@@ -1,0 +1,21 @@
+{
+  "id": 2,
+  "chapter": 1,
+  "name": "Rescata a Coquí",
+  "objective": {
+    "type": "rescue",
+    "creature_id": "coqui",
+    "creature_position": [2, 0]
+  },
+  "max_shots": 24,
+  "available_colors": ["red", "blue", "yellow"],
+  "rainbow_chance": 0.0,
+  "bubbles": [
+    [0, 0, "red"],
+    [1, 0, "yellow"],
+    [2, 0, "yellow"],
+    [3, 0, "yellow"],
+    [4, 0, "blue"]
+  ],
+  "obstacles": []
+}

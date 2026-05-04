@@ -188,8 +188,33 @@ func _draw_trajectory(direction: Vector2) -> void:
 	trajectory_line.points = points
 
 
+## Smart queue: solo selecciona colores que tienen 2+ instancias en el grid actual,
+## para evitar que el jugador reciba colores "muertos" (los que no pueden matchear).
+## Si ningún color cumple el threshold (ej. al final del nivel), fallback a random
+## entre los playable_types del nivel.
 func _random_type() -> int:
-	return playable_types[randi() % playable_types.size()]
+	var grid_colors := _get_smart_colors()
+	if grid_colors.is_empty():
+		return playable_types[randi() % playable_types.size()]
+	return grid_colors[randi() % grid_colors.size()]
+
+
+## Devuelve los tipos de burbuja que tienen 2+ instancias en el grid (filtrados también
+## por playable_types del nivel para no spawnear colores no permitidos).
+func _get_smart_colors() -> Array:
+	var grid_node: Grid = get_parent().get_node_or_null("Grid") as Grid
+	if not grid_node:
+		return []
+	var color_counts: Dictionary = {}
+	for cell in grid_node.bubbles:
+		var b: Bubble = grid_node.bubbles[cell]
+		if b.state == Bubble.State.IN_GRID and b.bubble_type in playable_types:
+			color_counts[b.bubble_type] = color_counts.get(b.bubble_type, 0) + 1
+	var result: Array = []
+	for c in color_counts:
+		if color_counts[c] >= 2:
+			result.append(c)
+	return result
 
 
 ## Reconfigura los colores jugables basado en el nivel actual. Llamado desde gameplay.gd

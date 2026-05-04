@@ -29,6 +29,7 @@ const COLOR_STR_TO_TYPE := {
 var level_data: Dictionary = {}
 var shots_remaining: int = 0
 var level_ended: bool = false
+var level_won: bool = false
 
 
 func _ready() -> void:
@@ -131,17 +132,24 @@ func _update_hud() -> void:
 
 func _show_end_screen(victory: bool) -> void:
 	level_ended = true
+	level_won = victory
 	canon.level_active = false
+	var has_next: bool = GameManager.current_level_id < LevelManager.get_total_levels()
 	if victory:
 		end_title.text = "¡LO LOGRASTE!"
 		end_subtitle.text = "Score: %d" % grid.score
+		retry_button.text = "Siguiente nivel →" if has_next else "Reintentar"
 	else:
 		end_title.text = "SIN DISPAROS"
 		end_subtitle.text = "Score: %d" % grid.score
+		retry_button.text = "Reintentar"
 	end_screen.visible = true
 
 
 func _on_retry_pressed() -> void:
+	# Si ganaste y hay siguiente nivel, avanzar. Si no, recargar el actual.
+	if level_won and GameManager.current_level_id < LevelManager.get_total_levels():
+		GameManager.current_level_id += 1
 	get_tree().reload_current_scene()
 
 

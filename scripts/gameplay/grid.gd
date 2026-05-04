@@ -29,7 +29,10 @@ signal state_settled
 
 
 ## Carga el grid inicial desde level_data parseado por LevelManager.
-## Si el level_data está vacío, fallback a un grid random (por si falla el load).
+## Aplica shuffle de colores estilo Candy Crush: las posiciones del JSON son fijas
+## (parte del diseño del nivel) pero los colores en cada posición se randomizan en
+## cada carga. La criatura preserva posición Y color porque es parte del puzzle.
+## Si el level_data está vacío, fallback a un grid random.
 func setup_from_level(level_data: Dictionary) -> void:
 	_clear_grid()
 	if level_data.is_empty():
@@ -37,11 +40,12 @@ func setup_from_level(level_data: Dictionary) -> void:
 		_spawn_random_fallback()
 		return
 
-	var bubbles_array: Array = level_data.get("bubbles", [])
-	var creature_cell := Vector2i(-1, -1)
-	if level_data.objective.get("type", "") == "rescue":
-		var pos: Array = level_data.objective.get("creature_position", [-1, -1])
-		creature_cell = Vector2i(pos[0], pos[1])
+	var bubbles_array: Array = level_data.get("bubbles", []).duplicate(true)
+	var creature_cell := _get_creature_cell(level_data)
+
+	# Shuffle: randomizar colores entre posiciones non-creature, preservando el conteo
+	# total de cada color (no lo cambia, solo redistribuye).
+	_shuffle_non_creature_colors(bubbles_array, creature_cell)
 
 	for entry in bubbles_array:
 		var col: int = entry[0]
@@ -56,7 +60,35 @@ func setup_from_level(level_data: Dictionary) -> void:
 			b.is_creature = true
 			b.queue_redraw()
 
-	print("[Grid] %d burbujas cargadas desde nivel %d" % [bubbles.size(), level_data.get("id", 0)])
+	print("[Grid] %d burbujas cargadas desde nivel %d (colores shuffleados)" % [bubbles.size(), level_data.get("id", 0)])
+
+
+## Devuelve la celda de la criatura si el nivel tiene objective rescue, sino (-1, -1).
+func _get_creature_cell(level_data: Dictionary) -> Vector2i:
+	if level_data.objective.get("type", "") == "rescue":
+		var pos: Array = level_data.objective.get("creature_position", [-1, -1])
+		return Vector2i(pos[0], pos[1])
+	return Vector2i(-1, -1)
+
+
+## Shufflea los colores entre todas las posiciones del nivel EXCEPTO la celda de la criatura.
+## Modifica `entries` in-place. Mantiene el conteo total de cada color (solo redistribuye).
+func _shuffle_non_creature_colors(entries: Array, creature_cell: Vector2i) -> void:
+	# Recolectar índices y colores de las entradas non-creature
+	var indices_to_shuffle: Array[int] = []
+	var colors_to_shuffle: Array[String] = []
+	for i in range(entries.size()):
+		var entry: Array = entries[i]
+		if Vector2i(entry[0], entry[1]) != creature_cell:
+			indices_to_shuffle.append(i)
+			colors_to_shuffle.append(entry[2])
+
+	# Shufflear los colores
+	colors_to_shuffle.shuffle()
+
+	# Re-asignar colores a las posiciones (en orden, ahora barajado)
+	for j in range(indices_to_shuffle.size()):
+		entries[indices_to_shuffle[j]][2] = colors_to_shuffle[j]
 
 
 func _clear_grid() -> void:
