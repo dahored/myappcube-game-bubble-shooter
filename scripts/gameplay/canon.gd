@@ -36,11 +36,26 @@ var last_aim_direction: Vector2 = Vector2(0, -1)
 var can_shoot: bool = true       # Bloqueo durante vuelo de la burbuja anterior
 var level_active: bool = true    # Bloqueo cuando el nivel terminó (win/lose)
 
+# Posiciones canónicas de los visuals (capturadas en _ready, se usan para reset tras animaciones)
+var _current_canonical_pos: Vector2
+var _current_canonical_scale: Vector2
+var _next_canonical_pos: Vector2
+var _next_canonical_scale: Vector2
+
 
 func _ready() -> void:
 	_load_initial_queue()
 	trajectory_line.clear_points()
 	queue_redraw()
+	# Capturar posiciones canónicas de los visuals (definidas en canon.tscn)
+	_current_canonical_pos = current_visual.position
+	_current_canonical_scale = current_visual.scale
+	_next_canonical_pos = next_visual.position
+	_next_canonical_scale = next_visual.scale
+	# Suscribirse al grid para refrescar la cola cuando el estado cambie tras un match/drop
+	var grid_node := get_parent().get_node_or_null("Grid")
+	if grid_node:
+		grid_node.state_settled.connect(_refresh_queue_if_invalid)
 
 
 ## Dibuja la concha base del cañón debajo de la burbuja current (placeholder).
@@ -129,15 +144,18 @@ func _shoot(direction: Vector2) -> void:
 	var b: Bubble = BubbleScene.instantiate()
 	get_parent().add_child(b)  # parent = Gameplay scene root, así global_position se respeta
 	b.global_position = global_position
-	b.set_type(current_type)
+	b.set_type(current_type)  # disparada con el color del current actual
 	# La señal ya emite la burbuja como argumento — no hay que hacer bind aquí.
 	b.landed.connect(_on_shot_landed)
 	b.launch(direction, SHOT_SPEED)
-	# Avanzar la cola
-	current_type = next_type
-	next_type = _random_type()
-	current_visual.set_type(current_type)
-	next_visual.set_type(next_type)
+	# Avanzar la cola lógicamente
+	var new_current_color: int = next_type
+	var new_next_color: int = _random_type()
+	current_type = new_current_color
+	next_type = new_next_color
+	# Animar la rotación visual de la cola (no bloqueante — corre durante el vuelo)
+	# El current "ya se fue" en el disparo, así que no necesita drop animation
+	_animate_queue_advance(new_current_color, new_next_color, false)
 	shot_fired.emit()
 
 
@@ -199,21 +217,98 @@ func _random_type() -> int:
 	return grid_colors[randi() % grid_colors.size()]
 
 
-## Devuelve los tipos de burbuja que tienen 2+ instancias en el grid (filtrados también
+## Tras cada disparo aterrizado (state_settled), revalida que current y next sigan
+## siendo colores presentes en grid. Si current ya no es válido, dispara la animación
+## de drop + reemplazo. Si solo next es inválido, se reemplaza sin animación.
+func _refresh_queue_if_invalid() -> void:
+	var smart := _get_smart_colors()
+	if smart.is_empty():
+		return
+
+	if current_type not in smart:
+		can_shoot = false
+		var color_for_new_current: int = next_type if next_type in smart else smart[randi() % smart.size()]
+		var color_for_new_next: int = smart[randi() % smart.size()]
+		# Si el next también era inválido, ajustar su color antes de animar para que
+		# la burbuja que se desliza muestre el color correcto
+		if next_type not in smart and next_visual:
+			next_visual.set_type(color_for_new_current)
+		current_type = color_for_new_current
+		next_type = color_for_new_next
+		await _animate_queue_advance(color_for_new_current, color_for_new_next, true)
+		can_shoot = true
+	elif next_type not in smart:
+		next_type = smart[randi() % smart.size()]
+		if next_visual:
+			next_visual.set_type(next_type)
+
+
+## Animación unificada de rotación de cola.
+##   - drop_current=false: usado al disparar — la burbuja current "ya se fue" en
+##     el disparo, así que se invisibiliza al instante. Solo se anima el slide del
+##     next al center y el fade-in de la nueva en el preview.
+##   - drop_current=true: usado al refrescar (color inválido) — la burbuja current
+##     cae con fade + shrink antes de que el next la reemplace.
+## En ambos casos, la fase final es: slide visualmente claro del next al center,
+## seguido del fade-in de una nueva burbuja en el slot del preview.
+func _animate_queue_advance(new_current_color: int, new_next_color: int, drop_current: bool) -> void:
+	if not current_visual or not next_visual:
+		return
+
+	var slide_duration: float = 0.28 if drop_current else 0.22
+
+	var tween1 := create_tween()
+	tween1.set_parallel(true)
+
+	if drop_current:
+		# Refresh case: current cae con fade out + shrink
+		tween1.tween_property(current_visual, "position:y", _current_canonical_pos.y + 80.0, slide_duration)
+		tween1.tween_property(current_visual, "modulate:a", 0.0, slide_duration * 0.8)
+		tween1.tween_property(current_visual, "scale", _current_canonical_scale * 0.7, slide_duration)
+	else:
+		# Shot case: current ya se fue como burbuja disparada — invisible al instante
+		current_visual.modulate.a = 0.0
+
+	# En ambos casos: next se desliza al center y crece al tamaño de current
+	tween1.tween_property(next_visual, "position", _current_canonical_pos, slide_duration)
+	tween1.tween_property(next_visual, "scale", _current_canonical_scale, slide_duration)
+	await tween1.finished
+
+	# Swap atómico: current_visual se convierte en el "nuevo current" en posición canónica
+	current_visual.position = _current_canonical_pos
+	current_visual.scale = _current_canonical_scale
+	current_visual.modulate.a = 1.0
+	current_visual.set_type(new_current_color)
+
+	# next_visual vuelve al slot de preview con el nuevo color, invisible (fade in después)
+	next_visual.position = _next_canonical_pos
+	next_visual.scale = _next_canonical_scale
+	next_visual.modulate.a = 0.0
+	next_visual.set_type(new_next_color)
+
+	# Fade in del nuevo preview
+	var tween2 := create_tween()
+	tween2.tween_property(next_visual, "modulate:a", 1.0, 0.18)
+	await tween2.finished
+
+
+## Devuelve los tipos de burbuja que tienen 1+ instancias en el grid (filtrados también
 ## por playable_types del nivel para no spawnear colores no permitidos).
+## Usamos threshold de 1 (no 2) para que los colores "huérfanos" sigan apareciendo en
+## el cañón — el jugador puede acumular instancias adicionales para futuros matches.
+## Mismo enfoque que Candy Crush: siempre dar colores que existen en el board.
 func _get_smart_colors() -> Array:
 	var grid_node: Grid = get_parent().get_node_or_null("Grid") as Grid
 	if not grid_node:
 		return []
-	var color_counts: Dictionary = {}
+	var colors_set: Dictionary = {}
 	for cell in grid_node.bubbles:
 		var b: Bubble = grid_node.bubbles[cell]
 		if b.state == Bubble.State.IN_GRID and b.bubble_type in playable_types:
-			color_counts[b.bubble_type] = color_counts.get(b.bubble_type, 0) + 1
+			colors_set[b.bubble_type] = true
 	var result: Array = []
-	for c in color_counts:
-		if color_counts[c] >= 2:
-			result.append(c)
+	for c in colors_set:
+		result.append(c)
 	return result
 
 
