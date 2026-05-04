@@ -1,0 +1,24 @@
+{
+  "id": 1,
+  "chapter": 1,
+  "name": "Primer encuentro",
+  "objective": {
+    "type": "rescue",
+    "creature_id": "coqui",
+    "creature_position": [5, 0]
+  },
+  "max_shots": 15,
+  "available_colors": ["red", "blue", "yellow", "green"],
+  "rainbow_chance": 0.0,
+  "bubbles": [
+    [0, 0, "red"],   [1, 0, "red"],   [2, 0, "red"],
+    [3, 0, "blue"],  [4, 0, "blue"],  [5, 0, "yellow"],[6, 0, "blue"],  [7, 0, "blue"],
+    [8, 0, "green"], [9, 0, "green"], [10, 0, "red"],
+    [0, 1, "red"],   [1, 1, "blue"],  [2, 1, "yellow"],[3, 1, "red"],   [4, 1, "blue"],
+    [5, 1, "yellow"],[6, 1, "red"],   [7, 1, "yellow"],[8, 1, "green"], [9, 1, "red"],
+    [0, 2, "green"], [1, 2, "red"],   [2, 2, "blue"],  [3, 2, "green"], [4, 2, "red"],
+    [5, 2, "blue"],  [6, 2, "yellow"],[7, 2, "red"],   [8, 2, "blue"],  [9, 2, "yellow"],
+    [10, 2, "red"]
+  ],
+  "obstacles": []
+}

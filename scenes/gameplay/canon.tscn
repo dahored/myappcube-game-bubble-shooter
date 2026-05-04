@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/canon.gd" id="1_canon"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/bubble.tscn" id="2_bubble"]
+
+[node name="Canon" type="Node2D"]
+position = Vector2(540, 1700)
+script = ExtResource("1_canon")
+
+[node name="TrajectoryLine" type="Line2D" parent="."]
+width = 8.0
+default_color = Color(0.93, 0.48, 0.48, 0.6)
+joint_mode = 2
+
+[node name="CurrentVisual" parent="." instance=ExtResource("2_bubble")]
+position = Vector2(0, 0)
+
+[node name="NextVisual" parent="." instance=ExtResource("2_bubble")]
+position = Vector2(120, 30)
+scale = Vector2(0.65, 0.65)
