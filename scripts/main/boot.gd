@@ -14,10 +14,15 @@ func _initialize_services() -> void:
 	print("[Boot] servicios inicializados (stub)")
 
 func _route_to_first_screen() -> void:
-	# Durante Fase 1 / Chunk 1 saltamos directo al gameplay para iterar el grid.
-	# TODO: cuando se construyan onboarding y santuario, restaurar el routing real:
-	#   var tutorial_done: bool = SaveManager.data.get("tutorial_completed", false)
-	#   if not tutorial_done: change_scene_to_file("res://scenes/main/onboarding.tscn")
-	#   else: change_scene_to_file("res://scenes/santuario/santuario.tscn")
-	print("[Boot] cargando Gameplay (Chunk 1 — grid hexagonal)")
+	# Durante Fase 1/2 saltamos directo al gameplay para iterar.
+	# TODO: cuando se construyan onboarding y santuario, restaurar routing real
+	# Convención casual mobile: cargar el SIGUIENTE nivel a jugar = highest_completed + 1
+	# Si ganaste el nivel 2, al reabrir cargás el 3 (listo para avanzar).
+	# Si nunca ganaste nada, cargás el 1.
+	# Si ganaste todos, cargás el último (replayable).
+	var highest: int = SaveManager.data.get("highest_level_completed", 0)
+	var total_levels: int = LevelManager.get_total_levels()
+	var next_to_play: int = clamp(highest + 1, 1, max(1, total_levels))
+	GameManager.current_level_id = next_to_play
+	print("[Boot] cargando Gameplay desde nivel %d (highest completed: %d)" % [GameManager.current_level_id, highest])
 	get_tree().change_scene_to_file("res://scenes/gameplay/gameplay.tscn")

@@ -1,9 +1,10 @@
 # Plan Fase 1 — Prototipo Jugable
 
-**Versión:** 0.1 — 2026-05-01
-**Duración estimada:** 3-4 semanas (solo dev concentrado)
-**Output:** prototipo con gameplay core funcional + 5 niveles jugables
-**Meta única:** **validar que el juego es divertido**
+**Versión:** 0.2 — 2026-05-01
+**Estado:** ✅ **COMPLETADA** (Chunk 7 skipped por decisión del solo dev)
+**Duración real:** 1 sesión intensiva con Claude (vs 3-4 semanas estimadas)
+**Output:** prototipo con gameplay core funcional + 5 niveles jugables + persistencia
+**Meta única:** **validar que el juego es divertido** ← pendiente validar con playtest informal
 
 ---
 
@@ -356,3 +357,20 @@ Al final de las 3-4 semanas:
 | Versión | Fecha | Cambios |
 |---|---|---|
 | 0.1 | 2026-05-01 | Plan inicial: 7 chunks, 3-4 semanas, validation playtest como decisión central |
+| 0.2 | 2026-05-01 | **Fase 1 completada.** Chunks 1-6 ejecutados en una sesión. Chunk 7 (validation playtest) skipped por decisión del solo dev — guía y templates creados en `05_Playtest_Guide_Coralia.md` para hacerlo informalmente antes del global launch. Trabajo posterior tracked en GitHub issues vía `06_Backlog_GitHub_Issues.md`. |
+
+## Resultado final de Fase 1
+
+| Chunk | Estado | Deliverable |
+|---|---|---|
+| 1. Grid hexagonal | ✅ | 84 burbujas en hex grid funcional |
+| 2. Cañón + disparo | ✅ | Drag aim + trayectoria + snap a grid |
+| 3. Match + drops | ✅ | Flood-fill + gravity drops + score |
+| 4. Win/lose | ✅ | HUD + modal + retry |
+| 5. JSON levels | ✅ | LevelManager + rescue objective + nav debug |
+| 6. 5 niveles | ✅ | Curva de dificultad + smart queue + color shuffle + queue rotation animation |
+| 7. Validation playtest | ⏭️ Skipped | Templates listos en `docs/05_Playtest_Guide_Coralia.md` |
+
+## Próximo paso
+
+Trabajo posterior se gestiona desde `06_Backlog_GitHub_Issues.md`. Convertir esos issues a GitHub issues reales y continuar con Claude Code en CLI.

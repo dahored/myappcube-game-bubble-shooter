@@ -31,7 +31,7 @@ offset_right = -8.0
 offset_bottom = 56.0
 theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
 theme_override_font_sizes/font_size = 22
-text = "Chunk 6 — 5 niveles"
+text = "Chunk A — Persistencia"
 horizontal_alignment = 2
 
 [node name="LevelLabel" type="Label" parent="HUD"]
@@ -88,14 +88,20 @@ offset_bottom = 210.0
 theme_override_constants/separation = 16
 
 [node name="PrevButton" type="Button" parent="HUD/DebugButtons"]
-custom_minimum_size = Vector2(220, 70)
-theme_override_font_sizes/font_size = 28
+custom_minimum_size = Vector2(180, 70)
+theme_override_font_sizes/font_size = 26
 text = "← Prev"
 
 [node name="NextButton" type="Button" parent="HUD/DebugButtons"]
-custom_minimum_size = Vector2(220, 70)
-theme_override_font_sizes/font_size = 28
+custom_minimum_size = Vector2(180, 70)
+theme_override_font_sizes/font_size = 26
 text = "Next →"
+
+[node name="ResetButton" type="Button" parent="HUD/DebugButtons"]
+custom_minimum_size = Vector2(180, 70)
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.85, 0.4, 0.4, 1)
+text = "Reset Save"
 
 [node name="EndScreen" type="Control" parent="HUD"]
 visible = false

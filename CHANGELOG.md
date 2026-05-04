@@ -4,74 +4,88 @@ Todos los cambios significativos del proyecto se registran acá. Formato basado 
 
 ## [Unreleased]
 
-### Fase 1 — Prototipo jugable (en progreso)
+### Fase 2 — MVP (en progreso)
+
+#### Chunk A — Persistencia / save-load (2026-05-01)
+- `save_manager.gd` — implementación completa: `load_save()`, `save_to_disk()`, migración de versiones, defaults, API de conveniencia (`record_level_completion`, `get_best_score`, `is_level_completed`, `reset_save`)
+- Schema de save: `highest_level_completed`, `best_scores` por nivel, `creatures_rescued`, `total_score`, `last_played_level`, `currencies`, settings, etc.
+- `boot.gd` — al arrancar carga `highest_level_completed + 1` (siguiente desbloqueado), no `last_played` (anti-redundancia: no recargás un nivel ya ganado)
+- `gameplay.gd` — al ganar llama `record_level_completion`; HUD muestra mejor score en el título del nivel; modal de victoria muestra "¡Nuevo récord!" cuando aplica
+- `gameplay.tscn` — botón "Reset Save" agregado a Debug Buttons (junto a Prev/Next) para testing
+- Save file en `~/Library/Application Support/Godot/app_userdata/Coralia/save_game.json` (Mac) — JSON plain, sin encriptación todavía (placeholder para post-MVP)
+
+### Fase 1 — Prototipo jugable (✅ COMPLETADA 2026-05-01)
+
+#### Chunk 7 — Validation playtest (SKIPPED por decisión del solo dev)
+- `docs/05_Playtest_Guide_Coralia.md` — guía completa de playtest con build standalone, reclutamiento, protocolo, matriz de decisión
+- `docs/templates/playtest_form_per_tester.md` — formulario por tester
+- `docs/templates/playtest_results_summary.md` — template de resumen final
+- Pendiente para hacer informalmente antes del global launch
+
+#### Chunk 6 — 5 niveles del prototipo + polish UX (2026-05-01)
+- 5 niveles hand-designed en `data/levels/001-005.json` con curva de dificultad creciente (clear_all → rescue progresivo)
+- Posiciones de criaturas variadas por fila (top, middle, deep) — antes todas iban a la última fila por accidente
+- **Smart queue v2:** threshold de 1+ instancias en grid (antes era 2+ que dejaba colores huérfanos congelados). Comportamiento Candy Crush: siempre ofrece colores que existen en el board.
+- **Color shuffle al cargar nivel:** posiciones de burbujas fijas (parte del puzzle), pero los colores en cada posición se randomizan en cada carga. La criatura preserva posición Y color porque define el objetivo.
+- **Animación de rotación de cola:** unificada para disparo Y refresh. Cuando se dispara, el next se desliza al cañón creciendo y una nueva burbuja aparece en preview con fade-in. Cuando un color queda inválido, el current cae fuera + fade-out + shrink, después next se desliza igual. ~0.4s.
+- UX: botón del modal cambia de "Reintentar" a "Siguiente nivel →" al ganar (si hay próximo nivel)
+- Refactor: `_animate_queue_advance(new_current_color, new_next_color, drop_current)` unifica las dos rutas de animación
 
 #### Chunk 5 — JSON Level Loader (2026-05-01)
-- `data/levels/001.json` — primer nivel definido en JSON con objective `rescue`, criatura "coqui" en (5, 0), 15 disparos, 4 colores
-- `level_manager.gd` autoload con implementación completa: `load_level()`, validación de campos requeridos, `get_total_levels()` que cuenta archivos en `data/levels/`
-- `grid.gd` — reemplazo de `spawn_initial_grid()` por `setup_from_level(data)` que parsea el JSON y construye el grid; mapeo `COLOR_STR_TO_TYPE` para colores
-- `bubble.gd` — flag `is_creature` con renderizado de estrella dorada 5-puntas como marcador de objetivo de rescate
-- `canon.gd` — método `configure_playable_types()` para reconfigurar colores jugables según el nivel
-- `gameplay.gd` — pipeline de carga: lee `GameManager.current_level_id` → `LevelManager.load_level()` → configura grid + cañón + HUD; soporte de objective types (`clear_all` y `rescue`)
-- `gameplay.tscn` — agregados `LevelLabel` (top-right, debajo de Chunk label), `DebugButtons` (Prev / Next) para navegar entre niveles
-- `game_manager.gd` — default `current_level_id = 1` (antes era 0)
+- `data/levels/001.json` — primer nivel con objective `rescue`
+- `level_manager.gd` autoload con `load_level()`, validación, `get_total_levels()`
+- `grid.gd` — `setup_from_level(data)` reemplaza spawn random
+- `bubble.gd` — flag `is_creature` con renderizado de estrella dorada
+- `canon.gd` — `configure_playable_types()` para colores específicos del nivel
+- `gameplay.gd` — pipeline de carga: GameManager.current_level_id → LevelManager.load_level() → configura todo
+- `gameplay.tscn` — `LevelLabel`, `DebugButtons` (Prev/Next) para navegación de niveles
 
 #### Chunk 4 — Win/Lose Conditions (2026-05-01)
-- `gameplay.gd` reescrito como root coordinator: tracking de `shots_remaining` (hardcoded 25), detección win (grid vacío) / lose (sin disparos)
-- `canon.gd` — flag `level_active` separado de `can_shoot`; signal `shot_fired`
-- `grid.gd` — signal `state_settled` que se emite tras cada disparo aterrizado (con o sin match) para evaluación de win/lose
-- `gameplay.tscn` — HUD ampliado con `ShotsLabel`, `ObjectiveLabel`, `EndScreen` modal con título + subtítulo + botón Reintentar
-- Colores y font sizes correctos en todos los Labels (antes blancos sobre fondo crema → invisibles)
+- `gameplay.gd` reescrito como root coordinator: `shots_remaining` (hardcoded 25 inicial), detección win/lose
+- `canon.gd` — flag `level_active`; signal `shot_fired`
+- `grid.gd` — signal `state_settled` tras cada disparo aterrizado
+- `gameplay.tscn` — HUD ampliado con `ShotsLabel`, `ObjectiveLabel`, `EndScreen` modal
+- Fix: colores de fuente en Labels (eran blancos sobre crema → invisibles)
 
 #### Chunk 3 — Match Detection + Drops (2026-05-01)
-- `bubble.gd` — métodos `explode()` (tween scale up + fade out) y `start_falling()` (gravity-based drop con variación horizontal random); estado `DROPPING` agregado
-- `grid.gd` — algoritmos:
-  - `find_connected_same_color()`: flood-fill BFS desde la celda donde aterrizó la burbuja
-  - `find_floating_bubbles()`: BFS desde fila 0 (techo); cualquier celda no alcanzada es flotante
-  - `_explode_group()`: anima explosión + suma score (10 pts/burbuja)
-  - `_drop_floating_bubbles()`: gravity drop con bonus de 15 pts (1.5x)
-  - Pipeline `add_landed_bubble` → `_process_matches_and_drops` con delay de 0.15s entre explosión y drops para legibilidad visual
-- `gameplay.gd` (nuevo) — wirea `Grid.score_changed` → `HUD/ScoreLabel`
-- `gameplay.tscn` — agregado `ScoreLabel` en HUD
+- `bubble.gd` — `explode()` (tween scale + fade), `start_falling()` (gravity), estado `DROPPING`
+- `grid.gd` — `find_connected_same_color()` (flood-fill), `find_floating_bubbles()` (BFS desde techo)
+- Score: 10 pts por burbuja explotada + 15 pts por caída (1.5x bonus)
+- Pipeline: `add_landed_bubble` → `_process_matches_and_drops` con delay 0.15s entre explosión y drops
 
 #### Chunk 2 — Cañón y disparo (2026-05-01)
-- `canon.gd` (nuevo) — sistema de input drag-vs-tap, dirección de apuntado, línea de trayectoria con primer rebote calculado en coords locales del cañón, cola de 2 burbujas (current + next), color swap por tap
-- `canon.tscn` (nuevo) — Node2D con `Line2D` + dos instancias de Bubble (current + next preview); concha azul placeholder dibujada con `_draw()`
-- `bubble.gd` — extensión con state machine (IDLE / IN_FLIGHT / IN_GRID), `launch()`, `_update_flight()` con rebote en paredes y detección de colisión con grid bubbles, signal `landed`, `prev_position` para snap correcto
-- `grid.gd` — método `add_landed_bubble()` que recibe la burbuja en vuelo, calcula celda destino vía `pixel_to_grid` desde `prev_position`, busca vecino vacío si la celda está ocupada, re-parenta del Gameplay root al Grid container
-- `gameplay.tscn` — instancia el `Canon`; cambio de `Background.mouse_filter` a Ignore (antes consumía los inputs antes del cañón)
-- Fix: `_input` en lugar de `_unhandled_input` en cañón (los Controls como ColorRect consumen `_unhandled_input` por default)
-- Fix: removido `.bind(b)` en signal connect (causaba "method expected 1, called with 2")
+- `canon.gd` (nuevo) — input drag-vs-tap, trayectoria con primer rebote, cola de 2 burbujas, color swap por tap
+- `canon.tscn` (nuevo) — Line2D + 2 Bubble instances + concha azul placeholder
+- `bubble.gd` — state machine (IDLE/IN_FLIGHT/IN_GRID), `launch()`, `_update_flight()` con colisión y rebote
+- Fix: `_input` en vez de `_unhandled_input` (ColorRect background consumía eventos)
+- Fix: removido `.bind()` en signal connect
 
 #### Chunk 1 — Grid hexagonal (2026-05-01)
-- `grid_logic.gd` — math puro del hex grid: `grid_to_pixel`, `pixel_to_grid`, `get_neighbors` (hasta 6 vecinos hexagonales, con offset para filas pares vs impares), `is_valid_cell`
-- `bubble.gd` (nuevo) — class `Bubble` con `_draw()` que renderiza círculo de color con highlight superior izquierdo y outline; 7 tipos (RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, RAINBOW)
-- `bubble.tscn` (nuevo) — Node2D simple con script
-- `grid.gd` (nuevo) — `Grid` class que spawnea 84 burbujas random (8 filas × 11/10 cols alternadas), Dictionary `bubbles` con key `Vector2i(col, row)`
-- `gameplay.tscn` (nuevo) — escena raíz con Background ColorRect crema + Grid container + HUD CanvasLayer
-- `boot.gd` — actualizado para saltar onboarding/santuario y cargar gameplay.tscn directo durante Fase 1
+- `grid_logic.gd` — math puro del hex grid (grid_to_pixel, pixel_to_grid, get_neighbors)
+- `bubble.gd` (nuevo) — class Bubble con `_draw()` + 7 tipos
+- `grid.gd` (nuevo) — spawnea 84 burbujas (8 filas × 11/10)
+- `gameplay.tscn` (nuevo) — escena raíz con Background + Grid + HUD
 
-### Fase 0 — Pre-producción (completada 2026-04-30)
+### Fase 0 — Pre-producción (✅ COMPLETADA 2026-04-30)
 
 #### Setup técnico inicial (Tarea #5)
-- `project.godot` — configuración mobile portrait 1080×1920 con renderer `gl_compatibility`, 11 autoloads registrados, `pointing/emulate_touch_from_mouse=true`
-- 11 autoload stubs en `scripts/autoloads/`: GameManager, AudioManager, SaveManager, EconomyManager, BattlePassManager, AdsManager, IAPManager, AnalyticsManager, FirebaseManager, LevelManager, LocaleManager
-- `localization/translations.csv` con 50+ keys starter en 6 idiomas (es, en, it, fr, de, pt)
+- `project.godot` — mobile portrait 1080×1920, renderer `gl_compatibility`, 11 autoloads, emulate_touch_from_mouse
+- 11 autoload stubs en `scripts/autoloads/`
+- `localization/translations.csv` con 50+ keys en 6 idiomas
 - `boot.tscn` + `boot.gd` placeholder
-- `.gitignore` para Godot 4 + secrets, `README.md`, `icon.svg` placeholder
-- Estructura de carpetas según GDD sección 14.2
+- `.gitignore`, `README.md`, `icon.svg`
 
 #### Documentos de Fase 0
-- `docs/01_Concepto_Inicial.md` (v0.3) — visión, premisa, decisiones lockeadas, convenciones cross-proyecto con Impostor app
-- `docs/02_GDD_Coralia.md` (v0.6) — Game Design Document completo con 17 secciones: mecánicas, niveles, power-ups, progresión, santuario, economía, retención, Battle Pass, monetización, UI/pantallas (17 screens), arte, audio, narrativa (12 criaturas hero + Sombra Profunda antagonista), stack técnico, analytics, roadmap post-MVP, apéndices
-- `docs/03_Wireframes_Coralia.md` (v0.2) — spec detallado de las 17 pantallas con framework, layouts ASCII, componentes reutilizables
-- `docs/04_Plan_Fase1_Coralia.md` (v0.1) — plan de los 7 chunks de Fase 1 con duración, deliverables y dependencias
+- `docs/01_Concepto_Inicial.md` (v0.3) — visión, decisiones lockeadas, convenciones cross-proyecto
+- `docs/02_GDD_Coralia.md` (v0.6) — GDD con 17 secciones
+- `docs/03_Wireframes_Coralia.md` (v0.2) — spec de las 17 pantallas
+- `docs/04_Plan_Fase1_Coralia.md` (v0.1) — plan de Fase 1 (7 chunks)
 
 #### Decisiones lockeadas durante Fase 0
-- Nombre del juego: **Coralia**, estudio: **myappcube**
-- Tema: cozy underwater, protagonista Marina (sirena joven), antagonista La Sombra Profunda (no villano — herida)
+- Nombre: **Coralia** · Estudio: **myappcube**
+- Tema: cozy underwater · Protagonista: Marina · Antagonista: La Sombra Profunda
 - Estructura: 6 capítulos × 10 niveles = 60 niveles MVP
-- Modelo F2P híbrido: Ads + IAP + Battle Pass + Suscripción (fase 2)
+- F2P híbrido: Ads + IAP + Battle Pass + Suscripción (fase 2)
 - 6 idiomas al MVP (es, en, it, fr, de, pt) con pipeline AI a $0
-- Tema visual: Modo Arrecife (claro) + Modo Profundidades (oscuro) + Automático
+- Light/Dark/Auto themes (Modo Arrecife / Modo Profundidades)
 - Convenciones cross-proyecto con app-impostor: 2 splashes, Settings de 4 secciones, 3 sliders de audio + vibración

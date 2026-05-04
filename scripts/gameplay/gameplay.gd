@@ -10,6 +10,7 @@ extends Node2D
 @onready var level_label: Label = $HUD/LevelLabel
 @onready var prev_button: Button = $HUD/DebugButtons/PrevButton
 @onready var next_button: Button = $HUD/DebugButtons/NextButton
+@onready var reset_button: Button = $HUD/DebugButtons/ResetButton
 @onready var end_screen: Control = $HUD/EndScreen
 @onready var end_title: Label = $HUD/EndScreen/Panel/VBox/TitleLabel
 @onready var end_subtitle: Label = $HUD/EndScreen/Panel/VBox/SubtitleLabel
@@ -40,6 +41,7 @@ func _ready() -> void:
 	retry_button.pressed.connect(_on_retry_pressed)
 	prev_button.pressed.connect(_on_prev_pressed)
 	next_button.pressed.connect(_on_next_pressed)
+	reset_button.pressed.connect(_on_reset_pressed)
 	end_screen.visible = false
 
 	_load_current_level()
@@ -47,6 +49,8 @@ func _ready() -> void:
 
 func _load_current_level() -> void:
 	var level_id: int = GameManager.current_level_id
+	# Track que el jugador empezó este nivel (no save inmediato — se persistirá al ganar/perder)
+	SaveManager.record_level_started(level_id)
 	level_data = LevelManager.load_level(level_id)
 	if level_data.is_empty():
 		# Fallback: setup random grid + objective default
@@ -71,7 +75,12 @@ func _load_current_level() -> void:
 	# Setup de shots y HUD
 	shots_remaining = level_data.get("max_shots", 25)
 	_set_objective_text(_objective_to_text(level_data.objective))
-	level_label.text = "Nivel %d — %s" % [level_data.get("id", 0), level_data.get("name", "")]
+	# El title incluye el mejor score si ya completaste el nivel
+	var best_score: int = SaveManager.get_best_score(level_id)
+	if best_score > 0:
+		level_label.text = "Nivel %d — %s · Mejor: %d" % [level_data.get("id", 0), level_data.get("name", ""), best_score]
+	else:
+		level_label.text = "Nivel %d — %s" % [level_data.get("id", 0), level_data.get("name", "")]
 	_update_hud()
 
 
@@ -135,9 +144,22 @@ func _show_end_screen(victory: bool) -> void:
 	level_won = victory
 	canon.level_active = false
 	var has_next: bool = GameManager.current_level_id < LevelManager.get_total_levels()
+	var level_id: int = GameManager.current_level_id
+
 	if victory:
+		# Persistir el progreso del nivel en el save
+		var creature_id := ""
+		if level_data.objective.get("type", "") == "rescue":
+			creature_id = level_data.objective.get("creature_id", "")
+		var prev_best: int = SaveManager.get_best_score(level_id)
+		SaveManager.record_level_completion(level_id, grid.score, creature_id)
+
 		end_title.text = "¡LO LOGRASTE!"
-		end_subtitle.text = "Score: %d" % grid.score
+		# Mostrar si fue récord nuevo
+		if grid.score > prev_best:
+			end_subtitle.text = "¡Nuevo récord! Score: %d (anterior: %d)" % [grid.score, prev_best]
+		else:
+			end_subtitle.text = "Score: %d (mejor: %d)" % [grid.score, prev_best]
 		retry_button.text = "Siguiente nivel →" if has_next else "Reintentar"
 	else:
 		end_title.text = "SIN DISPAROS"
@@ -167,4 +189,11 @@ func _on_next_pressed() -> void:
 	if next_id == GameManager.current_level_id:
 		return
 	GameManager.current_level_id = next_id
+	get_tree().reload_current_scene()
+
+
+func _on_reset_pressed() -> void:
+	# Botón debug para borrar el save y empezar fresh — útil durante desarrollo
+	SaveManager.reset_save()
+	GameManager.current_level_id = 1
 	get_tree().reload_current_scene()
