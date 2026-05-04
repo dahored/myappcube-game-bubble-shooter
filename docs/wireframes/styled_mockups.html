@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Coralia — Mockups Estilizados (Rich Wireframes)</title>
+<style>
+  :root {
+    --coral-pink: #F4A6A0;
+    --coral-deep: #D87B7B;
+    --seafoam: #A8E0D5;
+    --pearl-white: #FBF6E9;
+    --aqua-deep: #1F4D7A;
+    --aqua-mid: #3A7BB0;
+    --aqua-light: #6FA8D3;
+    --bubble-blue: #4FC3F7;
+    --bubble-yellow: #FFD54F;
+    --bubble-green: #81C784;
+    --bubble-purple: #BA68C8;
+    --bubble-red: #E57373;
+    --bubble-orange: #FF8A65;
+    --bubble-pink: #F06292;
+    --gold-treasure: #FFC107;
+    --rock-gray: #525252;
+    --shell-pink: #F8BBD0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #ddd;
+    font-family: -apple-system, "SF Pro", system-ui, sans-serif;
+    padding: 32px;
+    margin: 0;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    color: var(--coral-pink);
+  }
+  .subtitle {
+    color: #aaa;
+    margin: 0 0 32px;
+    font-size: 14px;
+  }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 360px));
+    gap: 36px;
+    justify-content: center;
+  }
+
+  .screen-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .screen-title {
+    color: #ddd;
+    font-size: 14px;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .screen-subtitle {
+    color: #999;
+    font-size: 11px;
+    margin: 0 0 12px;
+  }
+
+  .screen {
+    width: 320px;
+    height: 692px;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    position: relative;
+    color: white;
+    font-family: -apple-system, system-ui, sans-serif;
+  }
+
+  /* ── Underwater background variants ─────────────────────────── */
+  .bg-underwater {
+    background:
+      radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.12) 0%, transparent 35%),
+      radial-gradient(ellipse at 70% 0%, rgba(255,255,255,0.08) 0%, transparent 30%),
+      linear-gradient(180deg, var(--aqua-mid) 0%, var(--aqua-deep) 60%, #0e2840 100%);
+  }
+  .bg-underwater-light {
+    background:
+      radial-gradient(ellipse at 50% 5%, rgba(255,255,255,0.2) 0%, transparent 40%),
+      linear-gradient(180deg, var(--aqua-light) 0%, var(--aqua-mid) 60%, var(--aqua-deep) 100%);
+  }
+  .bg-pearl {
+    background: linear-gradient(180deg, var(--seafoam) 0%, var(--pearl-white) 60%, #FFE4D6 100%);
+  }
+
+  /* Light rays from top */
+  .light-rays::before {
+    content: "";
+    position: absolute;
+    top: -20px; left: 30%; width: 40%; height: 60%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 80%);
+    transform: skewX(-8deg);
+    pointer-events: none;
+  }
+  .light-rays::after {
+    content: "";
+    position: absolute;
+    top: -20px; left: 55%; width: 25%; height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 80%);
+    transform: skewX(6deg);
+    pointer-events: none;
+  }
+
+  /* Tiny ambient bubbles floating */
+  .ambient-bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6), rgba(255,255,255,0.15));
+    border: 1px solid rgba(255,255,255,0.3);
+    pointer-events: none;
+  }
+
+  /* ── Main bubbles (with shine) ──────────────────────────────── */
+  .bub {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+    box-shadow:
+      inset -3px -4px 8px rgba(0,0,0,0.25),
+      inset 3px 3px 8px rgba(255,255,255,0.4),
+      0 2px 4px rgba(0,0,0,0.3);
+  }
+  .bub.r { background: radial-gradient(circle at 30% 30%, #FFB0B0, var(--bubble-red)); }
+  .bub.b { background: radial-gradient(circle at 30% 30%, #B0E5FB, var(--bubble-blue)); }
+  .bub.y { background: radial-gradient(circle at 30% 30%, #FFE89A, var(--bubble-yellow)); }
+  .bub.g { background: radial-gradient(circle at 30% 30%, #B5DDB7, var(--bubble-green)); }
+  .bub.p { background: radial-gradient(circle at 30% 30%, #DDB0DD, var(--bubble-purple)); }
+  .bub.o { background: radial-gradient(circle at 30% 30%, #FFB89A, var(--bubble-orange)); }
+  .bub.pi { background: radial-gradient(circle at 30% 30%, #F8A4B6, var(--bubble-pink)); }
+  /* Rock obstacle */
+  .bub.rock {
+    background: radial-gradient(circle at 30% 30%, #8a8a8a, var(--rock-gray));
+    box-shadow: inset -2px -3px 6px rgba(0,0,0,0.4), 0 2px 3px rgba(0,0,0,0.3);
+  }
+  /* Pearl-in-shell (criatura atrapada) */
+  .bub.pearl {
+    background: radial-gradient(circle at 30% 30%, #FFF, #F0E0D0);
+    box-shadow: inset -2px -3px 6px rgba(0,0,0,0.15), inset 2px 2px 4px rgba(255,255,255,0.8), 0 0 6px rgba(255,255,255,0.6);
+  }
+  .bub.pearl::before {
+    content: "🐚";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--shell-pink);
+  }
+  /* Star marker (creature target) */
+  .bub.star::after {
+    content: "★";
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--gold-treasure);
+    font-size: 16px;
+    text-shadow: 0 0 3px rgba(0,0,0,0.5);
+  }
+
+  /* ── HUD elements ───────────────────────────────────────────── */
+  .hud-bar-top {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    z-index: 5;
+  }
+  .hud-pill {
+    background: linear-gradient(180deg, #4a90c8, #2d6ba8);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 18px;
+    padding: 6px 10px;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .hud-pill.coral {
+    background: linear-gradient(180deg, var(--coral-pink), var(--coral-deep));
+  }
+  .hud-pill.gold {
+    background: linear-gradient(180deg, #FFD54F, #FFA000);
+    color: #6b4400;
+  }
+  .hud-pill.dark {
+    background: linear-gradient(180deg, rgba(20,40,60,0.85), rgba(10,20,40,0.85));
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+
+  .hud-icon-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #4a90c8, #2d6ba8);
+    border: 2px solid rgba(255,255,255,0.4);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+  }
+
+  /* ── Power-up buttons ─────────────────────────────────────── */
+  .powerup-stack {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 4;
+  }
+  .powerup-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #4a90c8, #2d6ba8);
+    border: 2px solid rgba(255,255,255,0.4);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+    position: relative;
+  }
+  .powerup-btn::after {
+    content: attr(data-count);
+    position: absolute;
+    bottom: -4px; right: -4px;
+    background: var(--coral-pink);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 10px;
+    border: 2px solid white;
+  }
+
+  /* ── Cannon shell ─────────────────────────────────────────── */
+  .cannon-shell {
+    position: absolute;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    width: 130px; height: 90px;
+    background: linear-gradient(180deg, #FAE0D0 0%, #E8B5A0 60%, #C99080 100%);
+    border-radius: 50% 50% 12px 12px / 60% 60% 12px 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 -8px 12px rgba(0,0,0,0.15);
+    border: 2px solid rgba(255,255,255,0.4);
+  }
+  .cannon-shell::before {
+    /* Shell ridges */
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border-radius: 50% 50% 8px 8px / 60% 60% 8px 8px;
+    background:
+      repeating-linear-gradient(180deg,
+        rgba(255,255,255,0.2) 0px,
+        rgba(255,255,255,0.2) 1px,
+        transparent 1px,
+        transparent 8px),
+      linear-gradient(180deg, #FFE5D5 0%, #E0A595 60%, transparent 100%);
+  }
+  .current-bubble {
+    position: absolute;
+    left: 50%;
+    bottom: 60px;
+    transform: translateX(-50%);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #DDB0DD, var(--bubble-purple));
+    box-shadow: inset -3px -4px 8px rgba(0,0,0,0.25), inset 3px 3px 8px rgba(255,255,255,0.4), 0 3px 6px rgba(0,0,0,0.4);
+    z-index: 6;
+  }
+  .next-bubble {
+    position: absolute;
+    left: 65%;
+    bottom: 38px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #B0E5FB, var(--bubble-blue));
+    box-shadow: inset -2px -3px 6px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 5;
+  }
+  .swap-arrows {
+    position: absolute;
+    left: 60%;
+    bottom: 50px;
+    color: white;
+    font-size: 9px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    z-index: 5;
+  }
+
+  /* Trajectory dots */
+  .trajectory {
+    position: absolute;
+    left: 50%;
+    bottom: 100px;
+    width: 4px;
+    height: 250px;
+    transform: translateX(-50%) rotate(-2deg);
+    transform-origin: bottom;
+    background-image: radial-gradient(circle, var(--coral-pink) 1.5px, transparent 2px);
+    background-size: 4px 12px;
+    background-repeat: repeat-y;
+    z-index: 4;
+    opacity: 0.85;
+  }
+
+  /* Modal overlays */
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  .modal-panel {
+    background: linear-gradient(180deg, #fff, #f5f5f5);
+    border-radius: 20px;
+    padding: 20px 16px;
+    width: 84%;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    border: 3px solid var(--coral-pink);
+  }
+
+  .btn-primary {
+    background: linear-gradient(180deg, var(--coral-pink), var(--coral-deep));
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 24px;
+    padding: 10px 16px;
+    color: white;
+    font-weight: 700;
+    font-size: 13px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4);
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+  }
+  .btn-secondary {
+    background: white;
+    border: 3px solid var(--coral-pink);
+    border-radius: 24px;
+    padding: 8px 16px;
+    color: var(--coral-deep);
+    font-weight: 700;
+    font-size: 12px;
+    text-align: center;
+    width: 100%;
+    display: inline-block;
+  }
+  .btn-ad {
+    background: linear-gradient(180deg, #FFD54F, #FFA000);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 24px;
+    padding: 10px 16px;
+    color: #4a3000;
+    font-weight: 700;
+    font-size: 12px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Decoration silhouettes */
+  .deco-coral-l {
+    position: absolute;
+    left: -10px; bottom: 30px;
+    width: 80px; height: 180px;
+    background:
+      radial-gradient(ellipse at 50% 0%, var(--coral-pink) 0%, transparent 50%),
+      radial-gradient(ellipse at 30% 30%, #ad6daa 0%, transparent 60%);
+    opacity: 0.7;
+    border-radius: 50% 50% 0 0;
+    pointer-events: none;
+  }
+  .deco-coral-r {
+    position: absolute;
+    right: -10px; bottom: 30px;
+    width: 80px; height: 180px;
+    background:
+      radial-gradient(ellipse at 50% 0%, #FF8A65 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 40%, #BA68C8 0%, transparent 60%);
+    opacity: 0.6;
+    border-radius: 50% 50% 0 0;
+    pointer-events: none;
+  }
+  .deco-floor {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 60px;
+    background: linear-gradient(180deg, transparent 0%, #2d4866 50%, #1a2c44 100%);
+    pointer-events: none;
+  }
+  /* Sunken ship silhouette (right side decoration) */
+  .deco-ship {
+    position: absolute;
+    right: 5px; bottom: 80px;
+    width: 100px; height: 70px;
+    pointer-events: none;
+    opacity: 0.4;
+  }
+  .deco-ship svg { width: 100%; height: 100%; }
+
+  /* Fish silhouette */
+  .deco-fish {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.65;
+  }
+
+  /* ── Grid bubble layout helpers ──────────────────────────── */
+  .bubble-grid {
+    position: absolute;
+    top: 70px; left: 6px; right: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: center;
+    z-index: 3;
+  }
+  .bubble-row {
+    display: flex;
+    gap: 1px;
+    margin: -2px 0;
+  }
+  .bubble-row.odd {
+    margin-left: 14px;
+  }
+
+  /* ── Section titles in screens ─────────────────────────── */
+  .section-divider {
+    color: rgba(255,255,255,0.85);
+    font-size: 10px;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    font-weight: 600;
+  }
+
+  /* Star rating bar (for level rating in HUD) */
+  .star-bar {
+    background: linear-gradient(180deg, #4a90c8, #2d6ba8);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 14px;
+    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: white;
+    font-size: 10px;
+  }
+  .star-on { color: var(--gold-treasure); }
+  .star-off { color: rgba(255,255,255,0.3); }
+
+  /* Creature illustrations (placeholders) */
+  .creature-circle {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #DDB0DD, var(--bubble-purple));
+    box-shadow: inset -3px -4px 10px rgba(0,0,0,0.3), inset 3px 3px 8px rgba(255,255,255,0.4), 0 4px 8px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    border: 3px solid var(--gold-treasure);
+  }
+</style>
+</head>
+<body>
+
+<h1>Coralia — Mockups Estilizados</h1>
+<p class="subtitle">v0.1 · 2026-05-01 · Alternativa más rica a los wireframes simples (<code>all_screens.html</code>). Convey el "look and feel" del juego final.</p>
+
+<div class="gallery">
+
+<!-- ════════════ BOOT ════════════ -->
+
+<!-- Pantalla 1: Company Splash -->
+<div class="screen-wrapper">
+  <div class="screen-title">1. Company Splash</div>
+  <p class="screen-subtitle">Boot · 1.5-2s</p>
+  <div class="screen bg-underwater-light light-rays">
+    <div class="ambient-bubble" style="top:20%;left:15%;width:14px;height:14px"></div>
+    <div class="ambient-bubble" style="top:35%;left:75%;width:18px;height:18px"></div>
+    <div class="ambient-bubble" style="top:55%;left:25%;width:10px;height:10px"></div>
+    <div style="position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:160px;height:160px;border-radius:32px;background:white;border:3px solid rgba(255,255,255,0.8);box-shadow:0 8px 24px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;flex-direction:column">
+      <div style="color:var(--aqua-deep);font-weight:800;font-size:22px;letter-spacing:-1px">myappcube</div>
+      <div style="color:var(--coral-pink);font-size:10px;margin-top:4px">studio</div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:60%;text-align:center;color:rgba(255,255,255,0.85);font-size:11px;font-style:italic;text-shadow:0 1px 2px rgba(0,0,0,0.4)">Juegos para todos los días</div>
+  </div>
+</div>
+
+<!-- Pantalla 2: Loading Splash -->
+<div class="screen-wrapper">
+  <div class="screen-title">2. Loading Splash</div>
+  <p class="screen-subtitle">Boot · hasta carga</p>
+  <div class="screen bg-underwater light-rays">
+    <div class="ambient-bubble" style="top:15%;left:20%;width:12px;height:12px"></div>
+    <div class="ambient-bubble" style="top:30%;left:80%;width:20px;height:20px"></div>
+    <div class="ambient-bubble" style="top:50%;left:10%;width:8px;height:8px"></div>
+    <div class="ambient-bubble" style="top:70%;left:70%;width:14px;height:14px"></div>
+    <!-- Marina silueta -->
+    <div style="position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);width:100px;height:140px;background:radial-gradient(ellipse at 50% 30%,rgba(244,166,160,0.4),transparent 70%);opacity:0.6"></div>
+    <!-- Logo -->
+    <div style="position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);width:140px;height:140px;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--coral-pink),var(--coral-deep));box-shadow:0 8px 24px rgba(0,0,0,0.4),inset 0 -8px 16px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:26px">Coralia</div>
+    <!-- Title -->
+    <div style="position:absolute;left:0;right:0;top:60%;text-align:center;font-size:24px;font-weight:800;color:white;letter-spacing:6px;text-shadow:0 2px 6px rgba(0,0,0,0.6)">CORALIA</div>
+    <!-- Loading bar -->
+    <div style="position:absolute;left:50%;top:75%;transform:translate(-50%,0);width:75%;height:14px;background:rgba(255,255,255,0.2);border-radius:7px;border:1px solid rgba(255,255,255,0.4);box-shadow:0 2px 4px rgba(0,0,0,0.3)">
+      <div style="background:linear-gradient(90deg,var(--coral-pink),var(--coral-deep));width:65%;height:100%;border-radius:7px;box-shadow:0 0 8px var(--coral-pink)"></div>
+    </div>
+    <!-- Version -->
+    <div style="position:absolute;left:0;right:0;bottom:40px;text-align:center;color:rgba(255,255,255,0.7);font-size:10px">v1.0.0</div>
+    <div style="position:absolute;left:0;right:0;bottom:24px;text-align:center;color:rgba(255,255,255,0.5);font-size:9px">by Diego · myappcube</div>
+  </div>
+</div>
+
+<!-- Pantalla 3: Onboarding -->
+<div class="screen-wrapper">
+  <div class="screen-title">3. Onboarding</div>
+  <p class="screen-subtitle">Boot · solo primera vez</p>
+  <div class="screen bg-underwater light-rays">
+    <div class="hud-bar-top">
+      <div></div>
+      <div style="background:rgba(0,0,0,0.4);padding:4px 8px;border-radius:8px;font-size:9px;color:rgba(255,255,255,0.7)">Saltar tutorial</div>
+    </div>
+    <!-- Mini grid -->
+    <div class="bubble-grid" style="top:50px">
+      <div class="bubble-row"><span class="bub r" style="width:20px;height:20px"></span><span class="bub y" style="width:20px;height:20px"></span><span class="bub b" style="width:20px;height:20px"></span><span class="bub r" style="width:20px;height:20px"></span><span class="bub g" style="width:20px;height:20px"></span></div>
+      <div class="bubble-row odd"><span class="bub y" style="width:20px;height:20px"></span><span class="bub r" style="width:20px;height:20px"></span><span class="bub r" style="width:20px;height:20px"></span><span class="bub b" style="width:20px;height:20px"></span></div>
+    </div>
+    <!-- Bocadillo Marina -->
+    <div style="position:absolute;left:30px;top:200px;width:200px;background:white;border:3px solid var(--coral-pink);border-radius:14px;padding:10px 12px;font-size:11px;color:var(--coral-deep);box-shadow:0 4px 12px rgba(0,0,0,0.3);line-height:1.4">
+      <strong>¡Hola!</strong> Soy Marina.<br>
+      Tocá y arrastrá para apuntar.
+    </div>
+    <!-- Manita / pointer -->
+    <div style="position:absolute;left:50%;top:330px;transform:translate(-50%,0);font-size:24px;animation:none">👇</div>
+    <!-- Cañón silhouette -->
+    <div class="cannon-shell" style="bottom:80px;width:100px;height:70px"></div>
+    <div class="current-bubble" style="bottom:120px;width:30px;height:30px"></div>
+    <div style="position:absolute;left:0;right:0;bottom:20px;text-align:center;color:rgba(255,255,255,0.7);font-size:9px">Paso 1 de 3</div>
+  </div>
+</div>
+
+<!-- ════════════ HUB ════════════ -->
+
+<!-- Pantalla 4: Santuario -->
+<div class="screen-wrapper">
+  <div class="screen-title">4. Santuario (main menu)</div>
+  <p class="screen-subtitle">Hub · pantalla principal · arrecife restaurándose</p>
+  <div class="screen bg-underwater light-rays">
+    <!-- Top HUD -->
+    <div class="hud-bar-top">
+      <div class="hud-icon-btn">⚙️</div>
+      <div class="hud-pill coral">🔥 12 días</div>
+      <div class="hud-icon-btn">👤</div>
+    </div>
+    <!-- Currencies bar -->
+    <div style="position:absolute;top:60px;left:12px;right:12px;display:flex;gap:6px;justify-content:center">
+      <div class="hud-pill">🪙 2,450</div>
+      <div class="hud-pill">💎 87</div>
+      <div class="hud-pill">❤️ 3 (12:34)</div>
+    </div>
+    <!-- Event banner -->
+    <div style="position:absolute;top:100px;left:30px;right:30px;background:linear-gradient(90deg,var(--gold-treasure),#FF8A65);border-radius:20px;padding:6px 10px;text-align:center;font-size:10px;font-weight:700;color:white;box-shadow:0 3px 6px rgba(0,0,0,0.3)">🎉 Festival de Coral · 2d 14h</div>
+    <!-- Reef vista -->
+    <div style="position:absolute;top:140px;left:0;right:0;height:220px">
+      <div class="ambient-bubble" style="top:40px;left:30%;width:10px;height:10px"></div>
+      <div class="ambient-bubble" style="top:80px;left:70%;width:14px;height:14px"></div>
+      <!-- Floating creatures -->
+      <div style="position:absolute;top:30px;left:20%;font-size:32px">🐢</div>
+      <div style="position:absolute;top:70px;right:15%;font-size:28px">🐠</div>
+      <div style="position:absolute;top:120px;left:60%;font-size:24px">🐡</div>
+      <div style="position:absolute;top:140px;left:25%;font-size:26px">🐙</div>
+      <div style="position:absolute;top:100px;left:8%;font-size:20px">🐚</div>
+    </div>
+    <!-- Marina at bottom-center -->
+    <div style="position:absolute;top:380px;left:50%;transform:translateX(-50%);width:80px;height:100px;background:radial-gradient(ellipse at 50% 30%,var(--coral-pink),var(--coral-deep));border-radius:40% 40% 30% 30%;box-shadow:0 6px 16px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:white;font-size:32px">🧜‍♀️</div>
+    <!-- Big PLAY button -->
+    <div style="position:absolute;left:30px;right:30px;bottom:90px">
+      <div class="btn-primary" style="font-size:18px;padding:14px;letter-spacing:2px">▶ JUGAR</div>
+    </div>
+    <!-- Quick access bottom -->
+    <div style="position:absolute;left:12px;right:12px;bottom:24px;display:flex;justify-content:space-around;gap:6px">
+      <div class="hud-pill">🛒 Shop</div>
+      <div class="hud-pill">🎫 BP</div>
+      <div class="hud-pill">📅 Daily</div>
+    </div>
+    <!-- Decorative coral edges -->
+    <div class="deco-coral-l" style="bottom:0;height:120px"></div>
+    <div class="deco-coral-r" style="bottom:0;height:120px"></div>
+  </div>
+</div>
+
+<!-- Pantalla 5: Daily Rewards -->
+<div class="screen-wrapper">
+  <div class="screen-title">5. Daily Rewards</div>
+  <p class="screen-subtitle">Hub · popup primer login</p>
+  <div class="screen bg-underwater">
+    <div class="modal-overlay">
+      <div class="modal-panel" style="width:88%">
+        <div style="font-weight:800;font-size:16px;color:var(--coral-deep);margin-bottom:4px">RECOMPENSA DIARIA</div>
+        <div style="font-size:11px;color:#666;margin-bottom:12px">Día 3 de 7</div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:8px 0">
+          <div style="background:#90c890;color:white;padding:8px 0;border-radius:6px;font-size:10px;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,0.2)">✓<br><span style="font-size:8px">D1</span></div>
+          <div style="background:#90c890;color:white;padding:8px 0;border-radius:6px;font-size:10px;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,0.2)">✓<br><span style="font-size:8px">D2</span></div>
+          <div style="background:linear-gradient(180deg,#FFD54F,#FFA000);color:white;padding:8px 0;border-radius:6px;font-size:14px;border:3px solid var(--coral-pink);box-shadow:0 0 8px var(--coral-pink)">💎<br><span style="font-size:8px">HOY</span></div>
+          <div style="background:#ddd;color:#888;padding:8px 0;border-radius:6px;font-size:10px">·<br><span style="font-size:7px">D4</span></div>
+          <div style="background:#ddd;color:#888;padding:8px 0;border-radius:6px;font-size:10px">·<br><span style="font-size:7px">D5</span></div>
+          <div style="background:#ddd;color:#888;padding:8px 0;border-radius:6px;font-size:10px">·<br><span style="font-size:7px">D6</span></div>
+          <div style="background:#ddd;color:#888;padding:8px 0;border-radius:6px;font-size:10px">★<br><span style="font-size:7px">D7</span></div>
+        </div>
+        <div style="font-weight:800;color:var(--coral-deep);font-size:18px;margin:12px 0">+5 GEMAS HOY</div>
+        <div class="btn-primary" style="margin:12px 0">RECLAMAR</div>
+        <div style="font-size:10px;color:#888;margin-top:8px">Próximo regalo en 9h 23min</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pantalla 6: Battle Pass -->
+<div class="screen-wrapper">
+  <div class="screen-title">6. Battle Pass</div>
+  <p class="screen-subtitle">Hub · 30 días · 2 tracks</p>
+  <div class="screen bg-underwater">
+    <div class="hud-bar-top">
+      <div class="hud-icon-btn">←</div>
+      <div class="hud-pill gold">⏱️ 12 días</div>
+    </div>
+    <div style="position:absolute;top:60px;left:0;right:0;text-align:center">
+      <div style="font-size:15px;font-weight:800;color:var(--gold-treasure);text-shadow:0 1px 3px rgba(0,0,0,0.5)">TEMPORADA 1</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.85)">Despertar del Coral</div>
+    </div>
+    <!-- Hero image temporada -->
+    <div style="position:absolute;top:104px;left:16px;right:16px;height:80px;background:linear-gradient(135deg,var(--coral-pink),#FF8A65);border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-style:italic;font-size:11px;box-shadow:0 4px 10px rgba(0,0,0,0.3)">[Hero ilustración temporada]</div>
+    <!-- Progress -->
+    <div style="position:absolute;top:194px;left:16px;right:16px;color:white;font-size:10px">
+      <div style="display:flex;justify-content:space-between"><span>Tier 18</span><span>Tier 19</span></div>
+      <div style="background:rgba(255,255,255,0.15);height:10px;border-radius:5px;margin:3px 0;border:1px solid rgba(255,255,255,0.3)"><div style="background:linear-gradient(90deg,var(--coral-pink),var(--gold-treasure));width:45%;height:100%;border-radius:5px;box-shadow:0 0 6px var(--coral-pink)"></div></div>
+      <div style="font-size:9px;opacity:0.85">450 / 1000 XP</div>
+    </div>
+    <!-- Buy button -->
+    <div style="position:absolute;top:244px;left:16px;right:16px">
+      <div class="btn-ad" style="font-size:11px;background:linear-gradient(180deg,#FFD54F,#FF8A00);color:white">⭐ COMPRAR PREMIUM $4.99</div>
+    </div>
+    <!-- Tracks -->
+    <div style="position:absolute;top:300px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.7);font-size:10px">── TRACKS ──</div>
+    <div style="position:absolute;top:320px;left:8px;right:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-weight:700;color:rgba(255,255,255,0.85);font-size:10px;border-bottom:1px solid rgba(255,255,255,0.3);padding-bottom:4px">
+        <span style="text-align:center">FREE</span>
+        <span style="text-align:center;color:var(--gold-treasure)">PREMIUM ⭐</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px 4px;font-size:9px">
+        <div style="background:rgba(144,200,144,0.4);color:white;padding:4px;border-radius:4px;text-align:center;border:1px solid #6c6">T20 ✓ 💎10</div>
+        <div style="background:rgba(229,190,92,0.4);color:white;padding:4px;border-radius:4px;text-align:center;border:1px solid var(--gold-treasure)">T20 ✨ skin</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px 4px;font-size:9px">
+        <div style="background:rgba(144,200,144,0.4);color:white;padding:4px;border-radius:4px;text-align:center;border:1px solid #6c6">T19 ✓</div>
+        <div style="background:rgba(144,200,144,0.4);color:white;padding:4px;border-radius:4px;text-align:center;border:1px solid #6c6">T19 ✓ 💎25</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px 4px;font-size:9px;background:rgba(244,166,160,0.25);border-radius:4px">
+        <div style="font-weight:700;color:white;text-align:center">T18 ●HOY</div>
+        <div style="font-weight:700;color:var(--gold-treasure);text-align:center">●HOY ✨ Pop</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px 4px;font-size:9px;color:rgba(255,255,255,0.5)">
+        <div style="text-align:center">T17 💎15</div>
+        <div style="text-align:center">T17 ✨</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pantalla 7: Shop -->
+<div class="screen-wrapper">
+  <div class="screen-title">7. Shop</div>
+  <p class="screen-subtitle">Hub · gemas · vidas · ofertas</p>
+  <div class="screen bg-underwater">
+    <div class="hud-bar-top">
+      <div class="hud-icon-btn">←</div>
+      <div style="font-weight:800;font-size:14px;color:white;text-shadow:0 1px 2px rgba(0,0,0,0.6)">TIENDA</div>
+      <div class="hud-pill" style="font-size:10px">🪙2,450 💎87</div>
+    </div>
+    <div style="position:absolute;top:60px;left:8px;right:8px;display:flex;gap:6px;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.3);padding-bottom:6px;color:rgba(255,255,255,0.85)">
+      <span style="font-weight:800;color:var(--coral-pink);border-bottom:2px solid var(--coral-pink);padding-bottom:6px">Gemas</span>
+      <span>Vidas</span>
+      <span>Power-ups</span>
+      <span style="color:var(--gold-treasure)">★ Especiales</span>
+    </div>
+    <!-- Starter Pack banner -->
+    <div style="position:absolute;top:96px;left:16px;right:16px;background:linear-gradient(90deg,var(--gold-treasure),var(--coral-pink));border-radius:14px;padding:12px;color:white;font-weight:700;font-size:11px;box-shadow:0 4px 12px rgba(0,0,0,0.4);text-align:center">
+      <div style="font-size:14px">🎁 STARTER PACK</div>
+      <div style="font-size:9px;opacity:0.9">$2.99 — termina en 3d 12h</div>
+    </div>
+    <!-- Pack cards -->
+    <div style="position:absolute;top:170px;left:12px;right:12px;display:flex;flex-direction:column;gap:8px">
+      <div style="background:rgba(255,255,255,0.95);border-radius:12px;padding:10px;display:flex;align-items:center;gap:8px;box-shadow:0 3px 8px rgba(0,0,0,0.3)">
+        <div style="font-size:24px">💎</div>
+        <div style="flex:1;color:#333;font-size:10px">
+          <strong style="font-size:12px">80 Gemas</strong>
+          <div style="color:#666">Burbujita</div>
+        </div>
+        <div class="btn-primary" style="width:60px;font-size:11px;padding:6px">$0.99</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.95);border-radius:12px;padding:10px;display:flex;align-items:center;gap:8px;box-shadow:0 3px 8px rgba(0,0,0,0.3)">
+        <div style="font-size:28px">💎💎</div>
+        <div style="flex:1;color:#333;font-size:10px">
+          <strong style="font-size:12px">450 Gemas <span style="color:#90c890">+13%</span></strong>
+          <div style="color:#666">Concha</div>
+        </div>
+        <div class="btn-primary" style="width:60px;font-size:11px;padding:6px">$4.99</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.95);border-radius:12px;padding:10px;display:flex;align-items:center;gap:8px;box-shadow:0 3px 8px rgba(0,0,0,0.3);border:3px solid var(--gold-treasure);position:relative">
+        <div style="position:absolute;top:-10px;right:8px;background:var(--gold-treasure);color:white;font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,0.3)">BEST!</div>
+        <div style="font-size:32px">💎💎💎</div>
+        <div style="flex:1;color:#333;font-size:10px">
+          <strong style="font-size:12px">1000 Gemas <span style="color:#90c890">+25%</span></strong>
+          <div style="color:#666">Coral</div>
+        </div>
+        <div class="btn-primary" style="width:60px;font-size:11px;padding:6px">$9.99</div>
+      </div>
+      <div style="text-align:center;color:rgba(255,255,255,0.6);font-size:10px;padding-top:6px">Tesoro $19.99 · Perla Real $49.99 · Cofre Mítico $99.99 ▼</div>
+    </div>
+  </div>
+</div>
+
+<!-- Pantalla 8: Settings -->
+<div class="screen-wrapper">
+  <div class="screen-title">8. Settings</div>
+  <p class="screen-subtitle">Hub · 4 secciones</p>
+  <div class="screen bg-underwater">
+    <div class="hud-bar-top">
+      <div class="hud-icon-btn">←</div>
+      <div style="font-weight:800;font-size:14px;color:white;text-shadow:0 1px 2px rgba(0,0,0,0.6)">AJUSTES</div>
+      <div style="width:36px"></div>
+    </div>
+    <div style="position:absolute;top:60px;left:8px;right:8px;font-size:10px;color:white;background:rgba(255,255,255,0.1);border-radius:12px;padding:10px;backdrop-filter:blur(8px)">
+      <div style="font-weight:800;color:var(--coral-pink);border-bottom:1px solid rgba(255,255,255,0.3);padding:4px 0;margin-bottom:4px">PREFERENCIAS</div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Sonidos del juego</span><span>▮▮▮░░ 70%</span></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Efectos interfaz</span><span>▮▮▮▮░ 80%</span></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Sonidos pop</span><span>▮▮▮▮▮ 100%</span></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Vibración</span><span style="color:#9ED48A">● ON</span></div>
+    </div>
+    <div style="position:absolute;top:200px;left:8px;right:8px;font-size:10px;color:white;background:rgba(255,255,255,0.1);border-radius:12px;padding:10px">
+      <div style="font-weight:800;color:var(--coral-pink);border-bottom:1px solid rgba(255,255,255,0.3);padding:4px 0;margin-bottom:4px">CUENTA Y ASISTENCIA</div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Perfil</span><span>›</span></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Suscripción</span><span style="color:rgba(255,255,255,0.4);font-style:italic">Próximamente</span></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Cómo jugar</span><span>›</span></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Idioma</span><span>Español ›</span></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Tema</span><span>Automático ›</span></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Ayuda</span><span>›</span></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>Restaurar compras</span><span>›</span></div>
+    </div>
+    <div style="position:absolute;top:430px;left:8px;right:8px;font-size:10px;color:white;background:rgba(255,255,255,0.1);border-radius:12px;padding:10px">
+      <div style="font-weight:800;color:var(--coral-pink);padding:4px 0">COMUNIDAD</div>
+      <div style="padding:2px 0;display:flex;justify-content:space-between"><span>Valorar · Compartir · Redes · Web</span><span>›</span></div>
+    </div>
+    <div style="position:absolute;top:510px;left:8px;right:8px;font-size:10px;color:white;background:rgba(255,255,255,0.1);border-radius:12px;padding:10px">
+      <div style="font-weight:800;color:var(--coral-pink);padding:4px 0">LEGAL</div>
+      <div style="padding:2px 0;display:flex;justify-content:space-between"><span>Privacidad · Términos</span><span>›</span></div>
+    </div>
+    <div style="position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,0.5)">v1.0.0 · myappcube</div>
+  </div>
+</div>
+
+<!-- Pantalla 9: Profile -->
+<div class="screen-wrapper">
+  <div class="screen-title">9. Profile</div>
+  <p class="screen-subtitle">Hub · stats + 40 logros</p>
+  <div class="screen bg-underwater">
+    <div class="hud-bar-top">
+      <div class="hud-icon-btn">←</div>
+      <div style="font-weight:800;font-size:14px;color:white">PERFIL</div>
+      <div class="hud-icon-btn">✏️</div>
+    </div>
+    <div style="position:absolute;top:56px;left:50%;transform:translateX(-50%);width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--coral-pink),var(--coral-deep));border:4px solid var(--gold-treasure);display:flex;align-items:center;justify-content:center;font-size:36px;box-shadow:0 4px 12px rgba(0,0,0,0.4)">🧜‍♀️</div>
+    <div style="position:absolute;top:160px;left:0;right:0;text-align:center;font-weight:800;font-size:16px;color:white">Marina123</div>
+    <div style="position:absolute;top:182px;left:0;right:0;text-align:center;font-size:10px;color:rgba(255,255,255,0.7)">Código: ABC-123</div>
+
+    <div style="position:absolute;top:208px;left:8px;right:8px;background:rgba(255,255,255,0.1);border-radius:12px;padding:10px;color:white;font-size:10px">
+      <div style="font-weight:800;color:var(--coral-pink);padding:2px 0;margin-bottom:4px">ESTADÍSTICAS</div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0"><span>Niveles ganados</span><strong>27</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0"><span>Criaturas rescatadas</span><strong>14</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0"><span>Racha actual / max</span><strong>12 / 15</strong></div>
+    </div>
+
+    <div style="position:absolute;top:328px;left:8px;right:8px;color:white">
+      <div style="font-size:10px">Vincular cuenta:</div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <div class="btn-secondary" style="flex:1;font-size:10px;padding:6px;background:rgba(255,255,255,0.1);color:white;border-color:rgba(255,255,255,0.4)">📘 Facebook</div>
+        <div class="btn-secondary" style="flex:1;font-size:10px;padding:6px;background:rgba(255,255,255,0.1);color:white;border-color:rgba(255,255,255,0.4)">🍎 Apple</div>
+      </div>
+    </div>
+
+    <div style="position:absolute;top:418px;left:8px;right:8px;color:white;font-size:10px">
+      <div style="font-weight:800;color:var(--coral-pink);padding:4px 0">LOGROS 14/40</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px">
+        <div style="height:54px;background:radial-gradient(circle,#FFD54F,#FFA000);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid var(--gold-treasure);box-shadow:0 2px 4px rgba(0,0,0,0.3)">🏆</div>
+        <div style="height:54px;background:radial-gradient(circle,#FFD54F,#FFA000);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid var(--gold-treasure)">🏆</div>
+        <div style="height:54px;background:rgba(255,255,255,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:rgba(255,255,255,0.4)">🔒</div>
+        <div style="height:54px;background:rgba(255,255,255,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:rgba(255,255,255,0.4)">🔒</div>
+        <div style="height:54px;background:radial-gradient(circle,#C0C0C0,#888);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px">🏆</div>
+        <div style="height:54px;background:rgba(255,255,255,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:rgba(255,255,255,0.4)">🔒</div>
+        <div style="height:54px;background:rgba(255,255,255,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:rgba(255,255,255,0.4)">🔒</div>
+        <div style="height:54px;background:rgba(255,255,255,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:rgba(255,255,255,0.4)">🔒</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pantalla 10: Leaderboard -->
+<div class="screen-wrapper">
+  <div class="screen-title">10. Leaderboard</div>
+  <p class="screen-subtitle">Hub · top semanal</p>
+  <div class="screen bg-underwater">
+    <div class="hud-bar-top">
+      <div class="hud-icon-btn">←</div>
+      <div style="font-weight:800;font-size:13px;color:white">LEADERBOARD</div>
+      <div class="hud-pill coral">⏱️ 5d 23h</div>
+    </div>
+    <div style="position:absolute;top:60px;left:8px;right:8px;display:flex;gap:8px;font-size:10px;border-bottom:1px solid rgba(255,255,255,0.3);padding-bottom:4px;color:rgba(255,255,255,0.85)">
+      <span style="font-weight:800;color:var(--coral-pink);border-bottom:2px solid var(--coral-pink);padding-bottom:4px">Global</span>
+      <span>Amigos</span>
+      <span>Por Nivel</span>
+    </div>
+    <div style="position:absolute;top:100px;left:0;right:0;text-align:center;color:var(--gold-treasure);font-size:11px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,0.5)">⭐ TOP 10 ESTA SEMANA ⭐</div>
+    <div style="position:absolute;top:130px;left:8px;right:8px;font-size:10px;color:white">
+      <div style="display:flex;justify-content:space-between;padding:6px 8px;background:linear-gradient(90deg,#FFD54F,#FFA000);border-radius:8px;margin-bottom:3px;color:#4a3000;font-weight:700"><span>🥇 1. Lucía</span><span>24,500 💎100</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 8px;background:linear-gradient(90deg,#E0E0E0,#9E9E9E);border-radius:8px;margin-bottom:3px;color:#333"><span>🥈 2. Pablo</span><span>22,100 💎75</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 8px;background:linear-gradient(90deg,#CD7F32,#8D5524);border-radius:8px;margin-bottom:3px"><span>🥉 3. Sofía</span><span>19,800 💎50</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,0.1);border-radius:6px;margin-bottom:2px"><span>4. Mario</span><span>18,400</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,0.1);border-radius:6px;margin-bottom:2px"><span>5. Carla</span><span>17,200</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,0.05);border-radius:6px;margin-bottom:2px;color:rgba(255,255,255,0.6)"><span>...</span><span></span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,0.1);border-radius:6px;margin-bottom:2px"><span>10. Andrés</span><span>14,000</span></div>
+    </div>
+    <div style="position:absolute;top:380px;left:0;right:0;text-align:center;font-size:11px;font-weight:700;color:var(--coral-pink)">── TU POSICIÓN ──</div>
+    <div style="position:absolute;top:404px;left:8px;right:8px;background:linear-gradient(90deg,var(--coral-pink),var(--coral-deep));color:white;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:700;display:flex;justify-content:space-between;box-shadow:0 3px 8px rgba(0,0,0,0.3)"><span>47. Marina123</span><span>9,800</span></div>
+    <div style="position:absolute;top:460px;left:12px;right:12px;background:rgba(0,0,0,0.3);border-radius:10px;padding:8px;font-size:10px;color:rgba(255,255,255,0.85)">
+      <div style="font-weight:700;color:var(--gold-treasure);margin-bottom:4px">Recompensas:</div>
+      <div>Top 10 → 100💎 + skin</div>
+      <div>Top 100 → 50💎</div>
+      <div>Top 1000 → 25💎</div>
+    </div>
+  </div>
+</div>
+
+<!-- Pantalla 11: Events -->
+<div class="screen-wrapper">
+  <div class="screen-title">11. Events</div>
+  <p class="screen-subtitle">Hub · evento activo + próximos</p>
+  <div class="screen bg-underwater">
+    <div class="hud-bar-top">
+      <div class="hud-icon-btn">←</div>
+      <div style="font-weight:800;font-size:14px;color:white">EVENTOS</div>
+      <div style="width:36px"></div>
+    </div>
+    <div style="position:absolute;top:56px;left:0;right:0;text-align:center;color:var(--gold-treasure);font-size:11px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,0.5)">🎉 EVENTO ACTIVO 🎉</div>
+    <div style="position:absolute;top:84px;left:8px;right:8px;background:linear-gradient(180deg,rgba(255,255,255,0.95),rgba(245,245,245,0.95));border-radius:14px;border:3px solid var(--coral-pink);padding:8px;box-shadow:0 4px 16px rgba(0,0,0,0.4)">
+      <div style="height:80px;background:linear-gradient(135deg,var(--coral-pink),var(--gold-treasure));border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-style:italic;font-size:11px;margin-bottom:8px">[ Hero del Festival ]</div>
+      <div style="font-weight:800;font-size:13px;color:var(--coral-deep)">FESTIVAL DE CORAL</div>
+      <div style="color:var(--coral-pink);font-size:10px">Termina en 2d 14h ⏱️</div>
+      <div style="margin-top:6px;font-size:10px;color:#666;line-height:1.3">Niveles especiales con recompensas dobles.</div>
+      <div style="margin-top:8px;font-size:10px;color:#333">Tu progreso: <strong>12 / 30</strong></div>
+      <div style="background:#ddd;height:8px;border-radius:4px;margin-top:3px"><div style="background:linear-gradient(90deg,var(--coral-pink),var(--gold-treasure));width:40%;height:100%;border-radius:4px;box-shadow:0 0 4px var(--coral-pink)"></div></div>
+      <div style="margin-top:10px;font-weight:700;font-size:10px;color:var(--coral-deep)">Premios:</div>
+      <div style="font-size:10px;color:#90c890;padding:2px 0">✓ 5 niveles → 50💎</div>
+      <div style="font-size:10px;color:var(--coral-deep);font-weight:700;padding:2px 0">● 15 niveles → skin</div>
+      <div style="font-size:10px;color:#aaa;padding:2px 0">○ 30 niveles → 200💎</div>
+      <div class="btn-primary" style="margin-top:10px;font-size:11px">▶ JUGAR EVENTO</div>
+    </div>
+    <div style="position:absolute;bottom:30px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.85);font-size:10px;font-weight:700">── PRÓXIMOS ──</div>
+    <div style="position:absolute;bottom:8px;left:8px;right:8px;font-size:9px;color:rgba(255,255,255,0.7);text-align:center">
+      🌕 Luna Llena · en 5 días<br>
+      🐚 Marea de Coleccionables · 12d
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ CICLO DE PARTIDA ════════════ -->
+
+<!-- Pantalla 12: Level Select -->
+<div class="screen-wrapper">
+  <div class="screen-title">12. Level Select</div>
+  <p class="screen-subtitle">Ciclo · mapa serpenteante</p>
+  <div class="screen bg-underwater light-rays">
+    <div class="hud-bar-top">
+      <div class="hud-icon-btn">←</div>
+      <div style="text-align:center;color:white">
+        <div style="font-weight:800;font-size:13px">CAPÍTULO 3</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.7)">Bosque de Algas</div>
+      </div>
+      <div class="hud-pill" style="font-size:9px">🪙💎❤️</div>
+    </div>
+    <div style="position:absolute;top:80px;left:0;right:0;text-align:center;font-size:10px;color:rgba(255,255,255,0.5)">─ próximo cap ─</div>
+    <div style="position:absolute;top:100px;left:0;right:0;height:480px">
+      <!-- Path with nodes -->
+      <div style="position:absolute;left:50%;top:0;transform:translateX(-50%);width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.4);font-weight:700;font-size:12px">29</div>
+      <div style="position:absolute;left:30%;top:60px;transform:translateX(-50%);width:42px;height:42px;border-radius:50%;background:radial-gradient(circle,#A5D6A7,#4CAF50);border:3px solid white;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:13px;box-shadow:0 3px 8px rgba(0,0,0,0.3)">28</div>
+      <div style="position:absolute;left:42%;top:75px;font-size:24px;color:rgba(255,255,255,0.5)">⚓</div>
+      <div style="position:absolute;left:50%;top:120px;transform:translateX(-50%);width:42px;height:42px;border-radius:50%;background:radial-gradient(circle,#A5D6A7,#4CAF50);border:3px solid white;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:13px">27</div>
+      <div style="position:absolute;left:70%;top:180px;transform:translateX(-50%);width:42px;height:42px;border-radius:50%;background:radial-gradient(circle,#A5D6A7,#4CAF50);border:3px solid white;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:13px">26</div>
+      <!-- Current level -->
+      <div style="position:absolute;left:50%;top:240px;transform:translateX(-50%);width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#FFB0B0,var(--coral-deep));border:4px solid var(--gold-treasure);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;box-shadow:0 4px 12px var(--coral-pink),0 0 16px var(--coral-pink)">25</div>
+      <div style="position:absolute;left:50%;top:298px;transform:translate(-50%,0);font-size:11px;color:var(--gold-treasure);font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,0.5)">▶ ACTUAL</div>
+      <!-- Locked levels -->
+      <div style="position:absolute;left:30%;top:340px;transform:translateX(-50%);width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-size:14px">🔒</div>
+      <div style="position:absolute;left:50%;top:400px;transform:translateX(-50%);width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-size:14px">🔒</div>
+      <div style="position:absolute;left:70%;top:440px;transform:translateX(-50%);width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-size:14px">🔒</div>
+    </div>
+    <div class="deco-coral-l" style="bottom:0;height:120px"></div>
+    <div class="deco-coral-r" style="bottom:0;height:120px"></div>
+  </div>
+</div>
+
+<!-- Pantalla 13: Pre-level -->
+<div class="screen-wrapper">
+  <div class="screen-title">13. Pre-level</div>
+  <p class="screen-subtitle">Ciclo · selección de power-ups</p>
+  <div class="screen bg-underwater light-rays">
+    <div class="hud-bar-top">
+      <div class="hud-icon-btn">←</div>
+      <div style="font-weight:800;font-size:14px;color:white">NIVEL 27</div>
+      <div class="hud-pill" style="font-size:9px">🪙2,450 💎87</div>
+    </div>
+    <div style="position:absolute;top:60px;left:50%;transform:translateX(-50%)">
+      <div class="creature-circle">🐙</div>
+    </div>
+    <div style="position:absolute;top:140px;left:0;right:0;text-align:center;font-weight:800;color:var(--gold-treasure);font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,0.5)">Rescatar a Lumi</div>
+    <div style="position:absolute;top:166px;left:24px;right:24px;text-align:center;font-style:italic;font-size:10px;color:rgba(255,255,255,0.85);line-height:1.4">"Te observé desde la primera burbuja, niña."</div>
+    <div style="position:absolute;top:220px;left:0;right:0;text-align:center;color:white">
+      <div style="background:rgba(0,0,0,0.4);display:inline-block;padding:6px 16px;border-radius:18px;font-size:13px;font-weight:700">🎯 28 disparos</div>
+    </div>
+    <div style="position:absolute;top:268px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.85);font-size:11px;font-weight:700">── EQUIPÁ POWER-UPS ──</div>
+    <div style="position:absolute;top:296px;left:16px;right:16px;display:flex;gap:8px;justify-content:center">
+      <div class="powerup-btn" style="position:relative;left:auto;top:auto;transform:none" data-count="2">💣</div>
+      <div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px dashed rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-size:24px">+</div>
+      <div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px dashed rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-size:24px">+</div>
+    </div>
+    <div style="position:absolute;top:380px;left:30px;right:30px">
+      <div class="btn-ad">🎬 Power-up gratis (anuncio)</div>
+    </div>
+    <div style="position:absolute;bottom:24px;left:30px;right:30px">
+      <div class="btn-primary" style="font-size:18px;padding:14px;letter-spacing:2px">▶ JUGAR</div>
+    </div>
+  </div>
+</div>
+
+<!-- Pantalla 14: Gameplay (la principal — match con la referencia) -->
+<div class="screen-wrapper">
+  <div class="screen-title">14. Gameplay ★</div>
+  <p class="screen-subtitle">Ciclo · LA pantalla principal · match con referencia</p>
+  <div class="screen bg-underwater light-rays">
+    <!-- Top HUD -->
+    <div class="hud-bar-top">
+      <div class="hud-pill dark" style="font-size:10px">⏸ Pausa</div>
+      <div class="hud-pill dark" style="font-size:10px">🎯 Lumi · 22 disparos</div>
+      <div class="hud-pill gold" style="font-size:11px">💎 87</div>
+    </div>
+    <!-- Hex grid with bubbles + obstacles + creature -->
+    <div class="bubble-grid" style="top:64px">
+      <div class="bubble-row">
+        <span class="bub r"></span><span class="bub b"></span><span class="bub y"></span><span class="bub g"></span><span class="bub p"></span><span class="bub r"></span><span class="bub o"></span><span class="bub b"></span><span class="bub y"></span>
+      </div>
+      <div class="bubble-row odd">
+        <span class="bub g"></span><span class="bub rock"></span><span class="bub r"></span><span class="bub b"></span><span class="bub y"></span><span class="bub p"></span><span class="bub g"></span><span class="bub rock"></span>
+      </div>
+      <div class="bubble-row">
+        <span class="bub b"></span><span class="bub y"></span><span class="bub pearl"></span><span class="bub r"></span><span class="bub g"></span><span class="bub pearl"></span><span class="bub p"></span><span class="bub o"></span><span class="bub b"></span>
+      </div>
+      <div class="bubble-row odd">
+        <span class="bub p"></span><span class="bub g"></span><span class="bub b"></span><span class="bub r"></span><span class="bub rock"></span><span class="bub y"></span><span class="bub p"></span><span class="bub g"></span>
+      </div>
+      <div class="bubble-row">
+        <span class="bub y"></span><span class="bub r"></span><span class="bub b"></span><span class="bub g"></span><span class="bub p star"></span><span class="bub o"></span><span class="bub r"></span><span class="bub b"></span><span class="bub y"></span>
+      </div>
+      <div class="bubble-row odd">
+        <span class="bub g"></span><span class="bub b"></span><span class="bub y"></span><span class="bub r"></span><span class="bub g"></span><span class="bub b"></span><span class="bub y"></span><span class="bub p"></span>
+      </div>
+      <div class="bubble-row">
+        <span class="bub r"></span><span class="bub p"></span><span class="bub g"></span><span class="bub b"></span><span class="bub y"></span><span class="bub r"></span><span class="bub g"></span>
+      </div>
+    </div>
+    <!-- Trajectory dots -->
+    <div class="trajectory"></div>
+    <!-- Power-ups stack on left -->
+    <div class="powerup-stack">
+      <div class="powerup-btn" data-count="3">💣</div>
+      <div class="powerup-btn" data-count="3">🌈</div>
+      <div class="powerup-btn" data-count="3">🎯</div>
+    </div>
+    <!-- Star/extra button on right -->
+    <div style="position:absolute;right:8px;bottom:90px;z-index:4">
+      <div class="powerup-btn" data-count="2" style="background:linear-gradient(180deg,#FFD54F,#FFA000)">⭐</div>
+    </div>
+    <!-- Sunken ship silhouette -->
+    <div style="position:absolute;right:20px;bottom:170px;font-size:50px;opacity:0.25;pointer-events:none">⛵</div>
+    <!-- Cute creatures decoration -->
+    <div style="position:absolute;left:24px;bottom:200px;font-size:36px;opacity:0.85">🐢</div>
+    <div style="position:absolute;left:80px;bottom:180px;font-size:18px;opacity:0.7">🐠</div>
+    <div style="position:absolute;right:80px;bottom:230px;font-size:20px;opacity:0.7">🐠</div>
+    <div style="position:absolute;right:50px;bottom:200px;font-size:24px;opacity:0.85">🐴</div>
+    <!-- Cannon shell with current bubble -->
+    <div class="cannon-shell"></div>
+    <div class="current-bubble"></div>
+    <div class="next-bubble"></div>
+    <div class="swap-arrows">⟷</div>
+    <!-- Floor -->
+    <div class="deco-floor"></div>
+  </div>
+</div>
+
+<!-- Pantalla 15: Pause -->
+<div class="screen-wrapper">
+  <div class="screen-title">15. Pause</div>
+  <p class="screen-subtitle">Ciclo · overlay sobre gameplay</p>
+  <div class="screen bg-underwater">
+    <!-- Gameplay tenue de fondo -->
+    <div class="bubble-grid" style="top:64px;opacity:0.3">
+      <div class="bubble-row"><span class="bub r"></span><span class="bub b"></span><span class="bub y"></span><span class="bub g"></span><span class="bub p"></span></div>
+      <div class="bubble-row odd"><span class="bub g"></span><span class="bub r"></span><span class="bub b"></span><span class="bub y"></span></div>
+    </div>
+    <div class="modal-overlay">
+      <div class="modal-panel" style="width:80%">
+        <div style="font-weight:800;font-size:18px;color:var(--coral-deep);margin-bottom:16px">⏸ PAUSADO</div>
+        <div class="btn-primary" style="margin:6px 0">▶ CONTINUAR</div>
+        <div class="btn-secondary" style="margin:6px 0">↻ REINICIAR NIVEL</div>
+        <div class="btn-secondary" style="margin:6px 0">🏠 SALIR AL SANTUARIO</div>
+        <div style="margin-top:14px;font-size:10px;color:#666;display:flex;justify-content:space-around">
+          <span>🎵 ▮▮▮▮░</span>
+          <span>🔊 ON</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pantalla 16: Game Over / Victory -->
+<div class="screen-wrapper">
+  <div class="screen-title">16. Victory / Game Over</div>
+  <p class="screen-subtitle">Ciclo · resultado del nivel</p>
+  <div class="screen bg-underwater">
+    <div class="bubble-grid" style="top:64px;opacity:0.2">
+      <div class="bubble-row"><span class="bub r"></span><span class="bub b"></span><span class="bub y"></span></div>
+    </div>
+    <div class="modal-overlay">
+      <div class="modal-panel" style="width:84%">
+        <div style="font-weight:800;font-size:22px;color:var(--coral-pink);text-shadow:0 1px 2px rgba(0,0,0,0.1)">¡LO LOGRASTE!</div>
+        <div style="font-size:36px;margin:6px 0">🎉</div>
+        <div style="background:linear-gradient(135deg,#FFF8E1,#FFE0B2);border-radius:10px;padding:10px;margin:8px 0;text-align:left;font-size:11px">
+          <div style="display:flex;justify-content:space-between;padding:1px 0"><span>Score:</span><strong>24,500</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:1px 0"><span>Combo máx:</span><strong>x8</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:1px 0"><span>Disparos sobrantes:</span><strong>4</strong></div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--coral-deep);margin:10px 0 6px">Criatura rescatada:</div>
+        <div style="display:flex;align-items:center;gap:10px;justify-content:center;background:rgba(186,104,200,0.15);padding:8px;border-radius:10px">
+          <div class="creature-circle" style="width:42px;height:42px;font-size:20px">🐙</div>
+          <div style="font-weight:800;color:var(--coral-deep)">Lumi</div>
+        </div>
+        <div class="btn-primary" style="margin-top:14px">SIGUIENTE NIVEL →</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pantalla 17: Post-level -->
+<div class="screen-wrapper">
+  <div class="screen-title">17. Post-level</div>
+  <p class="screen-subtitle">Ciclo · drop de recompensas</p>
+  <div class="screen bg-underwater light-rays">
+    <div style="position:absolute;top:30px;left:0;right:0;text-align:center;color:white;font-weight:800;font-size:18px;text-shadow:0 2px 4px rgba(0,0,0,0.5)">RECOMPENSAS</div>
+    <!-- Reward drops animation placeholder -->
+    <div style="position:absolute;top:70px;left:50%;transform:translateX(-50%);font-size:48px">💎</div>
+    <div style="position:absolute;top:90px;left:30%;transform:translateX(-50%);font-size:32px">🪙</div>
+    <div style="position:absolute;top:100px;left:70%;transform:translateX(-50%);font-size:32px">💣</div>
+    <!-- Drops list -->
+    <div style="position:absolute;top:170px;left:16px;right:16px;background:rgba(255,255,255,0.95);border-radius:14px;padding:14px;box-shadow:0 4px 16px rgba(0,0,0,0.3);color:#333;font-size:11px">
+      <div style="font-weight:800;color:var(--coral-deep);margin-bottom:8px">Drop animado:</div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>🪙 Monedas</span><strong>+75</strong></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>💎 Gemas</span><strong>+2</strong></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>💣 Bomba de coral</span><strong>+1</strong></div>
+      <div style="padding:3px 0;display:flex;justify-content:space-between"><span>⭐ Battle Pass XP</span><strong>+50</strong></div>
+      <div style="padding:6px 0 2px;color:var(--coral-deep);font-weight:700;border-top:1px dashed #ccc">✨ Lumi rescatada</div>
+    </div>
+    <!-- BP progress -->
+    <div style="position:absolute;top:330px;left:16px;right:16px;background:linear-gradient(135deg,var(--gold-treasure),var(--coral-pink));border-radius:14px;padding:10px;color:white;font-weight:700;font-size:11px;box-shadow:0 4px 10px rgba(0,0,0,0.3)">
+      <div>⭐ Battle Pass: tier 18 → 19 ¡Subiste!</div>
+      <div style="background:rgba(255,255,255,0.3);height:8px;border-radius:4px;margin-top:6px"><div style="background:white;width:70%;height:100%;border-radius:4px"></div></div>
+    </div>
+    <!-- Buttons -->
+    <div style="position:absolute;bottom:120px;left:30px;right:30px">
+      <div class="btn-ad">🎬 DUPLICAR (ver ad)</div>
+    </div>
+    <div style="position:absolute;bottom:60px;left:30px;right:30px">
+      <div class="btn-primary" style="font-size:14px">SIGUIENTE NIVEL →</div>
+    </div>
+    <div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.7);font-size:10px;text-decoration:underline">Salir al santuario</div>
+  </div>
+</div>
+
+</div> <!-- /gallery -->
+
+<p style="margin-top:48px;text-align:center;color:#aaa;font-size:11px;max-width:700px;margin-left:auto;margin-right:auto;line-height:1.6">
+  <strong>Estos son mockups estilizados</strong>, NO design final. Convey el "look and feel" del juego con:
+  bubbles con shine y reflejos, obstáculos como rocas grises, criaturas atrapadas marcadas con ★ dorada,
+  shells especiales (criaturas como pearl-in-shell estilo referencia 1), background submarino con light rays,
+  fish y creatures sueltos, sunken ship silhouette, power-ups en panel lateral. La <strong>pantalla 14 (Gameplay)</strong>
+  es la más cercana al estilo de la referencia. Para arte final con sprites detallados, ver el issue
+  <em>"Asset pass real"</em> en <code>docs/06_Backlog_GitHub_Issues.md</code>.
+</p>
+
+</body>
+</html>
