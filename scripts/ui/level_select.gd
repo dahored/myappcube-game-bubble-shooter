@@ -9,23 +9,20 @@ const CHAPTER_NAMES := [
 	"Bosque de Algas", "Cueva de Cristales",
 	"Profundidades de Coral", "Ciudad de las Perlas",
 ]
-const LEVELS_PER_CHAPTER := 10
+const LEVELS_PER_CHAPTER := 15
 const NODES_PER_ROW := 3
 
-# Colores de estado de nodo
-const COLOR_COMPLETED := Color(0.455, 0.737, 0.451)   # verde
-const COLOR_CURRENT   := Color(0.957, 0.651, 0.627)   # coral_pink
-const COLOR_LOCKED    := Color(0.75, 0.75, 0.75)      # gris
+const COLOR_COMPLETED := Color(0.455, 0.737, 0.451)
+const COLOR_CURRENT   := Color(0.957, 0.651, 0.627)
+const COLOR_LOCKED    := Color(0.75, 0.75, 0.75)
 
 var _highest_completed: int = 0
 var _total_levels: int = 0
 
-# Referencias para scroll automático al nivel actual
 var _scroll: ScrollContainer
 var _map_container: VBoxContainer
 var _current_level_btn: Control = null
 
-# Tooltip para niveles bloqueados
 var _tooltip: Label
 
 
@@ -42,30 +39,31 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	_build_header()
-	_build_scroll_area()
+	# Layout principal ocupa toda la pantalla
+	var vbox := VBoxContainer.new()
+	vbox.name = "MainVBox"
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.add_theme_constant_override("separation", 0)
+	add_child(vbox)
+
+	_build_header(vbox)
+
+	# Línea separadora bajo el header
+	var sep := ColorRect.new()
+	sep.color = Color(0.659, 0.878, 0.835, 0.6)
+	sep.custom_minimum_size = Vector2(0, 3)
+	vbox.add_child(sep)
+
+	_build_scroll_area(vbox)
 	_build_tooltip()
 
 
-func _build_header() -> void:
+func _build_header(parent: Node) -> void:
 	var header := HBoxContainer.new()
 	header.name = "Header"
-	header.set_anchor_and_offset(SIDE_LEFT, 0.0, 0.0)
-	header.set_anchor_and_offset(SIDE_RIGHT, 1.0, 0.0)
-	header.set_anchor_and_offset(SIDE_TOP, 0.0, 0.0)
-	header.set_anchor_and_offset(SIDE_BOTTOM, 0.0, 88.0)
-	add_child(header)
-
-	# Fondo del header
-	var header_bg := ColorRect.new()
-	header_bg.color = Color(0.984, 0.965, 0.914)
-	header_bg.set_anchor_and_offset(SIDE_LEFT, 0.0, 0.0)
-	header_bg.set_anchor_and_offset(SIDE_RIGHT, 1.0, 0.0)
-	header_bg.set_anchor_and_offset(SIDE_TOP, 0.0, 0.0)
-	header_bg.set_anchor_and_offset(SIDE_BOTTOM, 0.0, 88.0)
-	header_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(header_bg)
-	move_child(header_bg, get_child_count() - 2)  # detrás del header
+	header.custom_minimum_size = Vector2(0, 88)
+	header.add_theme_constant_override("separation", 8)
+	parent.add_child(header)
 
 	var back_btn := Button.new()
 	back_btn.text = "←"
@@ -104,16 +102,17 @@ func _build_header() -> void:
 	lives_lbl.add_theme_color_override("font_color", Color(0.85, 0.4, 0.4))
 	currency_row.add_child(lives_lbl)
 
+	var pad_r := Control.new()
+	pad_r.custom_minimum_size = Vector2(8, 0)
+	header.add_child(pad_r)
 
-func _build_scroll_area() -> void:
+
+func _build_scroll_area(parent: Node) -> void:
 	_scroll = ScrollContainer.new()
 	_scroll.name = "ScrollContainer"
-	_scroll.set_anchor_and_offset(SIDE_LEFT, 0.0, 0.0)
-	_scroll.set_anchor_and_offset(SIDE_RIGHT, 1.0, 0.0)
-	_scroll.set_anchor_and_offset(SIDE_TOP, 0.0, 88.0)
-	_scroll.set_anchor_and_offset(SIDE_BOTTOM, 1.0, 0.0)
+	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(_scroll)
+	parent.add_child(_scroll)
 
 	_map_container = VBoxContainer.new()
 	_map_container.name = "MapContainer"
@@ -177,7 +176,6 @@ func _build_level_map() -> void:
 			items_in_row = 0
 			row_index += 1
 
-	# Espaciado final
 	var bottom_spacer := Control.new()
 	bottom_spacer.custom_minimum_size = Vector2(0, 64)
 	_map_container.add_child(bottom_spacer)
@@ -194,7 +192,7 @@ func _add_chapter_header(chapter: int) -> void:
 	separator.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_map_container.add_child(separator)
 
-	var name_idx := min(chapter, CHAPTER_NAMES.size() - 1)
+	var name_idx: int = mini(chapter, CHAPTER_NAMES.size() - 1)
 	var lbl := Label.new()
 	lbl.text = tr("ui.level_select.chapter").format({"n": chapter, "name": CHAPTER_NAMES[name_idx]})
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -209,7 +207,7 @@ func _make_row(row_index: int) -> HBoxContainer:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 24)
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# Zigzag: filas pares alineadas izquierda, impares desplazadas a la derecha
+	# Zigzag: filas impares desplazadas a la derecha
 	var margin := Control.new()
 	margin.custom_minimum_size = Vector2(96 if row_index % 2 == 1 else 0, 0)
 	row.add_child(margin)
@@ -228,13 +226,11 @@ func _make_level_node(level_id: int) -> Control:
 	if not level_data.is_empty():
 		creature_id = level_data.get("objective", {}).get("creature_id", "")
 
-	# Contenedor vertical: circle + info
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_theme_constant_override("separation", 4)
 	vbox.custom_minimum_size = Vector2(180, 200)
 
-	# Botón circular
 	var btn := Button.new()
 	btn.custom_minimum_size = Vector2(140, 140)
 
@@ -258,7 +254,6 @@ func _make_level_node(level_id: int) -> Control:
 	btn.add_theme_stylebox_override("hover", _make_hover_style(style))
 	btn.add_theme_stylebox_override("pressed", _make_hover_style(style))
 
-	# Texto del botón: número + emoji si completado
 	if is_completed:
 		btn.text = "✓\n%d" % level_id
 	elif is_locked:
@@ -278,7 +273,6 @@ func _make_level_node(level_id: int) -> Control:
 
 	vbox.add_child(btn)
 
-	# Info debajo: best score / creature
 	var info_lbl := Label.new()
 	info_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info_lbl.add_theme_font_size_override("font_size", 18)
@@ -309,7 +303,6 @@ func _make_hover_style(base: StyleBoxFlat) -> StyleBoxFlat:
 func _scroll_to_current() -> void:
 	if _current_level_btn == null:
 		return
-	# Defer para que el layout se haya calculado
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var target_y := _current_level_btn.global_position.y - get_viewport_rect().size.y * 0.4

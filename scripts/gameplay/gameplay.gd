@@ -206,11 +206,17 @@ func _show_end_screen(victory: bool) -> void:
 
 func _on_sanctuary_pressed() -> void:
 	AudioManager.play_sfx("button", AudioManager.AudioCategory.UI_FX)
+	# Si el nivel no terminó, el jugador abandona → pierde vida (igual que Candy Crush)
+	if not level_ended:
+		EconomyManager.consume_life()
 	get_tree().change_scene_to_file("res://scenes/sanctuary/sanctuary.tscn")
 
 
 func _on_retry_pressed() -> void:
 	AudioManager.play_sfx("button", AudioManager.AudioCategory.UI_FX)
+	# Consume vida en todo caso excepto victoria (siguiente nivel no cuesta)
+	if not level_won:
+		EconomyManager.consume_life()
 	if level_won and GameManager.current_level_id < LevelManager.get_total_levels():
 		GameManager.current_level_id += 1
 	get_tree().reload_current_scene()

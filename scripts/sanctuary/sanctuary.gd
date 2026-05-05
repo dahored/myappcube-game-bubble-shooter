@@ -2,7 +2,7 @@ extends Control
 class_name Sanctuary
 ## Pantalla principal del juego (main menu). Hub desde donde se accede a todo.
 ## GDD §5 (Meta-juego Santuario) + GDD §10.3 Pantalla 4.
-## UI construida programáticamente para facilitar iteración sin editor.
+## UI construida con VBoxContainer para layout fiable en Godot 4.
 
 const CHAPTER_NAMES := [
 	"", "La Cala Apagada", "Jardín de Anémonas",
@@ -10,7 +10,6 @@ const CHAPTER_NAMES := [
 	"Profundidades de Coral", "Ciudad de las Perlas",
 ]
 
-# HUD nodes actualizados en _update_hud()
 var _coins_label: Label
 var _gems_label: Label
 var _lives_label: Label
@@ -35,69 +34,57 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	_build_reef_area()
-	_build_top_bar()
-	_build_currency_row()
-	_build_creatures_info()
-	_build_streak_label()
-	_build_play_button()
-	_build_bottom_bar()
+	# Fondo decorativo de arrecife (detrás del layout)
+	var reef_bg := ColorRect.new()
+	reef_bg.name = "ReefBg"
+	reef_bg.color = Color(0.659, 0.878, 0.835, 0.35)
+	reef_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	reef_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(reef_bg)
+
+	# Layout vertical principal — ocupa toda la pantalla
+	var vbox := VBoxContainer.new()
+	vbox.name = "MainVBox"
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.add_theme_constant_override("separation", 0)
+	add_child(vbox)
+
+	_build_top_bar(vbox)
+	_build_currency_row(vbox)
+	_build_creatures_info(vbox)
+	_build_reef_content(vbox)   # se expande para llenar el espacio
+	_build_streak_label(vbox)
+	_build_play_button(vbox)
+	_add_spacer(vbox, 16)
+	_build_bottom_bar(vbox)
+	_add_spacer(vbox, 32)
 
 
-func _build_reef_area() -> void:
-	var reef := ColorRect.new()
-	reef.name = "ReefArea"
-	reef.color = Color(0.659, 0.878, 0.835, 0.25)
-	reef.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	reef.set_anchor_and_offset(SIDE_LEFT, 0.0, 0.0)
-	reef.set_anchor_and_offset(SIDE_RIGHT, 1.0, 0.0)
-	reef.set_anchor_and_offset(SIDE_TOP, 0.18, 0.0)
-	reef.set_anchor_and_offset(SIDE_BOTTOM, 0.72, 0.0)
-	add_child(reef)
-
-	var emoji := Label.new()
-	emoji.name = "ReefEmojis"
-	emoji.text = "🌊       🐠      🐡\n   🐙    🦐       🐚\n🐢      🦀     🐟"
-	emoji.add_theme_font_size_override("font_size", 44)
-	emoji.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	emoji.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	emoji.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	emoji.set_anchor_and_offset(SIDE_LEFT, 0.0, 24.0)
-	emoji.set_anchor_and_offset(SIDE_RIGHT, 1.0, -24.0)
-	emoji.set_anchor_and_offset(SIDE_TOP, 0.28, 0.0)
-	emoji.set_anchor_and_offset(SIDE_BOTTOM, 0.65, 0.0)
-	add_child(emoji)
-
-
-func _build_top_bar() -> void:
+func _build_top_bar(parent: Node) -> void:
 	var row := HBoxContainer.new()
 	row.name = "TopBar"
-	row.set_anchor_and_offset(SIDE_LEFT, 0.0, 8.0)
-	row.set_anchor_and_offset(SIDE_RIGHT, 1.0, -8.0)
-	row.set_anchor_and_offset(SIDE_TOP, 0.0, 16.0)
-	row.set_anchor_and_offset(SIDE_BOTTOM, 0.0, 88.0)
-	add_child(row)
+	row.custom_minimum_size = Vector2(0, 88)
+	row.add_theme_constant_override("separation", 8)
+	parent.add_child(row)
 
-	var settings_btn := _make_icon_button("⚙️", _on_settings_pressed)
-	row.add_child(settings_btn)
+	_add_hpad(row, 8)
+	row.add_child(_make_icon_button("⚙️", _on_settings_pressed))
 
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(spacer)
 
-	var profile_btn := _make_icon_button("👤", _on_profile_pressed)
-	row.add_child(profile_btn)
+	row.add_child(_make_icon_button("👤", _on_profile_pressed))
+	_add_hpad(row, 8)
 
 
-func _build_currency_row() -> void:
+func _build_currency_row(parent: Node) -> void:
 	var row := HBoxContainer.new()
 	row.name = "CurrencyRow"
+	row.custom_minimum_size = Vector2(0, 52)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 24)
-	row.set_anchor_and_offset(SIDE_LEFT, 0.0, 16.0)
-	row.set_anchor_and_offset(SIDE_RIGHT, 1.0, -16.0)
-	row.set_anchor_and_offset(SIDE_TOP, 0.0, 96.0)
-	row.set_anchor_and_offset(SIDE_BOTTOM, 0.0, 148.0)
-	add_child(row)
+	parent.add_child(row)
 
 	_coins_label = _make_currency_label(Color(0.6, 0.5, 0.1))
 	row.add_child(_coins_label)
@@ -109,67 +96,80 @@ func _build_currency_row() -> void:
 	row.add_child(_lives_label)
 
 
-func _build_creatures_info() -> void:
+func _build_creatures_info(parent: Node) -> void:
 	_creatures_label = Label.new()
 	_creatures_label.name = "CreaturesInfo"
+	_creatures_label.custom_minimum_size = Vector2(0, 36)
 	_creatures_label.add_theme_font_size_override("font_size", 22)
 	_creatures_label.add_theme_color_override("font_color", Color(0.35, 0.55, 0.45))
-	_creatures_label.set_anchor_and_offset(SIDE_LEFT, 0.0, 16.0)
-	_creatures_label.set_anchor_and_offset(SIDE_RIGHT, 1.0, -16.0)
-	_creatures_label.set_anchor_and_offset(SIDE_TOP, 0.0, 152.0)
-	_creatures_label.set_anchor_and_offset(SIDE_BOTTOM, 0.0, 188.0)
-	add_child(_creatures_label)
+	_creatures_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	parent.add_child(_creatures_label)
 
 
-func _build_streak_label() -> void:
+func _build_reef_content(parent: Node) -> void:
+	var panel := Control.new()
+	panel.name = "ReefPanel"
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(panel)
+
+	var emoji := Label.new()
+	emoji.name = "ReefEmojis"
+	emoji.text = "🌊       🐠      🐡\n   🐙    🦐       🐚\n🐢      🦀     🐟"
+	emoji.add_theme_font_size_override("font_size", 44)
+	emoji.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	emoji.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	emoji.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	emoji.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.add_child(emoji)
+
+
+func _build_streak_label(parent: Node) -> void:
 	_streak_label = Label.new()
 	_streak_label.name = "StreakLabel"
+	_streak_label.custom_minimum_size = Vector2(0, 44)
 	_streak_label.add_theme_font_size_override("font_size", 28)
 	_streak_label.add_theme_color_override("font_color", Color(0.9, 0.5, 0.1))
-	_streak_label.set_anchor_and_offset(SIDE_LEFT, 0.0, 16.0)
-	_streak_label.set_anchor_and_offset(SIDE_RIGHT, 0.5, 0.0)
-	_streak_label.set_anchor_and_offset(SIDE_TOP, 0.72, -40.0)
-	_streak_label.set_anchor_and_offset(SIDE_BOTTOM, 0.72, 4.0)
-	add_child(_streak_label)
+	_streak_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	parent.add_child(_streak_label)
 
 
-func _build_play_button() -> void:
+func _build_play_button(parent: Node) -> void:
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 80)
+	margin.add_theme_constant_override("margin_right", 80)
+	parent.add_child(margin)
+
 	var btn := Button.new()
 	btn.name = "PlayButton"
 	btn.text = tr("ui.sanctuary.play")
+	btn.custom_minimum_size = Vector2(0, 90)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.add_theme_font_size_override("font_size", 52)
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.957, 0.651, 0.627)  # coral_pink
+	style.bg_color = Color(0.957, 0.651, 0.627)
 	style.set_corner_radius_all(32)
 	style.content_margin_top = 12.0
 	style.content_margin_bottom = 12.0
 	btn.add_theme_stylebox_override("normal", style)
 
 	var style_hover := style.duplicate() as StyleBoxFlat
-	style_hover.bg_color = Color(0.847, 0.482, 0.482)  # coral_deep
+	style_hover.bg_color = Color(0.847, 0.482, 0.482)
 	btn.add_theme_stylebox_override("hover", style_hover)
 	btn.add_theme_stylebox_override("pressed", style_hover)
 	btn.add_theme_color_override("font_color", Color.WHITE)
-
-	btn.set_anchor_and_offset(SIDE_LEFT, 0.1, 0.0)
-	btn.set_anchor_and_offset(SIDE_RIGHT, 0.9, 0.0)
-	btn.set_anchor_and_offset(SIDE_TOP, 0.74, 0.0)
-	btn.set_anchor_and_offset(SIDE_BOTTOM, 0.82, 0.0)
 	btn.pressed.connect(_on_play_pressed)
-	add_child(btn)
+	margin.add_child(btn)
 
 
-func _build_bottom_bar() -> void:
+func _build_bottom_bar(parent: Node) -> void:
 	var row := HBoxContainer.new()
 	row.name = "BottomBar"
+	row.custom_minimum_size = Vector2(0, 90)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 16)
-	row.set_anchor_and_offset(SIDE_LEFT, 0.0, 16.0)
-	row.set_anchor_and_offset(SIDE_RIGHT, 1.0, -16.0)
-	row.set_anchor_and_offset(SIDE_TOP, 0.84, 0.0)
-	row.set_anchor_and_offset(SIDE_BOTTOM, 0.94, 0.0)
-	add_child(row)
+	row.add_theme_constant_override("separation", 8)
+	parent.add_child(row)
 
 	row.add_child(_make_shortcut_button("🛒 " + tr("ui.sanctuary.shop"), _on_shop_pressed))
 	row.add_child(_make_shortcut_button("🎫 " + tr("ui.sanctuary.battle_pass"), _on_battle_pass_pressed))
@@ -177,6 +177,18 @@ func _build_bottom_bar() -> void:
 
 
 # ── Helpers de UI ───────────────────────────────────────────────────────────
+
+
+func _add_spacer(parent: Node, height: int) -> void:
+	var s := Control.new()
+	s.custom_minimum_size = Vector2(0, height)
+	parent.add_child(s)
+
+
+func _add_hpad(parent: Node, width: int) -> void:
+	var p := Control.new()
+	p.custom_minimum_size = Vector2(width, 0)
+	parent.add_child(p)
 
 
 func _make_icon_button(emoji: String, callback: Callable) -> Button:
@@ -198,7 +210,7 @@ func _make_currency_label(color: Color) -> Label:
 func _make_shortcut_button(text_str: String, callback: Callable) -> Button:
 	var btn := Button.new()
 	btn.text = text_str
-	btn.custom_minimum_size = Vector2(280, 90)
+	btn.custom_minimum_size = Vector2(240, 80)
 	btn.add_theme_font_size_override("font_size", 24)
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.pressed.connect(callback)
@@ -214,8 +226,8 @@ func _collect_passive_income() -> void:
 		return
 	var now := Time.get_unix_time_from_system()
 	var last: float = SaveManager.data.get("last_open_timestamp", now)
-	var hours := minf((now - last) / 3600.0, 8.0)  # cap 8h GDD §5.4
-	var earned := int(hours * rescued.size() * 5)  # 5 coins/criatura/hora (tier common)
+	var hours := minf((now - last) / 3600.0, 8.0)
+	var earned := int(hours * rescued.size() * 5)
 	if earned > 0:
 		EconomyManager.add_coins(earned, "passive_sanctuary")
 		print("[Sanctuary] income pasivo: +%d monedas (%d criaturas × %.1fh)" % [earned, rescued.size(), hours])
@@ -256,29 +268,24 @@ func _on_play_pressed() -> void:
 
 func _on_settings_pressed() -> void:
 	AudioManager.play_sfx("button", AudioManager.AudioCategory.UI_FX)
-	# TODO: issue #8 — Settings screen
 	push_warning("[Sanctuary] Settings screen no implementado aún (issue #8)")
 
 
 func _on_profile_pressed() -> void:
 	AudioManager.play_sfx("button", AudioManager.AudioCategory.UI_FX)
-	# TODO: Profile screen
 	push_warning("[Sanctuary] Profile screen no implementado aún")
 
 
 func _on_shop_pressed() -> void:
 	AudioManager.play_sfx("button", AudioManager.AudioCategory.UI_FX)
-	# TODO: Shop screen
 	push_warning("[Sanctuary] Shop screen no implementado aún")
 
 
 func _on_battle_pass_pressed() -> void:
 	AudioManager.play_sfx("button", AudioManager.AudioCategory.UI_FX)
-	# TODO: Battle Pass screen
 	push_warning("[Sanctuary] Battle Pass screen no implementado aún")
 
 
 func _on_daily_pressed() -> void:
 	AudioManager.play_sfx("button", AudioManager.AudioCategory.UI_FX)
-	# TODO: Daily reward popup
 	push_warning("[Sanctuary] Daily reward no implementado aún (issue #8)")
