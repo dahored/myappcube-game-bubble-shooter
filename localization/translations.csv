@@ -64,3 +64,16 @@ ui.battlepass.days_left,{days} días restantes,{days} days left,{days} giorni ri
 splash.tagline,Juegos para todos los días,Games for every day,Giochi per ogni giorno,Des jeux pour chaque jour,Spiele für jeden Tag,Jogos para todos os dias
 splash.loading,Cargando...,Loading...,Caricamento...,Chargement...,Lädt...,Carregando...
 splash.error,Error al cargar — toca para reintentar,Loading error — tap to retry,Errore — tocca per riprovare,Erreur — touchez pour réessayer,Fehler — zum Erneutversuchen tippen,Erro — toque para tentar novamente
+ui.sanctuary.play,JUGAR,PLAY,GIOCA,JOUER,SPIELEN,JOGAR
+ui.sanctuary.creatures_rescued,{n} criaturas rescatadas,{n} creatures rescued,{n} creature salvate,{n} créatures sauvées,{n} Kreaturen gerettet,{n} criaturas resgatadas
+ui.sanctuary.streak,{n} días de racha 🔥,{n} day streak 🔥,{n} giorni di serie 🔥,{n} jours de série 🔥,{n} Tage Serie 🔥,{n} dias de sequência 🔥
+ui.sanctuary.shop,Shop,Shop,Shop,Shop,Shop,Shop
+ui.sanctuary.battle_pass,Pase,Pass,Pass,Pass,Pass,Passe
+ui.sanctuary.daily,Diario,Daily,Giornale,Quotidien,Täglich,Diário
+ui.sanctuary.passive_collected,+{coins} monedas del santuario,+{coins} coins from sanctuary,+{coins} monete dal santuario,+{coins} pièces du sanctuaire,+{coins} Münzen aus dem Heiligtum,+{coins} moedas do santuário
+ui.level_select.title,Selecciona nivel,Select Level,Seleziona livello,Choisir le niveau,Level wählen,Selecionar nível
+ui.level_select.chapter,Capítulo {n}: {name},Chapter {n}: {name},Capitolo {n}: {name},Chapitre {n} : {name},Kapitel {n}: {name},Capítulo {n}: {name}
+ui.level_select.locked,Completa el anterior,Complete previous,Completa il precedente,Termine le précédent,Schließe das vorherige ab,Completa o anterior
+ui.level_select.best,Mejor: {score},Best: {score},Migliore: {score},Meilleur: {score},Beste: {score},Melhor: {score}
+ui.level_select.play_again,Volver a jugar,Play again,Rigioca,Rejouer,Nochmal spielen,Jogar novamente
+ui.gameplay.exit_sanctuary,← Salir,← Exit,← Esci,← Quitter,← Verlassen,← Sair

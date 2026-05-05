@@ -17,6 +17,8 @@ extends Node2D
 @onready var end_title: Label = $HUD/EndScreen/Panel/VBox/TitleLabel
 @onready var end_subtitle: Label = $HUD/EndScreen/Panel/VBox/SubtitleLabel
 @onready var retry_button: Button = $HUD/EndScreen/Panel/VBox/RetryButton
+@onready var sanctuary_button: Button = $HUD/EndScreen/Panel/VBox/SanctuaryButton
+@onready var exit_button: Button = $HUD/ExitButton
 
 # Fila a partir de la cual cualquier burbuja del grid dispara game-over.
 # screen y ≈ 1332 (80 grid offset + 14 * 83px row + 88px bubble half). Ajustar si hace falta.
@@ -33,6 +35,8 @@ func _ready() -> void:
 	grid.state_settled.connect(_on_state_settled)
 	canon.shot_fired.connect(_on_shot_fired)
 	retry_button.pressed.connect(_on_retry_pressed)
+	sanctuary_button.pressed.connect(_on_sanctuary_pressed)
+	exit_button.pressed.connect(_on_sanctuary_pressed)
 	prev_button.pressed.connect(_on_prev_pressed)
 	next_button.pressed.connect(_on_next_pressed)
 	reset_button.pressed.connect(_on_reset_pressed)
@@ -41,6 +45,7 @@ func _ready() -> void:
 	EconomyManager.gems_changed.connect(_on_currency_changed)
 	end_screen.visible = false
 
+	exit_button.text = tr("ui.gameplay.exit_sanctuary")
 	AudioManager.play_music("gameplay")
 	_load_current_level()
 
@@ -195,7 +200,13 @@ func _show_end_screen(victory: bool) -> void:
 		end_subtitle.text = tr("ui.gameover.subtitle").format({"score": grid.score})
 		retry_button.text = tr("ui.button.retry")
 
+	sanctuary_button.text = tr("ui.gameplay.exit_sanctuary")
 	end_screen.visible = true
+
+
+func _on_sanctuary_pressed() -> void:
+	AudioManager.play_sfx("button", AudioManager.AudioCategory.UI_FX)
+	get_tree().change_scene_to_file("res://scenes/sanctuary/sanctuary.tscn")
 
 
 func _on_retry_pressed() -> void:
