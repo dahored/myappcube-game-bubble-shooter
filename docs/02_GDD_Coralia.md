@@ -101,7 +101,7 @@ Al perder, se ofrece **continuar** viendo un anuncio (rewarded ad → +5 disparo
 
 ### 2.1 Estructura general
 
-El MVP tiene **60 niveles**, agrupados en 6 **capítulos** de 10 niveles cada uno. Cada capítulo desbloquea una **zona** del arrecife que se va llenando de color y vida en la pantalla del santuario (ver sección 5).
+El MVP tiene **90 niveles**, agrupados en 6 **capítulos** de 15 niveles cada uno (3 fáciles, 5 normales, 4 difíciles, 2 wall/boss, 1 bonus). Cada capítulo desbloquea una **zona** del arrecife que se va llenando de color y vida en la pantalla del santuario (ver sección 5).
 
 | Capítulo | Niveles | Zona del arrecife | Tema visual |
 |---|---|---|---|

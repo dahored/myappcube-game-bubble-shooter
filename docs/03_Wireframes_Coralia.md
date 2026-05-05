@@ -106,7 +106,26 @@ Múltiplos de 8 que se usan consistentemente: `4`, `8`, `16`, `24`, `32`, `48`, 
 
 #### `hud_lives`
 - Pill horizontal con icono de corazón + número de vidas + timer hasta próxima vida regenerada
+- **El timer es SIEMPRE visible cuando vidas < 5** — es el countdown más importante de la UI (CC, BW lo muestran prominente arriba-izquierda)
 - Tap → muestra opciones de comprar/esperar/ver ad
+
+#### `bottom_nav`
+Barra de navegación persistente en la parte inferior. Presente en Santuario y Level Select. **NO aparece en Gameplay, Pause, ni popups.**
+
+```
+┌──────────────────────────────────────────────────┐
+│  🗺️ Mapa  │  📅 Diario  │  👥 Social  │  🛒 Tienda │
+│  [activo]  │             │             │            │
+└──────────────────────────────────────────────────┘
+```
+
+- Alto: 160 px + safe area bottom iOS (total ~262 px)
+- 4 tabs: **Mapa** (sanctuary/level select) · **Diario** (daily rewards + eventos) · **Social** (amigos, leaderboard) · **Tienda** (shop)
+- Tab activo: icono + label en `coral_pink`, fondo pill sutil
+- Tab inactivo: icono gris + label gris
+- Badge rojo con número en tabs con contenido nuevo (Diario principalmente)
+- Fondo: blanco con top border 1 px `pearl_white` darkened 10%
+- Regla de diseño: **nunca más de 4 tabs** — la complejidad adicional va dentro de cada tab, no como un quinto tab
 
 ### Iconografía
 
@@ -284,63 +303,75 @@ Cada pantalla se diseña primero en **Modo Arrecife (light)** y se deriva a **Mo
 
 **Dimensión:** 1179 × 2556
 **Pantalla principal del juego — todo se accede desde acá**
-**Layout:** vista panorámica del arrecife con HUDs en top y bottom, e iconos en esquinas
+**Referencia visual:** Candy Crush main menu (IMG_3589) — fondo full-illustrated, un solo CTA grande, navegación persistente abajo.
+
+**Principio de diseño clave:** el jugador debe ver el arrecife con vida ANTES de tocar JUGAR. El fondo no es decoración — es la recompensa emocional de jugar. Cada zona restaurada que aparece aquí es motivación directa para jugar el siguiente capítulo.
 
 ```
 ┌─────────────────────────────────┐
-│ ⚙️  [Eventos banner]    👤     │ ← top: settings (izq), eventos (centro), profile (der)
+│ ❤️3 29:45    🪙2,450    💎87  ⚙️│ ← top bar: vidas+timer IZQ, currencies CENTRO, settings DER
 │                                 │
-│ 🪙2,450  💎87  ❤️3 (12:34)      │ ← HUD currencies
-│                                                       
+│  [FONDO ILUSTRADO: arrecife     │
+│   con zonas vivas/apagadas      │
+│   según progreso del jugador.   │
+│   Animado: corrientes, peces,   │
+│   partículas de luz biolum.]    │
 │                                 │
-│   [Vista panorámica del         │
-│    arrecife con criaturas       │
-│    rescatadas nadando idle —    │
-│    cambia color/vida según      │
-│    progreso]                    │
+│   🐠    🐢         🐙           │ ← criaturas rescatadas nadando
+│        🦐    🐡                 │   idle, posición semi-aleatoria
+│   🐚              🦀            │
 │                                 │
-│   🐠  🐢      🐙                │
-│       🦐  🐡                    │
+│   [Marina idle en primer plano, │
+│    parada sobre coral/concha,   │
+│    animación loop suave]        │
 │                                 │
-│   [Marina parada en una concha  │
-│    en primer plano, idle]       │
-│                                 │
-│                                 │
-│  [racha 12🔥]                   │ ← indicador de racha
+│  🔥 Racha: 12 días              │ ← pill compacto, solo si racha > 1
 │                                 │
 │  ┌────────────────────────┐    │
-│  │       J U G A R        │    │ ← btn_primary grande
+│  │        J U G A R       │    │ ← btn_primary, 160px alto
 │  └────────────────────────┘    │
 │                                 │
-│  🛒 Shop  🎫 BP  📅 Daily       │ ← acceso rápido
+├─────────────────────────────────┤
+│  🗺️ Mapa │📅 Diario│👥 Social│🛒│ ← bottom_nav (tab Mapa activo)
 └─────────────────────────────────┘
 ```
 
 **Elementos:**
 
-1. **Background** — vista del arrecife. Animado: corrientes suaves, peces nadando, partículas de luz. Cambia su nivel de "vida" según el progreso (los primeros niveles muestran arrecife más apagado, los últimos lo muestran restaurado).
-2. **HUD top-left: Settings icon** — `btn_icon` (96×96) con engranaje. Tap → Pantalla 8 (Settings).
-3. **HUD top-right: Profile icon** — `btn_icon` con avatar de Marina (skin actual). Tap → Pantalla 9 (Profile).
-4. **HUD top-center: Events banner** — solo aparece si hay evento activo. Pill horizontal (640×96) con título del evento y countdown. Tap → Pantalla 11 (Events).
-5. **HUD currencies (debajo del top)** — fila horizontal con 3 pills: monedas (`hud_currency` + número), gemas (`hud_currency` + número), vidas (`hud_lives` + número + timer). Cada uno tappable: monedas/gemas → Shop, vidas → popup de comprar.
-6. **Criaturas rescatadas** — ~10-30 criaturas (según progreso) animadas idle nadando por la pantalla. Tap en una → bestiary popup con info de esa criatura.
-7. **Marina** — idle animation en primer plano sobre una concha o coral. Tap → animación de saludo + frase aleatoria en bocadillo.
-8. **Indicador de racha** — pill compacto con icono de fuego + número de días. Si está por terminar el día y no hay actividad: animación de urgencia. Tap → popup de racha con info detallada.
-9. **Botón JUGAR** — `btn_primary` extra-grande (alto 160 px), centrado horizontal, posición vertical 65% del frame. Tap → Pantalla 12 (Level Select).
-10. **Acceso rápido bottom** — fila de 3 iconos: Shop, Battle Pass, Daily Rewards. Cada uno con badge si hay novedad (rojo con número). Tap → respectiva pantalla.
+1. **Top bar** (96 px, fondo semi-transparente pill):
+   - **Izquierda:** `hud_lives` — ❤️N con countdown visible siempre que N < 5. Es el elemento más importante del HUD porque crea urgencia/retención.
+   - **Centro:** currencies — 🪙 número · 💎 número (pills compactas, tap → Shop)
+   - **Derecha:** `btn_icon` ⚙️ → Settings
+
+2. **Fondo ilustrado** — arte del arrecife dividido en 6 zonas. Zonas completadas: color vivo, animadas, con criaturas. Zonas no alcanzadas: gris, desaturadas. Transición gradual entre zonas. **Este arte es el diferenciador visual principal de Coralia** — no escatimar en calidad.
+
+3. **Criaturas rescatadas** — flotan idle por la zona correspondiente a su capítulo. Tap en una → popup bestiary con nombre, frase y stats. Long-press → diálogo in situ (bocadillo sobre la criatura).
+
+4. **Marina en primer plano** — animación idle loop (3-4s): respira, mueve la cola, parpadea. Tap → saluda con animación aleatoria (wave, peace sign, etc.) + frase aleatoria en bocadillo. No tap en 30s → bostezo cute (engagement hook).
+
+5. **Indicador de racha** — pill solo visible si racha ≥ 2 días. Si el día está por terminar (<2h) sin actividad: animación de urgencia + pulso rojo. Tap → popup con info de racha.
+
+6. **Botón JUGAR** — `btn_primary` 160 px alto, 80% del ancho. Posición: 70% vertical del frame (respeta el espacio del fondo ilustrado arriba). Tap → Level Select.
+
+7. **`bottom_nav`** — tab Mapa activo. Badge rojo en Diario si daily reward disponible o evento activo.
+
+**Popups automáticos al abrir (por prioridad):**
+1. Daily Reward (si no reclamada hoy) — aparece sobre el Santuario
+2. Welcome Back (si 7+ días sin jugar)
+3. Battle Pass nueva temporada (día 1 de temporada)
+4. Sin vidas + hace 30+ min → "Tus vidas se regeneraron. ¿Jugamos?"
 
 **Estados:**
 
-- **Default:** todo lo descrito arriba
-- **Battle Pass nuevo (popup auto):** al abrir el juego en día 1 de temporada nueva, popup automático "Nueva temporada disponible" con CTA al BP
-- **Welcome Back:** si volviste tras 7+ días, popup "Te extrañamos" con regalo de bienvenida
-- **Daily Reward disponible:** badge rojo con `!` en el icono de Daily Rewards
-- **Modo Profundidades:** background con tonos azul-violeta profundos, criaturas más bioluminiscentes, Marina con detalles glow
+- **Default:** todo lo descrito
+- **Sin vidas (0):** botón JUGAR se vuelve gris con texto "Sin vidas (29:45)" + tap abre popup de compra
+- **Modo Profundidades:** fondo con bioluminiscencia, paleta azul-violeta, criaturas con glow
+- **Primera vez (post-onboarding):** solo 1 zona del arrecife visible, rest todo negro con animación de "descúbrelo" pulsando
 
 **Interacciones:**
-- Pull-to-refresh: actualizar estado del santuario (criaturas, eventos)
-- Long-press en una criatura: mostrar su nombre y diálogo característico
-- Tap en background vacío: animación de Marina (saludo o bostezo cute)
+- Pull-to-refresh: actualizar estado (criaturas, eventos)
+- Tap en zona apagada del arrecife: tooltip "Completa los niveles del Capítulo N para restaurar esta zona"
+- Tap en background vacío (no en criatura ni Marina): nada (evita accidentes)
 
 ---
 
@@ -765,57 +796,98 @@ Cada pantalla se diseña primero en **Modo Arrecife (light)** y se deriva a **Mo
 ## Pantalla 12 — Level Select
 
 **Dimensión:** 1179 × 2556
-**Layout:** mapa serpenteante vertical con scroll
+**Layout:** mapa de camino serpenteante vertical con scroll. **Marina camina por el camino** — ella ES el cursor del jugador.
+**Referencia visual:** Bubble Witch Saga (IMG_3592–3593) para la estructura del camino. CC (IMG_3591) para la densidad de nodos y el HUD top.
+**15 niveles por capítulo** (3 fácil · 5 normal · 4 difícil · 2 wall/boss · 1 bonus).
 
 ```
 ┌─────────────────────────────────┐
-│  ←  CAPÍTULO 3   🪙... 💎... ❤️│ ← header + HUD
-│  Bosque de Algas                │ ← nombre del capítulo
+│ ❤️3 29:45      🪙2,450    💎87  │ ← HUD top (sin back — se navega con bottom_nav)
 │                                 │
-│  ──── nivel 30 (próximo cap)  │ ← capítulo siguiente locked
-│                ●                │
-│           ●                     │
-│                ●                │
-│  29 ────────●                   │ ← niveles ya completados
-│         ● 28  con criatura     │
-│       ●      rescatada         │
-│  27 ●─────●                    │
-│              ●26                │
-│         ●                       │
-│  ●25                            │ ← nivel actual (pulsing)
-│        ●                        │
-│  24 ●                           │
-│       ● 23                      │
-│  22 ────────●                   │ ← nodos completados
-│        ● 21                     │
-│  ──── inicio capítulo 3 ────   │
+│  ╔═══════════════════════════╗  │
+│  ║  CAPÍTULO 4               ║  │ ← banner capítulo siguiente (locked)
+│  ║  Cueva de Cristales  🔒   ║  │
+│  ╚═══════════════════════════╝  │
+│                                 │
+│           ○ 45                  │ ← nodo bloqueado (gris, candado)
+│        ○ 44                     │
+│  ──── fin capítulo 3 ────       │
+│                                 │
+│  [decoración: algas, corales    │
+│   del capítulo 3]               │
+│                                 │
+│     ○ 43  boss final 💀         │ ← wall level marcado especial
+│  ○ 42                           │
+│        ● 41 ← Marina aquí      │ ← nivel actual: Marina parada, pulsing
+│  ✓ 40 🐠                        │ ← completado con criatura rescatada
+│        ✓ 39                     │
+│  ✓ 38                           │
+│     ✓ 37  boss 💀               │
+│  ✓ 36                           │
+│        ✓ 35 🐡                  │
+│  ✓ 34                           │
+│     ✓ 33                        │
+│  ✓ 32                           │
+│        ✓ 31                     │ ← primeros del capítulo
+│  ──── inicio capítulo 3 ────    │
+│                                 │
+├─────────────────────────────────┤
+│  🗺️ Mapa │📅 Diario│👥 Social│🛒│ ← bottom_nav (tab Mapa activo)
 └─────────────────────────────────┘
 ```
 
 **Elementos:**
 
-1. **Header** — back arrow + nombre del capítulo + HUD currencies
-2. **Subtítulo** — nombre poético del capítulo (ej. "Bosque de Algas")
-3. **Mapa serpenteante** — vertical scroll, camino que zigzaguea entre niveles
-4. **Nodos de nivel** — círculos numerados:
-   - Completado: verde con criatura rescatada (icono pequeño)
-   - Actual: pulsa con animación, color `coral_pink`
-   - Bloqueado: gris con candado
-5. **Conexiones entre nodos** — caminos curvos `coral_pink` (los recorridos) y grises (los no)
-6. **Decoración del mapa** — algas, peces, partículas según el tema del capítulo
-7. **Marcador de inicio/fin de capítulo** — separadores horizontales con texto
-8. **Capítulo siguiente** — visible en parte superior pero locked hasta completar el actual
+1. **HUD top** — mismo que Santuario: ❤️ + timer IZQ · currencies CENTRO · (sin settings aquí, va en Santuario). Sin botón de back — el usuario navega via bottom_nav.
+
+2. **Fondo del mapa** — ilustración del bioma del capítulo actual + siguiente capítulo bloqueado visible arriba en gris. Continuidad visual entre capítulos al hacer scroll.
+
+3. **Camino serpenteante** — línea orgánica que conecta todos los nodos. Color `coral_pink` para el tramo recorrido, gris para el tramo por recorrer. El camino sugiere movimiento horizontal (zigzag) para romper la monotonía vertical.
+
+4. **Marina en el mapa** — sprite pequeño de Marina (~80×120 px) parado en el nodo actual. Al abrir la pantalla: animación de caminata de nodo anterior al actual (300ms). No camina a tiempo real — es posición fija que se actualiza al completar un nivel.
+
+5. **Nodos de nivel** (tamaño base 96×96 px):
+   - **Completado** (✓): círculo verde relleno + número + icono de criatura si ese nivel tenía rescue
+   - **Actual** (●): coral_pink + número + animación pulsing sutil + Marina encima
+   - **Bloqueado** (○): círculo gris + número en gris + candado pequeño
+   - **Wall/Boss** (💀): mismo estado que aplique pero con skull icon sobreimpreso — comunica dificultad
+   - **Bonus** (⭐): borde dorado, estrella sobreimpuesta
+
+6. **Banner de capítulo siguiente** — visible al hacer scroll hacia arriba, siempre por encima del último nivel del capítulo actual. Card horizontal con nombre, ícono del bioma y candado. Al completar el capítulo: se reemplaza con banner de "¡Desbloqueado!" + animación.
+
+7. **Separadores de capítulo** — línea horizontal con texto "Capítulo N — Nombre" entre el último nodo de un cap y el primero del siguiente.
+
+**Distribución de 15 niveles por capítulo:**
+
+| Posición | Tipo | Dificultad | Notas |
+|---|---|---|---|
+| 1-3 | Normal | Fácil | Sin wall, muchos disparos |
+| 4-8 | Normal | Media | Curva estándar |
+| 9 | Wall | Alta | Primer punto de fricción del capítulo |
+| 10-12 | Normal | Alta | Más colores, menos disparos |
+| 13-14 | Boss | Muy alta | Nivel barrera pre-finale |
+| 15 | Bonus/Finale | Media | Forma especial, criatura hero del capítulo |
 
 **Estados:**
-- **Default:** scroll fluido, nivel actual centrado al abrir
-- **Capítulo recién desbloqueado:** animación de revelación al abrir (~3s) antes de poder jugar
-- **Evento activo:** badge especial en niveles del evento
+- **Scroll inicial:** siempre abre con el nivel actual centrado en pantalla (scroll automático al abrir)
+- **Capítulo recién desbloqueado:** animación de "desbloqueo" del banner del capítulo (~2s) antes de poder interactuar
+- **Evento activo:** badge especial (estrella dorada parpadeante) en los niveles del evento
+- **Sin vidas:** todos los nodos muestran icono de corazón vacío al hacer tap → popup de compra
 
 **Interacciones:**
-- Scroll vertical para navegar
-- Tap en nivel actual: → Pantalla 13 (Pre-level)
-- Tap en nivel completado: opción de re-jugar o ver mejor score
-- Tap en nivel bloqueado: tooltip "Completa el nivel anterior"
+- Scroll vertical: navegar el mapa
+- Tap en nivel actual o completado: → popup de nivel (ver abajo)
+- Tap en nivel bloqueado: tooltip "Completa el nivel anterior para continuar"
+- Tap en banner capítulo bloqueado: tooltip con porcentaje de progreso necesario
+
+**Popup de nivel (al tap sobre nodo):**
+Mini-modal que emerge desde abajo (bottom sheet, 600 px alto) con:
+- Nombre del nivel + número
+- Objetivo ("Rescatar a Lumi" o "Limpiar todas las burbujas")
+- Mejor score del jugador (si ya jugó)
+- Botón **JUGAR** → Gameplay directo (sin Pantalla 13 para niveles simples)
+- Slots de power-ups (3, compactos) — equipar antes de entrar
+- Nota: este bottom sheet reemplaza la Pantalla 13 para la mayoría de niveles. La Pantalla 13 completa solo aparece para niveles Boss/Wall donde la preparación importa.
 
 ---
 
@@ -1153,3 +1225,4 @@ Cada pantalla se diseña primero en **Modo Arrecife (light)** y se deriva a **Mo
 |---|---|---|
 | 0.1 | 2026-04-30 | Framework completo + pantallas 1-2 (Company Splash, Loading Splash) como prueba de formato |
 | 0.2 | 2026-04-30 | Pantallas 3-17 completas. Las 17 pantallas del MVP especificadas con layout ASCII, lista de elementos, estados e interacciones. Listo para diseñar en Figma. |
+| 0.3 | 2026-05-05 | Revisión experta basada en análisis de Candy Crush Saga + Bubble Witch Saga. Cambios principales: (1) Framework: `bottom_nav` de 4 tabs agregado como componente global, `hud_lives` reforzado como elemento prioritario. (2) Santuario: fondo ilustrado como diferenciador principal, popup flow priorizado, lives+timer en top-left, `bottom_nav` reemplaza accesos rápidos. (3) Level Select: Marina camina por el mapa, distribución de 15 niveles por capítulo documentada (3 fácil/5 normal/4 difícil/2 boss/1 bonus), bottom sheet reemplaza Pantalla 13 para niveles normales, HUD top sin back button. |
