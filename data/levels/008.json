@@ -1,0 +1,20 @@
+{
+  "id": 8,
+  "chapter": 1,
+  "name": "Corriente de medusas",
+  "objective": {
+    "type": "rescue",
+    "creature_id": "medusa",
+    "creature_position": [4, 3]
+  },
+  "max_shots": 22,
+  "available_colors": ["red", "blue", "yellow"],
+  "rainbow_chance": 0.0,
+  "bubbles": [
+    [2, 0, "blue"], [3, 0, "red"], [4, 0, "blue"], [5, 0, "yellow"], [6, 0, "red"], [7, 0, "blue"],
+    [2, 1, "yellow"], [3, 1, "blue"], [4, 1, "red"], [5, 1, "blue"], [6, 1, "yellow"], [7, 1, "red"],
+    [2, 2, "red"], [3, 2, "yellow"], [4, 2, "blue"], [5, 2, "red"], [6, 2, "blue"],
+    [2, 3, "blue"], [3, 3, "red"], [4, 3, "yellow"], [5, 3, "blue"]
+  ],
+  "obstacles": []
+}

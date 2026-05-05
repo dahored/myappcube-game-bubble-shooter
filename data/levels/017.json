@@ -1,0 +1,20 @@
+{
+  "id": 17,
+  "chapter": 2,
+  "name": "La medusa danzante",
+  "objective": {
+    "type": "rescue",
+    "creature_id": "medusita",
+    "creature_position": [5, 3]
+  },
+  "max_shots": 26,
+  "available_colors": ["red", "blue", "yellow", "green", "purple", "orange"],
+  "rainbow_chance": 0.0,
+  "bubbles": [
+    [1, 0, "orange"], [2, 0, "red"], [3, 0, "blue"], [4, 0, "yellow"], [5, 0, "green"], [6, 0, "purple"], [7, 0, "orange"], [8, 0, "red"], [9, 0, "blue"],
+    [1, 1, "blue"], [2, 1, "yellow"], [3, 1, "orange"], [4, 1, "purple"], [5, 1, "red"], [6, 1, "blue"], [7, 1, "yellow"], [8, 1, "orange"],
+    [2, 2, "red"], [3, 2, "green"], [4, 2, "blue"], [5, 2, "orange"], [6, 2, "yellow"], [7, 2, "green"],
+    [3, 3, "yellow"], [4, 3, "red"], [5, 3, "blue"], [6, 3, "purple"]
+  ],
+  "obstacles": []
+}

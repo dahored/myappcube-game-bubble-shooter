@@ -1,0 +1,21 @@
+{
+  "id": 20,
+  "chapter": 2,
+  "name": "El jardín florecido",
+  "objective": {
+    "type": "rescue",
+    "creature_id": "estrella_marina",
+    "creature_position": [5, 4]
+  },
+  "max_shots": 28,
+  "available_colors": ["red", "blue", "yellow", "green", "purple", "orange"],
+  "rainbow_chance": 0.0,
+  "bubbles": [
+    [0, 0, "orange"], [1, 0, "red"], [2, 0, "blue"], [3, 0, "yellow"], [4, 0, "green"], [5, 0, "purple"], [6, 0, "orange"], [7, 0, "red"], [8, 0, "blue"], [9, 0, "yellow"], [10, 0, "green"],
+    [1, 1, "blue"], [2, 1, "purple"], [3, 1, "orange"], [4, 1, "red"], [5, 1, "green"], [6, 1, "blue"], [7, 1, "yellow"], [8, 1, "purple"], [9, 1, "orange"],
+    [2, 2, "green"], [3, 2, "blue"], [4, 2, "yellow"], [5, 2, "orange"], [6, 2, "red"], [7, 2, "green"], [8, 2, "purple"],
+    [3, 3, "purple"], [4, 3, "orange"], [5, 3, "blue"], [6, 3, "yellow"], [7, 3, "red"],
+    [4, 4, "red"], [5, 4, "yellow"], [6, 4, "blue"]
+  ],
+  "obstacles": []
+}
