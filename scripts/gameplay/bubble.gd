@@ -21,6 +21,16 @@ const DROP_OFFSCREEN_Y := 2200.0  # bajo este y global, la burbuja se libera
 enum Type { RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, RAINBOW }
 enum State { IDLE, IN_FLIGHT, IN_GRID, DROPPING }
 
+const COLOR_STR_TO_TYPE := {
+	"red": Type.RED,
+	"blue": Type.BLUE,
+	"yellow": Type.YELLOW,
+	"green": Type.GREEN,
+	"purple": Type.PURPLE,
+	"orange": Type.ORANGE,
+	"rainbow": Type.RAINBOW,
+}
+
 const TYPE_COLORS := {
 	Type.RED: Color(0.93, 0.48, 0.48),
 	Type.BLUE: Color(0.49, 0.79, 0.89),

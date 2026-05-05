@@ -9,17 +9,6 @@ const POINTS_PER_POPPED := 10
 const POINTS_PER_DROPPED := 15
 const DROP_DELAY := 0.15
 
-# Mapa de string color → Bubble.Type enum
-const COLOR_STR_TO_TYPE := {
-	"red": Bubble.Type.RED,
-	"blue": Bubble.Type.BLUE,
-	"yellow": Bubble.Type.YELLOW,
-	"green": Bubble.Type.GREEN,
-	"purple": Bubble.Type.PURPLE,
-	"orange": Bubble.Type.ORANGE,
-	"rainbow": Bubble.Type.RAINBOW,
-}
-
 # Map de Vector2i (col, row) → instancia de Bubble
 var bubbles: Dictionary = {}
 var score: int = 0
@@ -51,7 +40,7 @@ func setup_from_level(level_data: Dictionary) -> void:
 		var col: int = entry[0]
 		var row: int = entry[1]
 		var color_str: String = entry[2]
-		var bubble_type: int = COLOR_STR_TO_TYPE.get(color_str, Bubble.Type.RED)
+		var bubble_type: int = Bubble.COLOR_STR_TO_TYPE.get(color_str, Bubble.Type.RED)
 		spawn_bubble(col, row, bubble_type)
 
 		var cell := Vector2i(col, row)
@@ -123,6 +112,14 @@ func spawn_bubble(col: int, row: int, type: int) -> void:
 
 func get_bubble_at(col: int, row: int) -> Bubble:
 	return bubbles.get(Vector2i(col, row), null)
+
+
+## True si alguna burbuja del grid alcanzó o superó la fila de muerte.
+func has_bubbles_past_row(death_row: int) -> bool:
+	for cell: Vector2i in bubbles:
+		if cell.y > death_row:
+			return true
+	return false
 
 
 func add_landed_bubble(b: Bubble) -> void:
@@ -223,6 +220,7 @@ func _explode_group(cells: Array) -> void:
 		var b: Bubble = bubbles[cell]
 		bubbles.erase(cell)
 		b.explode()
+	AudioManager.play_sfx("pop", AudioManager.AudioCategory.BUBBLE_POP)
 	score += cells.size() * POINTS_PER_POPPED
 	score_changed.emit(score)
 	print("[Grid] match de %d burbujas, score = %d" % [cells.size(), score])

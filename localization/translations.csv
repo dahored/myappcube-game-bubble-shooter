@@ -39,8 +39,15 @@ ui.settings.legal.terms,Condiciones del servicio,Terms of service,Termini di ser
 ui.gameplay.shots_remaining,Disparos,Shots,Colpi,Tirs,Schüsse,Tiros
 ui.gameplay.score,Puntuación,Score,Punteggio,Score,Punkte,Pontuação
 ui.gameplay.combo,Combo,Combo,Combo,Combo,Combo,Combo
+ui.gameplay.objective.clear_all,Limpiar todas las burbujas,Clear all bubbles,Elimina tutte le bolle,Éliminer toutes les bulles,Alle Blasen entfernen,Limpar todas as bolhas
 ui.gameplay.objective.rescue,Rescatar a {creature},Rescue {creature},Salva {creature},Sauver {creature},Rette {creature},Resgatar {creature}
+ui.gameplay.level_label,Nivel {id} — {name},Level {id} — {name},Livello {id} — {name},Niveau {id} — {name},Level {id} — {name},Nível {id} — {name}
+ui.gameplay.level_label_with_best,Nivel {id} — {name} · Mejor: {best},Level {id} — {name} · Best: {best},Livello {id} — {name} · Miglior: {best},Niveau {id} — {name} · Meilleur : {best},Level {id} — {name} · Beste: {best},Nível {id} — {name} · Melhor: {best}
+ui.victory.subtitle.new_record,¡Nuevo récord! Puntuación: {score} (anterior: {best}),New record! Score: {score} (previous: {best}),Nuovo record! Punteggio: {score} (precedente: {best}),Nouveau record ! Score : {score} (précédent : {best}),Neuer Rekord! Punkte: {score} (vorher: {best}),Novo recorde! Pontuação: {score} (anterior: {best})
+ui.victory.subtitle.score,Puntuación: {score} (mejor: {best}),Score: {score} (best: {best}),Punteggio: {score} (miglior: {best}),Score : {score} (meilleur : {best}),Punkte: {score} (beste: {best}),Pontuação: {score} (melhor: {best})
 ui.gameover.title,Sin disparos,Out of shots,Senza colpi,Plus de tirs,Keine Schüsse,Sem tiros
+ui.gameover.subtitle,Puntuación: {score},Score: {score},Punteggio: {score},Score : {score},Punkte: {score},Pontuação: {score}
+ui.button.next_level,Siguiente nivel →,Next level →,Prossimo livello →,Niveau suivant →,Nächstes Level →,Próximo nível →
 ui.gameover.continue_ad,+5 disparos (anuncio),+5 shots (ad),+5 colpi (annuncio),+5 tirs (pub),+5 Schüsse (Werbung),+5 tiros (anúncio)
 ui.gameover.continue_gems,+5 disparos ({gems} gemas),+5 shots ({gems} gems),+5 colpi ({gems} gemme),+5 tirs ({gems} gemmes),+5 Schüsse ({gems} Edelsteine),+5 tiros ({gems} gemas)
 ui.gameover.accept,Aceptar,Accept,Accetta,Accepter,Akzeptieren,Aceitar

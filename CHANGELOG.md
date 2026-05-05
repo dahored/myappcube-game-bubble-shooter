@@ -6,6 +6,14 @@ Todos los cambios significativos del proyecto se registran acá. Formato basado 
 
 ### Fase 2 — MVP (en progreso)
 
+#### Chunk E — Más niveles: del 5 al 20 (2026-05-05)
+- 15 nuevos niveles JSON en `data/levels/006-020.json` siguiendo la curva del GDD §2.4
+- **Capítulo 1 (La Cala Apagada) — niveles 6-10:** wrap-up del capítulo con 2-5 colores, 17-32 burbujas. Progresión: arco simple (clear_all, 3 colores) → muro del cangrejo (rescue, wall level #7) → corriente de medusas → islotes (forma archipiélago) → estrella dormida (pirámide 5 filas, chapter finale)
+- **Capítulo 2 (Jardín de Anémonas) — niveles 11-20:** introducción de 4→6 colores y grids más densos. Objetivos mixtos (clear_all y rescue). Wall level estratégico en #15 (Tormenta de burbujas, 30 burbujas con 26 disparos). Chapter finale #20 (El jardín florecido, fila completa de 11 + pirámide hasta criatura en fila 4)
+- Criaturas nuevas: cangrejo, medusa, estrella, caballito, pececillo, pulpo, medusita, tortuga, estrella_marina
+- `get_total_levels()` detecta archivos dinámicamente — sin cambios de código necesarios
+- Validación de bounds: todos los 20 niveles pasan el check de `col < max_cols` y criatura dentro del array de burbujas
+
 #### Chunk A — Persistencia / save-load (2026-05-01)
 - `save_manager.gd` — implementación completa: `load_save()`, `save_to_disk()`, migración de versiones, defaults, API de conveniencia (`record_level_completion`, `get_best_score`, `is_level_completed`, `reset_save`)
 - Schema de save: `highest_level_completed`, `best_scores` por nivel, `creatures_rescued`, `total_score`, `last_played_level`, `currencies`, settings, etc.
