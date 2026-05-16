@@ -52,3 +52,6 @@ logs/
 *.tmp
 *.bak
 *.old
+/.editor_settings
+/.internal
+/build

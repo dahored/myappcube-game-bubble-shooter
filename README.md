@@ -1,11 +1,11 @@
 # Coralia
 
-> Cozy underwater Bubble Shooter
+> Cozy underwater Bubble Shooter — iOS + Android
 
-**Estudio:** myappcube
-**Engine:** Godot 4.3+
-**Plataformas:** Android + iOS
-**Estado:** Pre-producción (Fase 0)
+**Estudio:** myappcube  
+**Engine:** Defold (Lua)  
+**Plataformas:** Android + iOS  
+**Estado:** Fase 2 — MVP en progreso
 
 ## Sobre el juego
 
@@ -15,46 +15,60 @@ Modelo F2P híbrido (Ads + IAP + Battle Pass), audiencia objetivo: mujeres 25-45
 
 ## Requisitos para desarrollar
 
-- **Godot 4.3+** ([download](https://godotengine.org/download))
-- Mac (para builds iOS) o Windows/Linux (para builds Android)
-- Cuenta Apple Developer ($99/año, para iOS)
-- Cuenta Google Play Console ($25 una vez, para Android)
+- **Defold** ([download](https://defold.com/download/)) — editor + build tools
+- Mac con Xcode para builds iOS
+- Android SDK para builds Android
 
 ## Estructura del proyecto
 
 ```
 coralia/
-├── scenes/         # Escenas .tscn agrupadas por feature
-├── scripts/        # Scripts GDScript (autoloads, gameplay, ui, data, utils)
-├── resources/      # Resources .tres (criaturas, power-ups, battle passes)
-├── data/levels/    # Archivos JSON de niveles
-├── assets/         # Sprites, audio, fuentes, shaders
-├── localization/   # CSVs de traducciones (6 idiomas)
-├── platform/       # Configuración específica Android/iOS
-├── docs/           # GDD, concept doc, wireframes
-└── tests/          # Tests unitarios (gdUnit4)
+├── game.project          # Configuración Defold (display, bootstrap, bundles)
+├── input/                # Input bindings (touch, back)
+├── main/                 # Bootstrap: collection + go + script de routing
+├── splash1/              # Pantalla 1: logo del estudio (myappcube)
+├── splash2/              # Pantalla 2: logo del juego + versión + cargando
+├── level_map/            # Mapa de niveles scrolleable por capítulos
+├── gameplay/             # (próximo) Partida principal
+├── modules/              # Módulos Lua reutilizables (config, router, save, levels)
+├── assets/               # Sprites, audio, fuentes, atlas
+│   ├── atlas/            # logos.atlas, bubbles.atlas
+│   ├── fonts/            # vera_mo_bd.ttf + coralia_ui.font
+│   ├── images/logos/     # logo.png (juego) + logo_myappcube.png (estudio)
+│   └── sprites/bubbles/  # v1 spritesheets + idle PNGs
+├── data/levels/          # 001-020.json (20 niveles, 2 capítulos)
+├── localization/         # translations.csv (6 idiomas: es, en, it, fr, de, pt)
+└── docs/                 # GDD, wireframes, backlog, status
 ```
 
-Para detalles arquitectónicos completos ver `docs/02_GDD_Coralia.md` sección 14.
+## Flujo de pantallas (actual)
 
-## Documentación
+```
+Splash 1 (logo estudio, ~2.7s) → Splash 2 (logo juego + cargando, ~2s) → Mapa de niveles
+```
 
-- `docs/Plan_Maestro_Bubble_Shooter.docx` — Plan original del proyecto
-- `docs/01_Concepto_Inicial.md` — Visión y decisiones creativas
-- `docs/02_GDD_Coralia.md` — Game Design Document completo
-- `docs/03_Wireframes_Coralia.md` — Especificación de las 17 pantallas
+## Módulos reutilizables
+
+| Módulo | Responsabilidad |
+|---|---|
+| `modules/config.lua` | Constantes globales (grid, física, colores, economía) |
+| `modules/router.lua` | Navegación: `router.go(scene_name)` |
+| `modules/save_manager.lua` | `save_mgr.load()` / `.save(data)` |
+| `modules/level_manager.lua` | `level_mgr.load(id)` / `.load_all()` — caché de JSONs |
 
 ## Setup inicial
 
 1. Clonar el repositorio
-2. Abrir Godot 4.3+ y seleccionar la carpeta del proyecto
-3. Esperar a que Godot importe los assets (la primera vez tarda)
-4. Verificar que los autoloads aparecen en Project Settings → Autoload (deben estar los 11)
-5. Ejecutar el proyecto (F5) — debería abrir la pantalla `boot.tscn`
+2. Abrir Defold → `Open Project` → seleccionar `game.project`
+3. Esperar a que Defold importe los assets
+4. Build → Run (Cmd+B) para correr en desktop
 
-## Convenciones
+## Documentación
 
-Ver GDD sección 14.10 para naming, tipado, i18n.
+- `docs/02_GDD_Coralia.md` — Game Design Document completo
+- `docs/03_Wireframes_Coralia.md` — Especificación de las 17 pantallas
+- `docs/06_Backlog_GitHub_Issues.md` — Backlog de issues
+- `docs/07_Status_y_Roadmap.md` — Estado actual + roadmap
 
 ## Licencia
 

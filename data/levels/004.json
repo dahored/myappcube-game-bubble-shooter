@@ -5,15 +5,96 @@
   "objective": {
     "type": "rescue",
     "creature_id": "caracol",
-    "creature_position": [4, 0]
+    "creature_position": [
+      2,
+      0
+    ]
   },
   "max_shots": 28,
-  "available_colors": ["red", "blue", "yellow", "green", "purple"],
+  "available_colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green",
+    "purple"
+  ],
   "rainbow_chance": 0.0,
   "bubbles": [
-    [3, 0, "purple"], [4, 0, "purple"], [5, 0, "yellow"], [6, 0, "blue"],
-    [2, 1, "yellow"], [3, 1, "green"], [4, 1, "red"], [5, 1, "purple"], [6, 1, "green"],
-    [2, 2, "green"], [3, 2, "red"], [4, 2, "blue"], [5, 2, "yellow"], [6, 2, "red"]
+    [
+      1,
+      0,
+      "purple"
+    ],
+    [
+      2,
+      0,
+      "purple"
+    ],
+    [
+      3,
+      0,
+      "yellow"
+    ],
+    [
+      4,
+      0,
+      "blue"
+    ],
+    [
+      0,
+      1,
+      "yellow"
+    ],
+    [
+      1,
+      1,
+      "green"
+    ],
+    [
+      2,
+      1,
+      "red"
+    ],
+    [
+      3,
+      1,
+      "purple"
+    ],
+    [
+      4,
+      1,
+      "green"
+    ],
+    [
+      0,
+      2,
+      "green"
+    ],
+    [
+      1,
+      2,
+      "red"
+    ],
+    [
+      2,
+      2,
+      "blue"
+    ],
+    [
+      3,
+      2,
+      "yellow"
+    ],
+    [
+      4,
+      2,
+      "red"
+    ]
   ],
-  "obstacles": []
+  "obstacles": [],
+  "star_thresholds": [
+    80,
+    180,
+    360
+  ]
 }

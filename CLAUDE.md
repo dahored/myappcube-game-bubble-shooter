@@ -4,127 +4,186 @@ Este archivo se carga automáticamente al iniciar una sesión de Claude Code en 
 
 ## Qué es Coralia
 
-**Coralia** es un Bubble Shooter mobile cozy submarino para Android + iOS. Estudio: **myappcube** (Diego). Stack: **Godot 4 + GDScript**. Modelo: **F2P híbrido** (Ads + IAP + Battle Pass + Suscripción fase 2). Audiencia: mujeres 25-45 casual. Estado actual: prototipo Fase 1 jugable, arrancando Fase 2 (MVP).
+**Coralia** es un Bubble Shooter mobile cozy submarino para Android + iOS. Estudio: **myappcube** (Diego). Stack: **Defold + Lua**. Modelo: **F2P híbrido** (Ads + IAP + Battle Pass + Suscripción fase 2). Audiencia: mujeres 25-45 casual.
 
-Protagonista: **Marina** (sirena joven). Antagonista: **La Sombra Profunda** (no es villano — es una criatura herida que Marina libera con compasión). Estructura: 6 capítulos × 10 niveles = 60 niveles MVP. 6 idiomas al lanzamiento (es, en, it, fr, de, pt) gestionados con AI translation a $0.
+Protagonista: **Marina** (sirena joven). Antagonista: **La Sombra Profunda** (criatura herida que Marina libera con compasión). Estructura: 6 capítulos × 10 niveles = 60 niveles MVP. 6 idiomas al lanzamiento (es, en, it, fr, de, pt).
+
+## Motor: Defold
+
+Todo el código activo está en **Lua + Defold**. Tipos de archivo clave:
+- `.collection` — escena/colección (protobuf text)
+- `.go` — game object (lista de componentes)
+- `.script` — script Lua adjunto a un game object
+- `.gui` — escena GUI (protobuf text)
+- `.gui_script` — script Lua adjunto a un GUI
+- `.collectionproxy` — proxy de colección (lazy-load de escenas)
+- `.atlas` — atlas de sprites
+- `game.project` — configuración del proyecto
 
 ## Documentos de referencia (orden de lectura)
 
-Cuando arranques una sesión, leé en este orden según lo que vayas a hacer:
+1. **`docs/07_Status_y_Roadmap.md`** — siempre primero. Dónde estamos y qué queda.
+2. **`docs/06_Backlog_GitHub_Issues.md`** — el backlog. Cada H2 es un issue con acceptance criteria.
+3. **`docs/02_GDD_Coralia.md`** — GDD completo (17 secciones). Consultar antes de implementar features:
+   - Mecánicas → secciones 1-4
+   - Economía → sección 6
+   - Retención (daily, missions, achievements) → sección 7
+   - Battle Pass → sección 8
+   - Monetización (ads, IAP) → sección 9
+   - UI/pantallas → sección 10
+   - Arte → sección 11
+   - Audio → sección 12
+   - Narrativa (criaturas, antagonista) → sección 13
+   - Arquitectura técnica → sección 14
+4. **`docs/03_Wireframes_Coralia.md`** — spec textual de las 17 pantallas.
+5. **`docs/wireframes/styled_mockups.html`** — mockups visuales estilizados.
+6. **`CHANGELOG.md`** — historial de cambios por chunk.
 
-1. **`docs/07_Status_y_Roadmap.md`** — siempre primero. Te dice dónde estamos y qué queda.
-2. **`docs/06_Backlog_GitHub_Issues.md`** — el backlog de trabajo. Cada sección H2 es un issue independiente con acceptance criteria. Si Diego te dice "trabajemos en el issue X", buscalo acá.
-3. **`docs/02_GDD_Coralia.md`** — el Game Design Document completo (17 secciones). Consultá la sección relevante antes de implementar features. Por ejemplo:
-   - Para mecánicas → secciones 1-4
-   - Para economía → sección 6
-   - Para retención (daily, missions, achievements) → sección 7
-   - Para Battle Pass → sección 8
-   - Para monetización (ads, IAP) → sección 9
-   - Para UI/pantallas → sección 10
-   - Para arte → sección 11
-   - Para audio → sección 12
-   - Para narrativa (criaturas, antagonista) → sección 13
-   - Para arquitectura técnica → sección 14
-4. **`docs/03_Wireframes_Coralia.md`** — spec textual de las 17 pantallas. Para cualquier UI work.
-5. **`docs/wireframes/styled_mockups.html`** — mockups visuales estilizados. Útil para entender el "look and feel" deseado.
-6. **`CHANGELOG.md`** — historial de cambios por chunk para entender qué se hizo.
+## Estructura de archivos
 
-## Convenciones del proyecto
+```
+game.project              ← config Defold (1080x1920 portrait, bootstrap, bundles)
+input/
+  game.input_binding      ← touch + back
+main/
+  main.collection         ← bootstrap (socket "main")
+  main.go                 ← game object con main.script + proxies de escenas
+  main.script             ← router: recibe "go_to", maneja disable/unload/async_load
+splash1/                  ← socket "splash1" — logo estudio, fade in/out, skip on tap
+splash2/                  ← socket "splash2" — logo juego + versión dinámica + dots
+level_map/                ← socket "level_map" — scroll inverso por capítulos
+gameplay/                 ← (próximo) socket "gameplay" — cañón + grid + HUD
+modules/
+  config.lua              ← constantes globales (grid, física, colores, economía)
+  router.lua              ← router.go(scene_name) → msg a main:/main#main_script
+  save_manager.lua        ← save_mgr.load() / .save(data) vía sys.save/sys.load
+  level_manager.lua       ← level_mgr.load(id) / .load_all() — caché de JSONs
+assets/
+  atlas/
+    logos.atlas           ← logo.png (1080x1080) + logo_myappcube.png (1024x1024)
+    bubbles.atlas         ← 7 colores idle (200x200 px cada uno)
+  fonts/
+    coralia_ui.font       ← distance field, referencia vera_mo_bd.ttf
+  images/logos/           ← PNGs originales de logos
+  sprites/bubbles/
+    idle/                 ← 7 PNGs 200x200 (extraídos de v1 spritesheets)
+    v1/                   ← spritesheets originales 2400x200, 12 frames
+data/levels/              ← 001.json–020.json (cap. 1: lvl 1-10, cap. 2: lvl 11-20)
+localization/
+  translations.csv        ← 6 idiomas (pendiente activar en Defold)
+```
 
-### Código
-- **Naming archivos:** `snake_case.gd`
-- **Naming clases:** `PascalCase` (con `class_name`)
-- **Naming variables:** `snake_case`
-- **Naming constantes:** `SCREAMING_SNAKE_CASE`
-- **Naming signals:** verbo en pasado (`level_completed`, `bubble_popped`)
-- **Tipado estático** cuando sea posible: `var lives: int = 5`
-- **Comentarios:** docstring en funciones públicas con 3+ líneas
-- **i18n:** todo string visible al usuario va a `localization/translations.csv`, NUNCA hardcoded
+## Reglas clave de Defold
 
-### Arquitectura
-- 11 autoloads ya stubeados en `scripts/autoloads/` — NO crear nuevos sin discusión. Ampliar los existentes (Audio, Save, Economy, BattlePass, Ads, IAP, Analytics, Firebase, Locale, Level, Game).
-- **Bus central de signals** en `GameManager` — la comunicación entre autoloads pasa por ahí, no entre autoloads directamente.
-- **Niveles en JSON** en `data/levels/` — formato definido en GDD 14.4. NO hardcodear niveles en código.
-- **Color shuffle** ya implementado en `grid.setup_from_level` — al cargar un nivel, los colores se randomizan preservando posiciones (estilo Candy Crush).
-- **Smart queue** ya implementado en `canon._random_type` — solo da colores con 1+ instancias en grid.
-- **Save format** documentado en GDD 14.5. Schema en `save_manager.gd::_default_save()`.
+### URLs y sockets
+- Socket name = el campo `name:` en el `.collection` (ej: `name: "main"` → socket `"main"`)
+- URL completa: `socket:/instance_path#component_id`
+- Ejemplo: `main:/main#main_script` (socket="main", instance="/main", component="main_script")
+- Las paths dentro de una collection son **FLAT**: `children:` solo hereda transform, NO afecta URL path
 
-### Convenciones cross-proyecto con app-impostor
-Diego tiene otra app llamada Impostor. Para mantener consistencia entre apps del estudio, Coralia hereda:
+### IDs y mensajes
+- IDs de game objects y URLs NO se pueden pasar dentro de tablas de `msg.post` — se corrompen
+- Para responder a quien envió un mensaje: usar `sender` en `on_message`, nunca pasar URL en tabla
 
-- **Two-splash pattern**: pantalla 1 Company Splash + pantalla 2 Loading Splash (con versión)
-- **Settings de 4 secciones**: Preferencias del juego / Cuenta y asistencia / Comunidad / Legal
-- **3 sliders de audio**: Sonidos del juego / Efectos interfaz / Sonidos pop (no music+sfx genérico)
-- **Vibración** como toggle separado en Settings
-- **6 idiomas default**: es, en, it, fr, de, pt
+### Routing (cómo cambiar de escena)
+1. `router.go("scene_name")` → `msg.post("main:/main#main_script", "go_to", { scene = name })`
+2. `main.script` recibe `go_to`, hace disable + final + unload al proxy actual
+3. Luego async_load al nuevo proxy
+4. El proxy responde `proxy_loaded` → main hace `enable`
 
-NO inventar nuevas convenciones de UI sin chequear que app-impostor también las usa o sin acuerdo explícito con Diego.
+### Input
+- `acquire_input_focus` en **cada** `gui_script` init Y en `main.script` init
+- Sin el acquire en main.script, los proxies NO reciben input
 
-### Workflow de Git
-- **Un commit por chunk/issue**, no múltiples commits pequeños
-- **Mensaje de commit** siempre con prefijo: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `polish:`
+### Datos de niveles (JSON)
+- Bundled via `game.project` → `custom_resources = /data/`
+- Cargar: `sys.load_resource("/data/levels/001.json")` + `json.decode(bytes)`
+- Cacheados en `level_manager._cache`
+
+### Atlas y texturas en GUI
+- En GUI, textures se referencian como `"atlas_name/image_name"` (sin extensión de imagen)
+- Ej: `"logos/logo_myappcube"` (atlas llamado "logos", imagen `logo_myappcube.png`)
+
+## Convenciones de código
+
+- **Naming archivos:** `snake_case` (ej: `level_manager.lua`)
+- **Naming variables/funciones:** `snake_case`
+- **Constantes:** `SCREAMING_SNAKE_CASE`
+- **Módulos:** siempre `local M = {} ... return M`
+- **Comentarios:** solo cuando el WHY no es obvio — sin docstrings
+- **i18n:** todo string visible → `localization/translations.csv` (pendiente activar)
+- **Niveles en JSON:** NUNCA hardcodear niveles en código
+
+## Convenciones cross-proyecto (app-impostor)
+
+- **Two-splash pattern**: splash 1 (studio logo) + splash 2 (game logo + versión + loading) ✅
+- **Settings de 4 secciones**: Preferencias / Cuenta y asistencia / Comunidad / Legal
+- **3 sliders de audio**: Sonidos del juego / Efectos interfaz / Sonidos pop
+- **Vibración** como toggle separado
+- **6 idiomas**: es, en, it, fr, de, pt
+
+## Workflow de Git
+
+- **Un commit por chunk/issue**
+- **Prefijo en commits**: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `polish:`
 - **Branch por issue**: `git checkout -b issue-N-short-description`
-- **Mergear a main vía PR** (incluso solo dev — fuerza review)
+- **Mergear a main vía PR**
 - **Actualizar CHANGELOG.md** al cerrar cada chunk
 
-### Workflow de issues
-1. Diego dice "trabajemos en el issue N" → leés `06_Backlog_GitHub_Issues.md` para encontrarlo
-2. Verificás que las dependencias están resueltas
-3. Leés la sección relevante del GDD para alinear
-4. Creás branch, implementás según acceptance criteria
-5. Probás en Godot
-6. Commit + push + PR
-7. Mergear y cerrar issue
-8. Update CHANGELOG.md
+## Workflow de issues
 
-## Estado actual del código
+1. Diego dice "trabajemos en el issue N" → leer `06_Backlog_GitHub_Issues.md`
+2. Verificar dependencias resueltas
+3. Leer sección relevante del GDD
+4. Branch → implementar según acceptance criteria
+5. Probar en Defold (desktop)
+6. Commit + push + PR → mergear + cerrar issue
+7. Update CHANGELOG.md
 
-### Implementado (Fase 1 + parte de Fase 2)
-- Grid hexagonal funcional (`grid.gd`, `grid_logic.gd`)
-- Cañón con drag aim, trayectoria con primer rebote, cola de 2 burbujas (`canon.gd`)
-- Match detection (flood-fill BFS) y drops (`grid.gd`)
-- Win/lose conditions con HUD y modal
-- 5 niveles JSON en `data/levels/001-005.json`
-- Smart queue + color shuffle + queue rotation animation
-- Persistencia (save/load) con `SaveManager`
+## Estado actual del código (2026-05-06)
+
+### Implementado ✅
+- Proyecto Defold limpio desde cero (game.project, input binding)
+- Módulos reutilizables: config, router, save_manager, level_manager
+- Bootstrap: main.collection / main.go / main.script con routing por proxies
+- Splash 1: logo estudio, fade in/out 2.7s total, tap to skip
+- Splash 2: logo juego, versión dinámica, dots animation, MIN_SHOW 2s
+- Level Map: scroll inverso (cap. nuevos arriba), 4 cols, estados locked/open/done dinámicos
+- 20 niveles JSON (capítulo 1: lvl 1-10, capítulo 2: lvl 11-20)
+- 2 atlases: logos.atlas + bubbles.atlas
 
 ### Pendiente (priorizado)
-Ver `06_Backlog_GitHub_Issues.md`, sección "Fase 2 — MVP" para los issues. Top priorities:
-
-1. Audio (música + SFX)
-2. Sistema de vidas (5, regen 30 min)
-3. Sistema de monedas + gemas con drops
-4. Más niveles (subir de 5 a 20+)
-5. Onboarding tutorial
-6. Santuario y Level Select pantallas
+Ver `docs/06_Backlog_GitHub_Issues.md`. Top:
+1. Gameplay: cañón + grid hexagonal + match + win/lose
+2. Audio: música + SFX placeholders
+3. Sistema de vidas (5 vidas, regen 30 min)
+4. HUD en gameplay (score, shots, lives)
+5. Settings screen
 
 ## Cosas a NO hacer
 
-- ❌ NO crear pantallas o features que no estén en el GDD o en el backlog
-- ❌ NO modificar el GDD sin discutir con Diego (es contrato)
-- ❌ NO usar formatos binarios para niveles (deben quedar editables JSON)
-- ❌ NO hardcodear strings en UI (deben ir a translations.csv)
-- ❌ NO commitear archivos sensibles: `*.keystore`, `google-services.json`, `GoogleService-Info.plist` (ya en `.gitignore`)
-- ❌ NO crear nuevos autoloads sin discusión — los 11 existentes deberían cubrir todo
-- ❌ NO mezclar features en un commit. Un chunk = un commit.
+- ❌ NO crear pantallas o features fuera del GDD / backlog
+- ❌ NO modificar el GDD sin discutir con Diego
+- ❌ NO formatos binarios para niveles (JSON siempre)
+- ❌ NO hardcodear strings UI (van a translations.csv)
+- ❌ NO commitear: `*.keystore`, `google-services.json`, `GoogleService-Info.plist`
+- ❌ NO pasar IDs/URLs de game objects dentro de tablas de msg.post
+- ❌ NO paths jerárquicas tipo `/gameplay/hud` — paths en Defold son FLAT
 
 ## Cómo Diego prefiere trabajar
 
-- **Directo y conciso.** No explicar de más cuando ya lo entiende.
-- **Confirmá decisiones críticas antes de implementar** (no asumir).
-- **Mostrá screenshots/output cuando sea posible** para validar que el cambio se ve bien.
-- **Pushback OK** si una decisión técnica te parece mal — Diego valora el feedback honesto.
-- **Spanglish OK** — Diego habla español natural mezclando términos técnicos en inglés.
-- Diego es **solo dev, no diseñador** — bias toward soluciones simples para no-artistas (asset stores, AI gen, placeholders bien usados).
+- Directo y conciso — no explicar de más
+- Confirmar decisiones críticas antes de implementar
+- Spanglish OK (mezcla español + términos técnicos en inglés)
+- Solo dev sin equipo de arte — soluciones simples, no-artista friendly
+- Pushback OK si una decisión técnica parece mal
 
-## Decisiones administrativas pendientes (sin código pero importantes)
+## Decisiones administrativas pendientes
 
-Antes del soft launch hay que cerrar:
-
-1. Verificar disponibilidad de "Coralia" en App Store / Google Play / dominios / redes
+1. Verificar "Coralia" disponibilidad (App Store, Google Play, dominios, redes)
 2. Apple Developer Program ($99/año)
 3. Google Play Console ($25 una vez)
-4. Firebase project (free tier al inicio)
+4. Firebase project (free tier)
 5. AdMob + AppLovin MAX accounts
 6. RevenueCat account
-7. Repo GitHub privado creado y push del código
+7. Repo GitHub privado + push

@@ -5,15 +5,90 @@
   "objective": {
     "type": "rescue",
     "creature_id": "burbujin",
-    "creature_position": [5, 1]
+    "creature_position": [
+      3,
+      1
+    ]
   },
   "max_shots": 26,
-  "available_colors": ["red", "blue", "yellow", "green"],
+  "available_colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
   "rainbow_chance": 0.0,
   "bubbles": [
-    [3, 0, "red"], [4, 0, "blue"], [5, 0, "red"], [6, 0, "yellow"], [7, 0, "green"],
-    [3, 1, "yellow"], [4, 1, "green"], [5, 1, "red"], [6, 1, "blue"], [7, 1, "yellow"],
-    [4, 2, "blue"], [5, 2, "green"], [6, 2, "red"]
+    [
+      1,
+      0,
+      "red"
+    ],
+    [
+      2,
+      0,
+      "blue"
+    ],
+    [
+      3,
+      0,
+      "red"
+    ],
+    [
+      4,
+      0,
+      "yellow"
+    ],
+    [
+      5,
+      0,
+      "green"
+    ],
+    [
+      1,
+      1,
+      "yellow"
+    ],
+    [
+      2,
+      1,
+      "green"
+    ],
+    [
+      3,
+      1,
+      "red"
+    ],
+    [
+      4,
+      1,
+      "blue"
+    ],
+    [
+      5,
+      1,
+      "yellow"
+    ],
+    [
+      2,
+      2,
+      "blue"
+    ],
+    [
+      3,
+      2,
+      "green"
+    ],
+    [
+      4,
+      2,
+      "red"
+    ]
   ],
-  "obstacles": []
+  "obstacles": [],
+  "star_thresholds": [
+    60,
+    140,
+    280
+  ]
 }

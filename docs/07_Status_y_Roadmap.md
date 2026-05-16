@@ -1,6 +1,6 @@
 # Coralia — Status y Roadmap
 
-**Última actualización:** 2026-05-01
+**Última actualización:** 2026-05-06
 
 Documento maestro de estado del proyecto. Si abrís uno solo de los docs, **abrí este**.
 
@@ -10,9 +10,9 @@ Documento maestro de estado del proyecto. Si abrís uno solo de los docs, **abr�
 
 | Fase | Estado | Notas |
 |---|---|---|
-| **Fase 0** — Pre-producción | ✅ Completada | Concept, GDD v0.6, Wireframes spec, Plan Fase 1, setup técnico Godot |
-| **Fase 1** — Prototipo jugable | ✅ Completada | 6 de 7 chunks ejecutados. Chunk 7 (playtest) skipped — pendiente informal |
-| **Fase 2** — MVP | 🔄 En progreso | Chunk A (Persistencia) implementado. Resto en backlog |
+| **Fase 0** — Pre-producción | ✅ Completada | Concept, GDD v0.6, Wireframes spec, Plan Fase 1, setup técnico |
+| **Fase 1** — Prototipo jugable | ✅ Completada | Mecánicas core validadas (Godot). Migración a Defold completada 2026-05-06. |
+| **Fase 2** — MVP | 🔄 En progreso | Base Defold lista (splash + level map). Gameplay pendiente. |
 | **Fase 3** — Soft Launch | ⏳ Pendiente | Tras MVP completo |
 | **Fase 4** — Global Launch | ⏳ Pendiente | Tras soft launch validado |
 
@@ -20,21 +20,34 @@ Documento maestro de estado del proyecto. Si abrís uno solo de los docs, **abr�
 
 ## Qué tenemos hoy
 
-Un **Bubble Shooter funcional jugable** en Godot 4 con:
+**Proyecto Defold limpio y funcional** (motor: Defold + Lua):
 
-- Grid hexagonal de 84 burbujas, físicas correctas
-- Cañón con drag aim, línea de trayectoria con primer rebote, cola de 2 burbujas
-- Smart queue (Candy Crush style): solo da colores que existen en el grid
-- Color shuffle al cargar nivel: posiciones fijas, colores random (replayability)
+### Infraestructura base ✅
+- `game.project` con display 1080x1920 portrait, bundles para iOS + Android
+- Input binding (touch + back)
+- Bootstrap: main.collection → routing por collection proxies
+- 4 módulos reutilizables: config, router, save_manager, level_manager
+
+### Pantallas implementadas ✅
+- **Splash 1**: logo estudio (myappcube), fade in/out 2.7s, skip on tap
+- **Splash 2**: logo juego (Coralia), versión dinámica desde game.project, dots animation, MIN_SHOW 2s
+- **Level Map**: scroll vertical inverso (capítulos nuevos arriba), 4 columnas, estados locked/open/done dinámicos según progreso guardado
+
+### Datos y assets ✅
+- 20 niveles JSON (capítulo 1: lvl 1-10, capítulo 2: lvl 11-20)
+- 7 bubbles idle PNGs (200x200) en bubbles.atlas
+- logos.atlas (logo estudio + logo juego)
+- coralia_ui.font (distance field, vera_mo_bd.ttf)
+- translations.csv con 50+ keys en 6 idiomas — pendiente activar en Defold
+
+### Referencia de mecánicas (del prototipo Godot)
+Las siguientes mecánicas ya fueron validadas en Godot y están listas para portar a Defold:
+- Grid hexagonal de 84 burbujas con físicas correctas
+- Cañón con drag aim, trayectoria con primer rebote, cola de 2 burbujas
+- Smart queue: solo da colores que existen en el grid
+- Color shuffle al cargar nivel (posiciones fijas, colores random)
 - Match detection (flood-fill BFS) y drops por gravedad
-- Score, win/lose con modales
-- 5 niveles JSON con curva de dificultad
-- 2 tipos de objetivos: clear_all y rescue (con criatura marcada con estrella)
-- Animación de rotación de cola (drop + slide + fade-in del nuevo preview)
-- **Persistencia**: progreso entre sesiones (last_played, best_scores, creatures_rescued, currencies, settings)
-- 11 autoload stubs listos para crecer (Audio, Economy, BattlePass, Ads, IAP, Analytics, Firebase, Locale, Level, Save, Game)
-- Localización CSV con 50+ keys en 6 idiomas (es, en, it, fr, de, pt) — pendiente activar
-- Documentación completa: Plan Maestro, Concept, GDD, Wireframes, Plan Fase 1, Playtest Guide, Backlog
+- Win/lose conditions con modales
 
 ---
 
@@ -44,11 +57,11 @@ Ver `06_Backlog_GitHub_Issues.md` para detalles. Aquí el resumen ordenado por i
 
 ### Top 5 cosas que más mejorarían el juego ahora mismo
 
-1. **Audio** — placeholders gratuitos. Mejora 10x el feel. Estimación: 1-2 días.
-2. **Más niveles** (subir de 5 a 20+) — más contenido, más sensación de "juego real". 3-5 días.
+1. **Gameplay Defold** — portar cañón + grid + match + HUD a Defold. Es el core. Estimación: 3-5 días.
+2. **Audio** — placeholders gratuitos. Mejora 10x el feel. Estimación: 1-2 días.
 3. **Sistema de vidas + monedas + gemas** — base de monetización. 2-3 días.
 4. **Onboarding tutorial** — para que jugadores nuevos no se confundan. 2 días.
-5. **Santuario y Level Select** — pantallas críticas faltantes. 5-7 días.
+5. **Pantalla de Settings** — 4 secciones, 3 sliders de audio, vibración. 1-2 días.
 
 ### Lo que NO bloquea ahora pero es necesario para lanzar
 
@@ -88,77 +101,62 @@ Plus en root del repo: `CHANGELOG.md` con historial de cambios por chunk.
 
 ```
 coralia/
-├── project.godot              ← Config Godot 4 (mobile portrait, autoloads)
-├── scenes/
-│   ├── main/boot.tscn         ← Pantalla inicial — routea según save state
-│   └── gameplay/
-│       ├── gameplay.tscn      ← Escena principal del juego (Chunk 1-6)
-│       ├── canon.tscn         ← Cañón con cola de 2 burbujas
-│       └── bubble.tscn        ← Burbuja individual
-├── scripts/
-│   ├── autoloads/             ← 11 singletons globales (Game, Audio, Save, Economy, etc.)
-│   ├── gameplay/              ← grid_logic, grid, bubble, canon, gameplay
-│   └── main/                  ← boot
-├── data/levels/               ← 001-005.json (5 niveles del prototipo)
-├── localization/              ← translations.csv (6 idiomas, 50+ keys)
-└── assets/                    ← Placeholder hasta arte final (vacío)
+├── game.project               ← Config Defold (1080x1920 portrait, iOS+Android)
+├── input/
+│   └── game.input_binding     ← touch + back
+├── main/                      ← Bootstrap: routing + collection proxies
+│   ├── main.collection        ← socket "main"
+│   ├── main.go                ← proxies de splash1, splash2, level_map
+│   └── main.script            ← maneja "go_to" → disable/unload/async_load
+├── splash1/                   ← socket "splash1" — logo estudio
+├── splash2/                   ← socket "splash2" — logo juego + loading
+├── level_map/                 ← socket "level_map" — mapa scrolleable
+├── gameplay/                  ← (próximo) socket "gameplay" — partida
+├── modules/
+│   ├── config.lua             ← constantes (grid, física, colores, economía)
+│   ├── router.lua             ← router.go(scene_name)
+│   ├── save_manager.lua       ← sys.save / sys.load wrapper
+│   └── level_manager.lua      ← carga + caché de niveles JSON
+├── assets/
+│   ├── atlas/                 ← logos.atlas, bubbles.atlas
+│   ├── fonts/                 ← coralia_ui.font (vera_mo_bd.ttf distance field)
+│   └── sprites/bubbles/       ← idle/ (7 PNGs) + v1/ (spritesheets originales)
+├── data/levels/               ← 001-020.json (20 niveles, 2 capítulos)
+└── localization/              ← translations.csv (6 idiomas, 50+ keys) — pendiente activar
 ```
 
 ---
 
 ## Cómo continuar con Claude Code
 
-Diego planea continuar el desarrollo con Claude Code en CLI en lugar de Cowork. Pasos sugeridos:
+### Workflow por issue
 
-### 1. Setup de GitHub
+Por cada issue de `06_Backlog_GitHub_Issues.md`:
+1. `git checkout -b issue-N-short-description`
+2. Decirle a Claude Code el número de issue — lee el AC
+3. Lee GDD sección relevante antes de implementar
+4. Implementa en Defold (Lua + .collection / .gui / .script)
+5. Prueba en Defold desktop (Cmd+B)
+6. Commit + push + PR → mergear + cerrar issue
+7. Update CHANGELOG.md
+
+### Setup de GitHub (pendiente)
 
 ```bash
-cd /Users/daho/Projects/code/games/app-bubble-shooter
-
-# Si aún no committeaste el último chunk:
-rm -f .git/index.lock
-git add -A
-git commit -m "feat: chunk A persistence + docs reorganization"
-
-# Crear repo privado en GitHub
 gh repo create coralia --private --source=. --push
-# o manualmente en github.com → New Repo → push manual
 ```
 
-### 2. Crear los issues en GitHub
+O manualmente: github.com → New Repo → push manual.
 
-Convertir cada sección H2 (`##`) de `06_Backlog_GitHub_Issues.md` en un GitHub issue. Hay ~30+ issues definidos. Opciones:
+### Cadencia recomendada
 
-**Manual:** copy-paste cada sección a GitHub UI. Lleva ~30-45 min para los 30 issues.
+- **Semana 1:** Gameplay Defold (cañón + grid + match)
+- **Semana 2:** Audio + HUD
+- **Semana 3:** Sistema de vidas + monedas
+- **Semana 4:** Onboarding tutorial + Settings
+- **Semana 5+:** Santuario, battle pass, ads/IAP...
 
-**Semi-automático con `gh` CLI:** un script que lea las secciones del MD y use `gh issue create`. Si querés, le pedís a Claude Code que te lo arme — es un script rápido en bash.
-
-**Automático con Claude Code:** decirle "lee `docs/06_Backlog_GitHub_Issues.md` y creá un issue de GitHub por cada sección H2, usando los labels que están listados". Probablemente lo hace en 2-3 minutos.
-
-### 3. Workflow recomendado con Claude Code
-
-Por cada issue:
-1. Crear branch: `git checkout -b issue-N-short-description`
-2. Pedirle a Claude Code que implemente el issue, dándole referencia al MD
-3. Test en Godot
-4. Commit + push del branch
-5. PR contra main, mergear, cerrar el issue
-6. Próximo issue
-
-Para mantener el contexto, en cada sesión nueva de Claude Code:
-- Le pasás el link al repo
-- Le decís en qué issue estás trabajando
-- Le pedís que lea el GDD section relevante antes de codear
-
-### 4. Cadencia recomendada
-
-- **Semana 1:** Audio (issue 1) + Más niveles (issue 4)
-- **Semana 2:** Sistema de vidas + monedas (issues 3 y 5)
-- **Semana 3:** Onboarding + Santuario (issues 7 y 11)
-- **Semana 4:** Level Select + Pre-level (issues 12 y 13)
-- ...continúa hasta MVP completo
-
-Probable que te lleve **6-10 semanas** si avanzás 1 issue grande o 2 medianos por semana.
+Probable **6-10 semanas** para MVP completo.
 
 ---
 

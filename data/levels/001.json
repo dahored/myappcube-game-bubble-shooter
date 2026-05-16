@@ -6,13 +6,37 @@
     "type": "clear_all"
   },
   "max_shots": 22,
-  "available_colors": ["red", "blue"],
+  "available_colors": [
+    "red",
+    "blue"
+  ],
   "rainbow_chance": 0.0,
   "bubbles": [
-    [4, 0, "red"],
-    [5, 0, "red"],
-    [6, 0, "blue"],
-    [7, 0, "blue"]
+    [
+      2,
+      0,
+      "red"
+    ],
+    [
+      3,
+      0,
+      "red"
+    ],
+    [
+      4,
+      0,
+      "blue"
+    ],
+    [
+      5,
+      0,
+      "blue"
+    ]
   ],
-  "obstacles": []
+  "obstacles": [],
+  "star_thresholds": [
+    40,
+    100,
+    200
+  ]
 }

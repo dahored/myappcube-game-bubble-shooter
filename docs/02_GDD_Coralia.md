@@ -257,15 +257,55 @@ No hay "XP del jugador", "nivel de personaje" ni "estrellas por nivel" que se su
 | **Logros** | Logros desbloqueados | Pantalla de Profile |
 | **Racha diaria** | Días consecutivos jugando | HUD del santuario |
 
-### 4.2 Estrellas por nivel (opcional, fase 2)
+### 4.2 Estrellas por nivel (implementado en MVP)
 
-Tradicionalmente los juegos del género dan 1-3 estrellas por nivel basado en performance. Para el MVP, **decisión: no implementar**. Razones:
+Cada nivel otorga 1-3 estrellas basadas en **score final**. El score final incluye un bonus por tiros sobrantes que premia la eficiencia.
 
-- Complica el balance (cómo definir "1 vs 3 estrellas")
-- Aumenta scope sin un gancho claro de retención adicional
-- El jugador casual cozy se frustra con el "no llegué a 3 estrellas"
+#### Mecánica de score final
 
-**Posible adición post-launch** si la data muestra demanda.
+```
+score_final = score_base + (tiros_sobrantes × BONUS_PER_REMAINING_SHOT)
+BONUS_PER_REMAINING_SHOT = 10  (constante en gameplay.gd)
+```
+
+- `score_base`: puntos acumulados durante el nivel (matches, drops, etc.)
+- `tiros_sobrantes`: `max_shots - tiros_usados` al ganar
+- El bonus se aplica **solo en victoria** — si perdés no hay bonus
+
+Este sistema hace que la eficiencia importe sin añadir una métrica separada. Un jugador que borra el nivel en pocos tiros obtiene más estrellas que uno que lo pasa justo.
+
+#### Visualización
+
+- **Durante el nivel:** HUD muestra `☆☆☆` → va llenando `★` en tiempo real conforme sube el score (sin bonus todavía — el bonus se aplica al ganar)
+- **Pantalla de victoria:** estrellas finales + desglose `score_base + bonus = total`
+- **Level Select:** nodos completados muestran `★★☆` (estrellas obtenidas)
+
+#### Workflow de diseño de niveles
+
+Al diseñar cada nivel, el diseñador debe determinar los 3 thresholds playtestando:
+
+1. **Jugá el nivel 3 veces:** como experto (mínimo tiros), normal, y usando todos los tiros
+2. **Anotá los 3 scores finales** (ya incluyen bonus automáticamente porque jugás con el juego real)
+3. **Esos scores son tus thresholds** en el JSON
+
+```
+Ejemplo — nivel con 20 burbujas, max_shots=30:
+
+Experto   (10 tiros usados, 20 sobrantes): base ~400 + 200 = 600  → threshold 3★
+Promedio  (22 tiros usados,  8 sobrantes): base ~350 +  80 = 430  → threshold 2★
+Just pass (30 tiros usados,  0 sobrantes): base ~280 +   0 = 280  → threshold 1★
+
+"star_thresholds": [280, 430, 600]
+```
+
+El threshold de 1★ debe ser alcanzable por cualquier jugador que complete el nivel (incluso usando todos los tiros). El threshold de 3★ requiere terminar con tiros sobrantes significativos.
+
+#### Nota sobre la decisión de implementar en MVP
+
+La decisión original era posponer. Se implementó porque:
+- El sistema de bonus simplificó el balance (eficiencia → más puntos, no métrica separada)
+- Los thresholds por nivel en JSON son fáciles de ajustar post-lanzamiento con data real
+- La frustración "no llegué a 3★" se mitiga con el diseño cozy: 1★ siempre permite avanzar
 
 ### 4.3 Desbloqueos por nivel del mapa
 
@@ -1803,11 +1843,17 @@ Los niveles son **archivos JSON estructurados** para soportar generación AI-ass
   "available_colors": ["red", "blue", "yellow", "green"],
   "rainbow_chance": 0.05,
   "creature_to_unlock": "coqui",
+  "star_thresholds": [280, 430, 600],
   "first_completion_bonus": {
     "coins": 75,
     "gems": 2
   }
 }
+```
+
+`star_thresholds` es un array de 3 enteros `[1★, 2★, 3★]`. Se calibra playtestando el nivel con el juego real (ver sección 4.2). El score que se compara contra los thresholds es `score_base + tiros_sobrantes × 10`.
+
+```
 ```
 
 **Validación:** un script `level_validator.gd` carga cada nivel y verifica formato, valida tipos de objetivo, posiciones dentro del grid, etc. Se ejecuta en runtime al cargar y en CI antes de cada release.

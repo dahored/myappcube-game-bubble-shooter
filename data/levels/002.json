@@ -5,17 +5,39 @@
   "objective": {
     "type": "rescue",
     "creature_id": "coqui",
-    "creature_position": [2, 0]
+    "creature_position": [
+      0,
+      0
+    ]
   },
   "max_shots": 24,
-  "available_colors": ["red", "blue", "yellow"],
+  "available_colors": [
+    "red",
+    "blue",
+    "yellow"
+  ],
   "rainbow_chance": 0.0,
   "bubbles": [
-    [0, 0, "red"],
-    [1, 0, "yellow"],
-    [2, 0, "yellow"],
-    [3, 0, "yellow"],
-    [4, 0, "blue"]
+    [
+      0,
+      0,
+      "yellow"
+    ],
+    [
+      1,
+      0,
+      "yellow"
+    ],
+    [
+      2,
+      0,
+      "blue"
+    ]
   ],
-  "obstacles": []
+  "obstacles": [],
+  "star_thresholds": [
+    50,
+    120,
+    240
+  ]
 }

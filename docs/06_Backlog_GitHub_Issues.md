@@ -38,7 +38,7 @@ Los issues debajo están agrupados por fase y prioridad.
 **Labels:** `phase-2`, `feat`, `audio`, `priority-high`, `size-M`
 
 ### Descripción
-Aunque sea con placeholders gratuitos, agregar audio mejora 10x el feel del juego. Sin sonido el prototipo se siente vacío y poco profesional. Implementar `AudioManager` autoload (ya stubbed) con reproducción real, y agregar los SFX y música mínimos.
+Aunque sea con placeholders gratuitos, agregar audio mejora 10x el feel del juego. Sin sonido el prototipo se siente vacío y poco profesional. Implementar `AudioManager` módulo Lua (pendiente crear) con reproducción real, y agregar los SFX y música mínimos.
 
 ### Acceptance criteria
 - [ ] Música de fondo loop en gameplay (1 track placeholder de Freesound o similar)
@@ -49,12 +49,12 @@ Aunque sea con placeholders gratuitos, agregar audio mejora 10x el feel del jueg
 - [ ] SFX de tap de botones (UI)
 - [ ] `AudioManager` con 3 canales/buses configurables: `music`, `ui_fx`, `bubble_pop` (matching los 3 sliders del Settings que define el GDD)
 - [ ] Volúmenes leídos de `SaveManager.data.settings` (ya están en el schema)
-- [ ] Vibración (toggle) implementada con `Input.vibrate_handheld()` para mobile
+- [ ] Vibración (toggle) implementada con `sys.vibrate() [Defold native]` para mobile
 
 ### Referencias
 - GDD sección 12 (Audio)
 - GDD sección 12.4 (Mix y mastering)
-- `scripts/autoloads/audio_manager.gd` ya tiene la estructura, falta implementación real
+- `modules/audio_manager.lua (pendiente crear)` ya tiene la estructura, falta implementación real
 
 ---
 
@@ -100,7 +100,7 @@ Implementar el sistema de vidas que es base de la monetización F2P. 5 vidas má
 
 ### Referencias
 - GDD sección 6.2 (Sistema de vidas)
-- `EconomyManager` autoload ya tiene `consume_life()`, `add_life()` placeholders
+- `EconomyManager` módulo ya tiene `consume_life()`, `add_life()` placeholders
 
 ---
 
@@ -158,9 +158,9 @@ Pasar de 5 niveles del prototipo a 20+ niveles con curva de dificultad coherente
 Activar la localización i18n: cargar `localization/translations.csv` (ya existe con 50+ keys), reemplazar strings hardcodeados en UI por keys (`tr("ui.button.play")`), permitir cambiar idioma en runtime, persistir preferencia.
 
 ### Acceptance criteria
-- [ ] Re-activar `locale/translations` en `project.godot` (comentado actualmente)
-- [ ] Setup correcto del CSV import en Godot 4 (Force Compress, Loader=Translations)
-- [ ] LocaleManager autoload usa `TranslationServer.set_locale()` correctamente
+- [ ] Configurar localización en Defold (CSV loader personalizado o tabla Lua)
+- [ ] Implementar i18n module que cargue translations.csv via sys.load_resource
+- [ ] LocaleManager módulo usa `i18n.set_locale()` correctamente
 - [ ] Todos los strings de HUD reemplazados por `tr()` keys (Score, Disparos, Objetivo, etc.)
 - [ ] Selector de idioma funcional (provisional: botón debug que cicla entre los 6)
 - [ ] Cambio de idioma en runtime sin reiniciar
@@ -170,7 +170,7 @@ Activar la localización i18n: cargar `localization/translations.csv` (ya existe
 ### Referencias
 - GDD sección 12.2bis (Localización)
 - `localization/translations.csv` con keys starter
-- `LocaleManager` autoload con stubs
+- `LocaleManager` módulo pendiente crear
 
 ---
 
@@ -182,17 +182,17 @@ Activar la localización i18n: cargar `localization/translations.csv` (ya existe
 Implementar el tutorial interactivo de 3 pasos descrito en GDD sección 10.3 Pantalla 3 (Onboarding). Solo se ejecuta una vez por jugador (flag `tutorial_completed` en save). Bocadillos de Marina + puntero animado.
 
 ### Acceptance criteria
-- [ ] Escena `scenes/main/onboarding.tscn`
+- [ ] Escena `onboarding/onboarding.collection + onboarding.gui`
 - [ ] Pasos 1-3 según GDD: apuntar, soltar, explicar match
 - [ ] Bocadillos de Marina con texto via i18n (keys nuevas en CSV)
 - [ ] Puntero animado / flecha que indica la acción
 - [ ] Botón "Saltar tutorial" oculto los primeros 2s, después aparece con fade
 - [ ] Al completar paso 3, marca `tutorial_completed = true` y va a Santuario (o Gameplay temporalmente)
-- [ ] Boot.gd respeta `tutorial_completed`: si false, va a onboarding; si true, va a santuario/gameplay
+- [ ] main.script respeta `tutorial_completed`: si false, va a onboarding; si true, va a santuario/gameplay
 
 ### Referencias
 - GDD sección 10.3 Pantalla 3 (Onboarding)
-- `boot.gd` ya tiene el TODO para el routing
+- main.script maneja el routing al init
 
 ---
 
@@ -236,7 +236,7 @@ Pasar de UI con `_draw()` y placeholders a UI con primer pase de assets reales: 
 - [ ] Botón primary: gradient coral pink, border radius 32px (según wireframes framework)
 - [ ] Botón secondary: blanco con borde coral
 - [ ] Iconos UI: settings, profile, daily, shop, battle pass
-- [ ] Theme único de Godot que se aplica al proyecto (no overrides individuales)
+- [ ] Estilos consistentes definidos en config.lua (colores, tamaños) usados en todos los GUIs
 - [ ] Transición de scenes con slide horizontal 300ms ease-out
 - [ ] Popups con scale-in animation
 
@@ -254,7 +254,7 @@ Pasar de UI con `_draw()` y placeholders a UI con primer pase de assets reales: 
 Implementar la Pantalla 4 (Santuario) que es la pantalla principal del juego. Vista panorámica del arrecife con criaturas rescatadas nadando idle. Botón JUGAR. Acceso a Shop, Battle Pass, Daily, Settings, Profile, etc.
 
 ### Acceptance criteria
-- [ ] Escena `scenes/santuario/santuario.tscn`
+- [ ] Escena `sanctuary/sanctuary.collection + sanctuary.gui`
 - [ ] Background del arrecife con animación leve
 - [ ] Criaturas rescatadas (de SaveManager.creatures_rescued) aparecen nadando idle
 - [ ] HUD top: monedas, gemas, vidas con countdown
@@ -280,7 +280,7 @@ Implementar la Pantalla 4 (Santuario) que es la pantalla principal del juego. Vi
 Mapa serpenteante vertical con scroll que muestra todos los niveles. Niveles desbloqueados navegables. Niveles bloqueados con candado. Niveles ganados con criatura rescatada.
 
 ### Acceptance criteria
-- [ ] Escena `scenes/ui/level_select.tscn`
+- [ ] Escena `(ya implementado como level_map/)`
 - [ ] Mapa serpenteante con nodos
 - [ ] Estados de nodos: completado (verde + criatura), actual (pulsante coral), bloqueado (gris + candado)
 - [ ] Tap en nivel desbloqueado → Pre-level
@@ -303,7 +303,7 @@ Mapa serpenteante vertical con scroll que muestra todos los niveles. Niveles des
 Pantalla intermedia entre level select y gameplay donde el jugador ve la criatura a rescatar, los disparos disponibles, y equipa hasta 3 power-ups antes de empezar.
 
 ### Acceptance criteria
-- [ ] Escena `scenes/ui/pre_level.tscn`
+- [ ] Escena `pre_level/pre_level.collection + pre_level.gui`
 - [ ] Imagen y nombre de la criatura a rescatar (si rescue)
 - [ ] Diálogo característico de la criatura
 - [ ] Counter de disparos disponibles
@@ -327,7 +327,7 @@ Pantalla intermedia entre level select y gameplay donde el jugador ve la criatur
 Sincronizar el save local con Firebase Firestore. Anonymous auth al primer abrir, opción de vincular cuenta (Apple ID / Google / Facebook). Sin esto el jugador pierde progreso al cambiar de dispositivo.
 
 ### Acceptance criteria
-- [ ] Plugin de Firebase para Godot 4 instalado y configurado
+- [ ] Extensión de Firebase para Defold instalado y configurado
 - [ ] `google-services.json` y `GoogleService-Info.plist` agregados (en .gitignore)
 - [ ] Anonymous auth al primer abrir
 - [ ] Auto-sync del save a Firestore cada 60s o on critical events (level win, IAP)
@@ -337,7 +337,7 @@ Sincronizar el save local con Firebase Firestore. Anonymous auth al primer abrir
 
 ### Referencias
 - GDD sección 14.5 (Save format) y 14.6 (Servicios Firebase)
-- `FirebaseManager` autoload con stubs
+- `FirebaseManager` módulo pendiente crear
 
 ---
 
@@ -346,10 +346,10 @@ Sincronizar el save local con Firebase Firestore. Anonymous auth al primer abrir
 **Labels:** `phase-2`, `feat`, `monetization`, `priority-medium`, `size-L`
 
 ### Descripción
-Integrar AdMob (vía plugin Godot) con AppLovin MAX como mediación. Implementar los 5 placements de rewarded ads + 1 interstitial según GDD sección 9.2.
+Integrar AdMob (vía plugin Defold) con AppLovin MAX como mediación. Implementar los 5 placements de rewarded ads + 1 interstitial según GDD sección 9.2.
 
 ### Acceptance criteria
-- [ ] Plugin AdMob de Godot instalado
+- [ ] Plugin AdMob para Defold instalado
 - [ ] AppLovin MAX configurado como mediación
 - [ ] Test ads en development (NUNCA con AdMob real durante desarrollo)
 - [ ] Rewarded placements implementados:
@@ -366,7 +366,7 @@ Integrar AdMob (vía plugin Godot) con AppLovin MAX como mediación. Implementar
 
 ### Referencias
 - GDD sección 9.2 (Anuncios)
-- `AdsManager` autoload con stubs
+- `AdsManager` módulo pendiente crear
 
 ---
 
@@ -396,7 +396,7 @@ Integrar RevenueCat (cross-platform IAP) con los 6 packs de gemas + Starter Pack
 ### Referencias
 - GDD sección 6.5 (IAP packs)
 - GDD sección 10.3 Pantalla 7 (Shop)
-- `IAPManager` autoload con stubs
+- `IAPManager` módulo pendiente crear
 
 ---
 
@@ -693,7 +693,7 @@ Pilar #3 de retención. Conectar via Facebook / Apple ID, friends list, enviar/r
 Script que simula N partidas de un nivel para validar solubilidad y estimar dificultad real. Crítico para el flujo de generación de niveles AI-assisted.
 
 ### Acceptance criteria
-- [ ] Script en Godot que carga un nivel JSON
+- [ ] Script Lua que valida un nivel JSON
 - [ ] Simula 1000 partidas con bot que dispara semi-aleatorio
 - [ ] Reporta tasa de éxito y promedio de disparos óptimos
 - [ ] Ejecutable desde CLI para validar batch de niveles
@@ -734,7 +734,7 @@ Lanzar suscripción mensual tras 3-6 meses post-launch (audiencia base estable).
 En clear_all, si quedan ≥1 burbujas huérfanas que no pueden formar matches con ningún otro color en grid, el nivel se vuelve unwinnable. El smart queue actual tira fallback random cuando no hay colores con 2+ instancias, pero eso no resuelve la unsolvability.
 
 ### Acceptance criteria
-- [ ] Detectar caso "no hay matches posibles" en gameplay.gd
+- [ ] Detectar caso "no hay matches posibles" en gameplay.script
 - [ ] Si detectado, ofrecer un "anti-stuck": mover bubbles aleatorias o regenerar grid
 - [ ] O: nunca generar layouts con bubbles huérfanas (responsabilidad del nivel diseñado)
 

@@ -1,8 +1,66 @@
 # Arte Assets — Especificaciones de Producción
 ## Coralia · myappcube · Diego (solo dev)
 
-**Versión:** 1.0 · **Fecha:** 2026-05-05
+**Versión:** 1.1 · **Fecha:** 2026-05-05
 **Herramientas:** ver tabla al final. Generás item por item en el orden de prioridad.
+
+---
+
+## Checklist maestro de producción
+
+> Marcá `[x]` cuando el asset esté listo e importado en Godot.
+
+### Tipografías
+- [ ] A0 · Quicksand Bold — descargar `.ttf` de Google Fonts → `assets/fonts/`
+- [ ] A0 · Nunito Regular — descargar `.ttf` de Google Fonts → `assets/fonts/`
+- [ ] A0 · Nunito Black — descargar `.ttf` de Google Fonts → `assets/fonts/`
+- [ ] A0 · Theme global en Godot configurado con las 3 fuentes
+
+### Prioridad 1 (sin esto el juego no corre visualmente)
+- [x] A1b · v1/bubble_red-sprite.png (1280×160, 8 frames) — frame 1 = idle, frames 1-8 = pop
+- [ ] A1b · bubble_blue-sprite.png — Kling AI / Midjourney
+- [ ] A1b · bubble_green-sprite.png — Kling AI / Midjourney
+- [ ] A1b · bubble_yellow-sprite.png — Kling AI / Midjourney
+- [ ] A1b · bubble_orange-sprite.png — Kling AI / Midjourney
+- [ ] A1b · bubble_purple-sprite.png — Kling AI / Midjourney
+- [ ] A1b · bubble_rainbow-sprite.png — Kling AI / Midjourney
+- [ ] A2 · Icono de app 1024×1024 — Midjourney + Figma
+- [ ] A2 · Logo Coralia — Midjourney + Figma
+- [ ] A3 · Fondo gameplay capítulo 1 — Midjourney
+
+### Prioridad 2 (MVP con buen look)
+- [ ] B1 · Marina diseño base — Midjourney + Photopea
+- [ ] B2 · Marina idle animation — Kling AI
+- [ ] B2 · Marina victory animation — Kling AI
+- [ ] B2 · Marina defeat animation — Kling AI
+- [ ] B3 · Fondo Santuario zona 1 lit — Midjourney
+- [ ] B3 · Fondo Santuario all dark — Midjourney
+- [ ] B4 · btn_primary — Figma
+- [ ] B4 · btn_secondary — Figma
+- [ ] B4 · btn_ad — Figma
+- [ ] B4 · HUD pills — Figma
+- [ ] B5 · Estrellas (star_filled, star_empty) — Figma
+- [ ] B5 · Iconos HUD (corazón, moneda, gema, timer) — Figma + Midjourney
+- [ ] B5 · Iconos Level Select (lock, check, current) — Figma
+- [ ] B5 · Iconos bottom nav (8 variantes on/off) — Figma + Midjourney
+
+### Prioridad 3 (experiencia completa)
+- [ ] B2 · Marina shoot animation — Kling AI
+- [ ] B2 · Marina rescue animation — Kling AI
+- [ ] B2 · Marina greet animation — Kling AI
+- [ ] C1 · Criaturas hero 1-6 (capítulos 1-3) — Midjourney
+- [ ] C1 · Criaturas hero 7-12 (capítulos 4-6) — Midjourney
+- [ ] C2 · Cañón — Midjourney + Photopea
+- [ ] C3 · Fondos gameplay capítulos 2-6 — Midjourney
+- [ ] C4 · Path decoración mapa — Figma + Midjourney
+- [ ] C5 · Spritesheet bubble pop (opción A: Godot particles / opción B: spritesheet comprado)
+- [ ] C5 · Spritesheet match explosion
+- [ ] C5 · Efecto criatura rescatada
+
+### Prioridad 4 (post-lanzamiento)
+- [ ] D1 · Skins Marina Battle Pass
+- [ ] D2 · Capturas App Store
+- [ ] D3 · Banners de eventos
 
 ---
 
@@ -23,6 +81,54 @@
 2. Editás/recortás en Photopea si hace falta (fondo transparente, ajustes)
 3. Guardás en `assets/sprites/` o `assets/backgrounds/` según corresponda
 4. Importás en Godot
+
+---
+
+## PRIORIDAD 0 — Antes que todo: tipografías
+
+---
+
+### A0 · Tipografías (Quicksand + Nunito)
+
+**Propósito:** fuentes de todo el texto del juego — títulos, botones, HUD, UI general.
+**Herramienta:** Google Fonts (gratis, descarga directa)
+**Tiempo estimado:** 15 minutos
+
+#### Las 3 fuentes requeridas
+
+| Uso en el juego | Fuente | Peso | Archivo |
+|---|---|---|---|
+| Títulos, logo, botones principales | **Quicksand** | Bold (700) | `Quicksand-Bold.ttf` |
+| Texto de UI, subtítulos, descripciones | **Nunito** | Regular (400) | `Nunito-Regular.ttf` |
+| Números HUD (score, tiros, monedas) | **Nunito** | Black (900) | `Nunito-Black.ttf` |
+
+Nunito Black en números porque el peso extra hace que los dígitos sean más legibles en pantallas pequeñas, y el ancho tabular evita que el layout salte al cambiar de `99` a `100`.
+
+#### Cómo descargar
+
+1. Ir a **fonts.google.com**
+2. Buscar "Quicksand" → seleccionar peso **Bold** → Download family
+3. Buscar "Nunito" → seleccionar pesos **Regular** y **Black** → Download family
+4. Extraer los `.ttf` de los ZIPs
+
+#### Dónde guardar en el proyecto
+
+```
+assets/fonts/Quicksand-Bold.ttf
+assets/fonts/Nunito-Regular.ttf
+assets/fonts/Nunito-Black.ttf
+```
+
+#### Configurar el Theme global en Godot
+
+1. En Godot: Project → Project Settings → General → GUI → Theme
+2. Crear un nuevo `Theme` resource en `assets/fonts/coralia_theme.tres`
+3. En el Theme, asignar:
+   - `default_font` → `Nunito-Regular.ttf`
+   - `default_font_size` → 28
+4. Para botones y labels específicos: usar `add_theme_font_override()` con `Quicksand-Bold.ttf` o `Nunito-Black.ttf`
+
+El Theme global se aplica automáticamente a todos los nodos Control del juego sin necesidad de configurar cada uno.
 
 ---
 
@@ -64,7 +170,7 @@ Estilo: esfera con gradiente — punto de luz arriba-izquierda (iluminación con
 | `teal` | Turquesa marino | `#38B2AC` |
 | `pink` | Rosa anémona | `#EC4899` |
 
-#### Archivos a guardar
+#### Archivos a guardar — sprite estático (frame único, para referencia de color)
 ```
 assets/sprites/bubbles/bubble_red.png
 assets/sprites/bubbles/bubble_blue.png
@@ -72,8 +178,62 @@ assets/sprites/bubbles/bubble_green.png
 assets/sprites/bubbles/bubble_yellow.png
 assets/sprites/bubbles/bubble_orange.png
 assets/sprites/bubbles/bubble_purple.png
-assets/sprites/bubbles/bubble_teal.png
-assets/sprites/bubbles/bubble_pink.png
+```
+
+---
+
+### A1b · Spritesheets de burbujas (idle + pop animation)
+
+**Propósito:** animación de cada burbuja en el grid (idle) y al explotar (pop).
+**Referencia:** `docs/other_games_captures/` — la burbuja roja de prueba está en `assets/sprites/bubbles/bubble_red-sprite.png`.
+**Cantidad:** 1 spritesheet por color = 7 archivos (6 colores + rainbow)
+
+#### Especificaciones técnicas
+```
+Canvas por frame:   160 × 160 px
+Frames:             5 de explosión en fila horizontal
+Tamaño total:       800 × 160 px
+Formato:            PNG con fondo transparente
+```
+
+> **Nota de diseño:** el idle "respiración" de la burbuja en el grid se hace con
+> un Tween de escala en Godot (1.0 ↔ 1.06, ease sine, ~0.9s). No necesita
+> sprite — se ve más fluido que cualquier spritesheet de 3 frames.
+> El spritesheet es exclusivamente para el **pop/explosión**.
+
+#### Secuencia de los 5 frames de explosión
+```
+Frame 1 → burbuja empezando a romperse (grietas, deformación)
+Frame 2 → explosión inicial, salpicadura hacia afuera
+Frame 3 → explosión máxima, anillo de gotas
+Frame 4 → gotas dispersándose, perdiendo forma
+Frame 5 → últimas gotitas, casi invisible
+```
+
+#### Paleta de colores por spritesheet
+
+| Archivo | Color base | Hex | Estado |
+|---|---|---|---|
+| `v1/bubble_red-sprite.png` | Coral rojo | `#E85D5D` | - [x] Listo (v1) |
+| `v1/bubble_blue-sprite.png` | Azul océano | `#4A90D9` | - [ ] Pendiente |
+| `v1/bubble_green-sprite.png` | Verde alga | `#5BAD6F` | - [ ] Pendiente |
+| `v1/bubble_yellow-sprite.png` | Amarillo arena | `#F0C040` | - [ ] Pendiente |
+| `v1/bubble_orange-sprite.png` | Naranja coral | `#F07840` | - [ ] Pendiente |
+| `v1/bubble_purple-sprite.png` | Violeta profundo | `#8B5CF6` | - [ ] Pendiente |
+| `v1/bubble_rainbow-sprite.png` | Blanco iridiscente | `#FFFFFF` | - [ ] Pendiente |
+
+#### Flujo de producción (repetir por cada color)
+1. Generar en Kling AI o Midjourney usando el rojo como referencia de estilo
+2. Editar en Photopea: ajustar al color correcto, recortar transparencia
+3. Armar el spritesheet de 8 frames en Free Sprite Sheet Packer
+4. Exportar 1280×160 PNG
+5. Guardar en `assets/sprites/bubbles/bubble_[color]-sprite.png`
+
+#### Prompt Kling AI (adaptar color)
+```
+water bubble [COLOR] sphere, gently wobbling animation loop 3 frames,
+then dramatic pop explosion 5 frames, transparent background,
+game art style, cozy underwater, soft light reflection on top-left
 ```
 
 ---
@@ -345,6 +505,130 @@ assets/ui/panel_popup_bg.png       ← 9-slice
 assets/ui/bottom_nav_bg.png        ← 1080×160px fondo barra nav
 ```
 
+### B5 · Iconos UI (HUD, Level Select, navegación)
+
+**Propósito:** todos los iconos pequeños que aparecen en el HUD, Level Select y barra de navegación.
+**Herramienta:** Figma (vectorial) para los geométricos; Midjourney opcional para los orgánicos.
+
+#### Iconos de estrellas (sistema de 1-2-3 estrellas)
+```
+Tamaño: 64 × 64 px cada uno
+Formato: PNG con fondo transparente
+Variantes: 2 por icono — filled + empty
+```
+
+| Archivo | Descripción | Color |
+|---|---|---|
+| `star_filled.png` | Estrella rellena | Gold `#F0C040` con brillo |
+| `star_empty.png` | Estrella vacía | Gris claro `#B0B0B0` |
+
+**Cómo crear en Figma:**
+1. Polígono de 5 lados con inner radius 0.45, tipo "star"
+2. Filled: gradiente gold `#FFD700` → `#F0A000`, stroke `#C8860C` 2px
+3. Empty: fill `#D0D0D0`, stroke `#B0B0B0` 2px
+4. Exportar 64×64 PNG
+
+---
+
+#### Iconos de HUD (vidas, monedas, gemas)
+```
+Tamaño: 48 × 48 px cada uno
+Formato: PNG con fondo transparente
+```
+
+| Archivo | Descripción | Notas |
+|---|---|---|
+| `icon_heart_full.png` | Corazón lleno (vida activa) | Coral red `#E85D5D` |
+| `icon_heart_empty.png` | Corazón vacío (vida gastada) | Gris `#B0B0B0` |
+| `icon_coin.png` | Moneda de oro | Circle gold, shine arriba-izq |
+| `icon_gem.png` | Gema azul (diamante) | Azul `#4A90D9`, facetas |
+| `icon_shots.png` | Burbuja con número (disparos) | Turquesa `#38B2AC` |
+| `icon_timer.png` | Reloj para regen de vidas | Coral `#F4A69F` |
+
+**Prompt Midjourney para moneda y gema (más detalle que Figma):**
+```
+single gold coin with star, cute kawaii style, cozy game art,
+glossy metallic finish, clean white background, 2D game icon,
+simple design --ar 1:1 --v 6.1 --no text letters numbers
+```
+
+---
+
+#### Iconos de Level Select
+```
+Tamaño: 64 × 64 px
+Formato: PNG con fondo transparente
+```
+
+| Archivo | Descripción | Notas |
+|---|---|---|
+| `icon_lock.png` | Candado (nivel bloqueado) | Gris, estilo minimalista |
+| `icon_check.png` | Check mark (nivel completado) | Verde `#5BAD6F` |
+| `icon_current.png` | Flecha o ola (nivel actual) | Coral, animated feeling |
+| `icon_marina_dot.png` | Marina pequeña en el nodo actual | 80×80 px, chibified |
+
+---
+
+#### Iconos de bottom nav (barra de navegación inferior)
+```
+Tamaño: 56 × 56 px cada uno — estado normal + estado activo (2 variantes)
+Formato: PNG con fondo transparente
+```
+
+| Archivo | Tab | Icono sugerido |
+|---|---|---|
+| `nav_map_off.png` / `nav_map_on.png` | Mapa | Ancla o mapa submarino |
+| `nav_diary_off.png` / `nav_diary_on.png` | Diario | Libro/pergamino |
+| `nav_social_off.png` / `nav_social_on.png` | Social | Burbuja de chat con peces |
+| `nav_shop_off.png` / `nav_shop_on.png` | Tienda | Concha con estrella |
+
+Estado `_off`: outline, gris medio `#9099A5`
+Estado `_on`: filled, coral_pink `#F4A69F` o teal `#38B2AC`
+
+**Prompt Midjourney (todos juntos en una hoja):**
+```
+set of 4 cute underwater app navigation icons: anchor/map, book/diary,
+chat bubble with fish, shell/shop, kawaii style, simple outline icons,
+coral and teal color palette, white background, game UI icons,
+clear silhouettes --ar 4:1 --v 6.1
+```
+
+---
+
+#### Iconos de power-ups (futuro — P3/P4)
+```
+Tamaño: 80 × 80 px
+Reservar los nombres:
+  assets/ui/icons/powerup_fireball.png
+  assets/ui/icons/powerup_bomb.png
+  assets/ui/icons/powerup_rainbow.png
+  assets/ui/icons/powerup_extra_shots.png
+```
+
+**Archivos a guardar (B5)**
+```
+assets/ui/icons/star_filled.png
+assets/ui/icons/star_empty.png
+assets/ui/icons/icon_heart_full.png
+assets/ui/icons/icon_heart_empty.png
+assets/ui/icons/icon_coin.png
+assets/ui/icons/icon_gem.png
+assets/ui/icons/icon_shots.png
+assets/ui/icons/icon_timer.png
+assets/ui/icons/icon_lock.png
+assets/ui/icons/icon_check.png
+assets/ui/icons/icon_current.png
+assets/ui/icons/icon_marina_dot.png
+assets/ui/icons/nav_map_off.png
+assets/ui/icons/nav_map_on.png
+assets/ui/icons/nav_diary_off.png
+assets/ui/icons/nav_diary_on.png
+assets/ui/icons/nav_social_off.png
+assets/ui/icons/nav_social_on.png
+assets/ui/icons/nav_shop_off.png
+assets/ui/icons/nav_shop_on.png
+```
+
 ---
 
 ## PRIORIDAD 3 — Enriquece la experiencia
@@ -486,14 +770,52 @@ assets/sprites/map/decorations_ch1.png    ← sheet de decoraciones cap 1
 
 ---
 
-### C5 · Efectos visuales (Godot puro — sin arte externo)
+### C5 · Efectos visuales — pop de burbujas y explosiones
 
-Estos NO necesitan assets de Midjourney. Se construyen con `CPUParticles2D` en Godot.
+#### Efecto bubble pop — dos opciones
+
+**Opción A — Godot particles (actual placeholder)**
+Se construye con `CPUParticles2D` sin assets externos. Rápido de implementar, pero se ve genérico.
+
+**Opción B — Spritesheet de animación (recomendada para MVP pulido)**
+Un spritesheet con ~8 frames de la burbuja reventando (esfera → deformación → anillo de gotas → dispersión). El estilo de referencia es una burbuja de agua realista que explota, como el ejemplo de referencia guardado en `docs/other_games_captures/`.
+
+```
+Especificaciones del spritesheet:
+Tamaño por frame: 96 × 96 px  (mismo que BUBBLE_DIAMETER)
+Frames: 8 frames en una sola fila horizontal
+Tamaño total del spritesheet: 768 × 96 px
+Formato: PNG con fondo transparente
+Color: blanco/azul neutro — se tinta en Godot con el color de la burbuja (modulate)
+FPS de animación: 18-24 fps (~0.4s total)
+```
+
+**Cómo obtener el spritesheet (en orden de recomendación):**
+
+1. **itch.io** (gratis/barato) — buscar "bubble pop sprite sheet" o "water burst vfx 2d". Hay packs de VFX gratuitos.
+2. **Kenney.nl** (gratis) — kenney.nl/assets, buscar partículas / VFX.
+3. **Unity Asset Store / GameDevMarket** — muchos packs de VFX 2D con licencia para uso en otros engines (~$5-15).
+4. **Kling AI** — generar un video de burbuja reventando → exportar frames → armar spritesheet con Free Sprite Sheet Packer.
+5. **Shutterstock / Adobe Stock** — tienen exactamente el estilo de referencia pero requieren licencia editorial o extended ($10-30 por imagen).
+
+**Cómo usar en Godot:**
+```gdscript
+# AnimatedSprite2D con SpriteFrames que contiene el spritesheet
+# Al hacer pop: instanciar la animación en la posición de la burbuja
+# Usar modulate = bubble_color para tintar el efecto al color correcto
+# Conectar animation_finished → queue_free()
+```
+
+**Archivos a guardar**
+```
+assets/sprites/vfx/bubble_pop_sheet.png      ← spritesheet 768×96
+assets/sprites/vfx/match_explosion_sheet.png ← opcional, para el match highlight
+```
+
+#### Otros efectos (Godot puro — sin assets)
 
 | Efecto | Descripción | Nodo Godot |
 |---|---|---|
-| Burbuja pop | Círculos pequeños explotan hacia afuera | CPUParticles2D radial |
-| Match explosion | Destellos de color en el punto de match | GPUParticles2D |
 | Criatura rescatada | Estrellas y corazones flotando hacia arriba | CPUParticles2D |
 | Combo x5+ | Número grande con glow que aparece y desaparece | AnimationPlayer + Label |
 | Corrientes de agua | Partículas suaves horizontales en fondo | CPUParticles2D drift |
@@ -530,43 +852,6 @@ Generar en Midjourney + texto en Figma
 ```
 
 ---
-
-## Checklist de producción
-
-Marcá cada item al completarlo:
-
-### Prioridad 1 (necesario para build presentable)
-- [ ] A1 · Burbujas de colores (8 sprites) — Figma
-- [ ] A2 · Icono de app 1024×1024 — Midjourney + Figma
-- [ ] A2 · Logo Coralia — Midjourney + Figma
-- [ ] A3 · Fondo gameplay capítulo 1 — Midjourney
-
-### Prioridad 2 (MVP con buen look)
-- [ ] B1 · Marina diseño base — Midjourney + Photopea
-- [ ] B2 · Marina idle animation — Kling AI
-- [ ] B2 · Marina victory animation — Kling AI
-- [ ] B2 · Marina defeat animation — Kling AI
-- [ ] B3 · Fondo Santuario zona 1 lit — Midjourney
-- [ ] B3 · Fondo Santuario all dark — Midjourney
-- [ ] B4 · btn_primary — Figma
-- [ ] B4 · btn_secondary — Figma
-- [ ] B4 · btn_ad — Figma
-- [ ] B4 · HUD pills — Figma
-
-### Prioridad 3 (experiencia completa)
-- [ ] B2 · Marina shoot animation — Kling AI
-- [ ] B2 · Marina rescue animation — Kling AI
-- [ ] B2 · Marina greet animation — Kling AI
-- [ ] C1 · Criaturas hero 1-6 (capítulos 1-3)
-- [ ] C1 · Criaturas hero 7-12 (capítulos 4-6)
-- [ ] C2 · Cañón — Midjourney + Photopea
-- [ ] C3 · Fondos gameplay capítulos 2-6
-- [ ] C4 · Path decoración mapa
-
-### Prioridad 4 (post-lanzamiento)
-- [ ] D1 · Skins Marina Battle Pass
-- [ ] D2 · Capturas App Store
-- [ ] D3 · Banners de eventos
 
 ---
 

@@ -6,6 +6,26 @@ Todos los cambios significativos del proyecto se registran acá. Formato basado 
 
 ### Fase 2 — MVP (en progreso)
 
+#### Chunk G — Sistema de estrellas 1-2-3 (2026-05-05)
+- **Sistema de score final con bonus por eficiencia:** `score_final = score_base + tiros_sobrantes × 10`. Incentiva terminar el nivel en pocos tiros (como "sugar crush" en CC). Constante `BONUS_PER_REMAINING_SHOT = 10` en `gameplay.gd`.
+- **`star_thresholds` en todos los JSONs (001-020):** array `[1★, 2★, 3★]` calibrado por nivel. Los thresholds asumen score final (base + bonus).
+- **HUD en tiempo real:** `HudStarsLabel` centrado bajo los corazones, muestra `☆☆☆` → `★★☆` → `★★★` mientras el score sube durante el nivel (sin bonus todavía — se aplica al ganar).
+- **Pantalla de victoria:** `StarsRow` con 3 etiquetas ★/☆ a 72px. Subtitle muestra desglose `score + bonus = total (récord)` cuando corresponde.
+- **Level Select:** nodos completados muestran `★★☆` en dorado en lugar del score numérico.
+- **`SaveManager`:** añadidos `stars_for_score(score, thresholds)` (static) y `get_best_stars(level_id)`.
+- **GDD §4.2 actualizado:** documenta la decisión de implementar en MVP, mecánica de bonus, y workflow de calibración de niveles. GDD §14.4 actualizado con campo `star_thresholds` en el formato JSON.
+- **Workflow de diseño de niveles:** playtestar 3 veces (experto / normal / usando todos los tiros) → los 3 scores finales son los thresholds.
+
+#### Chunk F — Santuario + Level Select + flujo de navegación (2026-05-05)
+- `boot.gd` — redirige al Santuario al iniciar (antes iba directo a gameplay)
+- `sanctuary.gd` — reescrito con `VBoxContainer + set_anchors_preset(PRESET_FULL_RECT)` para layout correcto en todas las pantallas. Muestra top bar, monedas/gemas/vidas, botón JUGAR, bottom bar.
+- `level_select.gd` — reescrito con mismo patrón VBoxContainer. Scroll invertido (nivel 1 abajo, últimos arriba, igual que CC). `LEVELS_PER_CHAPTER = 15` (estándar de la industria). Zigzag de nodos. Scroll automático al nivel actual.
+- `gameplay.gd` / `gameplay.tscn` — añadidos botón "← Salir" en HUD (mid-level) y en EndScreen. Reglas de vida: salir mid-level = consume vida; game over → reintentar = consume vida; victoria → siguiente = gratis.
+- Reglas documentadas en GDD: `not level_ended` para exit mid-level, `not level_won` para retry (cubre game over sin duplicar al ganar).
+- `docs/03_Wireframes_Coralia.md` — actualizado a v0.3 con `bottom_nav` (4 tabs, 160px), Marina caminando el mapa, distribución de 15 niveles por capítulo.
+- Capturas de referencia de Candy Crush + Bubble Witch en `docs/other_games_captures/` (8 PNG).
+- `docs/08_Arte_Assets_Specs.md` — creado: guía completa de producción de arte para solo dev con AI tools (Midjourney, Kling AI, Figma, Photopea). Priorities 1-4, prompts, especificaciones técnicas, checklist. Incluye sección B5 de iconos UI (estrellas, HUD, Level Select, bottom nav).
+
 #### Chunk E — Más niveles: del 5 al 20 (2026-05-05)
 - 15 nuevos niveles JSON en `data/levels/006-020.json` siguiendo la curva del GDD §2.4
 - **Capítulo 1 (La Cala Apagada) — niveles 6-10:** wrap-up del capítulo con 2-5 colores, 17-32 burbujas. Progresión: arco simple (clear_all, 3 colores) → muro del cangrejo (rescue, wall level #7) → corriente de medusas → islotes (forma archipiélago) → estrella dormida (pirámide 5 filas, chapter finale)
