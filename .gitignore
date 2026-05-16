@@ -24,6 +24,12 @@ desktop.ini
 *.swo
 *~
 
+# Large design source files (guardar en Drive/Dropbox)
+*.psd
+*.ai
+*.sketch
+*.fig
+
 # Build artifacts
 build/
 dist/

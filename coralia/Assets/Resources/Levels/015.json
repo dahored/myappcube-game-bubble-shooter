@@ -1,0 +1,160 @@
+{
+  "id": 15,
+  "chapter": 2,
+  "name": "Tormenta de burbujas",
+  "objective": {
+    "type": "rescue",
+    "creature_id": "pulpo",
+    "creature_position": [
+      2,
+      4
+    ]
+  },
+  "max_shots": 26,
+  "available_colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green",
+    "purple"
+  ],
+  "rainbow_chance": 0.0,
+  "bubbles": [
+    [
+      0,
+      0,
+      "red"
+    ],
+    [
+      1,
+      0,
+      "green"
+    ],
+    [
+      2,
+      0,
+      "yellow"
+    ],
+    [
+      3,
+      0,
+      "purple"
+    ],
+    [
+      4,
+      0,
+      "blue"
+    ],
+    [
+      5,
+      0,
+      "red"
+    ],
+    [
+      6,
+      0,
+      "green"
+    ],
+    [
+      0,
+      1,
+      "purple"
+    ],
+    [
+      1,
+      1,
+      "blue"
+    ],
+    [
+      2,
+      1,
+      "red"
+    ],
+    [
+      3,
+      1,
+      "green"
+    ],
+    [
+      4,
+      1,
+      "yellow"
+    ],
+    [
+      5,
+      1,
+      "purple"
+    ],
+    [
+      0,
+      2,
+      "green"
+    ],
+    [
+      1,
+      2,
+      "yellow"
+    ],
+    [
+      2,
+      2,
+      "purple"
+    ],
+    [
+      3,
+      2,
+      "blue"
+    ],
+    [
+      4,
+      2,
+      "red"
+    ],
+    [
+      5,
+      2,
+      "green"
+    ],
+    [
+      1,
+      3,
+      "red"
+    ],
+    [
+      2,
+      3,
+      "green"
+    ],
+    [
+      3,
+      3,
+      "yellow"
+    ],
+    [
+      4,
+      3,
+      "purple"
+    ],
+    [
+      1,
+      4,
+      "purple"
+    ],
+    [
+      2,
+      4,
+      "red"
+    ],
+    [
+      3,
+      4,
+      "blue"
+    ]
+  ],
+  "obstacles": [],
+  "star_thresholds": [
+    360,
+    850,
+    1700
+  ]
+}

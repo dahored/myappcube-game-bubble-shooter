@@ -1,0 +1,161 @@
+{
+  "id": 5,
+  "chapter": 1,
+  "name": "La cueva de Lumi",
+  "objective": {
+    "type": "rescue",
+    "creature_id": "lumi",
+    "creature_position": [
+      3,
+      2
+    ]
+  },
+  "max_shots": 30,
+  "available_colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green",
+    "purple",
+    "orange"
+  ],
+  "rainbow_chance": 0.0,
+  "bubbles": [
+    [
+      0,
+      0,
+      "yellow"
+    ],
+    [
+      1,
+      0,
+      "green"
+    ],
+    [
+      2,
+      0,
+      "orange"
+    ],
+    [
+      3,
+      0,
+      "purple"
+    ],
+    [
+      4,
+      0,
+      "blue"
+    ],
+    [
+      5,
+      0,
+      "yellow"
+    ],
+    [
+      6,
+      0,
+      "green"
+    ],
+    [
+      0,
+      1,
+      "green"
+    ],
+    [
+      1,
+      1,
+      "blue"
+    ],
+    [
+      2,
+      1,
+      "red"
+    ],
+    [
+      3,
+      1,
+      "purple"
+    ],
+    [
+      4,
+      1,
+      "green"
+    ],
+    [
+      5,
+      1,
+      "blue"
+    ],
+    [
+      0,
+      2,
+      "red"
+    ],
+    [
+      1,
+      2,
+      "green"
+    ],
+    [
+      2,
+      2,
+      "orange"
+    ],
+    [
+      3,
+      2,
+      "purple"
+    ],
+    [
+      4,
+      2,
+      "yellow"
+    ],
+    [
+      5,
+      2,
+      "red"
+    ],
+    [
+      6,
+      2,
+      "blue"
+    ],
+    [
+      0,
+      3,
+      "blue"
+    ],
+    [
+      1,
+      3,
+      "yellow"
+    ],
+    [
+      2,
+      3,
+      "green"
+    ],
+    [
+      3,
+      3,
+      "purple"
+    ],
+    [
+      4,
+      3,
+      "yellow"
+    ],
+    [
+      5,
+      3,
+      "green"
+    ]
+  ],
+  "obstacles": [],
+  "star_thresholds": [
+    100,
+    220,
+    440
+  ]
+}

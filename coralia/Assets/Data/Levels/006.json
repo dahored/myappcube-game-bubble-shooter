@@ -1,0 +1,108 @@
+{
+  "id": 6,
+  "chapter": 1,
+  "name": "El arco de coral",
+  "objective": {
+    "type": "clear_all"
+  },
+  "max_shots": 22,
+  "available_colors": [
+    "red",
+    "blue",
+    "yellow"
+  ],
+  "rainbow_chance": 0.0,
+  "bubbles": [
+    [
+      0,
+      0,
+      "red"
+    ],
+    [
+      1,
+      0,
+      "blue"
+    ],
+    [
+      2,
+      0,
+      "yellow"
+    ],
+    [
+      3,
+      0,
+      "red"
+    ],
+    [
+      4,
+      0,
+      "blue"
+    ],
+    [
+      5,
+      0,
+      "yellow"
+    ],
+    [
+      6,
+      0,
+      "red"
+    ],
+    [
+      0,
+      1,
+      "blue"
+    ],
+    [
+      1,
+      1,
+      "yellow"
+    ],
+    [
+      2,
+      1,
+      "red"
+    ],
+    [
+      3,
+      1,
+      "blue"
+    ],
+    [
+      4,
+      1,
+      "yellow"
+    ],
+    [
+      5,
+      1,
+      "red"
+    ],
+    [
+      1,
+      2,
+      "yellow"
+    ],
+    [
+      2,
+      2,
+      "blue"
+    ],
+    [
+      3,
+      2,
+      "red"
+    ],
+    [
+      4,
+      2,
+      "blue"
+    ]
+  ],
+  "obstacles": [],
+  "star_thresholds": [
+    120,
+    260,
+    520
+  ]
+}

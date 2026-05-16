@@ -1,0 +1,21 @@
+# Unity .gitattributes — sin LFS
+
+# Unity source files
+*.cginc                 text
+*.cs                    text diff=csharp
+*.shader                text
+
+# Unity JSON files
+*.asmdef                eol=lf linguist-language=json
+*.asmref                eol=lf linguist-language=json
+*.inputactions          eol=lf linguist-language=json
+*.shadergraph           eol=lf linguist-language=json
+
+# Unity YAML files
+*.anim                  merge=unityyamlmerge eol=lf linguist-language=yaml
+*.asset                 merge=unityyamlmerge eol=lf linguist-language=yaml
+*.controller            merge=unityyamlmerge eol=lf linguist-language=yaml
+*.mat                   merge=unityyamlmerge eol=lf linguist-language=yaml
+*.meta                  merge=unityyamlmerge eol=lf linguist-language=yaml
+*.prefab                merge=unityyamlmerge eol=lf linguist-language=yaml
+*.unity                 merge=unityyamlmerge eol=lf linguist-language=yaml
