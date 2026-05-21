@@ -6,13 +6,16 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SplashStudio.unity
+    path: Assets/Scenes/Splash/SplashStudio.unity
     guid: 455b0745463a5480695d8d6f8d500fea
   - enabled: 1
-    path: Assets/Scenes/SplashGame.unity
+    path: Assets/Scenes/Splash/SplashGame.unity
     guid: 28ac08ceabdc54b90815b6e003d75a3a
   - enabled: 1
-    path: Assets/Scenes/LevelMap.unity
+    path: Assets/Scenes/Home/HomeGame.unity
+    guid: a588036b6c70f4a39b3a9bc4c3fca325
+  - enabled: 1
+    path: Assets/Scenes/Game/LevelMap.unity
     guid: b28ff5f8f67b248878dd5341a74d8123
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

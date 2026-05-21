@@ -23,7 +23,7 @@ public class SplashGame : MonoBehaviour
 
     IEnumerator LoadNextScene()
     {
-        var op = SceneManager.LoadSceneAsync(SceneLoader.LEVEL_MAP);
+        var op = SceneManager.LoadSceneAsync(SceneLoader.HOME_GAME);
         op.allowSceneActivation = false;
 
         float elapsed = 0f;
@@ -43,6 +43,7 @@ public class SplashGame : MonoBehaviour
         fillImage.fillAmount = 1f;
         if (percentLabel) percentLabel.text = "100%";
         yield return new WaitForSeconds(0.2f);
+        SceneTransition.Enabled = true;
         SceneTransition.FadeOutThen(() => op.allowSceneActivation = true);
     }
 
