@@ -9,6 +9,7 @@ public static class SceneLoader
 
     // HOME SCREENS
     public const string HOME_GAME       = "HomeGame";
+    public const string SETTINGS        = "Settings";
 
     // GAME SCREENS
     public const string LEVEL_MAP      = "LevelMap";

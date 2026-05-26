@@ -1,4 +1,5 @@
 keys,es,en,it,fr,de,pt
+ui.label,Label,Label,Label,Label,Label,Label
 ui.button.play,Jugar,Play,Gioca,Jouer,Spielen,Jogar
 ui.button.continue,Continuar,Continue,Continua,Continuer,Weiter,Continuar
 ui.button.cancel,Cancelar,Cancel,Annulla,Annuler,Abbrechen,Cancelar
@@ -16,9 +17,8 @@ ui.settings.section.preferences,Preferencias del juego,Game preferences,Preferen
 ui.settings.section.account,Cuenta y asistencia,Account & support,Account e supporto,Compte et assistance,Konto & Hilfe,Conta e suporte
 ui.settings.section.community,Comunidad,Community,Comunità,Communauté,Community,Comunidade
 ui.settings.section.legal,Legal,Legal,Legale,Légal,Rechtliches,Legal
-ui.settings.audio.game,Sonidos del juego,Game sounds,Suoni del gioco,Sons du jeu,Spielsounds,Sons do jogo
-ui.settings.audio.ui,Efectos interfaz,UI effects,Effetti interfaccia,Effets d'interface,UI-Effekte,Efeitos da interface
-ui.settings.audio.pop,Sonidos pop,Pop sounds,Suoni pop,Sons pop,Pop-Sounds,Sons pop
+ui.settings.audio.music,Música,Music,Musica,Musique,Musik,Música
+ui.settings.audio.sound,Sonidos,Sounds,Suoni,Sons,Sounds,Sons
 ui.settings.vibration,Vibración,Vibration,Vibrazione,Vibration,Vibration,Vibração
 ui.settings.profile,Perfil,Profile,Profilo,Profil,Profil,Perfil
 ui.settings.subscription,Suscripción,Subscription,Abbonamento,Abonnement,Abo,Assinatura

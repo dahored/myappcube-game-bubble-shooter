@@ -18,10 +18,10 @@ public class SceneTransition : MonoBehaviour
     const float FADE_OUT_DURATION = 0.3f;
     const int   BUBBLE_COUNT_BACK  = 60;
     const int   BUBBLE_COUNT_FRONT = 50;
-    const float SIZE_BACK_MIN  = 150f;
-    const float SIZE_BACK_MAX  = 250f;
-    const float SIZE_FRONT_MIN = 200f;
-    const float SIZE_FRONT_MAX = 300f;
+    const float SIZE_BACK_MIN  = 200f;
+    const float SIZE_BACK_MAX  = 300f;
+    const float SIZE_FRONT_MIN = 250f;
+    const float SIZE_FRONT_MAX = 350f;
     const float SPEED_BACK     = 1.4f; // multiplicador — capa lejana, más lenta
     const float SPEED_FRONT    = 2.0f; // multiplicador — capa cercana, más rápida
     const float BUBBLE_SCREENS = 2f;   // alto del container en pantallas (densidad de burbujas)
@@ -232,5 +232,6 @@ public class SceneTransition : MonoBehaviour
         }
         c.a = to;
         _overlay.color = c;
+        _overlay.raycastTarget = to > 0f;
     }
 }

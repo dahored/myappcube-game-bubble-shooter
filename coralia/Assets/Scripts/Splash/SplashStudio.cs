@@ -8,6 +8,12 @@ public class SplashStudio : MonoBehaviour
 
     bool _done;
 
+    void Awake()
+    {
+        Application.targetFrameRate = 60;
+        QualitySettings.vSyncCount  = 0;
+    }
+
     void Start() => StartCoroutine(WaitAndGoNext());
 
     void Update()

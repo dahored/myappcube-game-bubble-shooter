@@ -1,3 +1,79 @@
-key,es,en,it,fr,de,pt
-loading,Cargando,Loading,Caricamento,Chargement,Laden,Carregando
-tap_to_skip,Toca para omitir,Tap to skip,Tocca per saltare,Appuyer pour ignorer,Zum Überspringen tippen,Toque para pular
+keys,es,en,it,fr,de,pt
+ui.label,Label,Label,Label,Label,Label,Label
+ui.button.play,Jugar,Play,Gioca,Jouer,Spielen,Jogar
+ui.button.continue,Continuar,Continue,Continua,Continuer,Weiter,Continuar
+ui.button.cancel,Cancelar,Cancel,Annulla,Annuler,Abbrechen,Cancelar
+ui.button.confirm,Confirmar,Confirm,Conferma,Confirmer,Bestätigen,Confirmar
+ui.button.close,Cerrar,Close,Chiudi,Fermer,Schließen,Fechar
+ui.button.retry,Reintentar,Retry,Riprova,Réessayer,Erneut versuchen,Tentar de novo
+ui.button.exit,Salir,Exit,Esci,Quitter,Beenden,Sair
+ui.button.next,Siguiente,Next,Avanti,Suivant,Weiter,Próximo
+ui.button.skip,Saltar,Skip,Salta,Passer,Überspringen,Pular
+ui.button.buy,Comprar,Buy,Acquista,Acheter,Kaufen,Comprar
+ui.button.claim,Reclamar,Claim,Riscatta,Réclamer,Einlösen,Resgatar
+ui.button.share,Compartir,Share,Condividi,Partager,Teilen,Compartilhar
+ui.settings.title,Ajustes,Settings,Impostazioni,Paramètres,Einstellungen,Ajustes
+ui.settings.section.preferences,Preferencias del juego,Game preferences,Preferenze di gioco,Préférences du jeu,Spieleinstellungen,Preferências do jogo
+ui.settings.section.account,Cuenta y asistencia,Account & support,Account e supporto,Compte et assistance,Konto & Hilfe,Conta e suporte
+ui.settings.section.community,Comunidad,Community,Comunità,Communauté,Community,Comunidade
+ui.settings.section.legal,Legal,Legal,Legale,Légal,Rechtliches,Legal
+ui.settings.audio.music,Música,Music,Musica,Musique,Musik,Música
+ui.settings.audio.sound,Sonidos,Sounds,Suoni,Sons,Sounds,Sons
+ui.settings.vibration,Vibración,Vibration,Vibrazione,Vibration,Vibration,Vibração
+ui.settings.profile,Perfil,Profile,Profilo,Profil,Profil,Perfil
+ui.settings.subscription,Suscripción,Subscription,Abbonamento,Abonnement,Abo,Assinatura
+ui.settings.howtoplay,Cómo jugar,How to play,Come si gioca,Comment jouer,Spielanleitung,Como jogar
+ui.settings.language,Idioma,Language,Lingua,Langue,Sprache,Idioma
+ui.settings.theme,Tema,Theme,Tema,Thème,Design,Tema
+ui.settings.theme.light,Modo Arrecife,Reef Mode,Modalità Barriera,Mode Récif,Riffmodus,Modo Recife
+ui.settings.theme.dark,Modo Profundidades,Deep Mode,Modalità Abisso,Mode Abysse,Tiefenmodus,Modo Profundezas
+ui.settings.theme.auto,Automático,Automatic,Automatico,Automatique,Automatisch,Automático
+ui.settings.help,Ayuda,Help,Aiuto,Aide,Hilfe,Ajuda
+ui.settings.restore_purchases,Restaurar compras,Restore purchases,Ripristina acquisti,Restaurer les achats,Käufe wiederherstellen,Restaurar compras
+ui.settings.community.rate,Valorar la app,Rate the app,Valuta l'app,Noter l'app,App bewerten,Avaliar o app
+ui.settings.community.share,Compartir,Share,Condividi,Partager,Teilen,Compartilhar
+ui.settings.community.social,Redes sociales,Social media,Social media,Réseaux sociaux,Soziale Medien,Redes sociais
+ui.settings.community.website,Sitio web,Website,Sito web,Site web,Webseite,Site
+ui.settings.legal.privacy,Política de privacidad,Privacy policy,Privacy policy,Politique de confidentialité,Datenschutz,Política de privacidade
+ui.settings.legal.terms,Condiciones del servicio,Terms of service,Termini di servizio,Conditions d'utilisation,AGB,Termos de serviço
+ui.gameplay.shots_remaining,Disparos,Shots,Colpi,Tirs,Schüsse,Tiros
+ui.gameplay.score,Puntuación,Score,Punteggio,Score,Punkte,Pontuação
+ui.gameplay.combo,Combo,Combo,Combo,Combo,Combo,Combo
+ui.gameplay.objective.clear_all,Limpiar todas las burbujas,Clear all bubbles,Elimina tutte le bolle,Éliminer toutes les bulles,Alle Blasen entfernen,Limpar todas as bolhas
+ui.gameplay.objective.rescue,Rescatar a {creature},Rescue {creature},Salva {creature},Sauver {creature},Rette {creature},Resgatar {creature}
+ui.gameplay.level_label,Nivel {id} — {name},Level {id} — {name},Livello {id} — {name},Niveau {id} — {name},Level {id} — {name},Nível {id} — {name}
+ui.gameplay.level_label_with_best,Nivel {id} — {name} · Mejor: {best},Level {id} — {name} · Best: {best},Livello {id} — {name} · Miglior: {best},Niveau {id} — {name} · Meilleur : {best},Level {id} — {name} · Beste: {best},Nível {id} — {name} · Melhor: {best}
+ui.victory.subtitle.new_record,¡Nuevo récord! Puntuación: {score} (anterior: {best}),New record! Score: {score} (previous: {best}),Nuovo record! Punteggio: {score} (precedente: {best}),Nouveau record ! Score : {score} (précédent : {best}),Neuer Rekord! Punkte: {score} (vorher: {best}),Novo recorde! Pontuação: {score} (anterior: {best})
+ui.victory.subtitle.score,Puntuación: {score} (mejor: {best}),Score: {score} (best: {best}),Punteggio: {score} (miglior: {best}),Score : {score} (meilleur : {best}),Punkte: {score} (beste: {best}),Pontuação: {score} (melhor: {best})
+ui.gameover.title,Sin disparos,Out of shots,Senza colpi,Plus de tirs,Keine Schüsse,Sem tiros
+ui.gameover.subtitle,Puntuación: {score},Score: {score},Punteggio: {score},Score : {score},Punkte: {score},Pontuação: {score}
+ui.button.next_level,Siguiente nivel →,Next level →,Prossimo livello →,Niveau suivant →,Nächstes Level →,Próximo nível →
+ui.gameover.continue_ad,+5 disparos (anuncio),+5 shots (ad),+5 colpi (annuncio),+5 tirs (pub),+5 Schüsse (Werbung),+5 tiros (anúncio)
+ui.gameover.continue_gems,+5 disparos ({gems} gemas),+5 shots ({gems} gems),+5 colpi ({gems} gemme),+5 tirs ({gems} gemmes),+5 Schüsse ({gems} Edelsteine),+5 tiros ({gems} gemas)
+ui.gameover.accept,Aceptar,Accept,Accetta,Accepter,Akzeptieren,Aceitar
+ui.victory.title,¡Lo lograste!,You did it!,Ce l'hai fatta!,Bien joué !,Geschafft!,Você conseguiu!
+ui.victory.creature_rescued,Criatura rescatada,Creature rescued,Creatura salvata,Créature sauvée,Kreatur gerettet,Criatura resgatada
+ui.daily.title,Recompensa diaria,Daily reward,Ricompensa giornaliera,Récompense quotidienne,Tägliche Belohnung,Recompensa diária
+ui.daily.day,Día {n} de 7,Day {n} of 7,Giorno {n} di 7,Jour {n} sur 7,Tag {n} von 7,Dia {n} de 7
+ui.daily.next_in,Próximo regalo en,Next gift in,Prossimo regalo tra,Prochain cadeau dans,Nächstes Geschenk in,Próximo presente em
+ui.battlepass.title,Pase de Batalla,Battle Pass,Pass Battaglia,Pass de Combat,Battle Pass,Passe de Batalha
+ui.battlepass.season,Temporada {n},Season {n},Stagione {n},Saison {n},Saison {n},Temporada {n}
+ui.battlepass.tier,Nivel {n},Tier {n},Livello {n},Palier {n},Stufe {n},Nível {n}
+ui.battlepass.buy_premium,Comprar Premium,Buy Premium,Acquista Premium,Acheter Premium,Premium kaufen,Comprar Premium
+ui.battlepass.days_left,{days} días restantes,{days} days left,{days} giorni rimanenti,{days} jours restants,{days} Tage übrig,{days} dias restantes
+splash.tagline,Juegos para todos los días,Games for every day,Giochi per ogni giorno,Des jeux pour chaque jour,Spiele für jeden Tag,Jogos para todos os dias
+splash.loading,Cargando...,Loading...,Caricamento...,Chargement...,Lädt...,Carregando...
+splash.error,Error al cargar — toca para reintentar,Loading error — tap to retry,Errore — tocca per riprovare,Erreur — touchez pour réessayer,Fehler — zum Erneutversuchen tippen,Erro — toque para tentar novamente
+ui.sanctuary.play,JUGAR,PLAY,GIOCA,JOUER,SPIELEN,JOGAR
+ui.sanctuary.creatures_rescued,{n} criaturas rescatadas,{n} creatures rescued,{n} creature salvate,{n} créatures sauvées,{n} Kreaturen gerettet,{n} criaturas resgatadas
+ui.sanctuary.streak,{n} días de racha 🔥,{n} day streak 🔥,{n} giorni di serie 🔥,{n} jours de série 🔥,{n} Tage Serie 🔥,{n} dias de sequência 🔥
+ui.sanctuary.shop,Shop,Shop,Shop,Shop,Shop,Shop
+ui.sanctuary.battle_pass,Pase,Pass,Pass,Pass,Pass,Passe
+ui.sanctuary.daily,Diario,Daily,Giornale,Quotidien,Täglich,Diário
+ui.sanctuary.passive_collected,+{coins} monedas del santuario,+{coins} coins from sanctuary,+{coins} monete dal santuario,+{coins} pièces du sanctuaire,+{coins} Münzen aus dem Heiligtum,+{coins} moedas do santuário
+ui.level_select.title,Selecciona nivel,Select Level,Seleziona livello,Choisir le niveau,Level wählen,Selecionar nível
+ui.level_select.chapter,Capítulo {n}: {name},Chapter {n}: {name},Capitolo {n}: {name},Chapitre {n} : {name},Kapitel {n}: {name},Capítulo {n}: {name}
+ui.level_select.locked,Completa el anterior,Complete previous,Completa il precedente,Termine le précédent,Schließe das vorherige ab,Completa o anterior
+ui.level_select.best,Mejor: {score},Best: {score},Migliore: {score},Meilleur: {score},Beste: {score},Melhor: {score}
+ui.level_select.play_again,Volver a jugar,Play again,Rigioca,Rejouer,Nochmal spielen,Jogar novamente
+ui.gameplay.exit_sanctuary,← Salir,← Exit,← Esci,← Quitter,← Verlassen,← Sair

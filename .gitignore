@@ -1,6 +1,25 @@
-# Godot 4 .gitignore for Coralia
+# Coralia — .gitignore
 
-# Godot-specific ignores
+# Unity builds (large binaries)
+builds/
+coralia/Assets/_Recovery/
+
+# Unity generated
+coralia/[Ll]ibrary/
+coralia/[Tt]emp/
+coralia/[Oo]bj/
+coralia/[Bb]uild/
+coralia/[Bb]uilds/
+coralia/Logs/
+coralia/UserSettings/
+coralia/*.suo
+coralia/*.user
+coralia/*.pidb
+coralia/*.booproj
+coralia/sysinfo.txt
+coralia/crashlytics-build.properties
+
+# Godot (legacy)
 .godot/
 .import/
 export.cfg

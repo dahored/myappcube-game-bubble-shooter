@@ -10,9 +10,6 @@ public class LevelMapController : MonoBehaviour
     [SerializeField] Transform contentRoot;
     [SerializeField] GameObject levelButtonPrefab;
 
-    [Header("Grid")]
-    [SerializeField] int columns = 4;
-
     static readonly Color C_DONE   = new Color(0.18f, 0.72f, 0.65f);
     static readonly Color C_OPEN   = new Color(0.25f, 0.52f, 0.88f);
     static readonly Color C_LOCKED = new Color(0.18f, 0.22f, 0.32f);
@@ -93,8 +90,6 @@ public class LevelMapController : MonoBehaviour
         PlayerPrefs.SetInt("selected_level", levelId);
         SceneLoader.GoTo(SceneLoader.GAMEPLAY);
     }
-
-    void AddChapterHeader(string text) { }  // overload placeholder
 
     List<LevelData> LoadAllLevels()
     {
