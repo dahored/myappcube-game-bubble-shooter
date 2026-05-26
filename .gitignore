@@ -3,6 +3,9 @@
 # Unity builds (large binaries)
 builds/
 coralia/Assets/_Recovery/
+coralia/Assets/_Recovery.meta
+coralia/Assets/Sprites/Temp/
+coralia/Assets/Sprites/Temp.meta
 
 # Unity generated
 coralia/[Ll]ibrary/
