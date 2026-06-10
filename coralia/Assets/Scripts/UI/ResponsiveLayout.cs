@@ -18,9 +18,11 @@ public class ResponsiveLayout : MonoBehaviour
     [Header("Tablet (aspect >= 0.6)")]
     [SerializeField] LayoutPreset[] tabletPresets;
 
-    void Awake()
+    System.Collections.IEnumerator Start()
     {
-        bool isTablet = (float)Screen.width / Screen.height >= 0.6f;
+        yield return null; // wait one frame — Device Simulator screen size settles after scene activation
+        float ratio = (float)Screen.width / Screen.height;
+        bool isTablet = ratio >= 0.6f;
         var presets = isTablet ? tabletPresets : phonePresets;
 
         for (int i = 0; i < targets.Length; i++)
