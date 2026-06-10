@@ -19,6 +19,8 @@ ui.settings.section.community,Comunidad,Community,Comunità,Communauté,Communit
 ui.settings.section.legal,Legal,Legal,Legale,Légal,Rechtliches,Legal
 ui.settings.audio.music,Música,Music,Musica,Musique,Musik,Música
 ui.settings.audio.sound,Sonidos,Sounds,Suoni,Sons,Sounds,Sons
+ui.settings.audio.music_volume,Volumen Música,Music Volume,Volume Musica,Volume Musique,Musiklautstärke,Volume Música
+ui.settings.audio.sound_volume,Volumen Sonidos,Sound Volume,Volume Suoni,Volume Sons,Lautstärke Sounds,Volume Sons
 ui.settings.vibration,Vibración,Vibration,Vibrazione,Vibration,Vibration,Vibração
 ui.settings.profile,Perfil,Profile,Profilo,Profil,Profil,Perfil
 ui.settings.subscription,Suscripción,Subscription,Abbonamento,Abonnement,Abo,Assinatura

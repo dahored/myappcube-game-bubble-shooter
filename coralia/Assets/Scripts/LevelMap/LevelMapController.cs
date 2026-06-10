@@ -14,7 +14,11 @@ public class LevelMapController : MonoBehaviour
     static readonly Color C_OPEN   = new Color(0.25f, 0.52f, 0.88f);
     static readonly Color C_LOCKED = new Color(0.18f, 0.22f, 0.32f);
 
-    void Start() => BuildMap();
+    void Start()
+    {
+        AudioManager.Instance?.PlayLobbyMusic();
+        BuildMap();
+    }
 
     void BuildMap()
     {

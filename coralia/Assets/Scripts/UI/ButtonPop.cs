@@ -26,20 +26,10 @@ public class ButtonPop : MonoBehaviour
 
     void Pop()
     {
-        if (clickSound && SaveManager.SoundEnabled) PlayUI(clickSound);
+        if (clickSound && SaveManager.SoundEnabled) AudioManager.Instance?.PlayUi(clickSound);
         if (haptic && SaveManager.Vibration)
             MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
         StartCoroutine(DoPop());
-    }
-
-    static void PlayUI(AudioClip clip)
-    {
-        var go  = new GameObject("UISound");
-        DontDestroyOnLoad(go);
-        var src = go.AddComponent<AudioSource>();
-        src.clip = clip;
-        src.Play();
-        Destroy(go, clip.length + 0.1f);
     }
 
     IEnumerator DoPop()

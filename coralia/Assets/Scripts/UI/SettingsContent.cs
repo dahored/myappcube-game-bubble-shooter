@@ -2,6 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Solo.MOST_IN_ONE;
+using System.Linq;
 
 public class SettingsContent : MonoBehaviour
 {
@@ -9,6 +10,8 @@ public class SettingsContent : MonoBehaviour
     [SerializeField] Slider gameSlider;
     [SerializeField] Slider uiSlider;
     [SerializeField] Slider popSlider;
+    [SerializeField] GameObject musicSlider;
+    [SerializeField] GameObject soundSlider;
 
     [Header("Toggles")]
     [SerializeField] SettingsToggle musicToggle;
@@ -42,7 +45,14 @@ public class SettingsContent : MonoBehaviour
     [SerializeField] string socialUrl;
     [SerializeField] string websiteUrl;
 
-    static readonly string[] LangCodes = { "es", "en", "it", "fr", "de", "pt" };
+    static readonly (string code, string name)[] Languages = {
+        ("es", "Español"),
+        ("en", "English"),
+        ("it", "Italiano"),
+        ("fr", "Français"),
+        ("de", "Deutsch"),
+        ("pt", "Português"),
+    };
 
     void Awake()
     {
@@ -76,19 +86,23 @@ public class SettingsContent : MonoBehaviour
         if (musicToggle)
         {
             musicToggle.Value = SaveManager.MusicEnabled;
+            if (musicSlider) musicSlider.SetActive(SaveManager.MusicEnabled);
             musicToggle.AddListener(v =>
             {
                 SaveManager.MusicEnabled = v;
                 AudioManager.Instance?.SetMusicEnabled(v);
+                if (musicSlider) musicSlider.SetActive(v);
             });
         }
         if (soundToggle)
         {
             soundToggle.Value = SaveManager.SoundEnabled;
+            if (soundSlider) soundSlider.SetActive(SaveManager.SoundEnabled);
             soundToggle.AddListener(v =>
             {
                 SaveManager.SoundEnabled = v;
                 AudioManager.Instance?.SetSoundEnabled(v);
+                if (soundSlider) soundSlider.SetActive(v);
             });
         }
         if (vibrationToggle)
@@ -105,11 +119,13 @@ public class SettingsContent : MonoBehaviour
     void SetupLanguage()
     {
         if (!languageDropdown) return;
-        int current = System.Array.IndexOf(LangCodes, SaveManager.Language);
+        languageDropdown.AddOptions(Languages.Select(l => l.name).ToList());
+        int current = System.Array.FindIndex(Languages, l => l.code == SaveManager.Language);
+
         languageDropdown.value = current < 0 ? 1 : current;
         languageDropdown.onValueChanged.AddListener(i =>
         {
-            SaveManager.Language = LangCodes[i];
+            SaveManager.Language = Languages[i].code;
             LocaleManager.Reload();
         });
     }

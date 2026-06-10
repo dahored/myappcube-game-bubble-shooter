@@ -8,6 +8,7 @@ public class HomeGame : MonoBehaviour
     void Start()
     {
         if (playButton) playButton.onClick.AddListener(OnPlay);
+        AudioManager.Instance?.PlayLobbyMusic();
     }
 
     void OnPlay() => SceneLoader.GoTo(SceneLoader.LEVEL_MAP);

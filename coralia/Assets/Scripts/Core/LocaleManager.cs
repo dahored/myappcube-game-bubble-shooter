@@ -5,6 +5,7 @@ public static class LocaleManager
 {
     static readonly Dictionary<string, string> _keys = new();
     static bool _loaded;
+    public static event System.Action OnLanguageChanged;
 
     public static string Get(string key)
     {
@@ -34,5 +35,8 @@ public static class LocaleManager
         }
     }
 
-    public static void Reload() { _loaded = false; _keys.Clear(); Load(); }
+    public static void Reload() { 
+        _loaded = false; _keys.Clear(); Load(); 
+        OnLanguageChanged?.Invoke();
+    }
 }
