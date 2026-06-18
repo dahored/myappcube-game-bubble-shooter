@@ -91,4 +91,12 @@ public class AudioManager : MonoBehaviour
         if (!src || clip == null) return;
         src.PlayOneShot(clip);
     }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void Bootstrap()
+    {
+        var prefab = Resources.Load<GameObject>("Audio/AudioManager");
+        Debug.Log($"[AudioManager] Bootstrap — prefab: {prefab}");
+        if (prefab) Instantiate(prefab);
+    }
 }
