@@ -1,18 +1,20 @@
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 
 public class LevelMapController : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] Transform contentRoot;
-    [SerializeField] GameObject levelButtonPrefab;
+    [SerializeField] GameObject levelNodePrefab;
+    [SerializeField] GameObject pearlPrefab;
 
-    static readonly Color C_DONE   = new Color(0.18f, 0.72f, 0.65f);
-    static readonly Color C_OPEN   = new Color(0.25f, 0.52f, 0.88f);
-    static readonly Color C_LOCKED = new Color(0.18f, 0.22f, 0.32f);
+    const float NODE_SPACING    =  300f; // distancia vertical entre nodos
+    const float PEARL_SPACING   =  100f; // distancia entre cada perla del path
+    const float PEARL_SIZE      =   45f; // tamaño de cada perla (width y height)
+    const float PEARL_TANGENT   = 0.85f; // tangent de curvatura de las perlas
+    const float X_LEFT          =  400f; // columna izquierda del zigzag
+    const float X_RIGHT         =  600f; // columna derecha del zigzag
+    const float BOTTOM_PADDING  =  400f; // espacio bajo el primer nodo para que no quede cortado
 
     void Start()
     {
@@ -23,70 +25,85 @@ public class LevelMapController : MonoBehaviour
     void BuildMap()
     {
         var levels = LoadAllLevels();
+        levels.Sort((a, b) => a.id.CompareTo(b.id));
         int maxUnlocked = SaveManager.MaxUnlockedLevel;
 
-        // Group by chapter, sort chapters descending (newest first)
-        var byChapter = new SortedDictionary<int, List<LevelData>>(Comparer<int>.Create((a, b) => b.CompareTo(a)));
-        foreach (var lvl in levels)
+        // Ajustar altura del Content (pivot bottom → Y positivo sube)
+        var contentRT     = contentRoot.GetComponent<RectTransform>();
+        float totalHeight = levels.Count * NODE_SPACING + BOTTOM_PADDING * 2f;
+        contentRT.sizeDelta = new Vector2(contentRT.sizeDelta.x, totalHeight);
+
+        // Pre-calcular posiciones: nivel 1 abajo (Y pequeño), último arriba (Y grande)
+        var positions = new Vector2[levels.Count];
+        for (int i = 0; i < levels.Count; i++)
         {
-            if (!byChapter.ContainsKey(lvl.chapter))
-                byChapter[lvl.chapter] = new List<LevelData>();
-            byChapter[lvl.chapter].Add(lvl);
+            float x = (i % 2 == 0) ? X_LEFT : X_RIGHT;
+            float y = BOTTOM_PADDING + i * NODE_SPACING;
+            positions[i] = new Vector2(x, y);
         }
 
-        foreach (var chapter in byChapter)
+        // Imagen transparente que cubre todo el Content para que el scroll reciba drags en zonas vacías
+        var hitArea    = new GameObject("HitArea").AddComponent<UnityEngine.UI.Image>();
+        hitArea.color  = Color.clear;
+        hitArea.raycastTarget = true;
+        hitArea.transform.SetParent(contentRoot, false);
+        var hitRT      = hitArea.GetComponent<RectTransform>();
+        hitRT.anchorMin = Vector2.zero;
+        hitRT.anchorMax = Vector2.one;
+        hitRT.offsetMin = hitRT.offsetMax = Vector2.zero;
+        hitArea.transform.SetAsFirstSibling(); // detrás de todo
+
+        // 1. Perlas primero → quedan debajo en la jerarquía → se dibujan detrás
+        for (int i = 1; i < levels.Count; i++)
+            DrawPearls(positions[i - 1], positions[i]);
+
+        // 2. Nodos después → quedan encima en la jerarquía → se dibujan delante
+        for (int i = 0; i < levels.Count; i++)
         {
-            // Chapter header
-            AddChapterHeader(chapter.Key);
-
-            // Levels within chapter: descending
-            var chapterLevels = chapter.Value;
-            chapterLevels.Sort((a, b) => b.id.CompareTo(a.id));
-
-            foreach (var lvl in chapterLevels)
-            {
-                bool done   = lvl.id < maxUnlocked;
-                bool open   = lvl.id == maxUnlocked;
-                bool locked = lvl.id > maxUnlocked;
-                AddLevelButton(lvl, done, open, locked);
-            }
+            var lvl  = levels[i];
+            var go   = Instantiate(levelNodePrefab, contentRoot);
+            go.name  = $"Level_{lvl.id}";
+            go.GetComponent<RectTransform>().anchoredPosition = positions[i];
+            var view  = go.GetComponent<LevelNodeView>();
+            view.Setup(lvl.id, GetState(lvl.id, maxUnlocked), 0);
         }
     }
 
-    void AddChapterHeader(int chapter)
+    NodeState GetState(int levelId, int maxUnlocked)
     {
-        var go = new GameObject($"Chapter_{chapter}_Header");
-        go.transform.SetParent(contentRoot, false);
-        var txt = go.AddComponent<TextMeshProUGUI>();
-        txt.text = $"Capítulo {chapter}";
-        txt.fontSize = 48;
-        txt.color = new Color(0.6f, 0.85f, 1f);
-        txt.alignment = TextAlignmentOptions.Center;
-        var rect = go.GetComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(1080f, 80f);
+        if (levelId > maxUnlocked)  return NodeState.Locked;
+        if (levelId == maxUnlocked) return NodeState.Available;
+        return NodeState.Completed; // TODO: NodeState.CompleteFirstTry desde SaveManager
     }
 
-    void AddLevelButton(LevelData lvl, bool done, bool open, bool locked)
+    void DrawPearls(Vector2 from, Vector2 to)
     {
-        var go = Instantiate(levelButtonPrefab, contentRoot);
-        go.name = $"Level_{lvl.id}";
+        // Cubic Bezier con tangentes verticales:
+        // P1 sale de "from" hacia arriba → P2 llega a "to" desde abajo
+        // El giro lateral ocurre en el centro → crea S continua natural
+        float   tangent = NODE_SPACING * PEARL_TANGENT;
+        Vector2 p1      = from + new Vector2(0,  tangent);
+        Vector2 p2      = to   + new Vector2(0, -tangent);
 
-        var img = go.GetComponent<Image>();
-        if (img) img.color = done ? C_DONE : open ? C_OPEN : C_LOCKED;
+        float approxLen = Vector2.Distance(from, p1) + Vector2.Distance(p1, p2) + Vector2.Distance(p2, to);
+        int   count     = Mathf.FloorToInt(approxLen / PEARL_SPACING);
 
-        var label = go.GetComponentInChildren<TextMeshProUGUI>();
-        if (label) label.text = lvl.id.ToString();
-
-        var btn = go.GetComponent<Button>();
-        if (btn && !locked)
+        for (int i = 1; i < count; i++)
         {
-            int id = lvl.id;
-            btn.onClick.AddListener(() => OnLevelSelected(id));
+            float   t     = (float)i / count;
+            Vector2 pos   = CubicBezier(from, p1, p2, to, t);
+            var     pearl = Instantiate(pearlPrefab, contentRoot);
+            var     pearlRT = pearl.GetComponent<RectTransform>();
+            pearlRT.anchoredPosition = pos;
+            pearlRT.sizeDelta = new Vector2(PEARL_SIZE, PEARL_SIZE);
         }
-        else if (btn)
-        {
-            btn.interactable = false;
-        }
+    }
+
+    // Curva Bezier cúbica: tangentes en P0→P1 y P2→P3 controlan entrada y salida
+    static Vector2 CubicBezier(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t)
+    {
+        float u = 1f - t;
+        return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
     }
 
     void OnLevelSelected(int levelId)
