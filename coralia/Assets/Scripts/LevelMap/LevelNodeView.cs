@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -21,6 +22,20 @@ public class LevelNodeView : MonoBehaviour
     [SerializeField] Sprite spriteCurrent;  // morado — nivel disponible para jugar
     [SerializeField] Sprite spriteGold;     // dorado — completado en el primer intento
 
+    [Header("Pulse — nodo actual")]
+    [SerializeField] float pulseMin      = 1.00f;
+    [SerializeField] float pulseMax      = 1.10f;
+    [SerializeField] float pulseDuration = 0.25f;
+    [SerializeField] float pulsePause    = 2.00f;
+    [SerializeField] float pulseTotals   = 2.00f;
+
+    [Header("Ripple — anillo expansivo")]
+    [SerializeField] Image  ringImage      = null;  // Image hijo detrás del círculo
+    [SerializeField] float  rippleScale    = 1.70f; // escala máxima del anillo
+    [SerializeField] float  rippleAlpha    = 0.55f; // alpha inicial del anillo
+    [SerializeField] float  rippleDuration = 0.45f; // duración de cada ripple
+
+
 
     // Configura el nodo con los datos del nivel
     public void Setup(int id, NodeState state, int starsEarned)
@@ -43,5 +58,57 @@ public class LevelNodeView : MonoBehaviour
 
         // Candado solo visible si el nivel está bloqueado
         lockIcon.SetActive(state == NodeState.Locked);
+
+        // Pulso + ripple solo en el nodo disponible
+        if (state == NodeState.Available)
+        {
+            if (ringImage) ringImage.gameObject.SetActive(true);
+            StartCoroutine(PulseLoop());
+        }
+        else if (ringImage)
+        {
+            ringImage.gameObject.SetActive(false);
+        }
+    }
+
+    IEnumerator PulseLoop()
+    {
+        while (true)
+        {
+            // 2 pulsos seguidos
+            for (int p = 0; p < pulseTotals; p++)
+            {
+                if (ringImage) StartCoroutine(RippleOnce());
+                for (float t = 0f; t < 1f; t += Time.deltaTime / pulseDuration)
+                {
+                    transform.localScale = Vector3.one * Mathf.Lerp(pulseMin, pulseMax, t);
+                    yield return null;
+                }
+                for (float t = 0f; t < 1f; t += Time.deltaTime / pulseDuration)
+                {
+                    transform.localScale = Vector3.one * Mathf.Lerp(pulseMax, pulseMin, t);
+                    yield return null;
+                }
+            }
+            transform.localScale = Vector3.one * pulseMin;
+            // Pausa
+            yield return new WaitForSeconds(pulsePause);
+        }
+    }
+
+    IEnumerator RippleOnce()
+    {
+        var c = ringImage.color;
+        for (float t = 0f; t < 1f; t += Time.deltaTime / rippleDuration)
+        {
+            ringImage.transform.localScale = Vector3.one * Mathf.Lerp(1f, rippleScale, t);
+            c.a = Mathf.Lerp(rippleAlpha, 0f, t);
+            ringImage.color = c;
+            yield return null;
+        }
+        // Reset para el próximo ripple
+        ringImage.transform.localScale = Vector3.one;
+        c.a = 0f;
+        ringImage.color = c;
     }
 }

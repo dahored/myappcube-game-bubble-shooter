@@ -7,6 +7,8 @@ public class LevelMapController : MonoBehaviour
     [SerializeField] Transform contentRoot;
     [SerializeField] GameObject levelNodePrefab;
     [SerializeField] GameObject pearlPrefab;
+    [SerializeField] GameObject playerCardPrefab;  // card de usuario junto al nodo actual
+    [SerializeField] bool       showPlayerNode;    // mostrar la card del usuario en el mapa
 
     const float NODE_SPACING    =  300f; // distancia vertical entre nodos
     const float PEARL_SPACING   =  100f; // distancia entre cada perla del path
@@ -14,7 +16,9 @@ public class LevelMapController : MonoBehaviour
     const float PEARL_TANGENT   = 0.85f; // tangent de curvatura de las perlas
     const float X_LEFT          =  400f; // columna izquierda del zigzag
     const float X_RIGHT         =  600f; // columna derecha del zigzag
-    const float BOTTOM_PADDING  =  400f; // espacio bajo el primer nodo para que no quede cortado
+    const float TOP_PADDING      =  400f; // espacio sobre el último nodo
+    const float BOTTOM_PADDING   =  400f; // espacio bajo el primer nodo
+    const float CARD_SIDE_OFFSET =  160f; // distancia horizontal de la card al nodo actual
 
     void Start()
     {
@@ -30,7 +34,7 @@ public class LevelMapController : MonoBehaviour
 
         // Ajustar altura del Content (pivot bottom → Y positivo sube)
         var contentRT     = contentRoot.GetComponent<RectTransform>();
-        float totalHeight = levels.Count * NODE_SPACING + BOTTOM_PADDING * 2f;
+        float totalHeight = (levels.Count - 1) * NODE_SPACING + BOTTOM_PADDING + TOP_PADDING;
         contentRT.sizeDelta = new Vector2(contentRT.sizeDelta.x, totalHeight);
 
         // Pre-calcular posiciones: nivel 1 abajo (Y pequeño), último arriba (Y grande)
@@ -60,12 +64,26 @@ public class LevelMapController : MonoBehaviour
         // 2. Nodos después → quedan encima en la jerarquía → se dibujan delante
         for (int i = 0; i < levels.Count; i++)
         {
-            var lvl  = levels[i];
-            var go   = Instantiate(levelNodePrefab, contentRoot);
-            go.name  = $"Level_{lvl.id}";
+            var lvl   = levels[i];
+            var go    = Instantiate(levelNodePrefab, contentRoot);
+            go.name   = $"Level_{lvl.id}";
+            var state = GetState(lvl.id, maxUnlocked);
             go.GetComponent<RectTransform>().anchoredPosition = positions[i];
-            var view  = go.GetComponent<LevelNodeView>();
-            view.Setup(lvl.id, GetState(lvl.id, maxUnlocked), 0);
+            go.GetComponent<LevelNodeView>().Setup(lvl.id, state, 0);
+
+            // Card de usuario junto al nodo actual
+            if (showPlayerNode && state == NodeState.Available && playerCardPrefab != null)
+            {
+                bool isLeft = positions[i].x < 500f; // nodo en col izquierda
+                float cardX = isLeft
+                    ? positions[i].x + CARD_SIDE_OFFSET  // nodo izq → card a la derecha
+                    : positions[i].x - CARD_SIDE_OFFSET; // nodo der → card a la izquierda
+                var card   = Instantiate(playerCardPrefab, contentRoot);
+                var cardRT = card.GetComponent<RectTransform>();
+                cardRT.anchorMin = cardRT.anchorMax = new Vector2(0f, 0f);
+                cardRT.pivot     = new Vector2(0.5f, 0.5f);
+                cardRT.anchoredPosition = new Vector2(cardX, positions[i].y);
+            }
         }
     }
 
