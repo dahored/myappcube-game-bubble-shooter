@@ -4,13 +4,15 @@ using UnityEngine;
 public class LevelMapController : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] Transform contentRoot;
-    [SerializeField] GameObject levelNodePrefab;
-    [SerializeField] GameObject pearlPrefab;
-    [SerializeField] GameObject playerCardPrefab;  // card de usuario junto al nodo actual
-    [SerializeField] bool       showPlayerNode;    // mostrar la card del usuario en el mapa
+    [SerializeField] Transform           contentRoot;
+    [SerializeField] GameObject          levelNodePrefab;
+    [SerializeField] GameObject          pearlPrefab;
+    [SerializeField] GameObject          playerCardPrefab;  // card de usuario junto al nodo actual
+    [SerializeField] bool                showPlayerNode;    // mostrar la card del usuario en el mapa
+    [SerializeField] ScrollPinController scrollPinTop;      // pin arriba — nodo está debajo del viewport
+    [SerializeField] ScrollPinController scrollPinBottom;   // pin abajo — nodo está arriba del viewport
 
-    const float NODE_SPACING    =  300f; // distancia vertical entre nodos
+    public const float NODE_SPACING =  300f; // distancia vertical entre nodos
     const float PEARL_SPACING   =  100f; // distancia entre cada perla del path
     const float PEARL_SIZE      =   45f; // tamaño de cada perla (width y height)
     const float PEARL_TANGENT   = 0.85f; // tangent de curvatura de las perlas
@@ -23,6 +25,7 @@ public class LevelMapController : MonoBehaviour
     void Start()
     {
         AudioManager.Instance?.PlayLobbyMusic();
+        SaveManager.MaxUnlockedLevel = 10; // TEMP TEST — quitar antes de release
         BuildMap();
     }
 
@@ -71,6 +74,10 @@ public class LevelMapController : MonoBehaviour
             go.GetComponent<RectTransform>().anchoredPosition = positions[i];
             go.GetComponent<LevelNodeView>().Setup(lvl.id, state, 0);
 
+            // ScrollPins: inicializar con el RectTransform del nodo actual
+            if (state == NodeState.Available)
+                StartCoroutine(InitScrollPins(go.GetComponent<RectTransform>()));
+
             // Card de usuario junto al nodo actual
             if (showPlayerNode && state == NodeState.Available && playerCardPrefab != null)
             {
@@ -85,6 +92,13 @@ public class LevelMapController : MonoBehaviour
                 cardRT.anchoredPosition = new Vector2(cardX, positions[i].y);
             }
         }
+    }
+
+    System.Collections.IEnumerator InitScrollPins(RectTransform nodeRT)
+    {
+        yield return null; // espera un frame para que el viewport tenga su rect calculado
+        scrollPinBottom?.Init(nodeRT, NODE_SPACING);
+        scrollPinTop?.Init(nodeRT, NODE_SPACING);
     }
 
     NodeState GetState(int levelId, int maxUnlocked)

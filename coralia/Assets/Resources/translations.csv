@@ -1,5 +1,6 @@
 keys,es,en,it,fr,de,pt
 ui.label,Label,Label,Label,Label,Label,Label
+ui.label.number,0,0,0,0,0,0
 ui.button.play,Jugar,Play,Gioca,Jouer,Spielen,Jogar
 ui.button.continue,Continuar,Continue,Continua,Continuer,Weiter,Continuar
 ui.button.cancel,Cancelar,Cancel,Annulla,Annuler,Abbrechen,Cancelar
