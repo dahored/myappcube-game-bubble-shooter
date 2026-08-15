@@ -1,8 +1,10 @@
 # Coralia — Status y Roadmap
 
-**Última actualización:** 2026-05-06
+**Última actualización:** 2026-08-15
 
 Documento maestro de estado del proyecto. Si abrís uno solo de los docs, **abrí este**.
+
+⚠️ Este doc estuvo desactualizado (Defold) desde 2026-05-06 hasta hoy — el proyecto migró a **Unity 6** en mayo 2026 y siguió avanzando sin que nadie lo volcara acá. Esta versión refleja el código real a la fecha de arriba.
 
 ---
 
@@ -11,57 +13,61 @@ Documento maestro de estado del proyecto. Si abrís uno solo de los docs, **abr�
 | Fase | Estado | Notas |
 |---|---|---|
 | **Fase 0** — Pre-producción | ✅ Completada | Concept, GDD v0.6, Wireframes spec, Plan Fase 1, setup técnico |
-| **Fase 1** — Prototipo jugable | ✅ Completada | Mecánicas core validadas (Godot). Migración a Defold completada 2026-05-06. |
-| **Fase 2** — MVP | 🔄 En progreso | Base Defold lista (splash + level map). Gameplay pendiente. |
+| **Fase 1** — Prototipo jugable | ✅ Completada | Mecánicas core validadas en Godot 4 (referencia, no se porta 1:1) |
+| **Fase 2** — MVP | 🔄 En progreso | Motor: **Unity 6**. Splash, Home, Level Map, Settings y HUD superior implementados. Gameplay (cañón/grid/match) todavía no existe. |
 | **Fase 3** — Soft Launch | ⏳ Pendiente | Tras MVP completo |
 | **Fase 4** — Global Launch | ⏳ Pendiente | Tras soft launch validado |
+
+**Historial de motor:** Godot 4 (prototipo, abril-mayo 2026) → Defold (migración breve, no llegó a tener gameplay) → **Unity 6** (`fb0a6da`, mayo 2026, motor actual). Si ves referencias a Defold o `.gd`/`.lua` en cualquier doc, son históricas.
 
 ---
 
 ## Qué tenemos hoy
 
-**Proyecto Defold limpio y funcional** (motor: Defold + Lua):
+**Proyecto Unity 6 (URP)**, portrait 1080×1920, C# sin namespace.
 
 ### Infraestructura base ✅
-- `game.project` con display 1080x1920 portrait, bundles para iOS + Android
-- Input binding (touch + back)
-- Bootstrap: main.collection → routing por collection proxies
-- 4 módulos reutilizables: config, router, save_manager, level_manager
+- Managers estáticos (no MonoBehaviour singleton): `SaveManager` (PlayerPrefs), `LocaleManager` (6 idiomas), `AudioManager`, `SceneLoader` + `SceneTransition`
+- `SceneTransition` se auto-instancia (`DontDestroyOnLoad`) — fade + animación de burbujas entre escenas
+- Haptics vía plugin `MOST_HapticFeedback` (bridge nativo Android/iOS)
 
 ### Pantallas implementadas ✅
-- **Splash 1**: logo estudio (myappcube), fade in/out 2.7s, skip on tap
-- **Splash 2**: logo juego (Coralia), versión dinámica desde game.project, dots animation, MIN_SHOW 2s
-- **Level Map**: scroll vertical inverso (capítulos nuevos arriba), 4 columnas, estados locked/open/done dinámicos según progreso guardado
+- **Splash Studio + Splash Game**: logo estudio → logo juego + loading
+- **HomeGame**: lobby mínimo — botón Jugar → Level Map + música de fondo. (Ojo: esto es más simple que el "Santuario" del GDD sección 5 — no tiene criaturas nadando, shop, battle pass, etc. todavía. Evaluar si el Santuario se construye sobre esta escena o es una pantalla nueva.)
+- **Level Map**: `LevelMapController` + `LevelNodeView` + `ScrollPinController` — path de perlas Bezier, nodos circulares, estados locked/open/done, `PlayerCard`/`AvatarDisplay` en el nodo actual
+- **TopPanel (HUD superior)**: en progreso — `TopPanelController` (padding de safe area) + `ResourcePillView` (componente reutilizable coins/vidas: ícono, valor, timer, badge, botón "+"). Ver detalle abajo.
+- **Settings**: completo — 4 secciones (Preferencias / Cuenta y asistencia / Comunidad / Legal), 3 sliders de audio, toggle de vibración, dropdown de idioma
+
+### HUD — ResourcePillView (nuevo, 2026-08) 🔄
+Componente genérico para mostrar recursos (coins, vidas) en un pill con ícono + valor + botón "+":
+- `Assets/Scripts/UI/ResourcePillView.cs` — API: `SetIcon`, `SetValue`, `SetFull`, `SetTimer`, `SetInfinite`, `SetBadge`/`SetBadgeInfinite`/`HideBadge`, evento `OnPlusClicked`
+- Prefab base `ResourcePill.prefab` + variants `ResourcePillCoins Variant` / `ResourcePillLives Variant` en `Prefabs/UI/game/`
+- Sprites propios exportados: `panel_top/bottom.png`, `pill_panel.png`, `button_plus.png`, íconos en `Sprites/UI/Icons/` y `Sprites/UI/Letters/` (incluye `infinite_letter` para el badge de vidas infinitas)
+- **Pendiente:** todavía muestra valores hardcodeados en el Editor (`999999`) — no hay `SaveManager.Coins`/`SaveManager.Lives` ni gameplay que los modifique, así que no tiene sentido conectarlo a datos reales todavía. Se conecta cuando exista el sistema de vidas/economía (ver backlog).
 
 ### Datos y assets ✅
-- 20 niveles JSON (capítulo 1: lvl 1-10, capítulo 2: lvl 11-20)
-- 7 bubbles idle PNGs (200x200) en bubbles.atlas
-- logos.atlas (logo estudio + logo juego)
-- coralia_ui.font (distance field, vera_mo_bd.ttf)
-- translations.csv con 50+ keys en 6 idiomas — pendiente activar en Defold
+- Niveles en `Resources/Levels/Chapter_1/2/3/*.json` → deserializados a `LevelData.cs` (reemplaza el viejo `data/levels/*.json` de Godot)
+- `Resources/translations.csv` — 6 idiomas, cargado por `LocaleManager`
+- Fuentes Fredoka (SDF) + Quicksand/Nunito según specs de `08_Arte_Assets_Specs.md`
+- Sprites UI exportados en `design/exported/` → importados a `coralia/Assets/Sprites/`
 
-### Referencia de mecánicas (del prototipo Godot)
-Las siguientes mecánicas ya fueron validadas en Godot y están listas para portar a Defold:
-- Grid hexagonal de 84 burbujas con físicas correctas
-- Cañón con drag aim, trayectoria con primer rebote, cola de 2 burbujas
-- Smart queue: solo da colores que existen en el grid
-- Color shuffle al cargar nivel (posiciones fijas, colores random)
-- Match detection (flood-fill BFS) y drops por gravedad
-- Win/lose conditions con modales
+### Referencia de mecánicas (del prototipo Godot, sin portar)
+Estas mecánicas fueron validadas en Godot 4 pero **no existen todavía en Unity** — `Scripts/Gameplay/` está vacío:
+- Grid hexagonal, cañón con drag aim, smart queue, color shuffle, match detection (flood-fill), win/lose
 
 ---
 
 ## Lo que falta (priorizado por valor)
 
-Ver `06_Backlog_GitHub_Issues.md` para detalles. Aquí el resumen ordenado por impacto:
+Ver `06_Backlog_GitHub_Issues.md` para detalles — ese doc también tiene secciones desactualizadas (Defold), usarlo para leer las acceptance criteria de diseño, no las notas técnicas de implementación.
 
 ### Top 5 cosas que más mejorarían el juego ahora mismo
 
-1. **Gameplay Defold** — portar cañón + grid + match + HUD a Defold. Es el core. Estimación: 3-5 días.
-2. **Audio** — placeholders gratuitos. Mejora 10x el feel. Estimación: 1-2 días.
-3. **Sistema de vidas + monedas + gemas** — base de monetización. 2-3 días.
-4. **Onboarding tutorial** — para que jugadores nuevos no se confundan. 2 días.
-5. **Pantalla de Settings** — 4 secciones, 3 sliders de audio, vibración. 1-2 días.
+1. **Gameplay en Unity** — cañón + grid hexagonal + match + win/lose. Sigue siendo el core faltante. `Scripts/Gameplay/` vacío.
+2. **Sistema de vidas + monedas** — `SaveManager` no tiene esos campos todavía. El HUD (`ResourcePillView`) ya está listo del lado visual, solo falta la data real.
+3. **Audio in-game** — `AudioManager` ya reproduce música de lobby; falta SFX de gameplay (pop, drop, win/lose) que dependen de que exista gameplay.
+4. **Onboarding tutorial** — no implementado.
+5. **Santuario real** — definir si `HomeGame` se expande a la pantalla completa del GDD sección 5 (criaturas, shop, battle pass) o si se arma como pantalla nueva.
 
 ### Lo que NO bloquea ahora pero es necesario para lanzar
 
@@ -69,8 +75,7 @@ Ver `06_Backlog_GitHub_Issues.md` para detalles. Aquí el resumen ordenado por i
 - Ads (AdMob + AppLovin MAX)
 - IAP (RevenueCat)
 - Battle Pass v1
-- Asset pass real (reemplazar placeholders)
-- Localización activa
+- Asset pass real (reemplazar placeholders — en progreso, HUD ya tiene sprites propios)
 - Verificar disponibilidad de "Coralia"
 - Setup cuentas: Apple Dev, Google Play, Firebase, AdMob, RevenueCat
 
@@ -83,17 +88,18 @@ docs/
 ├── Plan_Maestro_Bubble_Shooter.docx     ← El plan original (immutable)
 ├── 01_Concepto_Inicial.md (v0.3)        ← Visión, decisiones lockeadas
 ├── 02_GDD_Coralia.md (v0.6)             ← Game Design Document (17 secciones)
-├── 03_Wireframes_Coralia.md (v0.2)      ← Spec de las 17 pantallas
-├── 04_Plan_Fase1_Coralia.md (v0.2)      ← Plan de Fase 1 (✅ completada)
-├── 05_Playtest_Guide_Coralia.md (v0.1)  ← Guía para hacer playtest informal
-├── 06_Backlog_GitHub_Issues.md (v0.1)   ← Backlog para crear issues en GitHub
+├── 03_Wireframes_Coralia.md (v0.3)      ← Spec de las 17 pantallas
+├── 04_Plan_Fase1_Coralia.md             ← Plan de Fase 1 (✅ completada, Godot)
+├── 05_Playtest_Guide_Coralia.md         ← Guía para hacer playtest informal
+├── 06_Backlog_GitHub_Issues.md          ← Backlog (⚠️ notas técnicas en Defold, desactualizado)
 ├── 07_Status_y_Roadmap.md (este doc)    ← Status general del proyecto
+├── 08_Arte_Assets_Specs.md              ← Specs de producción de arte (vigente)
 └── templates/
     ├── playtest_form_per_tester.md
     └── playtest_results_summary.md
 ```
 
-Plus en root del repo: `CHANGELOG.md` con historial de cambios por chunk.
+Plus en root del repo: `CLAUDE.md` (contexto Unity actualizado 2026-08-11) y `CHANGELOG.md` (⚠️ solo cubre hasta Fase 1 Godot — los commits de Unity no están volcados ahí, usar `git log`).
 
 ---
 
@@ -101,28 +107,23 @@ Plus en root del repo: `CHANGELOG.md` con historial de cambios por chunk.
 
 ```
 coralia/
-├── game.project               ← Config Defold (1080x1920 portrait, iOS+Android)
-├── input/
-│   └── game.input_binding     ← touch + back
-├── main/                      ← Bootstrap: routing + collection proxies
-│   ├── main.collection        ← socket "main"
-│   ├── main.go                ← proxies de splash1, splash2, level_map
-│   └── main.script            ← maneja "go_to" → disable/unload/async_load
-├── splash1/                   ← socket "splash1" — logo estudio
-├── splash2/                   ← socket "splash2" — logo juego + loading
-├── level_map/                 ← socket "level_map" — mapa scrolleable
-├── gameplay/                  ← (próximo) socket "gameplay" — partida
-├── modules/
-│   ├── config.lua             ← constantes (grid, física, colores, economía)
-│   ├── router.lua             ← router.go(scene_name)
-│   ├── save_manager.lua       ← sys.save / sys.load wrapper
-│   └── level_manager.lua      ← carga + caché de niveles JSON
-├── assets/
-│   ├── atlas/                 ← logos.atlas, bubbles.atlas
-│   ├── fonts/                 ← coralia_ui.font (vera_mo_bd.ttf distance field)
-│   └── sprites/bubbles/       ← idle/ (7 PNGs) + v1/ (spritesheets originales)
-├── data/levels/               ← 001-020.json (20 niveles, 2 capítulos)
-└── localization/              ← translations.csv (6 idiomas, 50+ keys) — pendiente activar
+  Assets/
+    Scenes/Splash/ Home/ Game/         ← SplashStudio, SplashGame, HomeGame, LevelMap
+    Scripts/
+      Core/        ← SaveManager, LocaleManager, AudioManager, SceneLoader, SceneTransition
+      UI/          ← ButtonPop, UIPanel, SettingsToggle/Panel/Content, LocalizedText,
+                      ResponsiveLayout, SafeAreaPanel, TopPanelController, ResourcePillView
+      Home/        ← HomeGame.cs
+      Splash/      ← SplashStudio.cs, SplashGame.cs
+      LevelMap/    ← LevelMapController.cs, LevelNodeView.cs, ScrollPinController.cs
+      Gameplay/    ← VACÍO — cañón/grid/match pendiente
+      Data/        ← LevelData.cs
+    Prefabs/UI/    ← buttons/ panels/ user/ game/ inputs/
+    Resources/
+      translations.csv
+      Levels/Chapter_1/2/3/*.json
+    Sprites/UI/    ← Buttons, Icons, Letters, Panels, Pines, Banners, Inputs
+design/exported/    ← exports de diseño antes de importar a Unity
 ```
 
 ---
@@ -131,77 +132,45 @@ coralia/
 
 ### Workflow por issue
 
-Por cada issue de `06_Backlog_GitHub_Issues.md`:
 1. `git checkout -b issue-N-short-description`
-2. Decirle a Claude Code el número de issue — lee el AC
+2. Decirle a Claude Code el número de issue — lee el AC (validar contra código real, el backlog tiene partes desactualizadas)
 3. Lee GDD sección relevante antes de implementar
-4. Implementa en Defold (Lua + .collection / .gui / .script)
-5. Prueba en Defold desktop (Cmd+B)
+4. Implementa en C# siguiendo convenciones de `CLAUDE.md`
+5. Prueba en Unity Editor (Play mode)
 6. Commit + push + PR → mergear + cerrar issue
-7. Update CHANGELOG.md
+7. Update CHANGELOG.md (no se viene haciendo desde la migración — retomar si Diego lo pide)
 
-### Setup de GitHub (pendiente)
+### Cadencia recomendada (revisada)
 
-```bash
-gh repo create coralia --private --source=. --push
-```
-
-O manualmente: github.com → New Repo → push manual.
-
-### Cadencia recomendada
-
-- **Semana 1:** Gameplay Defold (cañón + grid + match)
-- **Semana 2:** Audio + HUD
-- **Semana 3:** Sistema de vidas + monedas
-- **Semana 4:** Onboarding tutorial + Settings
-- **Semana 5+:** Santuario, battle pass, ads/IAP...
-
-Probable **6-10 semanas** para MVP completo.
+- **Ahora:** Gameplay Unity (cañón + grid + match) — sigue siendo el bloqueante mayor
+- **Después:** Sistema de vidas + monedas (conecta con el HUD ya construido) + Audio in-game
+- **Luego:** Onboarding tutorial + definir Santuario real
+- **Más adelante:** Battle pass, ads/IAP, social
 
 ---
 
 ## Decisiones administrativas pendientes (sin código)
 
-Antes del soft launch hay que cerrar:
+Sin cambios desde la última revisión — nada de esto se resolvió todavía:
 
 1. **Verificar "Coralia" disponibilidad** (App Store, Google Play, dominios, redes)
-2. **Setup de cuentas:**
-   - Apple Developer Program ($99/año)
-   - Google Play Console ($25 una vez)
-   - Firebase project (free tier)
-   - AdMob, AppLovin MAX, RevenueCat
-3. **Crear repo GitHub privado** (issue tracking + version control)
+2. **Setup de cuentas:** Apple Developer Program, Google Play Console, Firebase, AdMob, AppLovin MAX, RevenueCat
+3. **Crear repo GitHub privado** (issue tracking + version control) — el repo local sigue sin remoto
 4. **Comprar dominio** (coralia.app o similar)
 5. **Crear cuentas de redes** (@coraliagame en Instagram, TikTok, X)
-
-Estos no requieren código pero son cuello de botella si los dejás para el final.
 
 ---
 
 ## Riesgos abiertos
 
-1. **Sin playtest externo** — el riesgo más grande. Puede que el juego no sea tan divertido como pensamos. Mitigación: hacer playtest informal antes de invertir en arte. Guía en `docs/05_Playtest_Guide_Coralia.md`.
-
-2. **Solo dev sin equipo de arte** — cuello de botella en Fase 2 cuando haya que reemplazar placeholders. Mitigación: estrategia híbrida AI gen + freelancer (definida en GDD sección 11.5, presupuesto ~$2000-4000).
-
-3. **Sin balance económico validado** — los números de la economía (drops, costos, IAP packs) son hipótesis. Validar con datos reales en soft launch (GDD sección 6.10).
-
-4. **Saturación del género** — Bubble Shooters hay muchos. La diferenciación viene del concepto cozy submarino + narrativa con criaturas hero + meta-progresión visual del santuario. Ejecutar bien esos pilares es crítico.
+1. **Sin playtest externo** — sigue siendo el riesgo más grande, ahora agravado porque tampoco hay gameplay jugable en Unity todavía para testear.
+2. **Solo dev sin equipo de arte** — mitigado parcialmente: ya se está exportando arte propio (íconos HUD, panels, botones) en vez de placeholders genéricos.
+3. **Sin balance económico validado** — sigue siendo hipótesis, sin datos.
+4. **Tres migraciones de motor en un año** (Godot → Defold → Unity) — riesgo de que la documentación se vuelva a desincronizar del código si no se actualiza al cerrar cada chunk. Mitigación: usar `graphify` (`graphify-out/graph.json`) para detectar discrepancias doc↔código en vez de confiar ciegamente en los docs.
+5. **Saturación del género** — sin cambios, la diferenciación sigue dependiendo del cozy submarino + narrativa + santuario.
 
 ---
 
 ## Cómo medir éxito
 
-Por fase:
-
-- **Fase 1 ✅:** prototipo jugable end-to-end (logrado)
-- **Fase 2 (MVP):** build production-ready con todas las features core. KPI: jugadores externos pueden completar 30 niveles sin bugs bloqueantes.
-- **Fase 3 (soft launch):** validar KPIs target en mercados pequeños:
-  - D1 retention ≥40%
-  - D7 retention ≥20%
-  - D30 retention ≥8%
-  - ARPDAU $0.10-0.25
-  - Conversion rate ≥3%
-- **Fase 4 (global launch):** escalar lo que validó el soft launch.
-
-LTV target del usuario (Plan Maestro): $1.50-$3.50. Esto define cuánto se puede invertir en marketing por install.
+Sin cambios respecto a la versión anterior — ver GDD y Plan Maestro para el detalle de KPIs por fase (D1/D7/D30 retention, ARPDAU, conversion rate, LTV target $1.50-$3.50).

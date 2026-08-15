@@ -1,7 +1,9 @@
 # Backlog — GitHub Issues para Coralia
 
-**Versión:** 0.1 — 2026-05-01
+**Versión:** 0.2 — 2026-08-15 (revisión Unity — v0.1 era 2026-05-01, escrita para Defold)
 **Propósito:** este documento traduce el plan del proyecto a issues de GitHub. Cada sección H2 (`##`) es un issue independiente — copy-pasteable directo a "New Issue" en GitHub.
+
+⚠️ **Nota de esta revisión:** el proyecto migró de Defold a **Unity 6** en mayo 2026. Las acceptance criteria de diseño/producto de cada issue siguen siendo válidas — se actualizaron las referencias técnicas (nombres de módulo, rutas de archivo, APIs) que apuntaban a Defold/Lua. Los issues ya completados quedan marcados con **✅ COMPLETADO** debajo del título, con una nota de qué se hizo realmente.
 
 ---
 
@@ -24,8 +26,10 @@ Recomendado crear estos labels en GitHub primero:
 
 # Estado actual (referencia, no es un issue)
 
-**Fase 1 — Prototipo:** ✅ Completada 2026-05-01 (Chunk 7 skipped — playtest pendiente)
-**Fase 2 — MVP:** 🔄 En progreso. Chunk A (Persistencia) completado.
+**Fase 1 — Prototipo:** ✅ Completada en Godot 4 (2026-05-01). Referencia de diseño, no se portó código 1:1.
+**Fase 2 — MVP:** 🔄 En progreso, motor **Unity 6**. Completado: Settings, Localización runtime, Level Map/Level Select, HUD superior (`ResourcePillView` — visual listo, datos pendientes). Sigue faltando: gameplay (cañón/grid/match), sistema de vidas/monedas con datos reales, Santuario, onboarding.
+
+Ver `07_Status_y_Roadmap.md` para el detalle completo y actualizado.
 
 Los issues debajo están agrupados por fase y prioridad.
 
@@ -33,28 +37,30 @@ Los issues debajo están agrupados por fase y prioridad.
 
 # Fase 2 — MVP (en progreso)
 
-## [Phase 2] Audio: música + SFX placeholders
+## [Phase 2] Audio: música + SFX in-game
 
-**Labels:** `phase-2`, `feat`, `audio`, `priority-high`, `size-M`
+✅ **PARCIALMENTE COMPLETADO** — `AudioManager` (clase estática C#, `Scripts/Core/AudioManager.cs`) ya existe con 4 canales (`music`, `sfx`, `ui`, `pop`), volúmenes leídos de `SaveManager`, y música de lobby sonando. Falta: SFX de gameplay (pop, drop, win/lose) porque el gameplay todavía no existe.
+
+**Labels:** `phase-2`, `feat`, `audio`, `priority-high`, `size-S`
 
 ### Descripción
-Aunque sea con placeholders gratuitos, agregar audio mejora 10x el feel del juego. Sin sonido el prototipo se siente vacío y poco profesional. Implementar `AudioManager` módulo Lua (pendiente crear) con reproducción real, y agregar los SFX y música mínimos.
+Conectar los SFX de gameplay al `AudioManager` ya existente cuando se implemente el cañón/grid/match. La infraestructura de audio (canales, volúmenes, mute) ya está lista — este issue queda reducido a "agregar los clips y llamar `AudioManager.Instance.PlaySfx(...)` en los momentos correctos".
 
 ### Acceptance criteria
-- [ ] Música de fondo loop en gameplay (1 track placeholder de Freesound o similar)
-- [ ] SFX de pop de burbuja al hacer match (con variación leve de pitch)
-- [ ] SFX de drop de flotantes
-- [ ] SFX de victoria al completar nivel
-- [ ] SFX de derrota al perder
-- [ ] SFX de tap de botones (UI)
-- [ ] `AudioManager` con 3 canales/buses configurables: `music`, `ui_fx`, `bubble_pop` (matching los 3 sliders del Settings que define el GDD)
-- [ ] Volúmenes leídos de `SaveManager.data.settings` (ya están en el schema)
-- [ ] Vibración (toggle) implementada con `sys.vibrate() [Defold native]` para mobile
+- [x] `AudioManager` con canales configurables: `music`, `sfx` (ui_fx), `ui`, `pop` (bubble_pop) — ya implementado, un canal más que el GDD original (separa UI de gameplay SFX)
+- [x] Volúmenes leídos de `SaveManager` (`MusicVolume`, `SfxVolume`, `UiVolume`, `PopVolume`)
+- [x] Vibración (toggle) implementada — vía plugin `MOST_HapticFeedback` (bridge nativo Android/iOS), no `sys.vibrate()` (eso era Defold)
+- [x] Música de fondo loop en el lobby (`AudioManager.PlayLobbyMusic()`)
+- [ ] SFX de pop de burbuja al hacer match (con variación leve de pitch) — bloqueado por gameplay
+- [ ] SFX de drop de flotantes — bloqueado por gameplay
+- [ ] SFX de victoria al completar nivel — bloqueado por gameplay
+- [ ] SFX de derrota al perder — bloqueado por gameplay
+- [ ] SFX de tap de botones (UI) — `AudioManager.PlayUi()` ya existe, falta asignar clips a los botones
 
 ### Referencias
 - GDD sección 12 (Audio)
 - GDD sección 12.4 (Mix y mastering)
-- `modules/audio_manager.lua (pendiente crear)` ya tiene la estructura, falta implementación real
+- `Scripts/Core/AudioManager.cs` (implementación real)
 
 ---
 
@@ -63,7 +69,7 @@ Aunque sea con placeholders gratuitos, agregar audio mejora 10x el feel del jueg
 **Labels:** `phase-2`, `feat`, `gameplay`, `priority-medium`, `size-M`
 
 ### Descripción
-Implementar el primer power-up del GDD: la Bomba de Coral. Explota una zona 3x3 (en hex grid: la celda + 6 vecinos hexagonales) alrededor del impacto. Es el power-up más simple y sirve para establecer el patrón de implementación de los otros 5.
+Implementar el primer power-up del GDD: la Bomba de Coral. Explota una zona 3x3 (en hex grid: la celda + 6 vecinos hexagonales) alrededor del impacto. Es el power-up más simple y sirve para establecer el patrón de implementación de los otros 5. **Bloqueado hasta que exista el gameplay base** (`Scripts/Gameplay/` está vacío).
 
 ### Acceptance criteria
 - [ ] UI de selección de power-up en pantalla pre-level (slot equipable)
@@ -73,7 +79,7 @@ Implementar el primer power-up del GDD: la Bomba de Coral. Explota una zona 3x3 
 - [ ] Al impactar grid, explota celda + 6 hex vecinos
 - [ ] Animación de explosión con partículas/shake
 - [ ] Costo: 8 gemas (placeholder hasta implementar economía)
-- [ ] Counter de power-ups disponibles guardado en SaveManager
+- [ ] Counter de power-ups disponibles guardado en `SaveManager`
 
 ### Referencias
 - GDD sección 3.2 (Power-ups del MVP)
@@ -86,21 +92,22 @@ Implementar el primer power-up del GDD: la Bomba de Coral. Explota una zona 3x3 
 **Labels:** `phase-2`, `feat`, `economy`, `gameplay`, `priority-high`, `size-M`
 
 ### Descripción
-Implementar el sistema de vidas que es base de la monetización F2P. 5 vidas máximo, una se regenera cada 30 minutos, se pierde al fallar un nivel. HUD muestra vidas actuales + countdown de la próxima.
+Implementar el sistema de vidas que es base de la monetización F2P. 5 vidas máximo, una se regenera cada 30 minutos, se pierde al fallar un nivel. **El HUD ya está listo** (`ResourcePillLives`, prefab variant de `ResourcePillView` con soporte para número, "Full", timer `mm:ss` y badge de ∞) — este issue es agregar los datos reales en `SaveManager` y llamar a los métodos del componente (`SetValue`, `SetFull`, `SetTimer`, `SetBadgeInfinite`).
 
 ### Acceptance criteria
-- [ ] HUD muestra ❤️ N (con N = vidas actuales 0-5)
-- [ ] Si N < 5, muestra countdown formato "MM:SS hasta próxima vida"
-- [ ] Vidas almacenadas en SaveManager con `lives_last_regen` timestamp
-- [ ] Al perder un nivel, decrementa vidas en 1
+- [x] HUD muestra el pill de vidas con ícono + valor + botón "+" — `ResourcePillLives Variant.prefab`
+- [x] Componente soporta modo número, "Full", timer `mm:ss` y badge infinito — `ResourcePillView.cs`
+- [ ] `SaveManager` no tiene campos de vidas todavía — agregar `Lives` (int, PlayerPrefs) y `LivesLastRegen` (timestamp)
+- [ ] Al perder un nivel, decrementa vidas en 1 (bloqueado por gameplay)
 - [ ] Al ganar un nivel, NO consume vida
 - [ ] Si vidas = 0 al intentar jugar nivel: popup "Sin vidas" con opciones (esperar / pagar gemas / ver ad — placeholders por ahora)
-- [ ] Cálculo de regen: cada 30 min real desde `lives_last_regen`, hasta cap de 5
+- [ ] Cálculo de regen: cada 30 min real desde `LivesLastRegen`, hasta cap de 5 — conectar con `ResourcePillView.SetTimer()`
 - [ ] Persiste correctamente al cerrar/reabrir el juego
 
 ### Referencias
 - GDD sección 6.2 (Sistema de vidas)
-- `EconomyManager` módulo ya tiene `consume_life()`, `add_life()` placeholders
+- `Scripts/UI/ResourcePillView.cs` (HUD ya implementado)
+- `Scripts/Core/SaveManager.cs` (agregar campos acá, sigue el patrón de propiedades existente)
 
 ---
 
@@ -109,68 +116,73 @@ Implementar el sistema de vidas que es base de la monetización F2P. 5 vidas má
 **Labels:** `phase-2`, `feat`, `economy`, `priority-high`, `size-M`
 
 ### Descripción
-Implementar el sistema dual de monedas (soft) + gemas (hard) según GDD sección 6. Display en HUD. Drops automáticos al completar niveles. Sin compras IAP todavía (eso viene en chunk separado).
+Implementar el sistema dual de monedas (soft) + gemas (hard) según GDD sección 6. **El HUD de monedas ya está listo** (`ResourcePillCoins Variant.prefab`) mostrando un valor hardcodeado — falta conectar datos reales y los drops al completar niveles. Sin compras IAP todavía (eso viene en chunk separado).
 
 ### Acceptance criteria
-- [ ] HUD top-left muestra `🪙 X    💎 Y` (monedas y gemas)
-- [ ] Drops por nivel completado:
+- [x] HUD muestra el pill de monedas con ícono + valor + botón "+" — `ResourcePillCoins Variant.prefab`
+- [ ] `SaveManager` no tiene campos de economía todavía — agregar `Coins` (int) y `Gems` (int)
+- [ ] Drops por nivel completado (bloqueado por gameplay):
   - 50-100 monedas según capítulo (GDD 6.6)
   - 1-3 gemas con probabilidad ~30%
   - +50% bonus en monedas para primera completación de un nivel
 - [ ] Animación de drop de currencies al final del nivel (caen del modal a los HUD counters)
-- [ ] Persistencia en SaveManager
+- [ ] Persistencia en `SaveManager`
 - [ ] Tracking de "primera completación" por nivel para bonus
+- [ ] Botón "+" del pill de monedas (`ResourcePillView.OnPlusClicked`) abre la Shop — todavía no implementado
 
 ### Referencias
 - GDD sección 6.3 (Monedas)
 - GDD sección 6.4 (Gemas)
 - GDD sección 6.6 (Drops por nivel)
+- `Scripts/UI/ResourcePillView.cs` (HUD ya implementado)
 
 ---
 
-## [Phase 2] Más niveles: subir de 5 a 20+ con AI gen
+## [Phase 2] Más niveles: de 30 a 60 con AI gen
 
-**Labels:** `phase-2`, `feat`, `levels`, `priority-high`, `size-L`
+✅ **PARCIALMENTE COMPLETADO** — hay 30 niveles reales en `Resources/Levels/Chapter_1/2/3/` (10 por capítulo), más de los 20 originales del plan.
+
+**Labels:** `phase-2`, `feat`, `levels`, `priority-medium`, `size-L`
 
 ### Descripción
-Pasar de 5 niveles del prototipo a 20+ niveles con curva de dificultad coherente. Usar Claude para generar borradores de niveles 6-25 según GDD sección 2.4 (curva de dificultad). Cada nivel se valida manualmente — solver script + playtest del propio dev.
+Completar de 30 a 60 niveles con curva de dificultad coherente para llegar a los 6 capítulos × 10 niveles del MVP. Usar Claude para generar borradores según GDD sección 2.4 (curva de dificultad). Cada nivel se valida manualmente.
 
 ### Acceptance criteria
-- [ ] 15+ niveles nuevos en `data/levels/` (006.json a 020.json o más)
-- [ ] Curva: niveles 6-10 fáciles intro, 11-20 medios con primeros obstáculos
+- [x] 30 niveles en `Resources/Levels/Chapter_1/Chapter_2/Chapter_3/*.json` (modelo: `LevelData.cs`)
+- [ ] 30 niveles más para completar capítulos 4, 5 y 6 (`Chapter_4/5/6`)
 - [ ] Variedad en tipos de objetivos: rescue, clear_all, color_count
 - [ ] Variedad en posiciones de criatura (top, middle, deep) y columnas
-- [ ] Cada nivel verificado como ganable por el dev
-- [ ] Botón Next del HUD funciona hasta el último nivel disponible
-- [ ] LevelManager.get_total_levels() refleja el nuevo conteo
+- [ ] Cada nivel verificado como ganable — bloqueado hasta que exista gameplay jugable
+- [ ] Sistema de carga refleja el nuevo conteo de niveles/capítulos
 
 ### Referencias
 - GDD sección 2.4 (Curva de dificultad)
 - GDD sección 2.7 (Estrategia híbrida hand + AI)
+- `Scripts/Data/LevelData.cs`
 
 ---
 
 ## [Phase 2] Localización activada en runtime
 
+✅ **COMPLETADO** — `LocaleManager` + `LocalizedText` implementados y funcionando.
+
 **Labels:** `phase-2`, `feat`, `i18n`, `priority-medium`, `size-M`
 
 ### Descripción
-Activar la localización i18n: cargar `localization/translations.csv` (ya existe con 50+ keys), reemplazar strings hardcodeados en UI por keys (`tr("ui.button.play")`), permitir cambiar idioma en runtime, persistir preferencia.
+~~Activar la localización i18n~~ Ya está activa: `LocaleManager` carga `Resources/translations.csv` (6 idiomas), `LocalizedText.cs` refresca texto estático en UI, `LocaleManager.OnLanguageChanged` para texto dinámico, selector de idioma funcional en Settings (dropdown), preferencia persistida en `SaveManager.Language` con detección automática del idioma del sistema al primer abrir.
 
 ### Acceptance criteria
-- [ ] Configurar localización en Defold (CSV loader personalizado o tabla Lua)
-- [ ] Implementar i18n module que cargue translations.csv via sys.load_resource
-- [ ] LocaleManager módulo usa `i18n.set_locale()` correctamente
-- [ ] Todos los strings de HUD reemplazados por `tr()` keys (Score, Disparos, Objetivo, etc.)
-- [ ] Selector de idioma funcional (provisional: botón debug que cicla entre los 6)
-- [ ] Cambio de idioma en runtime sin reiniciar
-- [ ] Preferencia guardada en SaveManager.settings.language
-- [ ] Por idioma del SO al primer abrir el juego
+- [x] `LocaleManager` carga `translations.csv` vía `Resources.Load<TextAsset>`
+- [x] `LocalizedText.cs` para texto estático, evento `OnLanguageChanged` para dinámico
+- [x] Selector de idioma funcional en Settings (dropdown real, no debug cycler)
+- [x] Cambio de idioma en runtime sin reiniciar (`LocaleManager.Reload()`)
+- [x] Preferencia guardada en `SaveManager.Language`
+- [x] Detecta idioma del sistema al primer abrir (`SaveManager.DetectLanguage()`)
+- [ ] Auditar que TODOS los strings de HUD/gameplay futuro usen `LocaleManager.Get()` — pendiente a medida que se agreguen pantallas nuevas
 
 ### Referencias
 - GDD sección 12.2bis (Localización)
-- `localization/translations.csv` con keys starter
-- `LocaleManager` módulo pendiente crear
+- `Scripts/Core/LocaleManager.cs`, `Scripts/UI/LocalizedText.cs`
 
 ---
 
@@ -179,20 +191,20 @@ Activar la localización i18n: cargar `localization/translations.csv` (ya existe
 **Labels:** `phase-2`, `feat`, `ui`, `priority-medium`, `size-M`
 
 ### Descripción
-Implementar el tutorial interactivo de 3 pasos descrito en GDD sección 10.3 Pantalla 3 (Onboarding). Solo se ejecuta una vez por jugador (flag `tutorial_completed` en save). Bocadillos de Marina + puntero animado.
+Implementar el tutorial interactivo de 3 pasos descrito en GDD sección 10.3 Pantalla 3 (Onboarding). Solo se ejecuta una vez por jugador (flag en save). Bocadillos de Marina + puntero animado. No implementado todavía.
 
 ### Acceptance criteria
-- [ ] Escena `onboarding/onboarding.collection + onboarding.gui`
+- [ ] Escena `Onboarding.unity` + script `Onboarding.cs`
 - [ ] Pasos 1-3 según GDD: apuntar, soltar, explicar match
-- [ ] Bocadillos de Marina con texto via i18n (keys nuevas en CSV)
+- [ ] Bocadillos de Marina con texto vía `LocaleManager.Get()` (keys nuevas en `translations.csv`)
 - [ ] Puntero animado / flecha que indica la acción
 - [ ] Botón "Saltar tutorial" oculto los primeros 2s, después aparece con fade
-- [ ] Al completar paso 3, marca `tutorial_completed = true` y va a Santuario (o Gameplay temporalmente)
-- [ ] main.script respeta `tutorial_completed`: si false, va a onboarding; si true, va a santuario/gameplay
+- [ ] Al completar paso 3, marca `tutorial_completed = true` en `SaveManager` y va a Santuario (o Gameplay temporalmente)
+- [ ] `SceneLoader`/routing inicial respeta `tutorial_completed`: si false, va a onboarding; si true, va a home/gameplay
 
 ### Referencias
 - GDD sección 10.3 Pantalla 3 (Onboarding)
-- main.script maneja el routing al init
+- `Scripts/Core/SceneLoader.cs` (routing)
 
 ---
 
@@ -201,10 +213,10 @@ Implementar el tutorial interactivo de 3 pasos descrito en GDD sección 10.3 Pan
 **Labels:** `phase-2`, `feat`, `retention`, `priority-medium`, `size-M`
 
 ### Descripción
-Implementar la racha diaria con loop de 7 días según GDD sección 7.2. Pop-up al primer login del día con la recompensa correspondiente. Indicador de racha en HUD del santuario.
+Implementar la racha diaria con loop de 7 días según GDD sección 7.2. Pop-up al primer login del día con la recompensa correspondiente. Indicador de racha en HUD del santuario. No implementado todavía.
 
 ### Acceptance criteria
-- [ ] Pantalla 5 (Daily Rewards) según GDD sección 10.3
+- [ ] Pantalla Daily Rewards según GDD sección 10.3 Pantalla 5
 - [ ] Recompensas día 1-7 según GDD 7.2:
   - Día 1: 50 monedas
   - Día 2: 100 monedas
@@ -214,7 +226,7 @@ Implementar la racha diaria con loop de 7 días según GDD sección 7.2. Pop-up 
   - Día 6: 10 gemas
   - Día 7: 25 gemas + 1 power-up raro
 - [ ] Detección de "primer login del día" (no spam)
-- [ ] Tracking en SaveManager: `streak.current`, `streak.longest`, `streak.last_claim_day`, `streak.last_login_timestamp`
+- [ ] Tracking en `SaveManager`: racha actual, racha máxima, último día reclamado, último login
 - [ ] Si pasa más de 1 día sin login, racha rota (current=0, mostrar mensaje al volver)
 - [ ] Streak Shield (50 gemas) — opcional para fase posterior
 
@@ -224,24 +236,26 @@ Implementar la racha diaria con loop de 7 días según GDD sección 7.2. Pop-up 
 
 ---
 
-## [Phase 2] UI polish con assets placeholder profesionales
+## [Phase 2] UI polish con assets propios
+
+✅ **PARCIALMENTE COMPLETADO** — ya no son placeholders genéricos: fuentes Fredoka (SDF) importadas, sprites propios exportados y en uso (panels, botón "+", íconos de HUD).
 
 **Labels:** `phase-2`, `polish`, `ui`, `priority-medium`, `size-L`
 
 ### Descripción
-Pasar de UI con `_draw()` y placeholders a UI con primer pase de assets reales: botones con frames decorativos, fonts Quicksand y Nunito (Google Fonts), iconos de Phosphor o similar, animaciones de transiciones entre pantallas.
+Pasar de UI con placeholders a UI con assets reales: botones con frames decorativos, fonts propias, íconos de HUD, animaciones de transición entre pantallas. Bastante avanzado ya en la parte de HUD/settings; falta el resto de las pantallas (Santuario, Shop, etc. — no existen todavía).
 
 ### Acceptance criteria
-- [ ] Fonts Quicksand Bold (títulos) y Nunito (body) cargadas en theme global
-- [ ] Botón primary: gradient coral pink, border radius 32px (según wireframes framework)
-- [ ] Botón secondary: blanco con borde coral
-- [ ] Iconos UI: settings, profile, daily, shop, battle pass
-- [ ] Estilos consistentes definidos en config.lua (colores, tamaños) usados en todos los GUIs
-- [ ] Transición de scenes con slide horizontal 300ms ease-out
-- [ ] Popups con scale-in animation
+- [x] Fuente Fredoka (SDF, variable) importada y en uso (`Assets/Fonts/fredoka/`)
+- [x] Sprites propios de HUD: `panel_top/bottom.png`, `pill_panel.png`, `button_plus.png`, íconos en `Sprites/UI/Icons/` y `Sprites/UI/Letters/`
+- [x] `ButtonPop.cs` — feedback de scale-bounce + sonido + haptic al tocar, usado en todos los botones
+- [x] Transiciones entre escenas con fade + animación de burbujas (`SceneTransition.cs`)
+- [ ] Botón primary/secondary con estilo definitivo (gradient, border radius) — verificar contra `08_Arte_Assets_Specs.md`
+- [ ] Íconos UI restantes: profile, daily, shop, battle pass — no existen todavía porque esas pantallas no existen
+- [ ] Popups con scale-in animation — `UIPanel.cs` ya tiene open/close animado, verificar que todos los popups lo usen
 
 ### Referencias
-- `docs/03_Wireframes_Coralia.md` Framework section
+- `docs/03_Wireframes_Coralia.md`, `docs/08_Arte_Assets_Specs.md` (specs vigentes)
 - GDD sección 11.3 (Tipografías)
 
 ---
@@ -251,17 +265,17 @@ Pasar de UI con `_draw()` y placeholders a UI con primer pase de assets reales: 
 **Labels:** `phase-2`, `feat`, `ui`, `narrative`, `priority-high`, `size-XL`
 
 ### Descripción
-Implementar la Pantalla 4 (Santuario) que es la pantalla principal del juego. Vista panorámica del arrecife con criaturas rescatadas nadando idle. Botón JUGAR. Acceso a Shop, Battle Pass, Daily, Settings, Profile, etc.
+Implementar la pantalla Santuario que es la pantalla principal del juego (GDD sección 5). Vista panorámica del arrecife con criaturas rescatadas nadando idle. Botón JUGAR. Acceso a Shop, Battle Pass, Daily, Settings, Profile, etc. **Estado actual: existe `HomeGame.unity`/`HomeGame.cs` pero es un lobby mínimo** — solo tiene botón Jugar y música de fondo, ninguna de las features del Santuario del GDD. Definir si se expande esta escena o se arma una nueva.
 
 ### Acceptance criteria
-- [ ] Escena `sanctuary/sanctuary.collection + sanctuary.gui`
+- [ ] Decidir: ¿`HomeGame` se convierte en el Santuario, o es una escena separada?
 - [ ] Background del arrecife con animación leve
-- [ ] Criaturas rescatadas (de SaveManager.creatures_rescued) aparecen nadando idle
-- [ ] HUD top: monedas, gemas, vidas con countdown
-- [ ] HUD top-left: Settings icon
+- [ ] Criaturas rescatadas (de save de criaturas) aparecen nadando idle
+- [ ] HUD top: monedas, gemas, vidas con countdown — reutilizar `ResourcePillView` ya construido
+- [ ] HUD top-left: Settings icon (ya existe como `OpenSettingsButton` en el TopPanel de LevelMap, evaluar si se replica acá)
 - [ ] HUD top-right: Profile icon
 - [ ] HUD top-center: Events banner (si hay evento activo)
-- [ ] Botón JUGAR grande centrado → Level Select
+- [ ] Botón JUGAR grande centrado → Level Map (ya existe este link vía `HomeGame.OnPlay()`)
 - [ ] Acceso rápido bottom: Shop, Battle Pass, Daily Rewards
 - [ ] Indicador de racha visible
 - [ ] Pull-to-refresh para actualizar estado
@@ -269,29 +283,34 @@ Implementar la Pantalla 4 (Santuario) que es la pantalla principal del juego. Vi
 ### Referencias
 - GDD sección 5 (Meta-juego: el Santuario)
 - GDD sección 10.3 Pantalla 4
+- `Scripts/Home/HomeGame.cs` (punto de partida actual)
+- `Scripts/UI/ResourcePillView.cs` (HUD reutilizable)
 
 ---
 
 ## [Phase 2] Level Select (mapa de niveles tipo Candy Crush)
 
+✅ **COMPLETADO** — implementado como `LevelMap.unity` con `LevelMapController`, `LevelNodeView`, `ScrollPinController`.
+
 **Labels:** `phase-2`, `feat`, `ui`, `priority-high`, `size-L`
 
 ### Descripción
-Mapa serpenteante vertical con scroll que muestra todos los niveles. Niveles desbloqueados navegables. Niveles bloqueados con candado. Niveles ganados con criatura rescatada.
+~~Mapa serpenteante vertical con scroll~~ Ya implementado: path de perlas con curva Bezier, nodos circulares, estados locked/open/done dinámicos, `PlayerCard`/`AvatarDisplay` en el nodo actual con animación de pulse/ripple.
 
 ### Acceptance criteria
-- [ ] Escena `(ya implementado como level_map/)`
-- [ ] Mapa serpenteante con nodos
-- [ ] Estados de nodos: completado (verde + criatura), actual (pulsante coral), bloqueado (gris + candado)
-- [ ] Tap en nivel desbloqueado → Pre-level
-- [ ] Tap en nivel bloqueado → tooltip "Completá el anterior"
+- [x] Escena `Scenes/Game/LevelMap.unity`
+- [x] Mapa con path de perlas (Bezier) y nodos circulares — `LevelMapController.cs`, `LevelNodeView.cs`
+- [x] Scroll vertical fluido con pin — `ScrollPinController.cs`
+- [x] `PlayerCard`/`AvatarDisplay` marcando el nodo actual con pulse/ripple
+- [x] TopPanel con HUD de recursos (`ResourcePillLives`/`ResourcePillCoins`) y botón Settings
+- [ ] Estados de nodos: verificar que completado/actual/bloqueado tengan el tratamiento visual final (candado, criatura, pulsante) — validar contra wireframes
+- [ ] Tap en nivel desbloqueado → Pre-level (Pre-level no existe todavía, hoy probablemente salta directo a Gameplay que tampoco existe)
 - [ ] Mejor score de cada nivel visible
-- [ ] Scroll vertical fluido
 - [ ] Decoración temática según capítulo
 
 ### Referencias
 - GDD sección 10.3 Pantalla 12 (Level Select)
-- Wireframes layout en `docs/03_Wireframes_Coralia.md`
+- `Scripts/LevelMap/LevelMapController.cs`, `ScrollPinController.cs`, `LevelNodeView.cs`
 
 ---
 
@@ -300,10 +319,10 @@ Mapa serpenteante vertical con scroll que muestra todos los niveles. Niveles des
 **Labels:** `phase-2`, `feat`, `ui`, `gameplay`, `priority-medium`, `size-M`
 
 ### Descripción
-Pantalla intermedia entre level select y gameplay donde el jugador ve la criatura a rescatar, los disparos disponibles, y equipa hasta 3 power-ups antes de empezar.
+Pantalla intermedia entre level select y gameplay donde el jugador ve la criatura a rescatar, los disparos disponibles, y equipa hasta 3 power-ups antes de empezar. No implementada todavía.
 
 ### Acceptance criteria
-- [ ] Escena `pre_level/pre_level.collection + pre_level.gui`
+- [ ] Escena `PreLevel.unity`
 - [ ] Imagen y nombre de la criatura a rescatar (si rescue)
 - [ ] Diálogo característico de la criatura
 - [ ] Counter de disparos disponibles
@@ -324,20 +343,20 @@ Pantalla intermedia entre level select y gameplay donde el jugador ve la criatur
 **Labels:** `phase-2`, `feat`, `infra`, `priority-low`, `size-XL`
 
 ### Descripción
-Sincronizar el save local con Firebase Firestore. Anonymous auth al primer abrir, opción de vincular cuenta (Apple ID / Google / Facebook). Sin esto el jugador pierde progreso al cambiar de dispositivo.
+Sincronizar el save local (`PlayerPrefs` vía `SaveManager`) con Firebase Firestore. Anonymous auth al primer abrir, opción de vincular cuenta (Apple ID / Google / Facebook). Sin esto el jugador pierde progreso al cambiar de dispositivo. No implementado todavía.
 
 ### Acceptance criteria
-- [ ] Extensión de Firebase para Defold instalado y configurado
-- [ ] `google-services.json` y `GoogleService-Info.plist` agregados (en .gitignore)
+- [ ] Firebase Unity SDK instalado y configurado
+- [ ] `google-services.json` y `GoogleService-Info.plist` agregados (en `.gitignore` — regla ya está en CLAUDE.md)
 - [ ] Anonymous auth al primer abrir
 - [ ] Auto-sync del save a Firestore cada 60s o on critical events (level win, IAP)
 - [ ] Resolución de conflictos: si cloud > local, prevalece cloud (con prompt)
-- [ ] Botón "Vincular cuenta" en Settings → Profile (Apple/Google/Facebook OAuth)
+- [ ] Botón "Vincular cuenta" en Settings → Cuenta y asistencia (Apple/Google/Facebook OAuth)
 - [ ] Restore al cambiar de device
 
 ### Referencias
 - GDD sección 14.5 (Save format) y 14.6 (Servicios Firebase)
-- `FirebaseManager` módulo pendiente crear
+- `Scripts/Core/SaveManager.cs` (base de PlayerPrefs a sincronizar)
 
 ---
 
@@ -346,10 +365,10 @@ Sincronizar el save local con Firebase Firestore. Anonymous auth al primer abrir
 **Labels:** `phase-2`, `feat`, `monetization`, `priority-medium`, `size-L`
 
 ### Descripción
-Integrar AdMob (vía plugin Defold) con AppLovin MAX como mediación. Implementar los 5 placements de rewarded ads + 1 interstitial según GDD sección 9.2.
+Integrar AdMob (Google Mobile Ads Unity SDK) con AppLovin MAX como mediación. Implementar los 5 placements de rewarded ads + 1 interstitial según GDD sección 9.2. No implementado todavía.
 
 ### Acceptance criteria
-- [ ] Plugin AdMob para Defold instalado
+- [ ] Google Mobile Ads Unity SDK instalado
 - [ ] AppLovin MAX configurado como mediación
 - [ ] Test ads en development (NUNCA con AdMob real durante desarrollo)
 - [ ] Rewarded placements implementados:
@@ -359,14 +378,13 @@ Integrar AdMob (vía plugin Defold) con AppLovin MAX como mediación. Implementa
   - Daily chest extra (1/día)
   - Power-up gratis pre-level (3/día)
 - [ ] Interstitial entre niveles (1 cada 3 niveles ganados)
-- [ ] Caps diarios respetados con `AdsManager`
+- [ ] Caps diarios respetados con clase `AdsManager` (C#, estática — sigue el patrón de `AudioManager`/`LocaleManager`)
 - [ ] Anti-fatigue: si ignora 5 ads consecutivos, suspender 24h
 - [ ] Compliance: ATT en iOS al primer abrir
 - [ ] NO ads durante gameplay activo
 
 ### Referencias
 - GDD sección 9.2 (Anuncios)
-- `AdsManager` módulo pendiente crear
 
 ---
 
@@ -375,10 +393,10 @@ Integrar AdMob (vía plugin Defold) con AppLovin MAX como mediación. Implementa
 **Labels:** `phase-2`, `feat`, `monetization`, `priority-medium`, `size-L`
 
 ### Descripción
-Integrar RevenueCat (cross-platform IAP) con los 6 packs de gemas + Starter Pack + Battle Pass según GDD sección 6.5. Configurar productos en App Store Connect y Google Play Console.
+Integrar RevenueCat (cross-platform IAP) con los 6 packs de gemas + Starter Pack + Battle Pass según GDD sección 6.5. Configurar productos en App Store Connect y Google Play Console. No implementado todavía.
 
 ### Acceptance criteria
-- [ ] RevenueCat SDK configurado
+- [ ] RevenueCat Unity SDK configurado
 - [ ] Productos definidos en RevenueCat dashboard:
   - Burbujita ($0.99 / 80 gemas)
   - Concha ($4.99 / 450 gemas)
@@ -388,15 +406,15 @@ Integrar RevenueCat (cross-platform IAP) con los 6 packs de gemas + Starter Pack
   - Cofre Mítico ($99.99 / 13000)
   - Starter Pack ($2.99) — 7 días desde install, 1 sola vez
   - Battle Pass S1 ($4.99)
-- [ ] Pantalla 7 (Shop) implementada con tabs (gemas, vidas, power-ups, especiales)
-- [ ] Botón "Restaurar compras" en Settings funcional
+- [ ] Pantalla Shop implementada con tabs (gemas, vidas, power-ups, especiales) — reutilizar `ResourcePillView` para el header de balance
+- [ ] Botón "Restaurar compras" en Settings → Cuenta y asistencia funcional
 - [ ] Validación server-side de recibos
-- [ ] Tracking de IAP history en SaveManager
+- [ ] Tracking de IAP history en `SaveManager`
 
 ### Referencias
 - GDD sección 6.5 (IAP packs)
 - GDD sección 10.3 Pantalla 7 (Shop)
-- `IAPManager` módulo pendiente crear
+- `Scripts/UI/ResourcePillView.cs` (header de balance reutilizable)
 
 ---
 
@@ -405,11 +423,11 @@ Integrar RevenueCat (cross-platform IAP) con los 6 packs de gemas + Starter Pack
 **Labels:** `phase-2`, `feat`, `monetization`, `priority-medium`, `size-XL`
 
 ### Descripción
-Implementar el Battle Pass de 30 días con 40 tiers, dos tracks (free y premium $4.99). Dado que es una temporada continua, este chunk requiere setup de la primera temporada y todo el sistema.
+Implementar el Battle Pass de 30 días con 40 tiers, dos tracks (free y premium $4.99). No implementado todavía.
 
 ### Acceptance criteria
-- [ ] Pantalla 6 (Battle Pass) según GDD 10.3
-- [ ] Sistema de XP que tracker XP por acción (50 por nivel ganado, etc. según GDD 8.3)
+- [ ] Pantalla Battle Pass según GDD 10.3 Pantalla 6
+- [ ] Sistema de XP que trackea XP por acción (50 por nivel ganado, etc. según GDD 8.3)
 - [ ] 40 tiers con recompensas free + premium para temporada 1 "Despertar del Coral"
 - [ ] Premium track elimina ads durante 30 días
 - [ ] Botón comprar premium $4.99 (vía RevenueCat) o 800 gemas
@@ -430,17 +448,15 @@ Implementar el Battle Pass de 30 días con 40 tiers, dos tracks (free y premium 
 **Labels:** `phase-1`, `chore`, `ui`, `priority-medium`, `size-L`
 
 ### Descripción
-La especificación de los wireframes está completa en `docs/03_Wireframes_Coralia.md` con framework + 17 pantallas detalladas. Falta ejecutar el diseño visual en Figma siguiendo ese spec.
+La especificación de los wireframes está completa en `docs/03_Wireframes_Coralia.md` con framework + 17 pantallas detalladas. Falta ejecutar el diseño visual en Figma siguiendo ese spec — o, dado que ahora se está exportando arte real directo a Unity (ver `08_Arte_Assets_Specs.md`), evaluar si este paso sigue siendo necesario o se saltea yendo directo a producción de assets.
 
 ### Acceptance criteria
-- [ ] Archivo Figma del proyecto creado
-- [ ] Framework de Figma con: estilos de color, tipografías, componentes (btn_primary, btn_secondary, popup_container, hud_currency, etc.)
-- [ ] 17 pantallas dibujadas en Figma siguiendo los layouts ASCII del spec
-- [ ] Versión Light Mode (Modo Arrecife) y Dark Mode (Modo Profundidades)
-- [ ] Link al Figma agregado a README.md
+- [ ] Decidir si este paso sigue vigente o se reemplaza por el flujo actual (export directo a `design/exported/` → Unity)
+- [ ] Si sigue vigente: archivo Figma del proyecto creado, framework con estilos/tipografías/componentes, 17 pantallas dibujadas
 
 ### Referencias
 - `docs/03_Wireframes_Coralia.md` (spec completo)
+- `docs/08_Arte_Assets_Specs.md` (flujo de producción actual)
 
 ---
 
@@ -449,10 +465,10 @@ La especificación de los wireframes está completa en `docs/03_Wireframes_Coral
 **Labels:** `phase-1`, `chore`, `priority-low`, `size-S`
 
 ### Descripción
-Aunque saltamos Chunk 7 oficialmente, antes del global launch DEBEMOS hacer al menos un playtest informal para validar diversión con audiencia objetivo. La guía y formularios ya están armados.
+Antes del global launch hay que hacer al menos un playtest informal para validar diversión con audiencia objetivo. **Bloqueado hasta que exista gameplay jugable en Unity** — el playtest del prototipo Godot no cuenta porque el gameplay no se portó.
 
 ### Acceptance criteria
-- [ ] Build standalone macOS de Coralia compartido a 1-3 personas
+- [ ] Build standalone (macOS o mobile) de Coralia con gameplay funcional compartido a 1-3 personas
 - [ ] Sesiones grabadas (con permiso) o notas detalladas
 - [ ] `docs/06_Playtest_Results.md` creado con resumen
 - [ ] Decisión documentada: avanzar / iterar / replantear
@@ -470,7 +486,7 @@ Aunque saltamos Chunk 7 oficialmente, antes del global launch DEBEMOS hacer al m
 **Labels:** `chore`, `priority-medium`, `size-S`
 
 ### Descripción
-Antes de invertir en arte y publicar en stores, validar que el nombre "Coralia" está disponible en App Store, Google Play, dominios y redes sociales. Si está tomado, decidir nombre alternativo.
+Antes de invertir en arte y publicar en stores, validar que el nombre "Coralia" está disponible en App Store, Google Play, dominios y redes sociales. Si está tomado, decidir nombre alternativo. Sin cambios — sigue pendiente.
 
 ### Acceptance criteria
 - [ ] App Store: search "Coralia" — si hay otra app con ese nombre, evaluar diferenciación
@@ -486,7 +502,7 @@ Antes de invertir en arte y publicar en stores, validar que el nombre "Coralia" 
 **Labels:** `chore`, `infra`, `priority-medium`, `size-S`
 
 ### Descripción
-Antes del soft launch necesitás:
+Antes del soft launch necesitás cuentas de developer y backend configuradas. Sin cambios — sigue pendiente.
 
 ### Acceptance criteria
 - [ ] Apple Developer Program activado ($99/año)
@@ -495,7 +511,7 @@ Antes del soft launch necesitás:
 - [ ] AdMob app registrada
 - [ ] AppLovin MAX cuenta creada
 - [ ] RevenueCat cuenta creada
-- [ ] GitHub repo del proyecto privado creado y push del código
+- [ ] GitHub repo del proyecto privado creado y push del código — el repo local sigue sin remoto configurado
 
 ---
 
@@ -566,16 +582,16 @@ Después del primer power-up (Bomba de Coral), implementar los otros 5 según GD
 
 ---
 
-## [Backlog] 60 niveles totales (de 20 a 60) para MVP
+## [Backlog] 60 niveles totales (de 30 a 60) para MVP
 
 **Labels:** `backlog`, `feat`, `levels`, `priority-medium`, `size-XL`
 
 ### Descripción
-Completar los 60 niveles del MVP siguiendo la curva del GDD sección 2.4. Estos son los 6 capítulos × 10 niveles. Estrategia híbrida hand + AI.
+Completar los 60 niveles del MVP siguiendo la curva del GDD sección 2.4. Estos son los 6 capítulos × 10 niveles — hoy hay 30 (capítulos 1-3). Estrategia híbrida hand + AI.
 
 ### Acceptance criteria
-- [ ] 40 niveles más (021 a 060)
-- [ ] Capítulos según GDD 2.1: Cala Apagada (1-10), Jardín de Anémonas (11-20), Bosque de Algas (21-30), Cueva de Cristales (31-40), Profundidades de Coral (41-50), Ciudad de las Perlas (51-60)
+- [ ] 30 niveles más (capítulos 4, 5 y 6 en `Resources/Levels/`)
+- [ ] Capítulos según GDD 2.1: Cala Apagada (1-10, ✅), Jardín de Anémonas (11-20, ✅), Bosque de Algas (21-30, ✅), Cueva de Cristales (31-40), Profundidades de Coral (41-50), Ciudad de las Perlas (51-60)
 - [ ] Curva difícil con walls de pago en 35, 45, 55
 - [ ] Variedad de objetivos (rescue, clear_all, color_count, drop_creature, multi_rescue)
 - [ ] Obstáculos progresivos (hielo, jaulas, pegajosas, generadores, bombas)
@@ -616,7 +632,7 @@ Implementar los 40 logros del GDD sección 7.5 con 3 tiers (bronce, plata, oro).
 - [ ] 40 logros implementados (12 bronce + 18 plata + 10 oro)
 - [ ] Categorías: progresión, coleccionismo, skill, restauración, generosidad, eficiencia, constancia
 - [ ] Detección automática de logros desbloqueados
-- [ ] Pantalla 9 (Profile) muestra grid 4×4 con barras de progreso
+- [ ] Pantalla Profile muestra grid 4×4 con barras de progreso
 - [ ] Recompensas otorgadas al desbloquear (gemas, monedas, power-ups, skins)
 - [ ] Notificación de logro desbloqueado durante gameplay (toast)
 
@@ -690,13 +706,13 @@ Pilar #3 de retención. Conectar via Facebook / Apple ID, friends list, enviar/r
 **Labels:** `backlog`, `tech`, `infra`, `priority-medium`, `size-L`
 
 ### Descripción
-Script que simula N partidas de un nivel para validar solubilidad y estimar dificultad real. Crítico para el flujo de generación de niveles AI-assisted.
+Script que simula N partidas de un nivel para validar solubilidad y estimar dificultad real. Crítico para el flujo de generación de niveles AI-assisted. Puede vivir fuera de Unity (Python standalone leyendo los JSON de `Resources/Levels/`) o como Editor tool en C# — evaluar cuál es más simple para un solo dev.
 
 ### Acceptance criteria
-- [ ] Script Lua que valida un nivel JSON
-- [ ] Simula 1000 partidas con bot que dispara semi-aleatorio
+- [ ] Script que valida un nivel JSON (Python standalone o Unity Editor tool)
+- [ ] Simula partidas con bot que dispara semi-aleatorio
 - [ ] Reporta tasa de éxito y promedio de disparos óptimos
-- [ ] Ejecutable desde CLI para validar batch de niveles
+- [ ] Ejecutable en batch para validar todos los niveles de golpe
 - [ ] Output formato CSV para análisis
 
 ### Referencias
@@ -709,7 +725,7 @@ Script que simula N partidas de un nivel para validar solubilidad y estimar difi
 **Labels:** `backlog`, `feat`, `monetization`, `priority-low`, `size-L`
 
 ### Descripción
-Lanzar suscripción mensual tras 3-6 meses post-launch (audiencia base estable). Beneficios: sin ads + 50 gemas/día + vidas infinitas + skin exclusiva mensual + early access a niveles.
+Lanzar suscripción mensual tras 3-6 meses post-launch (audiencia base estable). Beneficios: sin ads + 50 gemas/día + vidas infinitas + skin exclusiva mensual + early access a niveles. El HUD de vidas ya soporta el estado "infinito" (`ResourcePillView.SetBadgeInfinite()`), listo para cuando se implemente esto.
 
 ### Acceptance criteria
 - [ ] Producto suscripción en RevenueCat ($4.99/mes o $39.99/año)
@@ -717,10 +733,12 @@ Lanzar suscripción mensual tras 3-6 meses post-launch (audiencia base estable).
 - [ ] Beneficios activos mientras la sub está activa
 - [ ] Manejo de cancelación / expiration
 - [ ] Skin mensual rotativo
+- [ ] Conectar vidas infinitas con `ResourcePillView.SetBadgeInfinite()` (ya implementado del lado visual)
 
 ### Referencias
 - GDD sección 9.3 (Suscripción)
 - Plan Maestro Capa 4
+- `Scripts/UI/ResourcePillView.cs`
 
 ---
 
@@ -731,10 +749,10 @@ Lanzar suscripción mensual tras 3-6 meses post-launch (audiencia base estable).
 **Labels:** `bug`, `gameplay`, `priority-low`, `size-S`
 
 ### Descripción
-En clear_all, si quedan ≥1 burbujas huérfanas que no pueden formar matches con ningún otro color en grid, el nivel se vuelve unwinnable. El smart queue actual tira fallback random cuando no hay colores con 2+ instancias, pero eso no resuelve la unsolvability.
+En clear_all, si quedan ≥1 burbujas huérfanas que no pueden formar matches con ningún otro color en grid, el nivel se vuelve unwinnable. Este bug viene del prototipo Godot — hay que verificar si aplica de nuevo cuando se implemente el smart queue en Unity. **No aplicable todavía: no hay gameplay en Unity.**
 
 ### Acceptance criteria
-- [ ] Detectar caso "no hay matches posibles" en gameplay.script
+- [ ] Al implementar el smart queue en Unity, detectar caso "no hay matches posibles"
 - [ ] Si detectado, ofrecer un "anti-stuck": mover bubbles aleatorias o regenerar grid
 - [ ] O: nunca generar layouts con bubbles huérfanas (responsabilidad del nivel diseñado)
 
@@ -745,11 +763,11 @@ En clear_all, si quedan ≥1 burbujas huérfanas que no pueden formar matches co
 **Labels:** `polish`, `gameplay`, `ux`, `priority-low`, `size-S`
 
 ### Descripción
-Cuando el jugador dispara y no matchea, la burbuja simplemente aterriza sin feedback. Algunos juegos hacen un pequeño "shake" o sonido suave. Considerar para mejorar feel.
+Cuando el jugador dispara y no matchea, la burbuja simplemente aterriza sin feedback. Algunos juegos hacen un pequeño "shake" o sonido suave. Considerar para mejorar feel. **No aplicable todavía: no hay gameplay en Unity.**
 
 ### Acceptance criteria
 - [ ] Shake leve de la burbuja al aterrizar sin match
-- [ ] Sonido suave distinto del pop de match
+- [ ] Sonido suave distinto del pop de match (`AudioManager.PlayPop()` ya existe, falta el clip y la llamada)
 - [ ] (Opcional) Indicador sutil de "near miss" si quedó cerca de un match
 
 ---
@@ -760,3 +778,4 @@ Cuando el jugador dispara y no matchea, la burbuja simplemente aterriza sin feed
 - Cada issue debe linkear al PR cuando se trabaje, y al commit cuando se cierre.
 - Para issues grandes (XL), considerar dividir en sub-issues antes de empezar.
 - Cuando crees el repo en GitHub, podrías importar este doc directamente con `gh issue create` por sección.
+- **Mantenimiento:** la revisión 2026-05→2026-08 quedó 3 meses sin sincronizar con el código real (migración de motor incluida). Para que no vuelva a pasar: actualizar este doc y `07_Status_y_Roadmap.md` al cerrar cada chunk grande, o al menos correr `/graphify --update` + comparar contra el código antes de asumir que un issue sigue pendiente.

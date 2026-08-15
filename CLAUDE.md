@@ -4,25 +4,28 @@ Este archivo se carga automáticamente al iniciar una sesión de Claude Code en 
 
 ## Qué es Coralia
 
-**Coralia** es un Bubble Shooter mobile cozy submarino para Android + iOS. Estudio: **myappcube** (Diego). Stack: **Defold + Lua**. Modelo: **F2P híbrido** (Ads + IAP + Battle Pass + Suscripción fase 2). Audiencia: mujeres 25-45 casual.
+**Coralia** es un Bubble Shooter mobile cozy submarino para Android + iOS. Estudio: **myappcube** (Diego). Stack: **Unity 6 + C#**. Modelo: **F2P híbrido** (Ads + IAP + Battle Pass + Suscripción fase 2). Audiencia: mujeres 25-45 casual.
 
 Protagonista: **Marina** (sirena joven). Antagonista: **La Sombra Profunda** (criatura herida que Marina libera con compasión). Estructura: 6 capítulos × 10 niveles = 60 niveles MVP. 6 idiomas al lanzamiento (es, en, it, fr, de, pt).
 
-## Motor: Defold
+> El proyecto arrancó como prototipo en **Godot 4**, pasó brevemente por **Defold**, y migró a **Unity 6** en mayo 2026 (`fb0a6da chore: migrar a Unity 6 — eliminar Defold`). Todo el código activo hoy es Unity/C#. Si encontrás referencias a Godot o Defold en `docs/`, `README.md` o `CHANGELOG.md`, son históricas y NO reflejan el estado actual — no confíes en sus secciones técnicas de engine, solo en las de diseño (GDD, wireframes, narrativa).
 
-Todo el código activo está en **Lua + Defold**. Tipos de archivo clave:
-- `.collection` — escena/colección (protobuf text)
-- `.go` — game object (lista de componentes)
-- `.script` — script Lua adjunto a un game object
-- `.gui` — escena GUI (protobuf text)
-- `.gui_script` — script Lua adjunto a un GUI
-- `.collectionproxy` — proxy de colección (lazy-load de escenas)
-- `.atlas` — atlas de sprites
-- `game.project` — configuración del proyecto
+## Motor: Unity 6
+
+Proyecto Unity en `coralia/`. Tipos de archivo clave:
+- `.unity` — escena
+- `.prefab` — game object reutilizable con sus componentes
+- `.cs` — script C# (MonoBehaviour, o clase estática para managers/utils)
+- `.asset` — ScriptableObject / config asset (ej. RenderPipeline settings)
+- `ProjectSettings/` — configuración del proyecto (nunca editar a mano, usar el editor)
+
+Render pipeline: URP. Orientación: portrait 1080×1920 (`defaultScreenWidth/Height` en ProjectSettings están al revés porque es el valor base landscape de Unity — no tocar).
 
 ## Documentos de referencia (orden de lectura)
 
-1. **`docs/07_Status_y_Roadmap.md`** — siempre primero. Dónde estamos y qué queda.
+⚠️ Estos docs describen diseño y roadmap con precisión, pero sus secciones de **arquitectura técnica / engine están desactualizadas** (escritas para Godot o Defold). Usalos para game design, no para convenciones de código.
+
+1. **`docs/07_Status_y_Roadmap.md`** — punto de partida, pero su sección de engine es vieja. Verificar estado real contra el código antes de asumir algo.
 2. **`docs/06_Backlog_GitHub_Issues.md`** — el backlog. Cada H2 es un issue con acceptance criteria.
 3. **`docs/02_GDD_Coralia.md`** — GDD completo (17 secciones). Consultar antes de implementar features:
    - Mecánicas → secciones 1-4
@@ -34,85 +37,57 @@ Todo el código activo está en **Lua + Defold**. Tipos de archivo clave:
    - Arte → sección 11
    - Audio → sección 12
    - Narrativa (criaturas, antagonista) → sección 13
-   - Arquitectura técnica → sección 14
-4. **`docs/03_Wireframes_Coralia.md`** — spec textual de las 17 pantallas.
-5. **`docs/wireframes/styled_mockups.html`** — mockups visuales estilizados.
-6. **`CHANGELOG.md`** — historial de cambios por chunk.
+   - Arquitectura técnica → sección 14 (⚠️ vieja, no confiar)
+4. **`docs/03_Wireframes_Coralia.md`** — spec textual de las pantallas.
+5. **`docs/08_Arte_Assets_Specs.md`** — specs de producción de arte (tamaños, colores, prompts) para sprites/iconos/UI. Vigente y últil al exportar assets nuevos.
+6. **`CHANGELOG.md`** — histórico de chunks, pero solo cubre hasta Fase 1 Godot. Los commits de Unity no están volcados ahí — usar `git log` para historial reciente.
 
-## Estructura de archivos
+## Estructura de archivos (Unity)
 
 ```
-game.project              ← config Defold (1080x1920 portrait, bootstrap, bundles)
-input/
-  game.input_binding      ← touch + back
-main/
-  main.collection         ← bootstrap (socket "main")
-  main.go                 ← game object con main.script + proxies de escenas
-  main.script             ← router: recibe "go_to", maneja disable/unload/async_load
-splash1/                  ← socket "splash1" — logo estudio, fade in/out, skip on tap
-splash2/                  ← socket "splash2" — logo juego + versión dinámica + dots
-level_map/                ← socket "level_map" — scroll inverso por capítulos
-gameplay/                 ← (próximo) socket "gameplay" — cañón + grid + HUD
-modules/
-  config.lua              ← constantes globales (grid, física, colores, economía)
-  router.lua              ← router.go(scene_name) → msg a main:/main#main_script
-  save_manager.lua        ← save_mgr.load() / .save(data) vía sys.save/sys.load
-  level_manager.lua       ← level_mgr.load(id) / .load_all() — caché de JSONs
-assets/
-  atlas/
-    logos.atlas           ← logo.png (1080x1080) + logo_myappcube.png (1024x1024)
-    bubbles.atlas         ← 7 colores idle (200x200 px cada uno)
-  fonts/
-    coralia_ui.font       ← distance field, referencia vera_mo_bd.ttf
-  images/logos/           ← PNGs originales de logos
-  sprites/bubbles/
-    idle/                 ← 7 PNGs 200x200 (extraídos de v1 spritesheets)
-    v1/                   ← spritesheets originales 2400x200, 12 frames
-data/levels/              ← 001.json–020.json (cap. 1: lvl 1-10, cap. 2: lvl 11-20)
-localization/
-  translations.csv        ← 6 idiomas (pendiente activar en Defold)
+coralia/
+  Assets/
+    Scenes/
+      Splash/           ← SplashStudio.unity, SplashGame.unity
+      Home/              ← HomeGame.unity
+      Game/              ← LevelMap.unity, (próximo) Gameplay.unity
+    Scripts/
+      Core/              ← managers estáticos: SaveManager, LocaleManager, AudioManager,
+                            SceneLoader (constantes de nombres de escena), SceneTransition
+      UI/                ← componentes de UI reutilizables (ButtonPop, UIPanel, SettingsToggle,
+                            LocalizedText, ResponsiveLayout, SafeAreaPanel, TopPanelController…)
+      Home/              ← HomeGame.cs
+      Splash/            ← SplashStudio.cs, SplashGame.cs
+      LevelMap/          ← LevelMapController.cs, LevelNodeView.cs, ScrollPinController.cs
+      Gameplay/          ← (vacío todavía — cañón/grid/match pendiente)
+      Data/              ← LevelData.cs (modelo serializable de nivel)
+    Prefabs/
+      UI/buttons/ panels/ user/ game/ inputs/
+      Gameplay/
+    Resources/
+      translations.csv   ← 6 idiomas, cargado por LocaleManager
+      Audio/              ← AudioManager.prefab
+      Levels/Chapter_1/ Chapter_2/ Chapter_3/  ← JSONs de niveles (deserializados a LevelData)
+    Sprites/UI/          ← Buttons, Pines, Panels, Banners, Inputs
+    Data/                ← ScriptableObjects de configuración
+design/exported/          ← exports de diseño (PNGs a distintas densidades) antes de importarlos a Unity
 ```
 
-## Reglas clave de Defold
+## Convenciones de código (C#)
 
-### URLs y sockets
-- Socket name = el campo `name:` en el `.collection` (ej: `name: "main"` → socket `"main"`)
-- URL completa: `socket:/instance_path#component_id`
-- Ejemplo: `main:/main#main_script` (socket="main", instance="/main", component="main_script")
-- Las paths dentro de una collection son **FLAT**: `children:` solo hereda transform, NO afecta URL path
+- **Sin namespace** — las clases van a global namespace (así está todo el código existente).
+- **Naming clases/archivos:** `PascalCase.cs`, un archivo por clase pública.
+- **Naming campos serializados:** `camelCase` con `[SerializeField]`, alineados en columnas cuando hay varios seguidos (ver `SettingsToggle.cs`, `ButtonPop.cs` como referencia de estilo).
+- **Naming campos privados no serializados:** `_camelCase` con guión bajo.
+- **Constantes:** `SCREAMING_SNAKE_CASE` o `PascalCase` según visibilidad (`const string KEY_LANGUAGE`, pero `public const string SPLASH_STUDIO`).
+- **Managers globales:** clases estáticas (no singletons MonoBehaviour) — `SaveManager`, `LocaleManager`, `SceneLoader`. Persistencia vía `PlayerPrefs`.
+- **Comentarios:** solo cuando el WHY no es obvio — sin docstrings.
+- **i18n:** todo string visible → `Resources/translations.csv`, acceso vía `LocaleManager.Get(key)`. Componente `LocalizedText.cs` para texto estático en UI; `LocaleManager.OnLanguageChanged` para refrescar dinámico.
+- **Niveles en JSON:** NUNCA hardcodear niveles en código — van en `Resources/Levels/Chapter_N/*.json`, modelo en `LevelData.cs`.
 
-### IDs y mensajes
-- IDs de game objects y URLs NO se pueden pasar dentro de tablas de `msg.post` — se corrompen
-- Para responder a quien envió un mensaje: usar `sender` en `on_message`, nunca pasar URL en tabla
-
-### Routing (cómo cambiar de escena)
-1. `router.go("scene_name")` → `msg.post("main:/main#main_script", "go_to", { scene = name })`
-2. `main.script` recibe `go_to`, hace disable + final + unload al proxy actual
-3. Luego async_load al nuevo proxy
-4. El proxy responde `proxy_loaded` → main hace `enable`
-
-### Input
-- `acquire_input_focus` en **cada** `gui_script` init Y en `main.script` init
-- Sin el acquire en main.script, los proxies NO reciben input
-
-### Datos de niveles (JSON)
-- Bundled via `game.project` → `custom_resources = /data/`
-- Cargar: `sys.load_resource("/data/levels/001.json")` + `json.decode(bytes)`
-- Cacheados en `level_manager._cache`
-
-### Atlas y texturas en GUI
-- En GUI, textures se referencian como `"atlas_name/image_name"` (sin extensión de imagen)
-- Ej: `"logos/logo_myappcube"` (atlas llamado "logos", imagen `logo_myappcube.png`)
-
-## Convenciones de código
-
-- **Naming archivos:** `snake_case` (ej: `level_manager.lua`)
-- **Naming variables/funciones:** `snake_case`
-- **Constantes:** `SCREAMING_SNAKE_CASE`
-- **Módulos:** siempre `local M = {} ... return M`
-- **Comentarios:** solo cuando el WHY no es obvio — sin docstrings
-- **i18n:** todo string visible → `localization/translations.csv` (pendiente activar)
-- **Niveles en JSON:** NUNCA hardcodear niveles en código
+### Routing (cambio de escena)
+- `SceneLoader.GoTo(SceneLoader.LEVEL_MAP)` (constantes definidas en `SceneLoader.cs`) → delega a `SceneTransition.GoTo(sceneName)`.
+- `SceneTransition` es una clase que se auto-instancia (`DontDestroyOnLoad`) la primera vez que se usa; maneja el fade + animación de burbujas entre escenas y el `SceneManager.LoadSceneAsync` por debajo.
 
 ## Convenciones cross-proyecto (app-impostor)
 
@@ -128,7 +103,7 @@ localization/
 - **Prefijo en commits**: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `polish:`
 - **Branch por issue**: `git checkout -b issue-N-short-description`
 - **Mergear a main vía PR**
-- **Actualizar CHANGELOG.md** al cerrar cada chunk
+- **Actualizar CHANGELOG.md** al cerrar cada chunk (nota: no se viene haciendo desde la migración a Unity — retomar si Diego lo pide)
 
 ## Workflow de issues
 
@@ -136,39 +111,39 @@ localization/
 2. Verificar dependencias resueltas
 3. Leer sección relevante del GDD
 4. Branch → implementar según acceptance criteria
-5. Probar en Defold (desktop)
+5. Probar en Unity Editor (Play mode)
 6. Commit + push + PR → mergear + cerrar issue
 7. Update CHANGELOG.md
 
-## Estado actual del código (2026-05-06)
+## Estado actual del código (2026-08-11)
 
 ### Implementado ✅
-- Proyecto Defold limpio desde cero (game.project, input binding)
-- Módulos reutilizables: config, router, save_manager, level_manager
-- Bootstrap: main.collection / main.go / main.script con routing por proxies
-- Splash 1: logo estudio, fade in/out 2.7s total, tap to skip
-- Splash 2: logo juego, versión dinámica, dots animation, MIN_SHOW 2s
-- Level Map: scroll inverso (cap. nuevos arriba), 4 cols, estados locked/open/done dinámicos
-- 20 niveles JSON (capítulo 1: lvl 1-10, capítulo 2: lvl 11-20)
-- 2 atlases: logos.atlas + bubbles.atlas
+- Proyecto Unity 6 (URP), portrait 1080×1920
+- Managers Core: `SaveManager` (PlayerPrefs), `LocaleManager` (6 idiomas), `AudioManager`, `SceneLoader` + `SceneTransition` (fade + burbujas animadas entre escenas)
+- Splash Studio + Splash Game
+- HomeGame (lobby)
+- Level Map: `LevelMapController`, `LevelNodeView`, `ScrollPinController`, `PlayerCard`/`AvatarDisplay` en el nodo actual
+- Settings panel completo (sliders de audio, toggles, dropdown de idioma)
+- Niveles en `Resources/Levels/Chapter_1/2/3` (JSON → `LevelData`)
+- `TopPanelController` (safe area del panel superior) — en progreso
 
 ### Pendiente (priorizado)
-Ver `docs/06_Backlog_GitHub_Issues.md`. Top:
-1. Gameplay: cañón + grid hexagonal + match + win/lose
-2. Audio: música + SFX placeholders
+Ver `docs/06_Backlog_GitHub_Issues.md` (con la salvedad de que fue escrito para Defold — validar contra el código real antes de asumir qué falta). Top conocido:
+1. Gameplay: cañón + grid hexagonal + match + win/lose (carpeta `Scripts/Gameplay/` está vacía)
+2. Audio: música + SFX in-game
 3. Sistema de vidas (5 vidas, regen 30 min)
 4. HUD en gameplay (score, shots, lives)
-5. Settings screen
+5. Componentes de HUD/Shop reutilizables (resource pills, currency bar)
 
 ## Cosas a NO hacer
 
 - ❌ NO crear pantallas o features fuera del GDD / backlog
 - ❌ NO modificar el GDD sin discutir con Diego
 - ❌ NO formatos binarios para niveles (JSON siempre)
-- ❌ NO hardcodear strings UI (van a translations.csv)
+- ❌ NO hardcodear strings UI (van a `Resources/translations.csv`)
 - ❌ NO commitear: `*.keystore`, `google-services.json`, `GoogleService-Info.plist`
-- ❌ NO pasar IDs/URLs de game objects dentro de tablas de msg.post
-- ❌ NO paths jerárquicas tipo `/gameplay/hud` — paths en Defold son FLAT
+- ❌ NO editar `ProjectSettings/` a mano — pasar por el editor de Unity
+- ❌ NO asumir que las secciones de engine/arquitectura de `docs/` son ciertas sin verificar contra el código — están escritas para Godot/Defold
 
 ## Cómo Diego prefiere trabajar
 

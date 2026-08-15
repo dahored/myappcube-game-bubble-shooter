@@ -83,3 +83,6 @@ logs/
 /.editor_settings
 /.internal
 /build
+
+# graphify (knowledge graph, regenerar con /graphify --update)
+graphify-out/
