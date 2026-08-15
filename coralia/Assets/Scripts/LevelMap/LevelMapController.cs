@@ -25,7 +25,8 @@ public class LevelMapController : MonoBehaviour
     void Start()
     {
         AudioManager.Instance?.PlayLobbyMusic();
-        SaveManager.MaxUnlockedLevel = 10; // TEMP TEST — quitar antes de release
+        // Para test descomenta
+        // SaveManager.MaxUnlockedLevel = 10;
         BuildMap();
     }
 

@@ -9,9 +9,11 @@ public enum PinDirection { Top, Bottom }
 // Bottom: aparece abajo cuando el nodo actual está ENCIMA del viewport.
 public class ScrollPinController : MonoBehaviour
 {
-    [SerializeField] ScrollRect    scrollRect;
-    [SerializeField] RectTransform contentRT;
-    [SerializeField] PinDirection  direction;   // Top o Bottom
+    [SerializeField] ScrollRect         scrollRect;
+    [SerializeField] RectTransform      contentRT;
+    [SerializeField] PinDirection       direction;          // Top o Bottom
+    [SerializeField] TopPanelController topPanel;           // asignar solo en ScrollPinTop
+    [SerializeField] float              pinPaddingFromPanel = 40f;
 
     [Header("Threshold (en cantidad de nodos)")]
     [SerializeField] int   nodesThreshold = 2;
@@ -53,6 +55,13 @@ public class ScrollPinController : MonoBehaviour
     {
         nodeRT  = currentNode;
         spacing = nodeSpacing;
+
+        if (topPanel != null)
+        {
+            var pos = rt.anchoredPosition;
+            pos.y = -(topPanel.PanelHeight + pinPaddingFromPanel);
+            rt.anchoredPosition = pos;
+        }
 
         // Solo el Bottom pin centra el scroll al cargar (es el pin "principal")
         if (direction == PinDirection.Bottom)

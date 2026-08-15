@@ -7,7 +7,6 @@ public class SafeAreaPanel : MonoBehaviour
 
     void Apply()
     {
-#if !UNITY_EDITOR
         var safe = Screen.safeArea;
         var rt   = GetComponent<RectTransform>();
 
@@ -23,6 +22,5 @@ public class SafeAreaPanel : MonoBehaviour
         rt.anchorMax = new Vector2(Mathf.Clamp01(anchorMax.x), Mathf.Clamp01(anchorMax.y));
         rt.offsetMin  = Vector2.zero;
         rt.offsetMax  = Vector2.zero;
-#endif
     }
 }

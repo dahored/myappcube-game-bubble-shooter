@@ -150,7 +150,9 @@ public class SceneTransition : MonoBehaviour
 
         if (_bubbleSound != null)
         {
-            _audioSource.clip = _bubbleSound;
+            _audioSource.clip   = _bubbleSound;
+            _audioSource.volume = SaveManager.PopVolume;
+            _audioSource.mute   = !SaveManager.SoundEnabled;
             _audioSource.Play();
         }
     }
