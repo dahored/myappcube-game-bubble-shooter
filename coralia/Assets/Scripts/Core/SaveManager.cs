@@ -8,6 +8,8 @@ public static class SaveManager
     // Claves internas usadas para leer/escribir en PlayerPrefs
     const string KEY_LANGUAGE      = "language";
     const string KEY_MAX_LEVEL     = "max_level";
+    const string KEY_GEMS          = "gems";
+    const string KEY_LIVES         = "lives";
     const string KEY_SOUND_MUSIC   = "vol_music";
     const string KEY_SOUND_SFX     = "vol_sfx";
     const string KEY_SOUND_UI      = "vol_ui";
@@ -47,6 +49,20 @@ public static class SaveManager
     {
         get => PlayerPrefs.GetInt(KEY_MAX_LEVEL, 1);
         set { PlayerPrefs.SetInt(KEY_MAX_LEVEL, value); PlayerPrefs.Save(); }
+    }
+
+    // Moneda premium (GDD §6.3). Sin fuentes reales de gemas todavía — arranca en 0.
+    public static int Gems
+    {
+        get => PlayerPrefs.GetInt(KEY_GEMS, 0);
+        set { PlayerPrefs.SetInt(KEY_GEMS, Mathf.Max(0, value)); PlayerPrefs.Save(); }
+    }
+
+    // Vidas (GDD §6.2). Por defecto: 5 llenas. Regen por tiempo todavía no implementado.
+    public static int Lives
+    {
+        get => PlayerPrefs.GetInt(KEY_LIVES, 5);
+        set { PlayerPrefs.SetInt(KEY_LIVES, Mathf.Max(0, value)); PlayerPrefs.Save(); }
     }
 
     // Volúmenes de cada canal de audio (0.0 a 1.0). Por defecto: 1 (máximo)
