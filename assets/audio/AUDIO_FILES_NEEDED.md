@@ -1,6 +1,6 @@
 # Audio Files Needed — Coralia
 
-All files must be OGG Vorbis format. Drop them in the corresponding folder and Godot will auto-import.
+MP3, WAV or OGG all work — Unity imports any of them as an AudioClip automatically. Drop them in the corresponding folder here, then import into `coralia/Assets/Resources/Audio/` to wire them up to `AudioManager`.
 
 ## Music  (`assets/audio/music/`)
 
