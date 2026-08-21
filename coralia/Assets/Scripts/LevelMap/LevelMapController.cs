@@ -24,6 +24,10 @@ public class LevelMapController : MonoBehaviour
 
     void Start()
     {
+        // Por si se entra a esta escena directo (sin pasar por Splash, donde se activa
+        // normalmente) — así las transiciones animadas funcionan igual al testear.
+        SceneTransition.Enabled = true;
+
         AudioManager.Instance?.PlayLobbyMusic();
         // Para test descomenta
         // SaveManager.MaxUnlockedLevel = 10;
@@ -73,7 +77,9 @@ public class LevelMapController : MonoBehaviour
             go.name   = $"Level_{lvl.id}";
             var state = GetState(lvl.id, maxUnlocked);
             go.GetComponent<RectTransform>().anchoredPosition = positions[i];
-            go.GetComponent<LevelNodeView>().Setup(lvl.id, state, 0);
+            var nodeView = go.GetComponent<LevelNodeView>();
+            nodeView.Setup(lvl.id, state, 0);
+            nodeView.OnClicked += OnLevelSelected;
 
             // ScrollPins: inicializar con el RectTransform del nodo actual
             if (state == NodeState.Available)

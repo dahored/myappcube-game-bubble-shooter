@@ -1,9 +1,20 @@
+using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(RectTransform))]
 public class SafeAreaPanel : MonoBehaviour
 {
     void Awake() => Apply();
+
+    // Reintento un frame después: cuando la escena se carga como parte de una transición
+    // (en vez de ser la primera escena en arrancar), Screen.safeArea a veces todavía no
+    // está actualizado en Awake() y devuelve un valor viejo/incorrecto — este segundo
+    // Apply() se autocorrige. No hace nada raro si el primer cálculo ya estaba bien.
+    IEnumerator Start()
+    {
+        yield return null;
+        Apply();
+    }
 
     void Apply()
     {

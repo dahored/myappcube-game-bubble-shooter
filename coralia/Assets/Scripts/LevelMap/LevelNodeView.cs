@@ -16,6 +16,12 @@ public class LevelNodeView : MonoBehaviour
     [SerializeField] GameObject starRow;    // fila de estrellas (se oculta si no hay progreso)
     [SerializeField] Image[] stars;         // Star1, Star2, Star3 — tamaño fijo 3
     [SerializeField] GameObject lockIcon;   // candado (solo visible si bloqueado)
+    [SerializeField] Button   button;       // clic/tap del nodo — dispara OnClicked si no está bloqueado
+
+    public event System.Action<int> OnClicked;
+
+    int       _id;
+    NodeState _state;
 
     [Header("Sprites — nodo")]
     [SerializeField] Sprite spriteDefault;  // azul — bloqueado o completado con reintentos
@@ -40,7 +46,18 @@ public class LevelNodeView : MonoBehaviour
     // Configura el nodo con los datos del nivel
     public void Setup(int id, NodeState state, int starsEarned)
     {
+        _id    = id;
+        _state = state;
         numberLabel.text = id.ToString();
+
+        if (button)
+        {
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() =>
+            {
+                if (_state != NodeState.Locked) OnClicked?.Invoke(_id);
+            });
+        }
 
         // Sprite del círculo según el estado del nivel
         switch (state)
