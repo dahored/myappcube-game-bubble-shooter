@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: a0660d12899264328bab769dc267cd15
+guid: e19bd62b08b1347f2b854843cf8d0767
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -5628002278266893520
-    second: button_plus_0
+      213: 5573322058532531375
+    second: bubble_yellow@200px_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -72,10 +72,10 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 256
+    maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 2
+    textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -139,13 +139,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: button_plus_0
+      name: bubble_yellow@200px_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 116
-        height: 117
+        x: 6
+        y: 6
+        width: 188
+        height: 188
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -154,8 +154,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 03b00d01fb155e1b0800000000000000
-      internalID: -5628002278266893520
+      spriteID: fac2ead22ea685d40800000000000000
+      internalID: 5573322058532531375
       vertices: []
       indices: 
       edges: []
@@ -174,7 +174,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      button_plus_0: -5628002278266893520
+      bubble_yellow@200px_0: 5573322058532531375
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
