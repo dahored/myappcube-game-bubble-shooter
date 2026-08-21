@@ -20,16 +20,24 @@ public class CannonController : MonoBehaviour
 
     public event System.Action<Vector2Int> OnBubbleLanded;
 
-    List<string> _availableColors;
-    float        _rainbowChance;
+    List<string>      _availableColors;
+    List<BubbleColor> _availableColorsParsed; // fallback de RollColor() si el grid se queda sin colores rastreables
+    float             _rainbowChance;
     BubbleColor  _current;
     BubbleColor  _next;
     ShotBubble   _flyingShot;
     bool         _inputEnabled = true;
     bool         _dragging;
     Vector2      _aimDir = Vector2.up;
+    Vector2      _muzzleLocal; // posición de muzzlePoint convertida al espacio local de gridContainer —
+                                // calculada acá en vez de a mano, así no importa el anchor/dispositivo
 
     void Awake() => currentBubbleButton.onClick.AddListener(SwapCurrentAndNext);
+
+    // Start() y no Awake(): SafeAreaPanel ajusta el tamaño real de SafeArea en su propio
+    // Awake(), y Unity garantiza que todos los Awake() de la escena terminan antes que
+    // cualquier Start() — así la posición mundial de muzzlePoint ya es la definitiva.
+    void Start() => _muzzleLocal = WorldToGridLocal(muzzlePoint.position);
 
     void Update()
     {
@@ -40,8 +48,10 @@ public class CannonController : MonoBehaviour
 
     public void Init(List<string> availableColors, float rainbowChance)
     {
-        _availableColors = availableColors;
-        _rainbowChance   = rainbowChance;
+        _availableColors       = availableColors;
+        _availableColorsParsed = new List<BubbleColor>();
+        foreach (var c in availableColors) _availableColorsParsed.Add(BubbleColorExtensions.Parse(c));
+        _rainbowChance = rainbowChance;
         _current = RollColor();
         _next    = RollColor();
         RefreshPreview();
@@ -73,12 +83,12 @@ public class CannonController : MonoBehaviour
     void UpdateAim(Vector2 screenPos)
     {
         Vector2 local = ScreenToGridLocal(screenPos);
-        Vector2 dir   = local - muzzlePoint.anchoredPosition;
+        Vector2 dir   = local - _muzzleLocal;
         if (dir.sqrMagnitude < 0.001f) dir = Vector2.up;
         dir.Normalize();
         if (dir.y < 0.15f) dir.y = 0.15f; // GDD 1.3: no se puede apuntar hacia abajo del todo
         _aimDir = dir.normalized;
-        trajectoryLine.ShowPath(muzzlePoint.anchoredPosition, _aimDir);
+        trajectoryLine.ShowPath(_muzzleLocal, _aimDir, grid.SpriteFor(_current));
     }
 
     Vector2 ScreenToGridLocal(Vector2 screenPos)
@@ -88,11 +98,21 @@ public class CannonController : MonoBehaviour
         return local;
     }
 
+    // Convierte una posición mundo (ej. la de muzzlePoint) al espacio local de gridContainer —
+    // funciona sin importar de qué padre/anchor cuelgue el objeto convertido.
+    Vector2 WorldToGridLocal(Vector3 worldPos)
+    {
+        var cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, worldPos);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(gridContainer, screenPoint, cam, out var local);
+        return local;
+    }
+
     void Fire()
     {
         var go   = Instantiate(bubblePrefab, gridContainer);
         var shot = go.AddComponent<ShotBubble>();
-        shot.Init(gridContainer, grid, muzzlePoint.anchoredPosition, _aimDir, shotSpeed, _current, grid.SpriteFor(_current));
+        shot.Init(gridContainer, grid, _muzzleLocal, _aimDir, shotSpeed, _current, grid.SpriteFor(_current));
         _flyingShot = shot;
         AudioManager.Instance?.PlaySfx(shootClip);
     }
@@ -109,11 +129,22 @@ public class CannonController : MonoBehaviour
         Destroy(_flyingShot); // el componente ShotBubble ya cumplió su función, la BubbleView sigue viva
         _flyingShot = null;
 
-        _current = _next;
-        _next    = RollColor();
-        RefreshPreview();
+        _current = _next; // avanzar la cola no depende del resultado del match, es siempre así
 
+        // OnBubbleLanded dispara GameplayController.ResolveMatchAndDrop de forma síncrona —
+        // para cuando termina esta línea, el grid ya refleja el match/drop de este disparo
+        // (incluida la cascada: burbujas de OTRO color que cayeron por quedar desconectadas
+        // del techo, no solo las que matchearon directo).
         OnBubbleLanded?.Invoke(cell);
+
+        // El "current" recién promovido pudo quedar huérfano por esa misma cascada (aunque
+        // su color no haya matcheado nada, puede haber caído igual). Se re-sortea antes de
+        // mostrarlo — mejor una burbuja distinta a una que no puede matchear con nada.
+        if (_current != BubbleColor.Rainbow && !grid.ColorsOnGrid().Contains(_current))
+            _current = RollColor();
+
+        _next = RollColor();
+        RefreshPreview();
     }
 
     void SwapCurrentAndNext()
@@ -123,11 +154,16 @@ public class CannonController : MonoBehaviour
         RefreshPreview();
     }
 
+    // Smart queue: solo ofrece colores que todavía están en el grid, para no regalar
+    // burbujas con las que no se puede matchear nada. Si el grid no tiene ninguno
+    // rastreable (ej. solo quedan rainbow, o está vacío), cae al pool del nivel.
     BubbleColor RollColor()
     {
         if (Random.value < _rainbowChance) return BubbleColor.Rainbow;
-        var colorStr = _availableColors[Random.Range(0, _availableColors.Count)];
-        return BubbleColorExtensions.Parse(colorStr);
+
+        var onGrid = grid.ColorsOnGrid();
+        List<BubbleColor> pool = onGrid.Count > 0 ? new List<BubbleColor>(onGrid) : _availableColorsParsed;
+        return pool[Random.Range(0, pool.Count)];
     }
 
     void RefreshPreview()

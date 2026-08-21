@@ -25,6 +25,10 @@ public class GameplayController : MonoBehaviour
 
     void Start()
     {
+        // Por si se entra a esta escena directo (sin pasar por Splash, donde se activa
+        // normalmente) — así las transiciones animadas funcionan igual al testear.
+        SceneTransition.Enabled = true;
+
         int levelId = PlayerPrefs.GetInt("selected_level", 1);
         _level = LevelLoader.LoadById(levelId);
         if (_level == null)
@@ -128,8 +132,10 @@ public class GameplayController : MonoBehaviour
         _levelEnded = true;
         cannon.SetInputEnabled(false);
 
-        if (won && _level.id >= SaveManager.MaxUnlockedLevel)
-            SaveManager.MaxUnlockedLevel = _level.id + 1;
+        // TEMP — desactivado a pedido de Diego mientras prueba el loop, para no ir
+        // desbloqueando niveles de verdad todavía. Reactivar sacando el comentario.
+        // if (won && _level.id >= SaveManager.MaxUnlockedLevel)
+        //     SaveManager.MaxUnlockedLevel = _level.id + 1;
 
         if (won) winLosePanel.ShowWin(_level.objective.type == "rescue");
         else     winLosePanel.ShowLose();

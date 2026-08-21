@@ -20,6 +20,17 @@ public class GridController : MonoBehaviour
 
     public int CellCount => _cells.Count;
 
+    // Colores que todavía están en el grid — usado por CannonController para no ofrecer
+    // colores que ya no tienen con qué matchear (GDD: "smart queue"). Rainbow no cuenta,
+    // matchea con cualquier color así que no representa una necesidad de suministro.
+    public HashSet<BubbleColor> ColorsOnGrid()
+    {
+        var colors = new HashSet<BubbleColor>();
+        foreach (var view in _cells.Values)
+            if (view.ColorType != BubbleColor.Rainbow) colors.Add(view.ColorType);
+        return colors;
+    }
+
     public void SpawnFromLevel(LevelData level)
     {
         Clear();

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 // Simula el mismo trayecto que va a recorrer el disparo real (comparte HexGridMath con
 // ShotBubble) para que la línea punteada nunca muestre un camino que el disparo no haría.
@@ -11,7 +12,8 @@ public class TrajectoryLine : MonoBehaviour
     [SerializeField] int            maxDots  = 40;
     [SerializeField] float          stepSize = 24f;
 
-    readonly List<RectTransform> _pool = new();
+    readonly List<RectTransform> _pool      = new();
+    readonly List<Image>         _poolImage = new();
 
     void Awake()
     {
@@ -20,10 +22,13 @@ public class TrajectoryLine : MonoBehaviour
             var go = Instantiate(dotPrefab, gridContainer);
             go.SetActive(false);
             _pool.Add((RectTransform)go.transform);
+            _poolImage.Add(go.GetComponent<Image>());
         }
     }
 
-    public void ShowPath(Vector2 originLocal, Vector2 dir)
+    // sprite: el mismo sprite de la burbuja actual (grid.SpriteFor(color)) — así el dot
+    // se ve como una mini burbuja real, sin depender de teñir un sprite genérico.
+    public void ShowPath(Vector2 originLocal, Vector2 dir, Sprite sprite)
     {
         Vector2 pos       = originLocal;
         Vector2 direction = dir.normalized;
@@ -39,6 +44,11 @@ public class TrajectoryLine : MonoBehaviour
 
             _pool[used].gameObject.SetActive(true);
             _pool[used].anchoredPosition = pos;
+            if (_poolImage[used])
+            {
+                _poolImage[used].sprite = sprite;
+                _poolImage[used].color  = Color.white;
+            }
             used++;
 
             if (HitsSomething(pos)) break;
