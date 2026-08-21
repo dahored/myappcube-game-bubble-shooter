@@ -6,48 +6,47 @@ description: Coralia project status, file map, backlog priority, and workflow fo
 # Project Manager — Coralia
 
 ## What is Coralia
-Cozy underwater Bubble Shooter (Godot 4 + GDScript). Solo dev: Diego (myappcube). F2P hybrid: Ads + IAP + Battle Pass. Audience: women 25-45 casual. 6 chapters × 10 levels = 60 levels MVP. 6 languages at launch.
 
-## Current state (as of 2026-05-01)
-- **Phase 1** ✅ Complete — playable prototype, 5 JSON levels, save system
-- **Phase 2** 🔄 In progress — Chunk A (persistence) done, rest in backlog
+Cozy underwater Bubble Shooter (Unity 6, C#). Solo dev: Diego (myappcube). F2P hybrid: Ads + IAP + Battle Pass. Audience: women 25-45 casual. 6 chapters × 10 levels = 60 levels MVP. 6 languages at launch (es, en, it, fr, de, pt).
 
-## Key file locations
+> Engine history: Godot 4 (prototype) → Defold (brief) → Unity 6 (`fb0a6da`, May 2026). All active code today is Unity/C#, under `coralia/`.
+
+## Current state — check live, don't trust a snapshot here
+
+This file used to hardcode "current state as of [date]" and went stale within weeks. Don't repeat that. To find the real current state:
+
+1. `gh issue list --state all` — the actual backlog, with open/closed status. Issues are the source of truth for what's done vs. pending, not this doc.
+2. `docs/07_Status_y_Roadmap.md` — periodically-updated status doc (engine-history section is accurate; verify anything specific against the code before trusting it).
+3. `CLAUDE.md`'s "Estado actual del código" section — updated less often than issues, but gives a readable summary.
+4. `git log --oneline -20` — recent commits, for what actually landed.
+
+## Key file locations (Unity)
+
 ```
-project.godot                   ← Godot 4 project config + autoload registration
-scenes/main/boot.tscn           ← Entry point, routes based on save state
-scenes/gameplay/gameplay.tscn   ← Main gameplay scene
-scripts/autoloads/              ← 11 global singletons (do NOT add new ones)
-scripts/gameplay/               ← grid.gd, grid_logic.gd, bubble.gd, canon.gd, gameplay.gd
-data/levels/001-005.json        ← 5 levels (JSON, format: GDD §14.4)
-localization/translations.csv   ← 50+ keys in 6 languages (es, en, it, fr, de, pt)
-docs/06_Backlog_GitHub_Issues.md ← Source of truth for all issues
-docs/02_GDD_Coralia.md          ← Game Design Document (17 sections)
+coralia/Assets/Scenes/{Splash,Home,Game}/          ← .unity scenes
+coralia/Assets/Scripts/{Core,UI,Home,Splash,LevelMap,Gameplay,Data}/   ← C# scripts
+coralia/Assets/Resources/translations.csv          ← 6-language UI strings
+coralia/Assets/Resources/Levels/Chapter_1/2/3/*.json  ← real level data (LevelData.cs)
+coralia/Assets/Prefabs/                             ← UI + gameplay prefabs
+docs/06_Backlog_GitHub_Issues.md                    ← issue drafts (predates GitHub issues existing; verify against `gh issue list`)
+docs/02_GDD_Coralia.md                              ← Game Design Document (17 sections; §14 architecture is Godot-era, don't trust it)
 ```
-
-## Phase 2 priority order (by impact)
-1. **Audio** — music + SFX placeholders (issue #1, size-M, 1-2 days)
-2. **Sistema de vidas** — 5 lives, 30-min regen (size-M)
-3. **Sistema de monedas + gemas** — drops per level (size-M)
-4. **Más niveles** — from 5 to 20+ using AI gen (size-L, 3-5 days)
-5. **Onboarding tutorial** — 3-step, first-run only (size-M)
-6. **Santuario** — main hub screen (size-XL)
-7. **Level Select** — serpentine map (size-L)
 
 ## Issue workflow
+
 1. Diego says "trabajemos en el issue N"
-2. Read `docs/06_Backlog_GitHub_Issues.md` to find the issue
-3. Check dependencies are resolved
-4. Read relevant GDD section before coding
-5. `git checkout -b issue-N-short-description`
-6. Implement per acceptance criteria
-7. Test in Godot (run the scene)
-8. Commit + push + PR → close issue
-9. Update CHANGELOG.md
+2. `gh issue view N` to read it (or `docs/06_Backlog_GitHub_Issues.md` if it predates a real GitHub issue — check dependencies either way)
+3. Read the relevant GDD section before coding
+4. `git checkout -b issue-N-short-description`
+5. Implement per acceptance criteria
+6. Test in the Unity Editor (Play mode)
+7. Commit (see the `commit` skill for message/branch conventions) + push + PR → `Closes #N` in the PR description
+8. Update `CHANGELOG.md`
 
 ## What NOT to do
-- ❌ No new autoloads (11 exist — extend them)
-- ❌ No hardcoded UI strings (use `tr("key")` + translations.csv)
+
+- ❌ No MonoBehaviour singletons for cross-scene state — extend the existing static managers in `Scripts/Core/` (`SaveManager`, `LocaleManager`, `AudioManager`, `SceneLoader`)
+- ❌ No hardcoded UI strings — add a key to `Resources/translations.csv`, access via `LocaleManager.Get(key)`
 - ❌ No new features outside GDD/backlog without discussing first
-- ❌ No binary level formats (JSON only)
-- ❌ No mixing features in one commit
+- ❌ No binary level formats (JSON only, under `Resources/Levels/Chapter_N/`)
+- ❌ No mixing unrelated features in one commit — see the `commit` skill

@@ -1,5 +1,7 @@
 # Plan Fase 1 — Prototipo Jugable
 
+> ⚠️ **Documento histórico de la era Godot.** Este plan (y todo su contenido técnico: `.tscn`, `.gd`, atajos de Godot) describe el prototipo original construido en Godot 4, previo a la migración a Unity 6. Se conserva como registro de lo que se construyó y por qué en esa fase — no representa el stack ni el código actual. Ver `CLAUDE.md` para el estado real del proyecto.
+
 **Versión:** 0.2 — 2026-05-01
 **Estado:** ✅ **COMPLETADA** (Chunk 7 skipped por decisión del solo dev)
 **Duración real:** 1 sesión intensiva con Claude (vs 3-4 semanas estimadas)

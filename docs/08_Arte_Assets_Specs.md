@@ -8,13 +8,13 @@
 
 ## Checklist maestro de producción
 
-> Marcá `[x]` cuando el asset esté listo e importado en Godot.
+> Marcá `[x]` cuando el asset esté listo e importado en Unity.
 
 ### Tipografías
 - [ ] A0 · Quicksand Bold — descargar `.ttf` de Google Fonts → `assets/fonts/`
 - [ ] A0 · Nunito Regular — descargar `.ttf` de Google Fonts → `assets/fonts/`
 - [ ] A0 · Nunito Black — descargar `.ttf` de Google Fonts → `assets/fonts/`
-- [ ] A0 · Theme global en Godot configurado con las 3 fuentes
+- [ ] A0 · Font Assets de TextMeshPro generados para las 3 fuentes e importados a Unity
 
 ### Prioridad 1 (sin esto el juego no corre visualmente)
 - [x] A1b · v1/bubble_red-sprite.png (1280×160, 8 frames) — frame 1 = idle, frames 1-8 = pop
@@ -53,7 +53,7 @@
 - [ ] C2 · Cañón — Midjourney + Photopea
 - [ ] C3 · Fondos gameplay capítulos 2-6 — Midjourney
 - [ ] C4 · Path decoración mapa — Figma + Midjourney
-- [ ] C5 · Spritesheet bubble pop (opción A: Godot particles / opción B: spritesheet comprado)
+- [ ] C5 · Spritesheet bubble pop (opción A: Unity Particle System / opción B: spritesheet comprado)
 - [ ] C5 · Spritesheet match explosion
 - [ ] C5 · Efecto criatura rescatada
 
@@ -72,7 +72,7 @@
 | Animaciones de personajes | **Kling AI** o **Runway ML** | ~$10-15/mes |
 | Burbujas, botones, UI vectorial | **Figma** | Gratis |
 | Logo, iconos de app | **Figma** + Midjourney | mismo plan |
-| Efectos de partículas | **Godot CPUParticles2D** | Gratis (código) |
+| Efectos de partículas | **Unity Particle System** | Gratis (código) |
 | Edición/recorte de imágenes | **Photopea** (Photoshop gratuito online) | Gratis |
 | Spritesheet de animaciones | **Free Sprite Sheet Packer** (online) | Gratis |
 
@@ -80,7 +80,7 @@
 1. Generás en Midjourney → descargás PNG
 2. Editás/recortás en Photopea si hace falta (fondo transparente, ajustes)
 3. Guardás en `assets/sprites/` o `assets/backgrounds/` según corresponda
-4. Importás en Godot
+4. Importás en Unity (`coralia/Assets/Sprites/...`, Sprite mode Single o Multiple según corresponda)
 
 ---
 
@@ -119,16 +119,12 @@ assets/fonts/Nunito-Regular.ttf
 assets/fonts/Nunito-Black.ttf
 ```
 
-#### Configurar el Theme global en Godot
+#### Configurar las fuentes en Unity (TextMeshPro)
 
-1. En Godot: Project → Project Settings → General → GUI → Theme
-2. Crear un nuevo `Theme` resource en `assets/fonts/coralia_theme.tres`
-3. En el Theme, asignar:
-   - `default_font` → `Nunito-Regular.ttf`
-   - `default_font_size` → 28
-4. Para botones y labels específicos: usar `add_theme_font_override()` con `Quicksand-Bold.ttf` o `Nunito-Black.ttf`
-
-El Theme global se aplica automáticamente a todos los nodos Control del juego sin necesidad de configurar cada uno.
+1. Importar cada `.ttf` a `coralia/Assets/Fonts/` (mismo patrón que la fuente Fredoka ya usada en el proyecto).
+2. Por cada fuente: click derecho → `Create → TextMeshPro → Font Asset` para generar el Font Asset (SDF) que usa TextMeshPro.
+3. Fuente por defecto del proyecto: `Edit → Project Settings → TextMeshPro → Settings` → asignar el Font Asset de `Nunito-Regular` en `Default Font Asset`.
+4. Para botones/labels específicos que necesiten `Quicksand-Bold` o `Nunito-Black`: asignar el Font Asset directo en el campo `Font Asset` de ese `TMP_Text` — no hay equivalente a un Theme global que se herede automáticamente, cada componente de texto tiene su propia referencia.
 
 ---
 
@@ -197,8 +193,9 @@ Formato:            PNG con fondo transparente
 ```
 
 > **Nota de diseño:** el idle "respiración" de la burbuja en el grid se hace con
-> un Tween de escala en Godot (1.0 ↔ 1.06, ease sine, ~0.9s). No necesita
-> sprite — se ve más fluido que cualquier spritesheet de 3 frames.
+> una animación de escala por código (1.0 ↔ 1.06, ease sine, ~0.9s — coroutine,
+> mismo patrón que `BubbleView.PlayPopAnimation()`/`PlayDropAnimation()`). No
+> necesita sprite — se ve más fluido que cualquier spritesheet de 3 frames.
 > El spritesheet es exclusivamente para el **pop/explosión**.
 
 #### Secuencia de los 5 frames de explosión
@@ -371,7 +368,7 @@ Para cada animación:
 2. Escribís el prompt de movimiento
 3. Generás video ~3-4 segundos
 4. Extraés frames con Free Sprite Sheet Packer o EZGif
-5. Importás como AnimatedSprite2D en Godot
+5. Importás el spritesheet en modo Sprite `Multiple` (sliceado) y armás un Animation Clip arrastrando la secuencia de sprites a la ventana `Animation` de Unity (genera el `Animator Controller` automáticamente)
 
 #### Animaciones a generar
 
@@ -689,7 +686,7 @@ assets/sprites/creatures/hero/burbujin.png
 ```
 Tamaño: 200 × 280 px
 Formato: PNG con fondo transparente
-Rotación: apunta hacia arriba (0°). Godot lo rota dinámicamente al apuntar.
+Rotación: apunta hacia arriba (0°). El código lo rota dinámicamente al apuntar.
 Estilo: concha marina grande y decorativa con abertura como cañón
 ```
 
@@ -774,8 +771,8 @@ assets/sprites/map/decorations_ch1.png    ← sheet de decoraciones cap 1
 
 #### Efecto bubble pop — dos opciones
 
-**Opción A — Godot particles (actual placeholder)**
-Se construye con `CPUParticles2D` sin assets externos. Rápido de implementar, pero se ve genérico.
+**Opción A — Unity Particle System (actual placeholder)**
+Se construye con el `Particle System` nativo de Unity sin assets externos. Rápido de implementar, pero se ve genérico.
 
 **Opción B — Spritesheet de animación (recomendada para MVP pulido)**
 Un spritesheet con ~8 frames de la burbuja reventando (esfera → deformación → anillo de gotas → dispersión). El estilo de referencia es una burbuja de agua realista que explota, como el ejemplo de referencia guardado en `docs/other_games_captures/`.
@@ -786,7 +783,7 @@ Tamaño por frame: 96 × 96 px  (mismo que BUBBLE_DIAMETER)
 Frames: 8 frames en una sola fila horizontal
 Tamaño total del spritesheet: 768 × 96 px
 Formato: PNG con fondo transparente
-Color: blanco/azul neutro — se tinta en Godot con el color de la burbuja (modulate)
+Color: blanco/azul neutro — se tinta en Unity con el color de la burbuja (`Image.color`)
 FPS de animación: 18-24 fps (~0.4s total)
 ```
 
@@ -798,12 +795,14 @@ FPS de animación: 18-24 fps (~0.4s total)
 4. **Kling AI** — generar un video de burbuja reventando → exportar frames → armar spritesheet con Free Sprite Sheet Packer.
 5. **Shutterstock / Adobe Stock** — tienen exactamente el estilo de referencia pero requieren licencia editorial o extended ($10-30 por imagen).
 
-**Cómo usar en Godot:**
-```gdscript
-# AnimatedSprite2D con SpriteFrames que contiene el spritesheet
-# Al hacer pop: instanciar la animación en la posición de la burbuja
-# Usar modulate = bubble_color para tintar el efecto al color correcto
-# Conectar animation_finished → queue_free()
+**Cómo usar en Unity:**
+```
+# Animation Clip armado desde el spritesheet sliceado (mismo flujo que la
+# animación de Marina más arriba), en un GameObject con Image + Animator
+# Al hacer pop: instanciar el efecto en la posición de la burbuja
+# Usar Image.color = bubbleColor para tintar el efecto al color correcto
+# Al terminar la animación: Destroy(gameObject) — mismo patrón que
+# BubbleView.PlayPopAnimation()
 ```
 
 **Archivos a guardar**
@@ -812,14 +811,14 @@ assets/sprites/vfx/bubble_pop_sheet.png      ← spritesheet 768×96
 assets/sprites/vfx/match_explosion_sheet.png ← opcional, para el match highlight
 ```
 
-#### Otros efectos (Godot puro — sin assets)
+#### Otros efectos (Unity puro — sin assets)
 
-| Efecto | Descripción | Nodo Godot |
+| Efecto | Descripción | Componente Unity |
 |---|---|---|
-| Criatura rescatada | Estrellas y corazones flotando hacia arriba | CPUParticles2D |
-| Combo x5+ | Número grande con glow que aparece y desaparece | AnimationPlayer + Label |
-| Corrientes de agua | Partículas suaves horizontales en fondo | CPUParticles2D drift |
-| Confeti victoria | Confeti multicolor cayendo | CPUParticles2D gravity |
+| Criatura rescatada | Estrellas y corazones flotando hacia arriba | Particle System |
+| Combo x5+ | Número grande con glow que aparece y desaparece | Animator + TMP_Text |
+| Corrientes de agua | Partículas suaves horizontales en fondo | Particle System (drift) |
+| Confeti victoria | Confeti multicolor cayendo | Particle System (gravity) |
 
 ---
 

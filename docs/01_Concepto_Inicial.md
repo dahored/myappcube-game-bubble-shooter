@@ -33,7 +33,7 @@ Marina vive en un arrecife de coral que alguna vez fue el más vibrante del océ
 | Audiencia objetivo | Mujeres 25-45, casual |
 | Lanzamiento | LATAM-first → global (estrategia de mercado, no estética) |
 | Localización | 6 idiomas al MVP (es, en, it, fr, de, pt) — gestión $0 con AI + red personal |
-| Stack | Godot 4 + GDScript |
+| Stack | Unity 6 + C# |
 | Modelo | F2P híbrido (Ads + IAP + Battle Pass) |
 
 ## Loop emocional por nivel
@@ -86,7 +86,7 @@ Para alinear arte y mood (referencias para AI gen y briefs a freelancers):
 2. **Diferenciación percibida en stores** — mitigación: screenshot principal debe mostrar restauración visual del arrecife (antes/después), no solo gameplay.
 3. **Escalabilidad narrativa** — mitigación: cada criatura tiene 1-2 líneas, no historias largas; reutilizable en LiveOps.
 4. **Calidad de localización con AI translation** — francés y alemán típicamente requieren más cuidado que italiano/portugués. Mitigación: priorizar revisión por hablantes nativos de la red personal específicamente para esos dos idiomas antes del lanzamiento (presupuesto $0 — solo favores de la red).
-5. **Doble paleta UI (Light + Dark)** — el tema oscuro implica que cada elemento de UI necesita variantes claro/oscuro. Mitigación: definir tokens de color como variables CSS-style en Godot; muchos elementos solo cambian de paleta sin redibujarse.
+5. **Doble paleta UI (Light + Dark)** — el tema oscuro implica que cada elemento de UI necesita variantes claro/oscuro. Mitigación: definir tokens de color como assets compartidos (ScriptableObject o material shared) en Unity; muchos elementos solo cambian de paleta sin redibujarse.
 
 ## Convenciones cross-proyecto con myappcube
 
