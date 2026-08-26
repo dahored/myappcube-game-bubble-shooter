@@ -20,6 +20,7 @@ Matches `LevelData.cs` (`coralia/Assets/Scripts/Data/LevelData.cs`) exactly — 
   "name": "Nombre del nivel",
   "objective": { "type": "clear_all" },
   "max_shots": 22,
+  "min_shots_to_clear": 17,
   "available_colors": ["red", "blue", "yellow"],
   "rainbow_chance": 0.05,
   "bubbles": [
@@ -47,6 +48,19 @@ Matches `LevelData.cs` (`coralia/Assets/Scripts/Data/LevelData.cs`) exactly — 
 - Row `0` is the ceiling. For the level's starting bubbles to correctly register as "connected to the ceiling" (so the drop-chain logic works), at least one bubble per column-run should originate at row `0` — a level that starts at row `2`+ with nothing at row `0` means the game considers *nothing* ceiling-connected, so the first match drops the entire level at once. (This was a real bug found and fixed during initial gameplay-loop testing — verify row `0` has content before shipping a level.)
 - Bubbles that land from missed shots stick permanently — the grid can grow further down than what the JSON defines as the player plays. That's expected classic bubble-shooter behavior, not something to design around.
 
+## min_shots_to_clear y star_thresholds
+
+`min_shots_to_clear` es el mínimo de disparos para completar el nivel jugando óptimo — se define **jugando el nivel a mano** (o simulándolo), no por fórmula. `max_shots - min_shots_to_clear` es el margen real de la dificultad: mucho margen = nivel fácil, margen justo = nivel difícil. Es el mismo criterio de la tabla de tasa de éxito de arriba, pero explícito en el JSON en vez de quedar solo en la cabeza de quien diseñó el nivel.
+
+Una vez que `min_shots_to_clear` está definido, `star_thresholds` sale de una referencia de score ideal:
+
+```
+score_ideal = burbujas × 10 + max(0, max_shots − min_shots_to_clear) × 10
+star_thresholds = [40%, 65%, 90%] de score_ideal
+```
+
+(Los pesos 10/10 son `SCORE_PER_POP`/`SCORE_PER_REMAINING_SHOT` de `GameplayController.cs` — mantenerlos sincronizados si esos valores cambian.) Mientras `min_shots_to_clear` siga en `0` (no calibrado), el fallback usa `burbujas` en su lugar — menos preciso, ya que no contempla cadenas largas, pero sirve de placeholder.
+
 ## Difficulty curve (GDD §2.4 and §2.5 — read those sections directly, this is a summary, not the source of truth)
 
 | Tramo | Niveles | Tasa de éxito target |
@@ -70,6 +84,7 @@ Rainbow bubbles match any adjacent color — use sparingly (1-2 per level max, `
 - [ ] At least 2 bubbles of each `available_colors` entry exist in `bubbles[]` (otherwise a color can appear in the shooter queue with nothing to match)
 - [ ] `creature_position` matches an actual entry in `bubbles[]` (rescue levels only)
 - [ ] `max_shots` is achievable — a skilled player should win in roughly the target success rate for that level range (see table above)
+- [ ] `min_shots_to_clear` is set from actual hand-testing (not left at `0`), and `star_thresholds` recalculated from it (see the section above)
 - [ ] No isolated bubbles (a single bubble surrounded by empty space with no matching color reachable)
 - [ ] Row `0` has bubbles (see the ceiling-connectivity note above)
 - [ ] `col` values are within the valid range for that row's parity (0-9 even, 0-8 odd)

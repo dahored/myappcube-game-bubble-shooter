@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -8,17 +9,44 @@ public class GameplayController : MonoBehaviour
 {
     [SerializeField] GridController   grid;
     [SerializeField] CannonController cannon;
-    [SerializeField] WinLosePanel     winLosePanel;
+    [SerializeField] WinPanel         winPanel;
+    [SerializeField] LosePanel        losePanel;
     [SerializeField] TMP_Text         shotsLabel;
 
     [Header("SFX (opcional — dejar vacío hasta tener los clips)")]
     [SerializeField] AudioClip popClip;
     [SerializeField] AudioClip dropClip;
 
-    const int CONTINUE_SHOTS_BONUS = 5; // GDD §7 — "Pagar gemas: +5 disparos"
+    [Header("Íconos de recompensa (WinPanel — GDD §6.3-6.4)")]
+    [SerializeField] Sprite coinIcon;
+    [SerializeField] Sprite gemIcon;
+
+    const int   CONTINUE_SHOTS_BONUS = 5;     // GDD §7 — "Pagar gemas: +5 disparos"
+    const float END_LEVEL_DELAY      = 1.1f;  // espera a que terminen las animaciones de pop/drop antes de mostrar el panel
+    const float POP_CHAIN_DELAY      = 0.08f; // segundos entre el pop de cada burbuja del match, en cadena
+    const float POP_CHAIN_DELAY_MAX  = 0.4f;   // tope — para que un match gigante no tarde una eternidad en terminar
+
+    // GDD §4.2 / docs/04_Plan_Fase1_Coralia.md — fórmula de score: 10 pts por burbuja
+    // explotada, 15 pts (1.5x) por burbuja caída, +10 pts por cada disparo sobrante al ganar.
+    const int SCORE_PER_POP            = 10;
+    const int SCORE_PER_DROP           = 15;
+    const int SCORE_PER_REMAINING_SHOT = 10;
+
+    // El GDD menciona "combos largos suben score multiplicador" pero sin definir el valor
+    // (queda anotado como pendiente) — estos dos valores son una propuesta propia, fáciles
+    // de retocar si el balance no se siente bien:
+    // - Cadena: bonus por el TAMAÑO del match+drop de un mismo disparo, por cada burbuja
+    //   que pasa del mínimo de 3 (un match de 3 no da bonus, uno de 8 sí).
+    // - Combo: bonus por RACHA de disparos consecutivos que matchean sin fallar ninguno.
+    const int CHAIN_BONUS_PER_EXTRA_BUBBLE = 5;
+    const int COMBO_BONUS_PER_STREAK       = 15;
 
     LevelData  _level;
     int        _shotsRemaining;
+    int        _bubblesPopped;
+    int        _bubblesDropped;
+    int        _comboBonus;   // acumulado durante todo el nivel
+    int        _comboStreak;  // racha actual de disparos consecutivos con match
     Vector2Int _creatureCell = new(-1, -1);
     bool       _creatureFreed;
     bool       _levelEnded;
@@ -28,6 +56,8 @@ public class GameplayController : MonoBehaviour
         // Por si se entra a esta escena directo (sin pasar por Splash, donde se activa
         // normalmente) — así las transiciones animadas funcionan igual al testear.
         SceneTransition.Enabled = true;
+
+        if (!ValidateReferences()) return;
 
         int levelId = PlayerPrefs.GetInt("selected_level", 1);
         _level = LevelLoader.LoadById(levelId);
@@ -47,35 +77,58 @@ public class GameplayController : MonoBehaviour
         cannon.Init(_level.available_colors, _level.rainbow_chance);
         cannon.OnBubbleLanded += OnBubbleLanded;
 
-        winLosePanel.OnContinuePressed += OnContinuePressed;
-        winLosePanel.OnAbandonPressed  += OnAbandonPressed;
+        // losePanel puede no estar wireado todavía (WIP) — ya se avisó en ValidateReferences(),
+        // acá solo evita el crash si falta.
+        if (losePanel != null)
+        {
+            losePanel.OnContinuePressed += OnContinuePressed;
+            losePanel.OnAbandonPressed  += OnAbandonPressed;
+        }
 
         _shotsRemaining = _level.max_shots;
         RefreshShotsLabel();
     }
 
+    // Referencias core (grid/cannon): sin ellas no hay nivel que jugar, se aborta Start().
+    // Referencias de presentación (paneles/HUD, todavía WIP en varios casos): se avisa con
+    // un LogWarning específico pero el juego sigue — cada uso individual ya tiene su propio
+    // null-check más abajo, así que faltar una no debe tirar NullReferenceException en medio
+    // de una partida.
+    bool ValidateReferences()
+    {
+        bool ok = true;
+        if (grid   == null) { Debug.LogWarning("[GameplayController] Falta asignar 'Grid' en el Inspector.");   ok = false; }
+        if (cannon == null) { Debug.LogWarning("[GameplayController] Falta asignar 'Cannon' en el Inspector."); ok = false; }
+
+        if (winPanel   == null) Debug.LogWarning("[GameplayController] Falta asignar 'Win Panel' en el Inspector — la victoria no va a mostrar panel todavía.");
+        if (losePanel  == null) Debug.LogWarning("[GameplayController] Falta asignar 'Lose Panel' en el Inspector — la derrota no va a mostrar panel todavía.");
+        if (shotsLabel == null) Debug.LogWarning("[GameplayController] Falta asignar 'Shots Label' en el Inspector — el HUD de disparos no se va a actualizar.");
+
+        return ok;
+    }
+
     void OnDestroy()
     {
         if (cannon != null) cannon.OnBubbleLanded -= OnBubbleLanded;
-        if (winLosePanel != null)
+        if (losePanel != null)
         {
-            winLosePanel.OnContinuePressed -= OnContinuePressed;
-            winLosePanel.OnAbandonPressed  -= OnAbandonPressed;
+            losePanel.OnContinuePressed -= OnContinuePressed;
+            losePanel.OnAbandonPressed  -= OnAbandonPressed;
         }
     }
 
     // GDD §7 — "Pagar gemas": +5 disparos, la ronda sigue (no cuenta como nuevo intento).
     void OnContinuePressed()
     {
-        SaveManager.Gems -= WinLosePanel.ContinueGemsCost;
+        SaveManager.Gems -= LosePanel.ContinueGemsCost;
         _shotsRemaining  += CONTINUE_SHOTS_BONUS;
         _levelEnded       = false;
         RefreshShotsLabel();
         cannon.SetInputEnabled(true);
-        winLosePanel.Close();
+        if (losePanel != null) losePanel.Close();
     }
 
-    // GDD §7 — "Aceptar derrota": -1 vida, la navegación al mapa ya la hace WinLosePanel.
+    // GDD §7 — "Aceptar derrota": -1 vida, la navegación al mapa ya la hace LosePanel.
     void OnAbandonPressed() => SaveManager.Lives--;
 
     void OnBubbleLanded(Vector2Int landedCell)
@@ -98,14 +151,28 @@ public class GameplayController : MonoBehaviour
         var removed = new HashSet<Vector2Int>();
 
         var matched = grid.FindConnectedSameColor(landedCell);
-        if (matched.Count < 3) return removed;
-
-        foreach (var cell in matched)
+        if (matched.Count < 3)
         {
-            if (grid.TryGetBubble(cell, out var view)) view.PlayPopAnimation();
+            _comboStreak = 0; // el disparo no matcheó nada — corta la racha de combo
+            return removed;
+        }
+
+        _comboStreak++;
+
+        // FindConnectedSameColor devuelve las celdas en orden de flood-fill (BFS) desde la
+        // burbuja que tocó el disparo — así que el índice ya es "qué tan lejos" está cada
+        // una, y alcanza con escalonar el pop según ese orden para que explote en cadena
+        // en vez de todas juntas. El estado lógico del grid (RemoveBubble) sigue siendo
+        // instantáneo — solo la animación visual del pop se demora.
+        for (int i = 0; i < matched.Count; i++)
+        {
+            var cell = matched[i];
+            if (grid.TryGetBubble(cell, out var view))
+                view.PlayPopAnimation(Mathf.Min(i * POP_CHAIN_DELAY, POP_CHAIN_DELAY_MAX));
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
+        _bubblesPopped += matched.Count;
         if (matched.Count > 0) AudioManager.Instance?.PlayPop(popClip);
 
         var floating = grid.FindUnreachableFromCeiling();
@@ -115,7 +182,15 @@ public class GameplayController : MonoBehaviour
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
+        _bubblesDropped += floating.Count;
         if (floating.Count > 0) AudioManager.Instance?.PlayPop(dropClip);
+
+        // Cadena: bonus por cuánto pasó este disparo del mínimo de 3 (match + todo lo que
+        // cayó con él). Combo: bonus por la racha de disparos seguidos que matchearon.
+        int chainSize  = matched.Count + floating.Count;
+        int chainBonus = Mathf.Max(0, chainSize - 3) * CHAIN_BONUS_PER_EXTRA_BUBBLE;
+        int comboBonus = (_comboStreak - 1) * COMBO_BONUS_PER_STREAK;
+        _comboBonus += chainBonus + comboBonus;
 
         return removed;
     }
@@ -123,22 +198,79 @@ public class GameplayController : MonoBehaviour
     void CheckWinLose()
     {
         bool objectiveMet = _level.objective.type == "rescue" ? _creatureFreed : grid.CellCount == 0;
-        if (objectiveMet) { EndLevel(true); return; }
-        if (_shotsRemaining <= 0) EndLevel(false);
+        if (objectiveMet) { StartCoroutine(EndLevelAfterAnimations(true)); return; }
+        if (_shotsRemaining <= 0) StartCoroutine(EndLevelAfterAnimations(false));
+    }
+
+    // El grid (el diccionario de celdas) ya está lógicamente vacío/definido apenas termina
+    // ResolveMatchAndDrop, pero las animaciones de pop/drop siguen jugando unos frames más
+    // por su cuenta — sin esta espera, el panel de victoria/derrota tapaba la animación.
+    IEnumerator EndLevelAfterAnimations(bool won)
+    {
+        cannon.SetInputEnabled(false); // bloquea el input ya mismo, no hace falta esperar
+        yield return new WaitForSeconds(END_LEVEL_DELAY);
+        EndLevel(won);
     }
 
     void EndLevel(bool won)
     {
         _levelEnded = true;
-        cannon.SetInputEnabled(false);
+
+        // "Primera vez" se infiere igual que LevelMapController: si este nivel es el
+        // MaxUnlockedLevel actual, todavía no se avanzó más allá de él. OJO: mientras el
+        // avance de MaxUnlockedLevel siga TEMP-desactivado más abajo, esto va a dar true
+        // en cada repetición del mismo nivel — es un efecto secundario esperado del TEMP,
+        // se corrige solo apenas se reactive el avance real.
+        bool firstCompletion = won && _level.id >= SaveManager.MaxUnlockedLevel;
 
         // TEMP — desactivado a pedido de Diego mientras prueba el loop, para no ir
         // desbloqueando niveles de verdad todavía. Reactivar sacando el comentario.
         // if (won && _level.id >= SaveManager.MaxUnlockedLevel)
         //     SaveManager.MaxUnlockedLevel = _level.id + 1;
 
-        if (won) winLosePanel.ShowWin(_level.objective.type == "rescue");
-        else     winLosePanel.ShowLose();
+        if (won)
+        {
+            if (winPanel == null) { Debug.LogWarning("[GameplayController] WinPanel no está wireado."); return; }
+            int score  = _bubblesPopped * SCORE_PER_POP + _bubblesDropped * SCORE_PER_DROP + _shotsRemaining * SCORE_PER_REMAINING_SHOT + _comboBonus;
+            int stars  = CalculateStars(score);
+            var awards = CalculateAwards(firstCompletion);
+            winPanel.Show(_level.id, score, stars, awards);
+        }
+        else
+        {
+            if (losePanel == null) { Debug.LogWarning("[GameplayController] LosePanel no está wireado."); return; }
+            losePanel.Show();
+        }
+    }
+
+    // GDD §4.2 — estrellas según star_thresholds del nivel (calibrados a mano por playtesting,
+    // no por fórmula). 0 a 3 estrellas.
+    int CalculateStars(int score)
+    {
+        int stars = 0;
+        if (_level.star_thresholds != null)
+            foreach (var threshold in _level.star_thresholds)
+                if (score >= threshold) stars++;
+        return Mathf.Clamp(stars, 0, 3);
+    }
+
+    // GDD §6.3-6.4 — monedas base por capítulo (cap.1: 50, cap.2-3: 75, cap.4-6: 100), +50%
+    // en la primera completación, más 1-3 gemas de bonus (solo primera vez).
+    List<(Sprite icon, int amount)> CalculateAwards(bool firstCompletion)
+    {
+        int baseCoins = _level.chapter <= 1 ? 50 : _level.chapter <= 3 ? 75 : 100;
+        int coins     = firstCompletion ? Mathf.RoundToInt(baseCoins * 1.5f) : baseCoins;
+        SaveManager.Coins += coins;
+
+        var awards = new List<(Sprite, int)> { (coinIcon, coins) };
+
+        if (firstCompletion)
+        {
+            int gems = Random.Range(1, 4); // 1-3
+            SaveManager.Gems += gems;
+            awards.Add((gemIcon, gems));
+        }
+        return awards;
     }
 
     void RefreshShotsLabel()

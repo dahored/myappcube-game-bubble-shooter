@@ -8,6 +8,11 @@ public class LevelData
     public int chapter;
     public string name;
     public int max_shots;
+    public int min_shots_to_clear;    // mínimo de disparos jugando óptimo (definido a mano por el
+                                       // diseñador al calibrar el nivel, jugándolo — 0 = todavía no
+                                       // calibrado). max_shots - min_shots_to_clear es el margen real
+                                       // que determina si el nivel es fácil/difícil, y de ahí salen
+                                       // los star_thresholds — ver GameplayController.CalculateStars.
     public float rainbow_chance;      // probabilidad de burbuja arcoíris (0.0–1.0)
     public List<string> available_colors;
     public List<int> star_thresholds; // [1 estrella, 2 estrellas, 3 estrellas]

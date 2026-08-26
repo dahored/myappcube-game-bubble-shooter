@@ -21,6 +21,10 @@ public abstract class UIPanel : MonoBehaviour
         new Keyframe(0.4f, 1.1f),
         new Keyframe(1f, 0f, -2f, 0f));
 
+    // Expuesto para que subclases (ej. WinPanel) puedan esperar a que la card termine de
+    // entrar antes de arrancar animaciones propias (estrellas, contador de score, etc.).
+    public float OpenDuration => openDuration;
+
     CanvasGroup _overlay;
     Vector3     _baseScale;
     Coroutine   _anim;

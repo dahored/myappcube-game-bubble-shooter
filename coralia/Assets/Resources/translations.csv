@@ -57,6 +57,8 @@ ui.gameover.continue_ad,+5 disparos (anuncio),+5 shots (ad),+5 colpi (annuncio),
 ui.gameover.continue_gems,+5 disparos ({gems} gemas),+5 shots ({gems} gems),+5 colpi ({gems} gemme),+5 tirs ({gems} gemmes),+5 Schüsse ({gems} Edelsteine),+5 tiros ({gems} gemas)
 ui.gameover.accept,Aceptar,Accept,Accetta,Accepter,Akzeptieren,Aceitar
 ui.victory.title,¡Lo lograste!,You did it!,Ce l'hai fatta!,Bien joué !,Geschafft!,Você conseguiu!
+ui.victory.level_banner,Nivel {id},Level {id},Livello {id},Niveau {id},Level {id},Nível {id}
+ui.victory.complete,¡Completado!,Complete!,Completato!,Terminé !,Abgeschlossen!,Completo!
 ui.victory.creature_rescued,Criatura rescatada,Creature rescued,Creatura salvata,Créature sauvée,Kreatur gerettet,Criatura resgatada
 ui.victory.continue,Continuar,Continue,Continua,Continuer,Weiter,Continuar
 ui.gameover.confirm_abandon,¿Seguro? Vas a perder 1 vida,Are you sure? You'll lose 1 life,Sei sicuro? Perderai 1 vita,Tu es sûr ? Tu vas perdre 1 vie,Bist du sicher? Du verlierst 1 Leben,Tem certeza? Você vai perder 1 vida

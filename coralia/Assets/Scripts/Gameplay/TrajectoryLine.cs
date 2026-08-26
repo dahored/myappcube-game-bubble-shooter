@@ -33,14 +33,12 @@ public class TrajectoryLine : MonoBehaviour
         Vector2 pos       = originLocal;
         Vector2 direction = dir.normalized;
         float   width     = gridContainer.rect.width;
-        int     bounces   = 0;
         int     used      = 0;
 
         while (used < maxDots)
         {
             pos += direction * stepSize;
-            if (HexGridMath.ReflectIfNeeded(ref pos, ref direction, width)) bounces++;
-            if (bounces > 1) break; // GDD 1.3: la línea muestra hasta el primer rebote
+            HexGridMath.ReflectIfNeeded(ref pos, ref direction, width); // rebota todas las veces que haga falta — se muestra el camino completo
 
             _pool[used].gameObject.SetActive(true);
             _pool[used].anchoredPosition = pos;

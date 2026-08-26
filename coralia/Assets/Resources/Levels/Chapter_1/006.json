@@ -12,5 +12,5 @@
     { "row": 2, "col": 0, "color": "yellow" }
   ],
   "obstacles": [],
-  "star_thresholds": [100, 220, 380]
+  "star_thresholds": [128, 208, 288]
 }
