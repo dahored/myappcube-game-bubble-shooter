@@ -1239,7 +1239,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::XanderDevelops.UI.CurvedText
   curve: 5
-  spacing: 32
+  spacing: 0
   flatnessThreshold: 4000
   angularOffset: 0
 --- !u!1 &5922432202832883582

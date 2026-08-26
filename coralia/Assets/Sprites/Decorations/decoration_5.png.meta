@@ -1,10 +1,19 @@
 fileFormatVersion: 2
-guid: 48d489cdc94e24536ae7643578a2ee25
+guid: 3a9df69cc481543219feb753dc97170e
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1109909363706899839
-    second: star_field_0
+      213: 2019691647655239431
+    second: decoration_5_0
+  - first:
+      213: 6004990140525751647
+    second: decoration_5_1
+  - first:
+      213: 5888734304218045012
+    second: decoration_5_2
+  - first:
+      213: 4138381019375648251
+    second: decoration_5_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -139,13 +148,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: star_field_0
+      name: decoration_5_0
       rect:
         serializedVersion: 2
-        x: 0
+        x: 4
         y: 0
-        width: 248
-        height: 245
+        width: 304
+        height: 402
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -154,8 +163,74 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 182de53705fc890f0800000000000000
-      internalID: -1109909363706899839
+      spriteID: 70f505e4ad2670c10800000000000000
+      internalID: 2019691647655239431
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: decoration_5_1
+      rect:
+        serializedVersion: 2
+        x: 105
+        y: 397
+        width: 9
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f5da2cd87b2065350800000000000000
+      internalID: 6004990140525751647
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: decoration_5_2
+      rect:
+        serializedVersion: 2
+        x: 131
+        y: 395
+        width: 13
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 45ad29b56acf8b150800000000000000
+      internalID: 5888734304218045012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: decoration_5_3
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 350
+        width: 5
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bfdba1d6c9b7e6930800000000000000
+      internalID: 4138381019375648251
       vertices: []
       indices: 
       edges: []
@@ -174,7 +249,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      star_field_0: -1109909363706899839
+      decoration_5_0: 2019691647655239431
+      decoration_5_1: 6004990140525751647
+      decoration_5_2: 5888734304218045012
+      decoration_5_3: 4138381019375648251
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

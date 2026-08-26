@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 48d489cdc94e24536ae7643578a2ee25
+guid: b2910b43da4614d19ab007ee15211e76
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1109909363706899839
-    second: star_field_0
+      213: -9157243731468103729
+    second: decoration_3_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -139,13 +139,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: star_field_0
+      name: decoration_3_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 248
-        height: 245
+        x: 11
+        y: 13
+        width: 265
+        height: 343
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -154,8 +154,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 182de53705fc890f0800000000000000
-      internalID: -1109909363706899839
+      spriteID: fcfcb28e75feae080800000000000000
+      internalID: -9157243731468103729
       vertices: []
       indices: 
       edges: []
@@ -174,7 +174,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      star_field_0: -1109909363706899839
+      decoration_3_0: -9157243731468103729
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
