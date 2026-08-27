@@ -12,6 +12,9 @@ public class TrajectoryLine : MonoBehaviour
     [SerializeField] int            maxDots  = 40;
     [SerializeField] float          stepSize = 24f;
 
+    [Header("Preview de aterrizaje (sprite bubble_field)")]
+    [SerializeField] Image landingPreview;
+
     readonly List<RectTransform> _pool      = new();
     readonly List<Image>         _poolImage = new();
 
@@ -24,6 +27,9 @@ public class TrajectoryLine : MonoBehaviour
             _pool.Add((RectTransform)go.transform);
             _poolImage.Add(go.GetComponent<Image>());
         }
+
+        if (!landingPreview) Debug.LogWarning("[TrajectoryLine] Falta asignar 'Landing Preview' en el Inspector — no se va a mostrar el preview de aterrizaje.");
+        else                 landingPreview.gameObject.SetActive(false);
     }
 
     // sprite: el mismo sprite de la burbuja actual (grid.SpriteFor(color)) — así el dot
@@ -34,6 +40,7 @@ public class TrajectoryLine : MonoBehaviour
         Vector2 direction = dir.normalized;
         float   width     = gridContainer.rect.width;
         int     used      = 0;
+        bool    landed    = false;
 
         while (used < maxDots)
         {
@@ -49,26 +56,51 @@ public class TrajectoryLine : MonoBehaviour
             }
             used++;
 
-            if (HitsSomething(pos)) break;
+            if (HitsSomething(pos, out var struckCell, out var hitCeiling))
+            {
+                ShowLandingPreview(pos, struckCell, hitCeiling);
+                landed = true;
+                break;
+            }
         }
 
+        if (!landed && landingPreview) landingPreview.gameObject.SetActive(false);
         for (int i = used; i < maxDots; i++) _pool[i].gameObject.SetActive(false);
     }
 
     public void Hide()
     {
         foreach (var dot in _pool) dot.gameObject.SetActive(false);
+        if (landingPreview) landingPreview.gameObject.SetActive(false);
     }
 
-    bool HitsSomething(Vector2 pos)
+    // Misma lógica que CannonController.ResolveImpact — así el preview nunca miente sobre
+    // dónde va a quedar pegada la burbuja real.
+    void ShowLandingPreview(Vector2 pos, Vector2Int struckCell, bool hitCeiling)
+    {
+        if (!landingPreview) return;
+
+        var reference = hitCeiling
+            ? new Vector2Int(HexGridMath.EstimateNearestCell(pos).x, 0)
+            : struckCell;
+        var cell = gridController.FindNearestEmptyCell(pos, reference);
+
+        landingPreview.gameObject.SetActive(true);
+        landingPreview.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);
+    }
+
+    bool HitsSomething(Vector2 pos, out Vector2Int struckCell, out bool hitCeiling)
     {
         // Mismo criterio de techo que ShotBubble.Tick — ver el comentario ahí.
-        if (pos.y >= -HexGridMath.BubbleRadius) return true;
+        hitCeiling = pos.y >= -HexGridMath.BubbleRadius;
+        if (hitCeiling) { struckCell = default; return true; }
 
         var cell = HexGridMath.EstimateNearestCell(pos);
-        if (CheckOverlap(cell, pos)) return true;
+        if (CheckOverlap(cell, pos)) { struckCell = cell; return true; }
         foreach (var n in HexGridMath.GetNeighbors(cell))
-            if (CheckOverlap(n, pos)) return true;
+            if (CheckOverlap(n, pos)) { struckCell = n; return true; }
+
+        struckCell = default;
         return false;
     }
 
