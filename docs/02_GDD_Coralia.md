@@ -181,7 +181,7 @@ Regla general: **disparos disponibles = disparos óptimos × 1.3**, donde "ópti
 
 ### 2.6 Editor de niveles (herramienta interna)
 
-Como advierte el Plan Maestro: sin editor de niveles, hacer 60 niveles a mano es una pesadilla y mata el proyecto. Construir un editor visual en Godot añade 1-2 semanas pero ahorra meses. **Decisión: construir editor en Fase 1**, antes de los 60 niveles. Detalle técnico en sección 14.
+Como advierte el Plan Maestro: sin editor de niveles, hacer 60 niveles a mano es una pesadilla y mata el proyecto. La decisión original de construir un editor visual en Fase 1 (época Godot) nunca se ejecutó — los niveles se siguen escribiendo/editando a mano en JSON (ver skill `level-designer`). Queda como issue separado para más adelante, no bloquea el resto del roadmap.
 
 ### 2.7 Estrategia híbrida de creación de niveles (mano + AI)
 
@@ -193,10 +193,10 @@ Coralia usará un flujo híbrido para crear y mantener niveles. Esto hace sosten
 | MVP grueso (niveles 16-60) | 45 | AI-assisted (Claude genera drafts, Diego polish) | Velocidad de producción + variedad mantenida con constraints explícitos. |
 | LiveOps post-launch | 10-15 por semana | AI-assisted sostenible | El ritmo realista para un solo dev sin equipo de level design. |
 
-**Implicación arquitectónica clave:** el formato del archivo de nivel debe ser texto estructurado y editable (JSON, YAML, o `.tres` de Godot) para permitir generación AI. Si fuera binario o solo creable desde editor visual, perderíamos esta capacidad. Decisión técnica final en sección 14.
+**Implicación arquitectónica clave:** el formato del archivo de nivel debe ser texto estructurado y editable para permitir generación AI. Decisión final (vigente): JSON, uno por nivel, bajo `coralia/Assets/Resources/Levels/Chapter_N/` — ver skill `level-designer` para el schema exacto. Si fuera binario o solo creable desde un editor visual, perderíamos esta capacidad.
 
 **Validación de niveles AI-generated requiere:**
-1. Un **solver automático** (script en Godot que simule N partidas para verificar solubilidad y dificultad real)
+1. Un **solver automático** (script que simule N partidas para verificar solubilidad y dificultad real — issue #30 en el backlog, todavía no construido)
 2. **Playtest humano de cada nivel** antes de marcarlo como aprobado (Claude no puede juzgar diversión)
 3. Tasa esperada de aceptación: ~70-80% usables con ajustes menores, 20-30% descartados o rehechos
 
@@ -265,7 +265,7 @@ Cada nivel otorga 1-3 estrellas basadas en **score final**. El score final inclu
 
 ```
 score_final = score_base + (tiros_sobrantes × BONUS_PER_REMAINING_SHOT)
-BONUS_PER_REMAINING_SHOT = 10  (constante en gameplay.gd)
+BONUS_PER_REMAINING_SHOT = 10  (constante a definir en el sistema de score — no implementado todavía en Unity)
 ```
 
 - `score_base`: puntos acumulados durante el nivel (matches, drops, etc.)
@@ -1347,7 +1347,7 @@ Plan Maestro propone 3 opciones (bajo / medio / alto). Para Coralia, **estrategi
 4. Brief detallado al freelancer con concept aprobado
 5. Iteración 2-3 rondas con freelancer
 6. Optimización: PNG con transparencia, máx 1024x1024, sprite atlases para reducir draw calls
-7. Importación a Godot + animaciones en `AnimationPlayer`
+7. Importación a Unity (modo Sprite, Multiple si hay sub-sprites) + animaciones en `Animator`
 8. Test in-game antes de aprobar final
 
 ### 11.7 Decisiones lockeadas
@@ -1381,7 +1381,7 @@ Plan Maestro propone 3 opciones (bajo / medio / alto). Para Coralia, **estrategi
 | `theme_victoria` | 8s sting | Triunfo suave | Tras ganar nivel |
 | `theme_evento_especial` | 90s loop | Festivo, único por evento | Eventos temporales (variantes según evento) |
 
-**Especificaciones técnicas:** 44.1 kHz, 16-bit, OGG Vorbis (mejor compresión que MP3 en Godot, sin pérdida perceptible). Loops perfectos verificados (sin click al final).
+**Especificaciones técnicas:** 44.1 kHz, 16-bit. MP3, WAV u OGG Vorbis funcionan bien en Unity — OGG suele dar mejor compresión sin pérdida perceptible. Loops perfectos verificados (sin click al final).
 
 **Fuentes recomendadas:**
 - **Epidemic Sound** (subscription $15/mes): catálogo profesional con licencias claras
@@ -1405,13 +1405,13 @@ Los 6 idiomas (es, en, it, fr, de, pt) **se gestionan completamente sin costo mo
 
 **Estrategia anti-riesgo:** si un idioma específico tiene calidad menor (típicamente francés y alemán requieren más cuidado que italiano y portugués), priorizar conseguir un hablante nativo de la red personal específicamente para ese idioma antes del lanzamiento.
 
-**Implementación técnica en Godot 4:**
+**Implementación técnica real (Unity):**
 
-- Godot tiene `TranslationServer` nativo
-- Strings van a archivos CSV con header de locale codes
-- Cambio de idioma en runtime con `TranslationServer.set_locale("it")`
-- Detección automática del idioma del SO al primer abrir el juego
-- Format keys consistentes: `ui.button.play`, `creature.coqui.first_dialogue`, etc.
+- `LocaleManager` (`Scripts/Core/LocaleManager.cs`) — diccionario estático cargado desde `Resources/translations.csv`
+- Strings van a `translations.csv` con header `keys,es,en,it,fr,de,pt`
+- Cambio de idioma en runtime con `SaveManager.Language = "it"`, dispara `LocaleManager.OnLanguageChanged` para refrescar UI dinámica
+- Detección automática del idioma del SO al primer abrir el juego (`SaveManager.Language` cae a `DetectLanguage()` si no hay guardado)
+- Format keys consistentes: `ui.button.play`, `creature.coqui.first_dialogue`, etc. — placeholders (`{value}`) se reemplazan a mano con `.Replace(...)`, `LocaleManager.Get()` no lo hace automático
 
 **Plantilla de CSV:**
 

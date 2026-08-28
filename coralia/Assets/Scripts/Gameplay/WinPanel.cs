@@ -1,0 +1,106 @@
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+// Panel de victoria: banner "Nivel {id}", estrellas según el score final (vs.
+// LevelData.star_thresholds — GDD §4.2), puntaje, y hasta N recompensas (monedas —
+// GDD §6.3-6.4). GameplayController calcula todo (score/estrellas/recompensas) y lo pasa a
+// Show() — este panel solo presenta. Sin buyButton/adButton, eso es exclusivo de LosePanel.
+// El texto "¡Completado!" es fijo (no depende de datos del nivel) — va con LocalizedText.cs
+// directo en el GameObject Content/CompleteLevel/Text, no se setea acá.
+public class WinPanel : UIPanel
+{
+    [SerializeField] TMP_Text       levelBannerText;
+    [SerializeField] LevelStarsView starsView;
+    [SerializeField] TMP_Text       scorePointsText;
+    [SerializeField] AwardItem[]    awardItems;
+    [SerializeField] Button         nextButton;
+    [SerializeField] Button         closeButton;
+
+    [Header("Reveal de score (contador 0 -> score final)")]
+    [SerializeField] float scoreCountMinDuration = 0.4f;
+    [SerializeField] float scoreCountMaxDuration = 1.2f;
+    [SerializeField] float scoreCountPerPoint    = 0.0012f; // segundos extra por punto, con tope arriba
+
+    int _levelId;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        nextButton.onClick.AddListener(GoToNextLevel);
+        closeButton.onClick.AddListener(() => SceneLoader.GoTo(SceneLoader.LEVEL_MAP));
+    }
+
+    public void Show(int levelId, int score, int stars, List<(Sprite icon, int amount)> awards)
+    {
+        _levelId = levelId;
+        ValidateReferences();
+
+        if (levelBannerText) levelBannerText.text = LocaleManager.Get("ui.victory.level_banner").Replace("{id}", levelId.ToString());
+        if (starsView)        starsView.SetStars(0);       // arranca en 0, se anima después de abrir
+        if (scorePointsText) scorePointsText.text  = "0";  // ídem — el contador lo lleva a "score"
+
+        for (int i = 0; i < awardItems.Length; i++)
+        {
+            bool has = awards != null && i < awards.Count;
+            awardItems[i].gameObject.SetActive(has);
+            if (has) awardItems[i].Set(awards[i].icon, awards[i].amount);
+        }
+
+        Open();
+        StartCoroutine(PlayRevealSequence(score, stars));
+    }
+
+    // Espera a que la card termine de entrar (OpenDuration, heredado de UIPanel) y recién ahí
+    // dispara las estrellas en cadena (1, 2, 3) seguidas del contador de score 0 -> final.
+    IEnumerator PlayRevealSequence(int score, int stars)
+    {
+        yield return new WaitForSeconds(OpenDuration);
+        if (starsView) yield return starsView.PlayStars(stars);
+        yield return AnimateScoreCountUp(score);
+    }
+
+    IEnumerator AnimateScoreCountUp(int target)
+    {
+        if (!scorePointsText) yield break;
+
+        float duration = Mathf.Clamp(target * scoreCountPerPoint, scoreCountMinDuration, scoreCountMaxDuration);
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            int value = Mathf.RoundToInt(Mathf.Lerp(0f, target, t / duration));
+            scorePointsText.text = value.ToString("N0");
+            yield return null;
+        }
+        scorePointsText.text = target.ToString("N0");
+    }
+
+    void GoToNextLevel()
+    {
+        int nextId = _levelId + 1;
+        if (LevelLoader.LoadById(nextId) != null)
+        {
+            PlayerPrefs.SetInt("selected_level", nextId);
+            SceneLoader.GoTo(SceneLoader.GAMEPLAY);
+        }
+        else
+        {
+            SceneLoader.GoTo(SceneLoader.LEVEL_MAP); // todavía no hay más niveles cargados
+        }
+    }
+
+    // Campos sin asignar en el Inspector no deben fallar en silencio (el texto se queda con
+    // el placeholder escrito a mano, ej. "Title", sin ninguna pista de por qué) — se avisa acá
+    // con el nombre exacto del campo que falta conectar.
+    void ValidateReferences()
+    {
+        if (!levelBannerText) Debug.LogWarning("[WinPanel] Falta asignar 'Level Banner Text' en el Inspector.");
+        if (!starsView)        Debug.LogWarning("[WinPanel] Falta asignar 'Stars View' en el Inspector.");
+        if (!scorePointsText) Debug.LogWarning("[WinPanel] Falta asignar 'Score Points Text' en el Inspector.");
+        // Award Items vacío es válido por ahora — la economía de recompensas todavía está
+        // pendiente de definir (ver conversación), no es un error de asignación.
+    }
+}

@@ -2,9 +2,9 @@
 
 > Cozy underwater Bubble Shooter — iOS + Android
 
-**Estudio:** myappcube  
-**Engine:** Defold (Lua)  
-**Plataformas:** Android + iOS  
+**Estudio:** myappcube
+**Engine:** Unity 6 (C#), URP
+**Plataformas:** Android + iOS
 **Estado:** Fase 2 — MVP en progreso
 
 ## Sobre el juego
@@ -13,61 +13,65 @@ Coralia es un Bubble Shooter cozy submarino donde Marina, una joven sirena, rest
 
 Modelo F2P híbrido (Ads + IAP + Battle Pass), audiencia objetivo: mujeres 25-45 casual.
 
+> El proyecto arrancó como prototipo en Godot 4, pasó brevemente por Defold, y migró a Unity 6 en mayo 2026. Todo el código activo hoy es Unity/C#.
+
 ## Requisitos para desarrollar
 
-- **Defold** ([download](https://defold.com/download/)) — editor + build tools
+- **Unity 6** (LTS) con soporte Android + iOS instalado
 - Mac con Xcode para builds iOS
-- Android SDK para builds Android
+- Android SDK/NDK (vía Unity Hub) para builds Android
 
 ## Estructura del proyecto
 
 ```
 coralia/
-├── game.project          # Configuración Defold (display, bootstrap, bundles)
-├── input/                # Input bindings (touch, back)
-├── main/                 # Bootstrap: collection + go + script de routing
-├── splash1/              # Pantalla 1: logo del estudio (myappcube)
-├── splash2/              # Pantalla 2: logo del juego + versión + cargando
-├── level_map/            # Mapa de niveles scrolleable por capítulos
-├── gameplay/             # (próximo) Partida principal
-├── modules/              # Módulos Lua reutilizables (config, router, save, levels)
-├── assets/               # Sprites, audio, fuentes, atlas
-│   ├── atlas/            # logos.atlas, bubbles.atlas
-│   ├── fonts/            # vera_mo_bd.ttf + coralia_ui.font
-│   ├── images/logos/     # logo.png (juego) + logo_myappcube.png (estudio)
-│   └── sprites/bubbles/  # v1 spritesheets + idle PNGs
-├── data/levels/          # 001-020.json (20 niveles, 2 capítulos)
-├── localization/         # translations.csv (6 idiomas: es, en, it, fr, de, pt)
-└── docs/                 # GDD, wireframes, backlog, status
+├── Assets/
+│   ├── Scenes/{Splash,Home,Game}/       # .unity — SplashStudio, SplashGame, HomeGame, LevelMap, Gameplay
+│   ├── Scripts/
+│   │   ├── Core/                        # managers estáticos: SaveManager, LocaleManager, AudioManager,
+│   │   │                                #   SceneLoader + SceneTransition
+│   │   ├── UI/                          # componentes reutilizables: ButtonPop, UIPanel, SettingsToggle,
+│   │   │                                #   LocalizedText, SafeAreaPanel, TopPanelController...
+│   │   ├── Home/ Splash/ LevelMap/       # controllers por pantalla
+│   │   ├── Gameplay/                    # cañón, grid hexagonal, match, win/lose
+│   │   └── Data/                        # LevelData.cs (modelo de nivel), LevelLoader.cs
+│   ├── Prefabs/                         # UI/buttons, panels, user, game, inputs + Gameplay
+│   ├── Resources/
+│   │   ├── translations.csv             # 6 idiomas, cargado por LocaleManager
+│   │   └── Levels/Chapter_1/2/3/         # niveles JSON reales (LevelData.cs)
+│   └── Sprites/                         # UI, burbujas, fondos, etc.
+├── design/exported/                     # exports de diseño antes de importar a Unity
+└── docs/                                # GDD, wireframes, backlog, status
 ```
 
 ## Flujo de pantallas (actual)
 
 ```
-Splash 1 (logo estudio, ~2.7s) → Splash 2 (logo juego + cargando, ~2s) → Mapa de niveles
+Splash Studio (logo estudio) → Splash Game (logo juego + cargando) → Home → Level Map → Gameplay
 ```
 
-## Módulos reutilizables
+## Managers (estáticos, `Scripts/Core/`)
 
-| Módulo | Responsabilidad |
+| Manager | Responsabilidad |
 |---|---|
-| `modules/config.lua` | Constantes globales (grid, física, colores, economía) |
-| `modules/router.lua` | Navegación: `router.go(scene_name)` |
-| `modules/save_manager.lua` | `save_mgr.load()` / `.save(data)` |
-| `modules/level_manager.lua` | `level_mgr.load(id)` / `.load_all()` — caché de JSONs |
+| `SaveManager` | Persistencia vía `PlayerPrefs` — vidas, gemas, nivel máximo desbloqueado, idioma, volúmenes |
+| `LocaleManager` | Diccionario de traducciones cargado de `Resources/translations.csv`, `Get(key)` |
+| `AudioManager` | SFX/música, tolera clips vacíos sin romper (`Instance?.PlaySfx(...)`) |
+| `SceneLoader` + `SceneTransition` | Constantes de escenas + fade/transición animada entre ellas |
 
 ## Setup inicial
 
 1. Clonar el repositorio
-2. Abrir Defold → `Open Project` → seleccionar `game.project`
-3. Esperar a que Defold importe los assets
-4. Build → Run (Cmd+B) para correr en desktop
+2. Abrir Unity Hub → `Add project from disk` → seleccionar la carpeta `coralia/`
+3. Abrir con Unity 6 (la versión indicada en `ProjectSettings/ProjectVersion.txt`)
+4. Abrir `Assets/Scenes/Splash/SplashStudio.unity` y darle Play para probar el flujo completo
 
 ## Documentación
 
-- `docs/02_GDD_Coralia.md` — Game Design Document completo
-- `docs/03_Wireframes_Coralia.md` — Especificación de las 17 pantallas
-- `docs/06_Backlog_GitHub_Issues.md` — Backlog de issues
+- `CLAUDE.md` — contexto del proyecto para asistencia con IA, estado real del código
+- `docs/02_GDD_Coralia.md` — Game Design Document completo (§14 arquitectura es de la era Godot, no confiar en esa sección)
+- `docs/03_Wireframes_Coralia.md` — Especificación de las pantallas
+- `docs/06_Backlog_GitHub_Issues.md` — Backlog de issues (verificar contra `gh issue list`)
 - `docs/07_Status_y_Roadmap.md` — Estado actual + roadmap
 
 ## Licencia

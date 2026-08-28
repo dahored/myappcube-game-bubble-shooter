@@ -6,6 +6,14 @@ Todos los cambios significativos del proyecto se registran acá. Formato basado 
 
 ### Fase 2 — MVP (en progreso)
 
+#### Chunk H — Unity 6: primer loop jugable + WinLosePanel (2026-08-20)
+- Migración de plataforma a Unity 6 (`fb0a6da`) — los chunks A-G de abajo corresponden a la implementación en Godot 4, reemplazada por completo. Todo el código activo hoy vive en `coralia/Assets/`.
+- **Gameplay loop core (issue #46):** grid hexagonal + cañón + match + win/lose en uGUI puro (sin Physics2D) sobre los 30 niveles reales. `HexGridMath`, `GridController` (flood-fill de match + BFS de drop desde techo), `CannonController` (drag + trayectoria + cola de 2 colores + swap), objetivos `clear_all` y `rescue`.
+- **`WinLosePanel`:** victoria / oferta de seguir jugando por gemas (GDD §7, +5 disparos por 15 gemas) / confirmación de abandono (-1 vida) sobre la misma Card.
+- **`SaveManager`:** nuevos `Gems` y `Lives` persistidos en PlayerPrefs.
+- Sprites de burbujas placeholder reemplazados por el set completo (9 colores).
+- Pendiente: agregar `Gameplay.unity` a Build Settings, wiring final de audio/vidas consumiéndose de verdad.
+
 #### Chunk G — Sistema de estrellas 1-2-3 (2026-05-05)
 - **Sistema de score final con bonus por eficiencia:** `score_final = score_base + tiros_sobrantes × 10`. Incentiva terminar el nivel en pocos tiros (como "sugar crush" en CC). Constante `BONUS_PER_REMAINING_SHOT = 10` en `gameplay.gd`.
 - **`star_thresholds` en todos los JSONs (001-020):** array `[1★, 2★, 3★]` calibrado por nivel. Los thresholds asumen score final (base + bonus).

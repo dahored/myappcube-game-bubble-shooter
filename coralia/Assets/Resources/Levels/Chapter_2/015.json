@@ -2,22 +2,72 @@
   "id": 15,
   "chapter": 2,
   "name": "Espiral marina",
-  "objective": { "type": "clear_all" },
+  "objective": {
+    "type": "clear_all"
+  },
   "max_shots": 26,
-  "available_colors": ["red","blue","green"],
+  "available_colors": [
+    "red",
+    "blue",
+    "green"
+  ],
   "rainbow_chance": 0.05,
   "bubbles": [
-    { "row": 1, "col": 0, "color": "red" },
-    { "row": 2, "col": 0, "color": "blue" },
-    { "row": 2, "col": 1, "color": "red" },
-    { "row": 3, "col": 0, "color": "green" },
-    { "row": 3, "col": 1, "color": "blue" },
-    { "row": 3, "col": 2, "color": "red" },
-    { "row": 4, "col": 0, "color": "red" },
-    { "row": 4, "col": 1, "color": "green" },
-    { "row": 4, "col": 2, "color": "blue" },
-    { "row": 4, "col": 3, "color": "red" }
+    {
+      "row": 1,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "color": "green"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "color": "blue"
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "color": "green"
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "color": "red"
+    }
   ],
   "obstacles": [],
-  "star_thresholds": [80, 160, 280]
+  "star_thresholds": [
+    104,
+    169,
+    234
+  ]
 }

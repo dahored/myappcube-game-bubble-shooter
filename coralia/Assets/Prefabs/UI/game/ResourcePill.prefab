@@ -300,6 +300,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3428944024431491594}
   - component: {fileID: 566562994363892849}
+  - component: {fileID: 3069302920944362786}
   m_Layer: 0
   m_Name: ResourcePill
   m_TagString: Untagged
@@ -337,6 +338,24 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4012733241178542409}
   m_CullTransparentMesh: 1
+--- !u!114 &3069302920944362786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4012733241178542409}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21a727538a82a47c396090e54c0cb1cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ResourcePillView
+  iconImage: {fileID: 1894994199729325859}
+  valueText: {fileID: 6826353523415252952}
+  plusButton: {fileID: 667723891716463835}
+  badgeRoot: {fileID: 8108202579198681519}
+  badgeText: {fileID: 2363507170270479972}
+  badgeInfinite: {fileID: 1387950508595869243}
 --- !u!1 &5446667370087392106
 GameObject:
   m_ObjectHideFlags: 0

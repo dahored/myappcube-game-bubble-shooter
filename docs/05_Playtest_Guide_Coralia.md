@@ -1,5 +1,7 @@
 # Guía de Playtest — Coralia (Chunk 7 Fase 1)
 
+> ⚠️ **Documento histórico de la era Godot.** Los pasos de build/export descritos acá (Godot editor, export presets) corresponden al prototipo original en Godot 4, previo a la migración a Unity 6 — este playtest específico fue salteado (ver `docs/06_Backlog_GitHub_Issues.md`). Se conserva como registro de la metodología planeada, no como guía técnica vigente. Para un playtest real hoy, la parte técnica de build hay que rehacerla para Unity; la metodología de observación (secciones de abajo) sigue siendo válida.
+
 **Versión:** 0.1 — 2026-05-01
 **Objetivo:** validar con 3-5 jugadores reales si el prototipo es **divertido** antes de invertir en Fase 2 (MVP).
 

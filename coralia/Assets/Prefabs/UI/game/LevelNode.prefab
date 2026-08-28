@@ -299,6 +299,7 @@ GameObject:
   - component: {fileID: 3742279867719805311}
   - component: {fileID: 625185945724912790}
   - component: {fileID: 1795344823868512899}
+  - component: {fileID: 8992738171485529102}
   m_Layer: 0
   m_Name: LevelNode
   m_TagString: Untagged
@@ -387,6 +388,7 @@ MonoBehaviour:
   - {fileID: 8405184363788788568}
   - {fileID: 4655481352890483483}
   lockIcon: {fileID: 3241433046457904255}
+  button: {fileID: 8992738171485529102}
   spriteDefault: {fileID: -4190337762811870514, guid: 42d72ee115e104cec97bad30246b46e2, type: 3}
   spriteCurrent: {fileID: 2097371483251685808, guid: 4273215e24033434e9824adffdecb25d, type: 3}
   spriteGold: {fileID: 9214126699357180723, guid: 9d6b3baec859c4f05883bf3347ddce6c, type: 3}
@@ -399,6 +401,50 @@ MonoBehaviour:
   rippleScale: 1.3
   rippleAlpha: 0.55
   rippleDuration: 0.45
+--- !u!114 &8992738171485529102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8555582664328800757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 625185945724912790}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &3187338197349617487
 PrefabInstance:
   m_ObjectHideFlags: 0

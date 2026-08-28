@@ -2,26 +2,93 @@
   "id": 24,
   "chapter": 3,
   "name": "Corales rotos",
-  "objective": { "type": "clear_all" },
+  "objective": {
+    "type": "clear_all"
+  },
   "max_shots": 25,
-  "available_colors": ["red","blue","green","yellow"],
+  "available_colors": [
+    "red",
+    "blue",
+    "green",
+    "yellow"
+  ],
   "rainbow_chance": 0.08,
   "bubbles": [
-    { "row": 1, "col": 0, "color": "red" },
-    { "row": 1, "col": 1, "color": "yellow" },
-    { "row": 2, "col": 0, "color": "blue" },
-    { "row": 2, "col": 1, "color": "red" },
-    { "row": 2, "col": 2, "color": "green" },
-    { "row": 3, "col": 0, "color": "yellow" },
-    { "row": 3, "col": 1, "color": "blue" },
-    { "row": 3, "col": 2, "color": "red" },
-    { "row": 3, "col": 3, "color": "yellow" },
-    { "row": 4, "col": 0, "color": "green" },
-    { "row": 4, "col": 1, "color": "red" },
-    { "row": 4, "col": 2, "color": "blue" },
-    { "row": 4, "col": 3, "color": "green" },
-    { "row": 4, "col": 4, "color": "yellow" }
+    {
+      "row": 1,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "color": "yellow"
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "color": "green"
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "color": "yellow"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "color": "blue"
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "color": "yellow"
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "color": "green"
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "color": "green"
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "color": "yellow"
+    }
   ],
   "obstacles": [],
-  "star_thresholds": [120, 220, 360]
+  "star_thresholds": [
+    100,
+    162,
+    225
+  ]
 }

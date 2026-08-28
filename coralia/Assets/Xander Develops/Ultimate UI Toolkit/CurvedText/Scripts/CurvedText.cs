@@ -18,9 +18,13 @@ namespace XanderDevelops.UI
         [Tooltip("Radius of the curve (higher values = less curve)")]
         private float curve = 30;
 
-        [SerializeField, Range(20f, 100f)]
-        [Tooltip("Fixed arc length per character (spacing between characters along the curve)")]
+        [SerializeField, Range(-20f, 100f)]
+        [Tooltip("Espacio extra sumado al ancho real de cada letra (0 = espaciado natural de la fuente)")]
         private float spacing = 30f;
+
+        [SerializeField, Range(0f, 200f)]
+        [Tooltip("Ancho de los espacios en blanco — TMP no reporta un xAdvance confiable para caracteres invisibles en este callback, así que se usa un valor fijo en vez de medirlo")]
+        private float spaceWidth = 40f;
 
         [SerializeField]
         //[Tooltip("Threshold beyond which the text appears straight (no curvature)")]
@@ -102,16 +106,43 @@ namespace XanderDevelops.UI
             if (textInfo == null) return;
                 
             int characterCount = textInfo.characterCount;
-            
+
             if (characterCount == 0) return;
 
-            // Get bounds of the text to determine layout
-            float totalArcLength = spacing * (characterCount - 1);
-            float anglePerCharacter = totalArcLength / Mathf.Abs(radius) * Mathf.Rad2Deg;
+            // Ancho real de cada carácter (según la fuente, no un valor fijo) — así "I"/"l"
+            // quedan angostas y "M"/"W" no se pisan. xAdvance/origin son los mismos datos que
+            // TMP usa para el layout normal (recto) del texto, así que respetan el kerning
+            // real de la fuente. "spacing" pasa a ser un espacio EXTRA sumado a cada letra,
+            // no el ancho fijo entre ellas.
+            // Ojo: NO saltear los caracteres invisibles acá (espacios) — no tienen vértices
+            // para dibujar, pero sí tienen un ancho real (xAdvance/origin) que hay que contar
+            // para no perder el espacio entre palabras. El salteo por isVisible va solo en el
+            // loop de abajo, que es el que mueve vértices.
+            float[] charWidths = new float[characterCount];
+            float   totalArcLength = 0f;
+            for (int i = 0; i < characterCount; i++)
+            {
+                float advance;
+                if (!textInfo.characterInfo[i].isVisible)
+                    advance = spaceWidth; // xAdvance/origin no son confiables para invisibles acá
+                else
+                    advance = textInfo.characterInfo[i].xAdvance - textInfo.characterInfo[i].origin;
+
+                charWidths[i] = Mathf.Max(advance, 0f) + spacing;
+                totalArcLength += charWidths[i];
+            }
+
+            float cumulative = 0f;
 
             for (int i = 0; i < characterCount; i++)
             {
-                if (!textInfo.characterInfo[i].isVisible) continue;
+                // La posición en el arco se calcula para TODOS los caracteres, visibles o no
+                // — si el espacio se salteara acá, las letras de después nunca avanzarían lo
+                // que el espacio ocupa, y quedarían pegadas a la palabra anterior.
+                float charCenterArcPos = cumulative + charWidths[i] / 2f - totalArcLength / 2f;
+                cumulative += charWidths[i];
+
+                if (!textInfo.characterInfo[i].isVisible) continue; // recién acá se saltea el dibujo (no hay vértices)
 
                 // Get the index and character vertices
                 int vertexIndex = textInfo.characterInfo[i].vertexIndex;
@@ -126,7 +157,7 @@ namespace XanderDevelops.UI
                 vertices[vertexIndex + 3] -= charMidBaselinePos;
 
                 // Calculate angle offset for each character
-                float charAngle = (angularOffset + (-totalArcLength / 2f) + i * spacing) / Mathf.Abs(radius) * Mathf.Rad2Deg;
+                float charAngle = (angularOffset + charCenterArcPos) / Mathf.Abs(radius) * Mathf.Rad2Deg;
 
                 // Check if curvature is too small
                 if (Mathf.Abs(radius) > flatnessThreshold)

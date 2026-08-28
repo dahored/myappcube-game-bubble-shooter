@@ -7,7 +7,7 @@
 Este documento es la fuente única de verdad para toda la producción visual de Coralia. Úsalo como:
 1. Tracker de progreso (marcar ✅ conforme se va completando)
 2. Brief para freelancers (secciones de brief están marcadas)
-3. Spec técnico para integración en Godot
+3. Spec técnico para integración en Unity
 
 ---
 
@@ -45,7 +45,7 @@ Este documento es la fuente única de verdad para toda la producción visual de 
 
 | # | Issue | Prioridad | Tamaño | Estado |
 |---|---|---|---|---|
-| **#34** | Design system Godot — tipografías, paleta, theme global | HIGH | S | ⬜ Pendiente |
+| **#34** | Design system — tipografías, paleta, Font Assets de TextMeshPro | HIGH | S | ⬜ Pendiente |
 | **#35** | Sprites de burbujas y cañón (gameplay core) | HIGH | M | ⬜ Pendiente |
 | **#36** | Marina protagonista — diseño base + 6 animaciones | HIGH | L | ⬜ Pendiente |
 | **#37** | 12 criaturas hero + criaturas comunes | MEDIUM | XL | ⬜ Pendiente |
@@ -167,7 +167,7 @@ assets/
 │
 ├── animations/
 │   └── restoration/
-│       ├── restore_ch1.ogv         (o escena Godot)
+│       ├── restore_ch1.ogv         (o secuencia animada en Unity)
 │       ├── ... restore_ch6.ogv
 │
 └── ui/
@@ -177,7 +177,7 @@ assets/
     │   ├── screenshot_03.png
     │   └── feature_graphic.png     (1024×500 Android)
     └── icons/
-        (íconos de app — generados por Godot export)
+        (íconos de app — generados desde Player Settings de Unity al buildear)
 ```
 
 ---
@@ -256,16 +256,16 @@ Mismo artista que Marina o brief idéntico de estilo. Cozy/Ghibli, no chibi extr
 
 ---
 
-## Specs técnicos de Godot (para integración)
+## Specs técnicos de Unity (para integración)
 
 ### Sprites de burbujas
-- Tamaño: 96×96 px — coincide con `GridLogic.BUBBLE_DIAMETER = 96.0`
-- Animación pop: AnimationPlayer en `bubble.tscn`, 0.25s
-- `bubble.gd` usa `Sprite2D` — reemplazar `_draw()` actual
+- Tamaño: 92×92 px — coincide con `HexGridMath.BubbleDiameter = 92f`
+- Animación pop: coroutine en `BubbleView.PlayPopAnimation()` (`Scripts/Gameplay/BubbleView.cs`), ~0.25s
+- `BubbleView` usa un componente `Image` (`UnityEngine.UI`) sobre un `RectTransform`, no un `SpriteRenderer` — todo el juego es uGUI, no hay nada en el mundo 2D físico
 
 ### Backgrounds de gameplay
-- Cargados en `gameplay.tscn` según `level_data.get("chapter", 1)`
-- TextureRect con `expand_mode = IGNORE_SIZE` y `stretch_mode = KEEP_ASPECT_COVERED`
+- Cargados por escena según el capítulo del nivel activo
+- `Image` de UI con `Preserve Aspect` o un `RectTransform` full-stretch según si el fondo necesita recortarse o no
 
 ### App Icons — tamaños requeridos
 **Android (Adaptive Icon):**
@@ -275,11 +275,11 @@ Mismo artista que Marina o brief idéntico de estilo. Cozy/Ghibli, no chibi extr
 
 **iOS:**
 - AppStore: 1024×1024 px (sin transparencia, sin esquinas — Apple las redondea)
-- Godot export genera el resto automáticamente desde el 1024
+- Unity genera el resto de los tamaños automáticamente al buildear (`Player Settings → Icon`)
 
 ### Partículas
-- Implementadas como GPUParticles2D en escenas `scenes/effects/fx_*.tscn`
-- Instanciar con `preload()` y `queue_free()` cuando termina la emisión
+- Implementadas como `Particle System` en prefabs bajo `Prefabs/VFX/fx_*.prefab`
+- Instanciar con `Instantiate()` y `Destroy(gameObject, duration)` cuando termina la emisión
 
 ---
 
@@ -288,7 +288,7 @@ Mismo artista que Marina o brief idéntico de estilo. Cozy/Ghibli, no chibi extr
 | Categoría | Costo estimado | Fuente |
 |---|---|---|
 | Tipografías (Quicksand + Nunito) | $0 | Google Fonts |
-| Design system Godot | $0 | Diego/Claude |
+| Design system | $0 | Diego/Claude |
 | Logo Coralia (básico) | $0-50 | Canva + retoque |
 | Sprites de burbujas | $50-100 | Freelancer o asset pack |
 | Marina + 6 animaciones | $80-150 | Freelancer Fiverr/Upwork |
@@ -298,7 +298,7 @@ Mismo artista que Marina o brief idéntico de estilo. Cozy/Ghibli, no chibi extr
 | Backgrounds santuario (12) | $150-300 | AI gen + freelancer |
 | Cinemáticas restauración (6) | $200-400 | Freelancer animador |
 | Iconos UI + power-ups | $0-50 | Phosphor Icons + Kenney.nl |
-| Efectos de partículas | $0 | Diego/Claude (Godot GPUParticles) |
+| Efectos de partículas | $0 | Diego/Claude (Unity Particle System) |
 | App icons + screenshots | $0-20 | Herramientas online |
 | Sombra Profunda | $100-200 | Freelancer |
 | **TOTAL ESTIMADO** | **$1,280-$2,770** | Plan Maestro: $2,000-$4,000 ✅ |
