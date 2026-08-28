@@ -13,6 +13,7 @@ public class GameplayController : MonoBehaviour
     [SerializeField] WinPanel          winPanel;
     [SerializeField] NoMoreMovesPanel  noMoreShotsPanel;
     [SerializeField] LosePanel         losePanel;
+    [SerializeField] OutOfLivesPanel   outOfLivesPanel; // guard de entrada — ver Start() (issue #52)
     [SerializeField] TMP_Text          shotsLabel;
 
     [Header("Sin disparos")]
@@ -70,6 +71,26 @@ public class GameplayController : MonoBehaviour
         SceneTransition.Enabled = true;
 
         if (!ValidateReferences()) return;
+
+        // Guard de entrada — cubre reintentar (ResetProgressPanel) quedándose sin vidas en
+        // el proceso, y cualquier otro camino que llegue a esta escena sin pasar por el
+        // chequeo de LevelMapController (issue #52). No arma el nivel si no hay vidas.
+        // Acá, a diferencia del Level Map, cerrar el panel no puede dejar solo "esconderlo"
+        // — no hay nivel armado detrás — así que su X manda de vuelta al mapa.
+        if (SaveManager.Lives <= 0)
+        {
+            // Ya se muestra acá — limpiar la bandera para que LevelMapController no lo
+            // repita apenas GoToLevelMap() aterrice ahí (ver SaveManager.NotifyOutOfLivesOnMapLoad).
+            SaveManager.NotifyOutOfLivesOnMapLoad = false;
+
+            if (outOfLivesPanel != null)
+            {
+                outOfLivesPanel.OnClosed += GoToLevelMap;
+                outOfLivesPanel.Open();
+            }
+            else Debug.LogWarning("[GameplayController] Falta asignar 'Out Of Lives Panel' en el Inspector.");
+            return;
+        }
 
         int levelId = PlayerPrefs.GetInt("selected_level", 1);
         _level = LevelLoader.LoadById(levelId);
@@ -136,7 +157,10 @@ public class GameplayController : MonoBehaviour
             noMoreShotsPanel.OnDeclinedPressed -= OnDeclined;
         }
         if (pausedPanel != null) pausedPanel.OnResumePressed -= OnResumePressed;
+        if (outOfLivesPanel != null) outOfLivesPanel.OnClosed -= GoToLevelMap;
     }
+
+    void GoToLevelMap() => SceneLoader.GoTo(SceneLoader.LEVEL_MAP);
 
     // Pausa: solo bloquea input y congela el disparo en vuelo (si había uno) — el grid y
     // el HUD quedan tal cual se ven detrás del panel, no hace falta Time.timeScale.
@@ -175,7 +199,7 @@ public class GameplayController : MonoBehaviour
     // enableNoMoreShotsOffer está apagado, directo al quedarse sin disparos.
     void ShowRealLoss()
     {
-        SaveManager.Lives--;
+        SaveManager.LoseLife();
         if (losePanel != null) losePanel.Open();
         else Debug.LogWarning("[GameplayController] LosePanel no está asignado.");
     }

@@ -24,7 +24,7 @@ public class ResetProgressPanel : UIPanel
 
     void ConfirmReset()
     {
-        SaveManager.Lives--;
+        SaveManager.LoseLife();
         SceneLoader.GoTo(SceneLoader.GAMEPLAY);
     }
 

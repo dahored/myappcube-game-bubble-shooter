@@ -20,6 +20,42 @@ PrefabInstance:
       propertyPath: m_Sprite
       value: 
       objectReference: {fileID: 7877994362186322301, guid: 77a79ab67f1894547945564f22e10e37, type: 3}
+    - target: {fileID: 2073554850340999234, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 57.915
+      objectReference: {fileID: 0}
+    - target: {fileID: 2073554850340999234, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 57.915
+      objectReference: {fileID: 0}
+    - target: {fileID: 2073554850340999234, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2073554850340999234, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2363507170270479972, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_text
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2363507170270479972, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_fontSize
+      value: 47.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 2363507170270479972, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 11e5e54ccc3684b0eb88a1b4bb13ddb2, type: 2}
+    - target: {fileID: 2363507170270479972, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 6286699744156901190, guid: 11e5e54ccc3684b0eb88a1b4bb13ddb2, type: 2}
+    - target: {fileID: 2363507170270479972, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3428944024431491594, guid: 14ef3721de776466e89825413ca576d7, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -117,11 +153,47 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6826353523415252952, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_text
+      value: Full
+      objectReference: {fileID: 0}
+    - target: {fileID: 6826353523415252952, guid: 14ef3721de776466e89825413ca576d7, type: 3}
       propertyPath: m_fontSize
-      value: 36.1
+      value: 42.95
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4012733241178542409, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8413903907398112176}
   m_SourcePrefab: {fileID: 100100000, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+--- !u!114 &468910085636793136 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3069302920944362786, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+  m_PrefabInstance: {fileID: 3177779385294882322}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1993311351381350235}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21a727538a82a47c396090e54c0cb1cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ResourcePillView
+--- !u!1 &1993311351381350235 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4012733241178542409, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+  m_PrefabInstance: {fileID: 3177779385294882322}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8413903907398112176
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1993311351381350235}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7b026babccef4084879220e4b15a888, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LivesPillView
+  pill: {fileID: 468910085636793136}

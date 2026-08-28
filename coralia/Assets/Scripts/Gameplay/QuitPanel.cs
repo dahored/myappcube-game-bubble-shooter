@@ -23,7 +23,7 @@ public class QuitPanel : UIPanel
 
     void ConfirmQuit()
     {
-        SaveManager.Lives--;
+        SaveManager.LoseLife();
         SceneLoader.GoTo(SceneLoader.LEVEL_MAP);
     }
 

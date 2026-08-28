@@ -78,9 +78,9 @@ ui.paused.panel.body.restartButton,Reiniciar,Restart,Ricomincia,Recommencer,Neu 
 ui.paused.panel.body.settingsButton,Ajustes,Settings,Impostazioni,Paramètres,Einstellungen,Ajustes
 ui.quitlevel.panel.title,Salir del nivel,Quit Level,Esci dal livello,Quitter le niveau,Level verlassen,Sair do nível
 ui.quitlevel.panel.body.question,¿Seguro que quieres salir del nivel?,Are you sure you want to quit the level?,Sei sicuro di voler uscire dal livello?,Tu es sûr de vouloir quitter le niveau ?,Bist du sicher, dass du das Level verlassen möchtest?,Tem certeza que quer sair do nível?
-ui.resetprogress.panel.title,Reiniciar progreso,Reset Progress,Reimposta progressi,Réinitialiser la progression,Fortschritt zurücksetzen,Redefinir progresso
-ui.resetprogress.panel.body.question,¿Seguro que quieres reiniciar tu progreso?,Are you sure you want to reset your progress?,Sei sicuro di voler reimpostare i tuoi progressi?,Tu es sûr de vouloir réinitialiser ta progression ?,Bist du sicher, dass du deinen Fortschritt zurücksetzen möchtest?,Tem certeza que quer redefinir seu progresso?
-ui.resetprogress.panel.body.warning,Esta acción no se puede deshacer.,This action cannot be undone.,Questa azione non può essere annullata.,Cette action est irréversible.,Diese Aktion kann nicht rückgängig gemacht werden.,Essa ação não pode ser desfeita.
+ui.resetlevel.panel.title,Reiniciar nivel,Reset Level,Reimposta livello,Réinitialiser le niveau,Level zurücksetzen,Reiniciar nível
+ui.resetlevel.panel.body.question,¿Seguro que quieres reiniciar el nivel?,Are you sure you want to reset the level?,Sei sicuro di voler reimpostare il livello?,Tu es sûr de vouloir réinitialiser le niveau ?,Bist du sicher, dass du das Level zurücksetzen möchtest?,Tem certeza que quer reiniciar o nível?
+ui.resetlevel.panel.body.warning,Esta acción no se puede deshacer.,This action cannot be undone.,Questa azione non può essere annullata.,Cette action est irréversible.,Diese Aktion kann nicht rückgängig gemacht werden.,Essa ação não pode ser desfeita.
 ui.daily.title,Recompensa diaria,Daily reward,Ricompensa giornaliera,Récompense quotidienne,Tägliche Belohnung,Recompensa diária
 ui.daily.day,Día {n} de 7,Day {n} of 7,Giorno {n} di 7,Jour {n} sur 7,Tag {n} von 7,Dia {n} de 7
 ui.daily.next_in,Próximo regalo en,Next gift in,Prossimo regalo tra,Prochain cadeau dans,Nächstes Geschenk in,Próximo presente em

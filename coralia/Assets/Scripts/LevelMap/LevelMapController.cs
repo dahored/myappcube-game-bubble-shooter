@@ -11,6 +11,7 @@ public class LevelMapController : MonoBehaviour
     [SerializeField] bool                showPlayerNode;    // mostrar la card del usuario en el mapa
     [SerializeField] ScrollPinController scrollPinTop;      // pin arriba — nodo está debajo del viewport
     [SerializeField] ScrollPinController scrollPinBottom;   // pin abajo — nodo está arriba del viewport
+    [SerializeField] OutOfLivesPanel     outOfLivesPanel;   // se muestra si SaveManager.Lives llega a 0 (issue #52)
 
     public const float NODE_SPACING =  300f; // distancia vertical entre nodos
     const float PEARL_SPACING   =  100f; // distancia entre cada perla del path
@@ -32,6 +33,23 @@ public class LevelMapController : MonoBehaviour
         // Para test descomenta
         // SaveManager.MaxUnlockedLevel = 10;
         BuildMap();
+
+        // Cubre "quitar/perder la última vida y aterrizar acá" — se muestra apenas carga
+        // el mapa, pero SOLO como aviso reactivo de la bandera que arma SaveManager.LoseLife()
+        // al momento justo de gastar la última vida. Ojo: NO chequea "Lives<=0" directo —
+        // eso dispararía el panel también al navegar Home → LevelMap con 0 vidas de antes,
+        // que es exactamente el caso que Diego pidió evitar.
+        if (SaveManager.NotifyOutOfLivesOnMapLoad)
+        {
+            SaveManager.NotifyOutOfLivesOnMapLoad = false; // se consume una sola vez
+            ShowOutOfLives();
+        }
+    }
+
+    void ShowOutOfLives()
+    {
+        if (outOfLivesPanel != null) outOfLivesPanel.Open();
+        else Debug.LogWarning("[LevelMapController] Falta asignar 'Out Of Lives Panel' en el Inspector.");
     }
 
     void BuildMap()
@@ -147,6 +165,8 @@ public class LevelMapController : MonoBehaviour
 
     void OnLevelSelected(int levelId)
     {
+        if (SaveManager.Lives <= 0) { ShowOutOfLives(); return; }
+
         PlayerPrefs.SetInt("selected_level", levelId);
         SceneLoader.GoTo(SceneLoader.GAMEPLAY);
     }
