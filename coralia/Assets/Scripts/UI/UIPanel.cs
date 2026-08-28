@@ -25,6 +25,13 @@ public abstract class UIPanel : MonoBehaviour
     // entrar antes de arrancar animaciones propias (estrellas, contador de score, etc.).
     public float OpenDuration => openDuration;
 
+    // Se dispara cuando el panel termina de cerrarse, sin importar quién llamó Close() ni
+    // cómo (botón asignado en el Inspector o código). Sirve para el patrón "volver al panel
+    // anterior" — ej. PausedPanel se esconde al abrir SettingsPanel y se suscribe acá para
+    // reabrirse solo cuando Settings se cierra — sin que SettingsPanel necesite saber nada
+    // sobre quién lo abrió (HomeGame/LevelMap lo abren igual, sin este comportamiento).
+    public event System.Action OnClosed;
+
     CanvasGroup _overlay;
     Vector3     _baseScale;
     Coroutine   _anim;
@@ -89,6 +96,7 @@ public abstract class UIPanel : MonoBehaviour
         gameObject.SetActive(false);
         _overlay.alpha = 1f;
         SetCardScale(1f);
+        OnClosed?.Invoke();
     }
 
     void SetCardScale(float s)

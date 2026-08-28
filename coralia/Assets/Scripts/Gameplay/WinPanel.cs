@@ -5,9 +5,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Panel de victoria: banner "Nivel {id}", estrellas según el score final (vs.
-// LevelData.star_thresholds — GDD §4.2), puntaje, y hasta N recompensas (monedas/gemas —
+// LevelData.star_thresholds — GDD §4.2), puntaje, y hasta N recompensas (monedas —
 // GDD §6.3-6.4). GameplayController calcula todo (score/estrellas/recompensas) y lo pasa a
-// Show() — este panel solo presenta. Sin gemsButton/adButton, eso es exclusivo de LosePanel.
+// Show() — este panel solo presenta. Sin buyButton/adButton, eso es exclusivo de LosePanel.
 // El texto "¡Completado!" es fijo (no depende de datos del nivel) — va con LocalizedText.cs
 // directo en el GameObject Content/CompleteLevel/Text, no se setea acá.
 public class WinPanel : UIPanel
@@ -101,6 +101,6 @@ public class WinPanel : UIPanel
         if (!starsView)        Debug.LogWarning("[WinPanel] Falta asignar 'Stars View' en el Inspector.");
         if (!scorePointsText) Debug.LogWarning("[WinPanel] Falta asignar 'Score Points Text' en el Inspector.");
         // Award Items vacío es válido por ahora — la economía de recompensas todavía está
-        // pendiente de definir (ver conversación), no es un error de wireo.
+        // pendiente de definir (ver conversación), no es un error de asignación.
     }
 }

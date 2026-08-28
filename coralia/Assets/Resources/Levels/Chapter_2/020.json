@@ -2,22 +2,73 @@
   "id": 20,
   "chapter": 2,
   "name": "El guardián",
-  "objective": { "type": "clear_all" },
+  "objective": {
+    "type": "clear_all"
+  },
   "max_shots": 25,
-  "available_colors": ["red","blue","green","yellow"],
+  "available_colors": [
+    "red",
+    "blue",
+    "green",
+    "yellow"
+  ],
   "rainbow_chance": 0.05,
   "bubbles": [
-    { "row": 1, "col": 0, "color": "red" },
-    { "row": 2, "col": 0, "color": "blue" },
-    { "row": 2, "col": 1, "color": "red" },
-    { "row": 3, "col": 0, "color": "green" },
-    { "row": 3, "col": 1, "color": "blue" },
-    { "row": 3, "col": 2, "color": "red" },
-    { "row": 4, "col": 0, "color": "red" },
-    { "row": 4, "col": 1, "color": "green" },
-    { "row": 4, "col": 2, "color": "blue" },
-    { "row": 4, "col": 3, "color": "red" }
+    {
+      "row": 1,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "color": "green"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "color": "blue"
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "color": "green"
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "color": "red"
+    }
   ],
   "obstacles": [],
-  "star_thresholds": [100, 162, 225]
+  "star_thresholds": [
+    100,
+    162,
+    225
+  ]
 }

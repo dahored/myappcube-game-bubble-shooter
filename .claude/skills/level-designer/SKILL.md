@@ -61,6 +61,8 @@ star_thresholds = [40%, 65%, 90%] de score_ideal
 
 (Los pesos 10/10 son `SCORE_PER_POP`/`SCORE_PER_REMAINING_SHOT` de `GameplayController.cs` — mantenerlos sincronizados si esos valores cambian.) Mientras `min_shots_to_clear` siga en `0` (no calibrado), el fallback usa `burbujas` en su lugar — menos preciso, ya que no contempla cadenas largas, pero sirve de placeholder.
 
+Los tres cortes (40/65/90%) también son el 100% de `ProgressScoreView` — la barra de score en vivo del HUD de gameplay. Su 3er umbral (90%) es exactamente el `STAR_3_RATIO_OF_BAR` hardcodeado en `ProgressScoreView.cs`; si estos porcentajes cambian acá, hay que actualizar esa constante también para que las estrellas sigan cayendo justo donde están los `Field1/2/3` puestos a mano en el prefab.
+
 ## Difficulty curve (GDD §2.4 and §2.5 — read those sections directly, this is a summary, not the source of truth)
 
 | Tramo | Niveles | Tasa de éxito target |

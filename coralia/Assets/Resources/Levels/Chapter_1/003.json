@@ -2,15 +2,37 @@
   "id": 3,
   "chapter": 1,
   "name": "Nivel 3",
-  "objective": { "type": "clear_all" },
+  "objective": {
+    "type": "clear_all"
+  },
   "max_shots": 26,
-  "available_colors": ["red", "blue", "yellow"],
+  "available_colors": [
+    "red",
+    "blue",
+    "yellow"
+  ],
   "rainbow_chance": 0.0,
   "bubbles": [
-    { "row": 0, "col": 0, "color": "red" },
-    { "row": 1, "col": 0, "color": "blue" },
-    { "row": 2, "col": 0, "color": "yellow" }
+    {
+      "row": 0,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "color": "yellow"
+    }
   ],
   "obstacles": [],
-  "star_thresholds": [104, 169, 234]
+  "star_thresholds": [
+    104,
+    169,
+    234
+  ]
 }

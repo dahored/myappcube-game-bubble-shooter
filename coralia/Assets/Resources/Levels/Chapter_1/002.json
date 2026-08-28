@@ -6,14 +6,37 @@
     "type": "clear_all"
   },
   "max_shots": 22,
-  "available_colors": ["red", "blue"],
+  "available_colors": [
+    "red",
+    "blue"
+  ],
   "rainbow_chance": 0.0,
   "bubbles": [
-    { "row": 2, "col": 0, "color": "red" },
-    { "row": 3, "col": 0, "color": "red" },
-    { "row": 4, "col": 0, "color": "blue" },
-    { "row": 5, "col": 0, "color": "blue" }
+    {
+      "row": 2,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 5,
+      "col": 0,
+      "color": "blue"
+    }
   ],
   "obstacles": [],
-  "star_thresholds": [88, 143, 198]
+  "star_thresholds": [
+    88,
+    143,
+    198
+  ]
 }

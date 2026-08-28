@@ -8,10 +8,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 995751907402069517, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 95.9693
+      objectReference: {fileID: 0}
+    - target: {fileID: 995751907402069517, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -7.9992
+      objectReference: {fileID: 0}
     - target: {fileID: 1894994199729325859, guid: 14ef3721de776466e89825413ca576d7, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 1854213340780231222, guid: adef11dd0f9704096b8b6f7e51cedd2a, type: 3}
+      objectReference: {fileID: 7877994362186322301, guid: 77a79ab67f1894547945564f22e10e37, type: 3}
     - target: {fileID: 3428944024431491594, guid: 14ef3721de776466e89825413ca576d7, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -95,6 +103,22 @@ PrefabInstance:
     - target: {fileID: 4012733241178542409, guid: 14ef3721de776466e89825413ca576d7, type: 3}
       propertyPath: m_Name
       value: ResourcePillLives Variant
+      objectReference: {fileID: 0}
+    - target: {fileID: 6046333627806865916, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 82
+      objectReference: {fileID: 0}
+    - target: {fileID: 6046333627806865916, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 74
+      objectReference: {fileID: 0}
+    - target: {fileID: 6046333627806865916, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6826353523415252952, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      propertyPath: m_fontSize
+      value: 36.1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

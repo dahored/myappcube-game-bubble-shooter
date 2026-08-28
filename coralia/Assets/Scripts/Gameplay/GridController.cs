@@ -16,9 +16,70 @@ public class GridController : MonoBehaviour
     [SerializeField] Sprite spriteOrange;
     [SerializeField] Sprite spriteRainbow;
 
+    [Header("Scroll de retirada (GDD: el grid se aleja del cañón cuando se llena)")]
+    [Range(0f, 1f)]
+    [SerializeField] float scrollTriggerRatio = 0.65f; // a qué % de la distancia techo→cañón empieza a retirarse (60-70% sugerido)
+    [SerializeField] float maxScrollOffset    = 6f * HexGridMath.BubbleDiameter; // tope de seguridad, no se retira más que esto
+    [SerializeField] float scrollSpeed        = 900f; // px/seg de la animación de scroll
+
     readonly Dictionary<Vector2Int, BubbleView> _cells = new();
 
+    RectTransform _rt;
+    Vector2       _baseAnchoredPos;
+    float         _muzzleReferenceY;
+    float         _scrollOffsetY;
+    float         _scrollTarget;
+
+    // Cuánto se retiró el grid del cañón ahora mismo (0 = posición normal) — CannonController
+    // lo resta de la posición del muzzle para que el disparo/mira sigan apuntando bien aunque
+    // el grid entero se haya movido.
+    public float ScrollOffsetY => _scrollOffsetY;
+
     public int CellCount => _cells.Count;
+
+    void Awake()
+    {
+        _rt = (RectTransform)transform;
+        _baseAnchoredPos = _rt.anchoredPosition;
+    }
+
+    void Update()
+    {
+        if (Mathf.Approximately(_scrollOffsetY, _scrollTarget)) return;
+        _scrollOffsetY = Mathf.MoveTowards(_scrollOffsetY, _scrollTarget, scrollSpeed * Time.deltaTime);
+        _rt.anchoredPosition = _baseAnchoredPos + Vector2.up * _scrollOffsetY;
+    }
+
+    // Llamado una vez por CannonController.Start() con la posición Y del muzzle (sin scroll) —
+    // es la referencia contra la que medimos qué tan cerca está la fila más baja del cañón.
+    public void SetMuzzleReferenceY(float muzzleLocalY) => _muzzleReferenceY = muzzleLocalY;
+
+    // Recalcula cuánto debería retirarse el grid ahora — llamar después de cada disparo
+    // resuelto (match + drop ya aplicados), así reacciona tanto a que el grid creció
+    // (dispara el retiro) como a que se vació por un match (permite que vuelva a bajar).
+    //
+    // El umbral es un % de la distancia TOTAL techo→cañón (no un gap fijo en píxeles) —
+    // así escala solo con niveles que tengan más o menos espacio disponible, en vez de
+    // disparar siempre al mismo puñado de píxeles sin importar qué tan largo sea el grid.
+    public void RecomputeScroll()
+    {
+        if (_cells.Count == 0) { _scrollTarget = 0f; return; }
+
+        float ceilingY   = -HexGridMath.BubbleRadius; // fila 0, referencia fija
+        float totalSpan  = ceilingY - _muzzleReferenceY;
+        if (totalSpan <= 0f) { _scrollTarget = 0f; return; } // referencia de muzzle todavía no seteada
+
+        float lowestRowY = float.PositiveInfinity;
+        foreach (var cell in _cells.Keys)
+        {
+            float y = HexGridMath.CellToLocalPos(cell).y;
+            if (y < lowestRowY) lowestRowY = y;
+        }
+
+        float requiredGap = (1f - scrollTriggerRatio) * totalSpan; // colchón mínimo según el % configurado
+        float rawGap      = lowestRowY - _muzzleReferenceY;        // colchón actual sin scroll (ambos valores son negativos)
+        _scrollTarget = Mathf.Clamp(requiredGap - rawGap, 0f, maxScrollOffset);
+    }
 
     // Colores que todavía están en el grid — usado por CannonController para no ofrecer
     // colores que ya no tienen con qué matchear (GDD: "smart queue"). Rainbow no cuenta,

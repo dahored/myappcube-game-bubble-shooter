@@ -5,17 +5,43 @@
   "objective": {
     "type": "rescue",
     "creature_id": "test_creature",
-    "creature_position": [2, 0]
+    "creature_position": [
+      2,
+      0
+    ]
   },
   "max_shots": 30,
-  "available_colors": ["red", "blue"],
+  "available_colors": [
+    "red",
+    "blue"
+  ],
   "rainbow_chance": 0.0,
   "bubbles": [
-    { "row": 2, "col": 0, "color": "red" },
-    { "row": 2, "col": 1, "color": "red" },
-    { "row": 3, "col": 0, "color": "red" },
-    { "row": 3, "col": 1, "color": "blue" }
+    {
+      "row": 2,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "color": "blue"
+    }
   ],
   "obstacles": [],
-  "star_thresholds": [10, 30, 60]
+  "star_thresholds": [
+    120,
+    195,
+    270
+  ]
 }

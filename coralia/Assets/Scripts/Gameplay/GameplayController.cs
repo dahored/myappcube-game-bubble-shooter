@@ -2,26 +2,37 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 // Coordinador de escena — NO es un singleton DontDestroyOnLoad (a diferencia de
 // AudioManager/LocaleManager), vive y muere con la escena Gameplay.
 public class GameplayController : MonoBehaviour
 {
-    [SerializeField] GridController   grid;
-    [SerializeField] CannonController cannon;
-    [SerializeField] WinPanel         winPanel;
-    [SerializeField] LosePanel        losePanel;
-    [SerializeField] TMP_Text         shotsLabel;
+    [SerializeField] GridController    grid;
+    [SerializeField] CannonController  cannon;
+    [SerializeField] WinPanel          winPanel;
+    [SerializeField] NoMoreMovesPanel  noMoreShotsPanel;
+    [SerializeField] LosePanel         losePanel;
+    [SerializeField] TMP_Text          shotsLabel;
+
+    [Header("Sin disparos")]
+    [Tooltip("Si está desactivado, al quedarse sin disparos se salta la oferta de monedas y se muestra LosePanel directo.")]
+    [SerializeField] bool enableNoMoreShotsOffer = true;
+
+    [Header("Pausa")]
+    [SerializeField] PausedPanel pausedPanel;
+    [SerializeField] Button      openPausedButton;
+
+    [Header("HUD")]
+    [SerializeField] ProgressScoreView progressScore;
 
     [Header("SFX (opcional — dejar vacío hasta tener los clips)")]
     [SerializeField] AudioClip popClip;
     [SerializeField] AudioClip dropClip;
 
-    [Header("Íconos de recompensa (WinPanel — GDD §6.3-6.4)")]
+    [Header("Ícono de recompensa (WinPanel — GDD §6.3-6.4)")]
     [SerializeField] Sprite coinIcon;
-    [SerializeField] Sprite gemIcon;
 
-    const int   CONTINUE_SHOTS_BONUS = 5;     // GDD §7 — "Pagar gemas: +5 disparos"
     const float END_LEVEL_DELAY      = 1.1f;  // espera a que terminen las animaciones de pop/drop antes de mostrar el panel
     const float POP_CHAIN_DELAY      = 0.08f; // segundos entre el pop de cada burbuja del match, en cadena
     const float POP_CHAIN_DELAY_MAX  = 0.4f;   // tope — para que un match gigante no tarde una eternidad en terminar
@@ -50,6 +61,7 @@ public class GameplayController : MonoBehaviour
     Vector2Int _creatureCell = new(-1, -1);
     bool       _creatureFreed;
     bool       _levelEnded;
+    int        _noMoreShotsUsedCount; // cuántas veces ya se pagó la oferta en esta partida — sube el costo
 
     void Start()
     {
@@ -77,13 +89,16 @@ public class GameplayController : MonoBehaviour
         cannon.Init(_level.available_colors, _level.rainbow_chance);
         cannon.OnBubbleLanded += OnBubbleLanded;
 
-        // losePanel puede no estar wireado todavía (WIP) — ya se avisó en ValidateReferences(),
-        // acá solo evita el crash si falta.
-        if (losePanel != null)
+        // noMoreShotsPanel puede no estar asignado todavía (WIP) — ya se avisó en
+        // ValidateReferences(), acá solo evita el crash si falta.
+        if (noMoreShotsPanel != null)
         {
-            losePanel.OnContinuePressed += OnContinuePressed;
-            losePanel.OnAbandonPressed  += OnAbandonPressed;
+            noMoreShotsPanel.OnContinuePressed += OnContinuePressed;
+            noMoreShotsPanel.OnDeclinedPressed += OnDeclined;
         }
+
+        if (openPausedButton != null) openPausedButton.onClick.AddListener(OpenPaused);
+        if (pausedPanel      != null) pausedPanel.OnResumePressed += OnResumePressed;
 
         _shotsRemaining = _level.max_shots;
         RefreshShotsLabel();
@@ -100,9 +115,14 @@ public class GameplayController : MonoBehaviour
         if (grid   == null) { Debug.LogWarning("[GameplayController] Falta asignar 'Grid' en el Inspector.");   ok = false; }
         if (cannon == null) { Debug.LogWarning("[GameplayController] Falta asignar 'Cannon' en el Inspector."); ok = false; }
 
-        if (winPanel   == null) Debug.LogWarning("[GameplayController] Falta asignar 'Win Panel' en el Inspector — la victoria no va a mostrar panel todavía.");
-        if (losePanel  == null) Debug.LogWarning("[GameplayController] Falta asignar 'Lose Panel' en el Inspector — la derrota no va a mostrar panel todavía.");
-        if (shotsLabel == null) Debug.LogWarning("[GameplayController] Falta asignar 'Shots Label' en el Inspector — el HUD de disparos no se va a actualizar.");
+        if (winPanel         == null) Debug.LogWarning("[GameplayController] Falta asignar 'Win Panel' en el Inspector — la victoria no va a mostrar panel todavía.");
+        if (noMoreShotsPanel == null) Debug.LogWarning("[GameplayController] Falta asignar 'No More Shots Panel' en el Inspector — la oferta de seguir jugando no va a mostrar panel todavía.");
+        if (losePanel        == null) Debug.LogWarning("[GameplayController] Falta asignar 'Lose Panel' en el Inspector — la derrota no va a mostrar panel todavía.");
+        if (shotsLabel       == null) Debug.LogWarning("[GameplayController] Falta asignar 'Shots Label' en el Inspector — el HUD de disparos no se va a actualizar.");
+
+        if (pausedPanel      == null) Debug.LogWarning("[GameplayController] Falta asignar 'Paused Panel' en el Inspector — el botón de pausa no va a hacer nada todavía.");
+        if (openPausedButton == null) Debug.LogWarning("[GameplayController] Falta asignar 'Open Paused Button' en el Inspector.");
+        if (progressScore    == null) Debug.LogWarning("[GameplayController] Falta asignar 'Progress Score' en el Inspector — la barra de score no se va a actualizar.");
 
         return ok;
     }
@@ -110,26 +130,55 @@ public class GameplayController : MonoBehaviour
     void OnDestroy()
     {
         if (cannon != null) cannon.OnBubbleLanded -= OnBubbleLanded;
-        if (losePanel != null)
+        if (noMoreShotsPanel != null)
         {
-            losePanel.OnContinuePressed -= OnContinuePressed;
-            losePanel.OnAbandonPressed  -= OnAbandonPressed;
+            noMoreShotsPanel.OnContinuePressed -= OnContinuePressed;
+            noMoreShotsPanel.OnDeclinedPressed -= OnDeclined;
         }
+        if (pausedPanel != null) pausedPanel.OnResumePressed -= OnResumePressed;
     }
 
-    // GDD §7 — "Pagar gemas": +5 disparos, la ronda sigue (no cuenta como nuevo intento).
+    // Pausa: solo bloquea input y congela el disparo en vuelo (si había uno) — el grid y
+    // el HUD quedan tal cual se ven detrás del panel, no hace falta Time.timeScale.
+    void OpenPaused()
+    {
+        if (_levelEnded) return; // no tiene sentido pausar sobre un panel de victoria/derrota ya abierto
+        cannon.SetInputEnabled(false);
+        if (pausedPanel != null) pausedPanel.Open();
+    }
+
+    void OnResumePressed() => cannon.SetInputEnabled(true);
+
+    // GDD §7 — "Pagar" (con monedas, ver comentario en NoMoreMovesPanel): +N disparos
+    // (ver NoMoreMovesPanel.ShotsBonus/GetCost), la ronda sigue (no cuenta como nuevo
+    // intento). El costo sube cada vez que se vuelve a usar en la misma partida.
     void OnContinuePressed()
     {
-        SaveManager.Gems -= LosePanel.ContinueGemsCost;
-        _shotsRemaining  += CONTINUE_SHOTS_BONUS;
-        _levelEnded       = false;
+        SaveManager.Coins -= noMoreShotsPanel.GetCost(_noMoreShotsUsedCount);
+        _noMoreShotsUsedCount++;
+        _shotsRemaining += noMoreShotsPanel.ShotsBonus;
+        _levelEnded      = false;
         RefreshShotsLabel();
         cannon.SetInputEnabled(true);
-        if (losePanel != null) losePanel.Close();
+        noMoreShotsPanel.Close();
     }
 
-    // GDD §7 — "Aceptar derrota": -1 vida, la navegación al mapa ya la hace LosePanel.
-    void OnAbandonPressed() => SaveManager.Lives--;
+    // El jugador cerró la oferta de NoMoreMovesPanel sin pagar -> derrota real.
+    void OnDeclined()
+    {
+        noMoreShotsPanel.Close();
+        ShowRealLoss();
+    }
+
+    // Derrota real: -1 vida (GDD §7) y se muestra LosePanel, que ya maneja su propia
+    // navegación (retry/mapa). Se llama tanto al declinar la oferta como, si
+    // enableNoMoreShotsOffer está apagado, directo al quedarse sin disparos.
+    void ShowRealLoss()
+    {
+        SaveManager.Lives--;
+        if (losePanel != null) losePanel.Open();
+        else Debug.LogWarning("[GameplayController] LosePanel no está asignado.");
+    }
 
     void OnBubbleLanded(Vector2Int landedCell)
     {
@@ -140,6 +189,13 @@ public class GameplayController : MonoBehaviour
 
         var removed = ResolveMatchAndDrop(landedCell);
         if (removed.Contains(_creatureCell)) _creatureFreed = true;
+
+        // El grid ya refleja el estado final de este disparo (match + drop aplicados) —
+        // recién acá tiene sentido decidir si hay que retirarlo del cañón o si puede volver
+        // a bajar (ver GridController.RecomputeScroll).
+        grid.RecomputeScroll();
+
+        if (progressScore != null) progressScore.SetScore(LiveScore, _level.star_thresholds);
 
         CheckWinLose();
     }
@@ -230,18 +286,28 @@ public class GameplayController : MonoBehaviour
 
         if (won)
         {
-            if (winPanel == null) { Debug.LogWarning("[GameplayController] WinPanel no está wireado."); return; }
-            int score  = _bubblesPopped * SCORE_PER_POP + _bubblesDropped * SCORE_PER_DROP + _shotsRemaining * SCORE_PER_REMAINING_SHOT + _comboBonus;
+            if (winPanel == null) { Debug.LogWarning("[GameplayController] WinPanel no está asignado."); return; }
+            int score  = LiveScore + _shotsRemaining * SCORE_PER_REMAINING_SHOT;
             int stars  = CalculateStars(score);
             var awards = CalculateAwards(firstCompletion);
             winPanel.Show(_level.id, score, stars, awards);
         }
+        else if (enableNoMoreShotsOffer)
+        {
+            if (noMoreShotsPanel == null) { Debug.LogWarning("[GameplayController] NoMoreMovesPanel no está asignado."); return; }
+            noMoreShotsPanel.Show(_noMoreShotsUsedCount);
+        }
         else
         {
-            if (losePanel == null) { Debug.LogWarning("[GameplayController] LosePanel no está wireado."); return; }
-            losePanel.Show();
+            ShowRealLoss();
         }
     }
+
+    // Score sin el bonus de disparos sobrantes — ese solo se conoce al terminar el nivel
+    // (depende de cuántos disparos quedaron), así que mostrarlo en vivo en ProgressScoreView
+    // haría que la barra subiera/bajara de forma rara mientras se juega. El salto final se ve
+    // en el contador animado de WinPanel, no acá.
+    int LiveScore => _bubblesPopped * SCORE_PER_POP + _bubblesDropped * SCORE_PER_DROP + _comboBonus;
 
     // GDD §4.2 — estrellas según star_thresholds del nivel (calibrados a mano por playtesting,
     // no por fórmula). 0 a 3 estrellas.
@@ -255,26 +321,22 @@ public class GameplayController : MonoBehaviour
     }
 
     // GDD §6.3-6.4 — monedas base por capítulo (cap.1: 50, cap.2-3: 75, cap.4-6: 100), +50%
-    // en la primera completación, más 1-3 gemas de bonus (solo primera vez).
+    // en la primera completación, más 1-3 de bonus (solo primera vez). El GDD original
+    // separaba este bonus en una moneda "gemas" aparte, pero el juego nunca tuvo una
+    // segunda moneda real — todo se unificó en monedas (ver SaveManager.Coins), así que
+    // el bonus de primera vez es simplemente parte del mismo total, no un award aparte.
     List<(Sprite icon, int amount)> CalculateAwards(bool firstCompletion)
     {
         int baseCoins = _level.chapter <= 1 ? 50 : _level.chapter <= 3 ? 75 : 100;
         int coins     = firstCompletion ? Mathf.RoundToInt(baseCoins * 1.5f) : baseCoins;
+        if (firstCompletion) coins += Random.Range(1, 4); // 1-3 bonus por primera vez
+
         SaveManager.Coins += coins;
-
-        var awards = new List<(Sprite, int)> { (coinIcon, coins) };
-
-        if (firstCompletion)
-        {
-            int gems = Random.Range(1, 4); // 1-3
-            SaveManager.Gems += gems;
-            awards.Add((gemIcon, gems));
-        }
-        return awards;
+        return new List<(Sprite, int)> { (coinIcon, coins) };
     }
 
     void RefreshShotsLabel()
     {
-        if (shotsLabel) shotsLabel.text = $"{LocaleManager.Get("ui.gameplay.shots_remaining")}: {_shotsRemaining}";
+        if (shotsLabel) shotsLabel.text = _shotsRemaining.ToString();
     }
 }

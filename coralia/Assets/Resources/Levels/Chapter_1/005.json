@@ -2,15 +2,37 @@
   "id": 5,
   "chapter": 1,
   "name": "Nivel 5",
-  "objective": { "type": "clear_all" },
+  "objective": {
+    "type": "clear_all"
+  },
   "max_shots": 30,
-  "available_colors": ["red", "blue", "yellow"],
+  "available_colors": [
+    "red",
+    "blue",
+    "yellow"
+  ],
   "rainbow_chance": 0.0,
   "bubbles": [
-    { "row": 0, "col": 0, "color": "red" },
-    { "row": 1, "col": 0, "color": "blue" },
-    { "row": 2, "col": 0, "color": "yellow" }
+    {
+      "row": 0,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "color": "yellow"
+    }
   ],
   "obstacles": [],
-  "star_thresholds": [120, 195, 270]
+  "star_thresholds": [
+    120,
+    195,
+    270
+  ]
 }

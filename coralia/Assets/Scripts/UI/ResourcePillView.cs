@@ -26,6 +26,13 @@ public class ResourcePillView : MonoBehaviour
         if (iconImage) iconImage.sprite = sprite;
     }
 
+    // Para instancias donde el "+" no debe interferir (ej. NoMoreMovesPanel, que ya tiene
+    // su propio botón de compra) — no afecta otras instancias de este prefab en la escena.
+    public void SetPlusVisible(bool visible)
+    {
+        if (plusButton) plusButton.gameObject.SetActive(visible);
+    }
+
     public void SetValue(int value)
     {
         if (valueText) valueText.text = value.ToString();

@@ -1110,8 +1110,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 16.5}
-  m_SizeDelta: {x: 447.515, y: 67.3982}
+  m_AnchoredPosition: {x: 6, y: 25}
+  m_SizeDelta: {x: 405.3009, y: 67.3982}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4597487459799325406
 CanvasRenderer:
@@ -1168,15 +1168,15 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 64
+  m_fontSize: 55.7
   m_fontSizeBase: 64
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 4096
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_characterHorizontalScale: 1
@@ -1240,6 +1240,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::XanderDevelops.UI.CurvedText
   curve: 5
   spacing: 0
+  spaceWidth: 40
   flatnessThreshold: 4000
   angularOffset: 0
 --- !u!1 &5922432202832883582

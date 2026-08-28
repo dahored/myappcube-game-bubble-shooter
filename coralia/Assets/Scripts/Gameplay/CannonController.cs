@@ -29,19 +29,34 @@ public class CannonController : MonoBehaviour
     bool         _inputEnabled = true;
     bool         _dragging;
     Vector2      _aimDir = Vector2.up;
-    Vector2      _muzzleLocal; // posición de muzzlePoint convertida al espacio local de gridContainer —
-                                // calculada acá en vez de a mano, así no importa el anchor/dispositivo
+    Vector2      _muzzleLocalBase; // posición de muzzlePoint convertida al espacio local de gridContainer,
+                                    // SIN scroll — calculada acá en vez de a mano, así no importa el anchor/dispositivo
+
+    // Posición real del muzzle ahora mismo: si GridController retiró el grid (ScrollOffsetY > 0),
+    // hay que restarlo acá para que el cañón siga apuntando desde su lugar visual fijo — el
+    // grid se mueve, el cañón no.
+    Vector2 MuzzleLocal => _muzzleLocalBase - Vector2.up * (grid != null ? grid.ScrollOffsetY : 0f);
 
     void Awake() => currentBubbleButton.onClick.AddListener(SwapCurrentAndNext);
 
     // Start() y no Awake(): SafeAreaPanel ajusta el tamaño real de SafeArea en su propio
     // Awake(), y Unity garantiza que todos los Awake() de la escena terminan antes que
     // cualquier Start() — así la posición mundial de muzzlePoint ya es la definitiva.
-    void Start() => _muzzleLocal = WorldToGridLocal(muzzlePoint.position);
+    void Start()
+    {
+        _muzzleLocalBase = WorldToGridLocal(muzzlePoint.position);
+        if (grid != null)
+        {
+            grid.SetMuzzleReferenceY(_muzzleLocalBase.y);
+            grid.RecomputeScroll();
+        }
+    }
 
     void Update()
     {
-        if (_flyingShot == null) return;
+        // _inputEnabled también congela el disparo ya en vuelo — si no, pausar a mitad de
+        // un tiro lo dejaría animándose solo detrás del PausedPanel.
+        if (!_inputEnabled || _flyingShot == null) return;
         var impact = _flyingShot.Tick(Time.deltaTime);
         if (impact.HasValue) ResolveImpact(impact.Value);
     }
@@ -83,12 +98,12 @@ public class CannonController : MonoBehaviour
     void UpdateAim(Vector2 screenPos)
     {
         Vector2 local = ScreenToGridLocal(screenPos);
-        Vector2 dir   = local - _muzzleLocal;
+        Vector2 dir   = local - MuzzleLocal;
         if (dir.sqrMagnitude < 0.001f) dir = Vector2.up;
         dir.Normalize();
         if (dir.y < 0.15f) dir.y = 0.15f; // GDD 1.3: no se puede apuntar hacia abajo del todo
         _aimDir = dir.normalized;
-        trajectoryLine.ShowPath(_muzzleLocal, _aimDir, grid.SpriteFor(_current));
+        trajectoryLine.ShowPath(MuzzleLocal, _aimDir, grid.SpriteFor(_current));
     }
 
     Vector2 ScreenToGridLocal(Vector2 screenPos)
@@ -112,7 +127,7 @@ public class CannonController : MonoBehaviour
     {
         var go   = Instantiate(bubblePrefab, gridContainer);
         var shot = go.AddComponent<ShotBubble>();
-        shot.Init(gridContainer, grid, _muzzleLocal, _aimDir, shotSpeed, _current, grid.SpriteFor(_current));
+        shot.Init(gridContainer, grid, MuzzleLocal, _aimDir, shotSpeed, _current, grid.SpriteFor(_current));
         _flyingShot = shot;
         AudioManager.Instance?.PlaySfx(shootClip);
     }

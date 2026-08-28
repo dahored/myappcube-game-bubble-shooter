@@ -9,12 +9,14 @@ ui.button.cancel,Cancelar,Cancel,Annulla,Annuler,Abbrechen,Cancelar
 ui.button.confirm,Confirmar,Confirm,Conferma,Confirmer,Bestätigen,Confirmar
 ui.button.close,Cerrar,Close,Chiudi,Fermer,Schließen,Fechar
 ui.button.retry,Reintentar,Retry,Riprova,Réessayer,Erneut versuchen,Tentar de novo
-ui.button.exit,Salir,Exit,Esci,Quitter,Beenden,Sair
+ui.button.quit,Salir,Quit,Esci,Quitter,Beenden,Sair
 ui.button.next,Siguiente,Next,Avanti,Suivant,Weiter,Próximo
 ui.button.skip,Saltar,Skip,Salta,Passer,Überspringen,Pular
 ui.button.buy,Comprar,Buy,Acquista,Acheter,Kaufen,Comprar
 ui.button.claim,Reclamar,Claim,Riscatta,Réclamer,Einlösen,Resgatar
 ui.button.share,Compartir,Share,Condividi,Partager,Teilen,Compartilhar
+ui.button.yes,Sí,Yes,Sì,Oui,Ja,Sim
+ui.button.no,No,No,No,Non,Nein,Não
 ui.settings.title,Ajustes,Settings,Impostazioni,Paramètres,Einstellungen,Ajustes
 ui.settings.section.preferences,Preferencias del juego,Game preferences,Preferenze di gioco,Préférences du jeu,Spieleinstellungen,Preferências do jogo
 ui.settings.section.account,Cuenta y asistencia,Account & support,Account e supporto,Compte et assistance,Konto & Hilfe,Conta e suporte
@@ -50,18 +52,35 @@ ui.gameplay.level_label,Nivel {id} — {name},Level {id} — {name},Livello {id}
 ui.gameplay.level_label_with_best,Nivel {id} — {name} · Mejor: {best},Level {id} — {name} · Best: {best},Livello {id} — {name} · Miglior: {best},Niveau {id} — {name} · Meilleur : {best},Level {id} — {name} · Beste: {best},Nível {id} — {name} · Melhor: {best}
 ui.victory.subtitle.new_record,¡Nuevo récord! Puntuación: {score} (anterior: {best}),New record! Score: {score} (previous: {best}),Nuovo record! Punteggio: {score} (precedente: {best}),Nouveau record ! Score : {score} (précédent : {best}),Neuer Rekord! Punkte: {score} (vorher: {best}),Novo recorde! Pontuação: {score} (anterior: {best})
 ui.victory.subtitle.score,Puntuación: {score} (mejor: {best}),Score: {score} (best: {best}),Punteggio: {score} (miglior: {best}),Score : {score} (meilleur : {best}),Punkte: {score} (beste: {best}),Pontuação: {score} (melhor: {best})
-ui.gameover.title,Sin disparos,Out of shots,Senza colpi,Plus de tirs,Keine Schüsse,Sem tiros
-ui.gameover.subtitle,Puntuación: {score},Score: {score},Punteggio: {score},Score : {score},Punkte: {score},Pontuação: {score}
 ui.button.next_level,Siguiente nivel →,Next level →,Prossimo livello →,Niveau suivant →,Nächstes Level →,Próximo nível →
-ui.gameover.continue_ad,+5 disparos (anuncio),+5 shots (ad),+5 colpi (annuncio),+5 tirs (pub),+5 Schüsse (Werbung),+5 tiros (anúncio)
-ui.gameover.continue_gems,+5 disparos ({gems} gemas),+5 shots ({gems} gems),+5 colpi ({gems} gemme),+5 tirs ({gems} gemmes),+5 Schüsse ({gems} Edelsteine),+5 tiros ({gems} gemas)
-ui.gameover.accept,Aceptar,Accept,Accetta,Accepter,Akzeptieren,Aceitar
 ui.victory.title,¡Lo lograste!,You did it!,Ce l'hai fatta!,Bien joué !,Geschafft!,Você conseguiu!
 ui.victory.level_banner,Nivel {id},Level {id},Livello {id},Niveau {id},Level {id},Nível {id}
 ui.victory.complete,¡Completado!,Complete!,Completato!,Terminé !,Abgeschlossen!,Completo!
 ui.victory.creature_rescued,Criatura rescatada,Creature rescued,Creatura salvata,Créature sauvée,Kreatur gerettet,Criatura resgatada
 ui.victory.continue,Continuar,Continue,Continua,Continuer,Weiter,Continuar
-ui.gameover.confirm_abandon,¿Seguro? Vas a perder 1 vida,Are you sure? You'll lose 1 life,Sei sicuro? Perderai 1 vita,Tu es sûr ? Tu vas perdre 1 vie,Bist du sicher? Du verlierst 1 Leben,Tem certeza? Você vai perder 1 vida
+ui.failed.panel.title,Nivel fallido,Level failed,Livello fallito,Niveau échoué,Level fehlgeschlagen,Nível falhou
+ui.failed.panel.body.title,¡Oh no!,Oh no!,Oh no!,Oh non !,Oh nein!,Ah não!
+ui.failed.panel.body.description,No completaste el nivel,You didn't complete the level,Non hai completato il livello,Tu n'as pas terminé le niveau,Du hast das Level nicht abgeschlossen,Você não completou o nível
+ui.failed.panel.body.tryButton,Intentar de nuevo,Try again,Riprova,Réessayer,Erneut versuchen,Tentar novamente
+ui.outofshots.panel.title,Sin más disparos,No more shots,Nessun colpo rimasto,Plus de tirs,Keine Schüsse mehr,Sem mais tiros
+ui.outofshots.panel.body.title,¡Ups!,Oops!,Ops!,Oups !,Hoppla!,Ops!
+ui.outofshots.panel.body.description,Te quedaste sin disparos.,You've run out of shots.,Hai esaurito i colpi.,Tu n'as plus de tirs.,Du hast keine Schüsse mehr.,Você ficou sem tiros.
+ui.outofshots.panel.body.suggestion,¡Consigue {shots} disparos más y sigue jugando!,Get {shots} more shots and keep playing!,Ottieni {shots} colpi in più e continua a giocare!,Obtiens {shots} tirs en plus et continue à jouer !,Hol dir {shots} weitere Schüsse und spiel weiter!,Consiga mais {shots} tiros e continue jogando!
+ui.outoflives.panel.title,Sin vidas,Out of lives,Vite esaurite,Plus de vies,Keine Leben mehr,Sem vidas
+ui.outoflives.panel.body.title,¡Uy!,Uh oh!,Uh oh!,Oh là là !,Oh oh!,Ui!
+ui.outoflives.panel.body.description,¡Te quedaste sin vidas!,You are out of lives!,Sei rimasto senza vite!,Tu n'as plus de vies !,Du hast keine Leben mehr!,Você ficou sem vidas!
+ui.outoflives.panel.body.suggestion,Recarga vidas o espera para continuar.,Refill lives or wait to continue.,Ricarica le vite o aspetta per continuare.,Recharge des vies ou attends pour continuer.,Fülle Leben auf oder warte um fortzufahren.,Recarregue vidas ou espere para continuar.
+ui.outoflives.panel.body.refillButton,Recargar vidas,Refill lives,Ricarica vite,Recharger des vies,Leben auffüllen,Recarregar vidas
+ui.paused.panel.title,Pausa,Paused,In pausa,En pause,Pausiert,Pausado
+ui.paused.panel.body.question,¿Qué quieres hacer?,What would you like to do?,Cosa vuoi fare?,Que veux-tu faire ?,Was möchtest du tun?,O que você gostaria de fazer?
+ui.paused.panel.body.resumeButton,Reanudar,Resume,Riprendi,Reprendre,Fortsetzen,Continuar
+ui.paused.panel.body.restartButton,Reiniciar,Restart,Ricomincia,Recommencer,Neu starten,Reiniciar
+ui.paused.panel.body.settingsButton,Ajustes,Settings,Impostazioni,Paramètres,Einstellungen,Ajustes
+ui.quitlevel.panel.title,Salir del nivel,Quit Level,Esci dal livello,Quitter le niveau,Level verlassen,Sair do nível
+ui.quitlevel.panel.body.question,¿Seguro que quieres salir del nivel?,Are you sure you want to quit the level?,Sei sicuro di voler uscire dal livello?,Tu es sûr de vouloir quitter le niveau ?,Bist du sicher, dass du das Level verlassen möchtest?,Tem certeza que quer sair do nível?
+ui.resetprogress.panel.title,Reiniciar progreso,Reset Progress,Reimposta progressi,Réinitialiser la progression,Fortschritt zurücksetzen,Redefinir progresso
+ui.resetprogress.panel.body.question,¿Seguro que quieres reiniciar tu progreso?,Are you sure you want to reset your progress?,Sei sicuro di voler reimpostare i tuoi progressi?,Tu es sûr de vouloir réinitialiser ta progression ?,Bist du sicher, dass du deinen Fortschritt zurücksetzen möchtest?,Tem certeza que quer redefinir seu progresso?
+ui.resetprogress.panel.body.warning,Esta acción no se puede deshacer.,This action cannot be undone.,Questa azione non può essere annullata.,Cette action est irréversible.,Diese Aktion kann nicht rückgängig gemacht werden.,Essa ação não pode ser desfeita.
 ui.daily.title,Recompensa diaria,Daily reward,Ricompensa giornaliera,Récompense quotidienne,Tägliche Belohnung,Recompensa diária
 ui.daily.day,Día {n} de 7,Day {n} of 7,Giorno {n} di 7,Jour {n} sur 7,Tag {n} von 7,Dia {n} de 7
 ui.daily.next_in,Próximo regalo en,Next gift in,Prossimo regalo tra,Prochain cadeau dans,Nächstes Geschenk in,Próximo presente em

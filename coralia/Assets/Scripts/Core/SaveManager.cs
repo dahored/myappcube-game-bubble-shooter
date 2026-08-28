@@ -8,7 +8,6 @@ public static class SaveManager
     // Claves internas usadas para leer/escribir en PlayerPrefs
     const string KEY_LANGUAGE      = "language";
     const string KEY_MAX_LEVEL     = "max_level";
-    const string KEY_GEMS          = "gems";
     const string KEY_COINS         = "coins";
     const string KEY_LIVES         = "lives";
     const string KEY_SOUND_MUSIC   = "vol_music";
@@ -52,14 +51,9 @@ public static class SaveManager
         set { PlayerPrefs.SetInt(KEY_MAX_LEVEL, value); PlayerPrefs.Save(); }
     }
 
-    // Moneda premium (GDD §6.3). Sin fuentes reales de gemas todavía — arranca en 0.
-    public static int Gems
-    {
-        get => PlayerPrefs.GetInt(KEY_GEMS, 0);
-        set { PlayerPrefs.SetInt(KEY_GEMS, Mathf.Max(0, value)); PlayerPrefs.Save(); }
-    }
-
-    // Moneda blanda (GDD §6.3 — recompensa base de completar niveles). Arranca en 0.
+    // Única moneda del juego (GDD §6.3 mencionaba una moneda premium "gemas" separada,
+    // pero el proyecto nunca llegó a tener arte/UI para eso — Diego confirmó que todo usa
+    // el ícono/balance de monedas, así que se unificó acá). Arranca en 0.
     public static int Coins
     {
         get => PlayerPrefs.GetInt(KEY_COINS, 0);
