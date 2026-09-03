@@ -401,6 +401,43 @@ MonoBehaviour:
   rippleScale: 1.3
   rippleAlpha: 0.55
   rippleDuration: 0.45
+  nodePopDuration: 0.3
+  popDuration: 0.3
+  delayBetweenStars: 0.2
+  spinRotations: 2
+  popCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.6
+      value: 1.15
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!114 &8992738171485529102
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -455,18 +492,22 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 55146502012902728, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 55146502012902728, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 55146502012902728, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 55146502012902728, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchoredPosition.y
+      value: -30
+      objectReference: {fileID: 0}
+    - target: {fileID: 1922864548927880399, guid: d7d462276a24e495f92b7475e797592e, type: 3}
+      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3121391383085486505, guid: d7d462276a24e495f92b7475e797592e, type: 3}
@@ -551,41 +592,42 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4185833698842321107, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4185833698842321107, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4185833698842321107, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 155
       objectReference: {fileID: 0}
     - target: {fileID: 4185833698842321107, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -35
       objectReference: {fileID: 0}
     - target: {fileID: 6303943631709698859, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6303943631709698859, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6303943631709698859, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 45
       objectReference: {fileID: 0}
     - target: {fileID: 6303943631709698859, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -35
       objectReference: {fileID: 0}
     - target: {fileID: 6819430900649861907, guid: d7d462276a24e495f92b7475e797592e, type: 3}
       propertyPath: m_Name
       value: StarRow
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1495932299149189424, guid: d7d462276a24e495f92b7475e797592e, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

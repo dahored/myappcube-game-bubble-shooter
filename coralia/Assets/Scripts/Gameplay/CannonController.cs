@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,6 +19,14 @@ public class CannonController : MonoBehaviour
     [SerializeField] float          shotSpeed = 1500f; // GDD 1.5
     [SerializeField] AudioClip      shootClip; // opcional — dejar vacío hasta tener el clip
 
+    [Header("Mano fantasma — cómo disparar (issue #7)")]
+    [SerializeField] ShootHintView shootHint;     // opcional — dejar vacío hasta tener el prefab
+    [SerializeField] float         idleHintDelay      = 6f;   // segundos sin interactuar antes de mostrarla de nuevo
+    [SerializeField] float         hintSwayAngle      = 25f;  // grados a cada lado de la vertical, demuestra que también se apunta a los costados
+    [SerializeField] float         hintSwayPeriod     = 12f;  // segundos por ciclo completo (izq→der→izq) — muy lento y suave, no un tic rápido
+    [SerializeField] float         hintTrajectoryAlpha = 0.4f; // línea "fantasma" semitransparente, distinta de un apuntado real
+    [SerializeField] float         hintHandDistance    = 550f; // qué tan lejos del cañón se posiciona la mano sobre la línea
+
     public event System.Action<Vector2Int> OnBubbleLanded;
 
     List<string>      _availableColors;
@@ -28,6 +37,9 @@ public class CannonController : MonoBehaviour
     ShotBubble   _flyingShot;
     bool         _inputEnabled = true;
     bool         _dragging;
+    bool         _hintShown;
+    float        _idleTimer;
+    Coroutine    _hintSwayRoutine;
     Vector2      _aimDir = Vector2.up;
     Vector2      _muzzleLocalBase; // posición de muzzlePoint convertida al espacio local de gridContainer,
                                     // SIN scroll — calculada acá en vez de a mano, así no importa el anchor/dispositivo
@@ -56,9 +68,23 @@ public class CannonController : MonoBehaviour
     {
         // _inputEnabled también congela el disparo ya en vuelo — si no, pausar a mitad de
         // un tiro lo dejaría animándose solo detrás del PausedPanel.
-        if (!_inputEnabled || _flyingShot == null) return;
-        var impact = _flyingShot.Tick(Time.deltaTime);
-        if (impact.HasValue) ResolveImpact(impact.Value);
+        if (!_inputEnabled) return;
+
+        if (_flyingShot != null)
+        {
+            var impact = _flyingShot.Tick(Time.deltaTime);
+            if (impact.HasValue) ResolveImpact(impact.Value);
+            return;
+        }
+
+        // Nudge de inactividad (issue #7): mientras es el turno del jugador (sin disparo en
+        // vuelo, sin estar ya arrastrando) y no se mostró todavía, cuenta el tiempo sin
+        // interactuar. Aplica en cualquier nivel, no solo el tutorial del primer disparo.
+        if (!_dragging && !_hintShown)
+        {
+            _idleTimer += Time.deltaTime;
+            if (_idleTimer >= idleHintDelay) ShowHint();
+        }
     }
 
     public void Init(List<string> availableColors, float rainbowChance)
@@ -70,15 +96,59 @@ public class CannonController : MonoBehaviour
         _current = RollColor();
         _next    = RollColor();
         RefreshPreview();
+
+        // Obligatorio mientras nunca se haya disparado en todo el juego (en la práctica,
+        // siempre nivel 1) — no depende del idle timer, se muestra ya mismo.
+        if (!SaveManager.HasFiredFirstShot) ShowHint();
     }
 
-    public void SetInputEnabled(bool enabled) => _inputEnabled = enabled;
+    public void SetInputEnabled(bool enabled)
+    {
+        _inputEnabled = enabled;
+        if (!enabled) HideHint(); // que no siga animando detrás de PausedPanel/paneles de fin de nivel
+    }
+
+    void ShowHint()
+    {
+        _hintShown = true;
+        shootHint?.Show();
+        // Reusa la línea de trayectoria real (puntos que se desvanecen + preview de
+        // aterrizaje ya incluidos) para la demo — mismo look que un apuntado real, sin
+        // duplicar nada acá. Se balancea izq/der en loop para mostrar que también se puede
+        // apuntar a los costados, no solo derecho hacia arriba.
+        _hintSwayRoutine = StartCoroutine(SwayTrajectoryDemo());
+    }
+
+    void HideHint()
+    {
+        _idleTimer = 0f;
+        if (!_hintShown) return;
+        _hintShown = false;
+        shootHint?.Hide();
+        if (_hintSwayRoutine != null) { StopCoroutine(_hintSwayRoutine); _hintSwayRoutine = null; }
+        trajectoryLine.Hide();
+    }
+
+    IEnumerator SwayTrajectoryDemo()
+    {
+        float t = 0f;
+        while (true)
+        {
+            t += Time.deltaTime;
+            float angle = Mathf.Sin(t / hintSwayPeriod * Mathf.PI * 2f) * hintSwayAngle;
+            Vector2 dir = Quaternion.Euler(0f, 0f, angle) * Vector2.up;
+            trajectoryLine.ShowPath(MuzzleLocal, dir, grid.SpriteFor(_current), hintTrajectoryAlpha);
+            shootHint?.SetPosition(MuzzleLocal + dir * hintHandDistance);
+            yield return null;
+        }
+    }
 
     // --- Llamado por AimInputRelay (drag sobre AimArea) ---
     public void OnAimBegin(Vector2 screenPos)
     {
         if (!_inputEnabled || _flyingShot != null) return;
         _dragging = true;
+        HideHint();
         UpdateAim(screenPos);
     }
 
@@ -130,6 +200,9 @@ public class CannonController : MonoBehaviour
         shot.Init(gridContainer, grid, MuzzleLocal, _aimDir, shotSpeed, _current, grid.SpriteFor(_current));
         _flyingShot = shot;
         AudioManager.Instance?.PlaySfx(shootClip);
+
+        if (!SaveManager.HasFiredFirstShot) SaveManager.HasFiredFirstShot = true;
+        HideHint();
     }
 
     void ResolveImpact(ShotBubble.ImpactInfo impact)

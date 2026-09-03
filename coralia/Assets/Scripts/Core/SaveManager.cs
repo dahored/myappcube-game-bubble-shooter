@@ -20,6 +20,16 @@ public static class SaveManager
     const string KEY_VIBRATION        = "vibration";
     const string KEY_SOUND_ENABLED    = "sound_enabled";
     const string KEY_MUSIC_ENABLED    = "music_enabled";
+    const string KEY_HAS_FIRED_FIRST_SHOT = "has_fired_first_shot";
+
+    // true apenas se dispara la primera bala de todo el juego — mientras siga en false,
+    // CannonController muestra la mano fantasma de forma obligatoria en cuanto arranca el
+    // nivel (en la práctica, siempre nivel 1 — nadie llega a otro nivel sin disparar antes).
+    public static bool HasFiredFirstShot
+    {
+        get => PlayerPrefs.GetInt(KEY_HAS_FIRED_FIRST_SHOT, 0) == 1;
+        set { PlayerPrefs.SetInt(KEY_HAS_FIRED_FIRST_SHOT, value ? 1 : 0); PlayerPrefs.Save(); }
+    }
 
     // Idioma activo. Si no hay guardado, detecta el idioma del sistema automáticamente.
     public static string Language
@@ -54,12 +64,60 @@ public static class SaveManager
         set { PlayerPrefs.SetInt(KEY_MAX_LEVEL, value); PlayerPrefs.Save(); }
     }
 
+    // Bandera de sesión (NO persiste) que arma GameplayController al avanzar MaxUnlockedLevel
+    // de verdad (primera vez que se completa ese nivel) — LevelMapController la consume para
+    // animar el nodo revelando estrellas y el personaje caminando al nuevo current (issue #55).
+    // 0 = no hay animación pendiente. Repetir un nivel viejo no la arma (no hay "current" al
+    // que mover el personaje).
+    public static int JustAdvancedFromLevelId;
+
+    public static int ConsumeJustAdvancedFromLevel()
+    {
+        int id = JustAdvancedFromLevelId;
+        JustAdvancedFromLevelId = 0;
+        return id;
+    }
+
+    // Progreso por nivel (issue #49) — usa keys dinámicas per-id, no hay una lista fija de
+    // niveles que declarar acá. Dos conceptos separados y ambos necesarios:
+    //   - "attempted": se marcó en CUALQUIER intento (ganado o perdido) — determina si el
+    //     intento actual es el #1, condición para el nodo dorado (ver GameplayController.Start()).
+    //   - "completed": se marcó solo al GANAR — determina el bonus de "primera vez" (monedas),
+    //     reemplaza el viejo heurístico basado en MaxUnlockedLevel que quedaba poco confiable
+    //     mientras el avance de nivel estuviera desactivado (TEMP, ver GameplayController).
+    // Las estrellas guardan el MEJOR resultado histórico (nunca bajan si repetís y ganás peor);
+    // el oro es una marca permanente de "gané en el intento #1 con 3 estrellas" — una vez
+    // dorado, sigue dorado aunque después juegues peor (las estrellas tampoco pueden bajar).
+    public static int  GetLevelStars(int levelId) => PlayerPrefs.GetInt($"level_{levelId}_stars", 0);
+    public static bool IsLevelGold(int levelId)   => PlayerPrefs.GetInt($"level_{levelId}_gold", 0) == 1;
+    public static bool HasAttemptedLevel(int levelId) => PlayerPrefs.GetInt($"level_{levelId}_attempted", 0) == 1;
+    public static bool HasCompletedLevel(int levelId) => PlayerPrefs.GetInt($"level_{levelId}_completed", 0) == 1;
+
+    // Llamar al ARRANCAR cada intento (ganado o perdido), ANTES de leer HasAttemptedLevel
+    // para decidir si este intento es el #1 — ver GameplayController.Start().
+    public static void MarkLevelAttempted(int levelId)
+    {
+        PlayerPrefs.SetInt($"level_{levelId}_attempted", 1);
+        PlayerPrefs.Save();
+    }
+
+    // Llamar solo al GANAR un nivel. isFirstAttempt debe venir de HasAttemptedLevel() leído
+    // ANTES de MarkLevelAttempted() en este mismo intento.
+    public static void RecordLevelWin(int levelId, int stars, bool isFirstAttempt)
+    {
+        if (stars > GetLevelStars(levelId)) PlayerPrefs.SetInt($"level_{levelId}_stars", stars);
+        if (isFirstAttempt && stars >= 3)   PlayerPrefs.SetInt($"level_{levelId}_gold", 1);
+        PlayerPrefs.SetInt($"level_{levelId}_completed", 1);
+        PlayerPrefs.Save();
+    }
+
     // Única moneda del juego (GDD §6.3 mencionaba una moneda premium "gemas" separada,
     // pero el proyecto nunca llegó a tener arte/UI para eso — Diego confirmó que todo usa
-    // el ícono/balance de monedas, así que se unificó acá). Arranca en 0.
+    // el ícono/balance de monedas, así que se unificó acá). Arranca en 50 (balance inicial
+    // para poder pagar al menos una vez la oferta de NoMoreMovesPanel antes de ganar más).
     public static int Coins
     {
-        get => PlayerPrefs.GetInt(KEY_COINS, 0);
+        get => PlayerPrefs.GetInt(KEY_COINS, 50);
         set { PlayerPrefs.SetInt(KEY_COINS, Mathf.Max(0, value)); PlayerPrefs.Save(); }
     }
 

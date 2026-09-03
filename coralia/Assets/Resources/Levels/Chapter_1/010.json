@@ -1,15 +1,14 @@
 {
   "id": 10,
   "chapter": 1,
-  "name": "Nivel 10",
+  "name": "Puerta de Cala Apagada",
   "objective": {
     "type": "clear_all"
   },
-  "max_shots": 40,
+  "max_shots": 25,
   "available_colors": [
     "red",
-    "blue",
-    "yellow"
+    "blue"
   ],
   "rainbow_chance": 0.0,
   "bubbles": [
@@ -19,20 +18,340 @@
       "color": "red"
     },
     {
+      "row": 0,
+      "col": 1,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "color": "red"
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "color": "red"
+    },
+    {
+      "row": 0,
+      "col": 5,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 6,
+      "color": "red"
+    },
+    {
+      "row": 0,
+      "col": 7,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 8,
+      "color": "red"
+    },
+    {
+      "row": 0,
+      "col": 9,
+      "color": "blue"
+    },
+    {
       "row": 1,
       "col": 0,
       "color": "blue"
     },
     {
+      "row": 1,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 5,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 6,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 7,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 8,
+      "color": "blue"
+    },
+    {
       "row": 2,
       "col": 0,
-      "color": "yellow"
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 5,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 6,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 7,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 8,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 9,
+      "color": "blue"
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "color": "blue"
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 4,
+      "color": "blue"
+    },
+    {
+      "row": 3,
+      "col": 5,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 6,
+      "color": "blue"
+    },
+    {
+      "row": 3,
+      "col": 7,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 8,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 5,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 6,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 7,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 8,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 9,
+      "color": "blue"
+    },
+    {
+      "row": 5,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 5,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 5,
+      "col": 2,
+      "color": "blue"
+    },
+    {
+      "row": 5,
+      "col": 3,
+      "color": "red"
+    },
+    {
+      "row": 5,
+      "col": 4,
+      "color": "blue"
+    },
+    {
+      "row": 5,
+      "col": 5,
+      "color": "red"
+    },
+    {
+      "row": 5,
+      "col": 6,
+      "color": "blue"
+    },
+    {
+      "row": 5,
+      "col": 7,
+      "color": "red"
+    },
+    {
+      "row": 5,
+      "col": 8,
+      "color": "blue"
+    },
+    {
+      "row": 6,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 6,
+      "col": 1,
+      "color": "blue"
+    },
+    {
+      "row": 6,
+      "col": 2,
+      "color": "red"
+    },
+    {
+      "row": 6,
+      "col": 3,
+      "color": "blue"
+    },
+    {
+      "row": 6,
+      "col": 4,
+      "color": "red"
+    },
+    {
+      "row": 6,
+      "col": 5,
+      "color": "blue"
+    },
+    {
+      "row": 6,
+      "col": 6,
+      "color": "red"
+    },
+    {
+      "row": 6,
+      "col": 7,
+      "color": "blue"
+    },
+    {
+      "row": 6,
+      "col": 8,
+      "color": "red"
+    },
+    {
+      "row": 6,
+      "col": 9,
+      "color": "blue"
     }
   ],
   "obstacles": [],
   "star_thresholds": [
-    160,
-    260,
-    360
+    268,
+    436,
+    603
   ]
 }

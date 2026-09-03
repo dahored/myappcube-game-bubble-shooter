@@ -46,6 +46,8 @@ ui.settings.legal.terms,Condiciones del servicio,Terms of service,Termini di ser
 ui.gameplay.shots_remaining,Disparos,Shots,Colpi,Tirs,Schüsse,Tiros
 ui.gameplay.score,Puntuación,Score,Punteggio,Score,Punkte,Pontuação
 ui.gameplay.combo,Combo,Combo,Combo,Combo,Combo,Combo
+ui.gameplay.hint.hold_to_aim,Mantén presionado para apuntar,Hold to aim,Tieni premuto per mirare,Maintiens appuyé pour viser,Halte gedrückt zum Zielen,Mantenha pressionado para mirar
+ui.gameplay.hint.release_to_shoot,Suelta para disparar,Release to shoot,Rilascia per sparare,Relâche pour tirer,Loslassen zum Schießen,Solte para atirar
 ui.gameplay.objective.clear_all,Limpiar todas las burbujas,Clear all bubbles,Elimina tutte le bolle,Éliminer toutes les bulles,Alle Blasen entfernen,Limpar todas as bolhas
 ui.gameplay.objective.rescue,Rescatar a {creature},Rescue {creature},Salva {creature},Sauver {creature},Rette {creature},Resgatar {creature}
 ui.gameplay.level_label,Nivel {id} — {name},Level {id} — {name},Livello {id} — {name},Niveau {id} — {name},Level {id} — {name},Nível {id} — {name}
@@ -81,6 +83,7 @@ ui.quitlevel.panel.body.question,¿Seguro que quieres salir del nivel?,Are you s
 ui.resetlevel.panel.title,Reiniciar nivel,Reset Level,Reimposta livello,Réinitialiser le niveau,Level zurücksetzen,Reiniciar nível
 ui.resetlevel.panel.body.question,¿Seguro que quieres reiniciar el nivel?,Are you sure you want to reset the level?,Sei sicuro di voler reimpostare il livello?,Tu es sûr de vouloir réinitialiser le niveau ?,Bist du sicher, dass du das Level zurücksetzen möchtest?,Tem certeza que quer reiniciar o nível?
 ui.resetlevel.panel.body.warning,Esta acción no se puede deshacer.,This action cannot be undone.,Questa azione non può essere annullata.,Cette action est irréversible.,Diese Aktion kann nicht rückgängig gemacht werden.,Essa ação não pode ser desfeita.
+ui.startgame.panel.select_boosters,Elegir boosters,Select boosters,Scegli i booster,Choisir des boosters,Booster auswählen,Escolher boosters
 ui.daily.title,Recompensa diaria,Daily reward,Ricompensa giornaliera,Récompense quotidienne,Tägliche Belohnung,Recompensa diária
 ui.daily.day,Día {n} de 7,Day {n} of 7,Giorno {n} di 7,Jour {n} sur 7,Tag {n} von 7,Dia {n} de 7
 ui.daily.next_in,Próximo regalo en,Next gift in,Prossimo regalo tra,Prochain cadeau dans,Nächstes Geschenk in,Próximo presente em

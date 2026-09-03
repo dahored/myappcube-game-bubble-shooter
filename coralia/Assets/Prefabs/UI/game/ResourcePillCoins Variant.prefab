@@ -111,5 +111,37 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4012733241178542409, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -3603249151242737138}
   m_SourcePrefab: {fileID: 100100000, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+--- !u!1 &416946523109301294 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4012733241178542409, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+  m_PrefabInstance: {fileID: 3637040669221637479}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &-3603249151242737138
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 416946523109301294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba2c0fdf1d5c94ec7b369641e0a01aec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CoinsPillView
+  pill: {fileID: 1792722401535977541}
+--- !u!114 &1792722401535977541 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3069302920944362786, guid: 14ef3721de776466e89825413ca576d7, type: 3}
+  m_PrefabInstance: {fileID: 3637040669221637479}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 416946523109301294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21a727538a82a47c396090e54c0cb1cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ResourcePillView

@@ -31,9 +31,6 @@ public class GameplayController : MonoBehaviour
     [SerializeField] AudioClip popClip;
     [SerializeField] AudioClip dropClip;
 
-    [Header("Ícono de recompensa (WinPanel — GDD §6.3-6.4)")]
-    [SerializeField] Sprite coinIcon;
-
     const float END_LEVEL_DELAY      = 1.1f;  // espera a que terminen las animaciones de pop/drop antes de mostrar el panel
     const float POP_CHAIN_DELAY      = 0.08f; // segundos entre el pop de cada burbuja del match, en cadena
     const float POP_CHAIN_DELAY_MAX  = 0.4f;   // tope — para que un match gigante no tarde una eternidad en terminar
@@ -62,6 +59,7 @@ public class GameplayController : MonoBehaviour
     Vector2Int _creatureCell = new(-1, -1);
     bool       _creatureFreed;
     bool       _levelEnded;
+    bool       _isFirstAttempt; // nunca se había intentado este nivel antes de esta partida (issue #49)
     int        _noMoreShotsUsedCount; // cuántas veces ya se pagó la oferta en esta partida — sube el costo
 
     void Start()
@@ -99,6 +97,11 @@ public class GameplayController : MonoBehaviour
             Debug.LogError($"[GameplayController] No se encontró el nivel {levelId}");
             return;
         }
+
+        // Leer ANTES de marcar — si nunca se intentó este nivel, esta partida es el intento
+        // #1 (condición para el nodo dorado, ver SaveManager.RecordLevelWin en EndLevel()).
+        _isFirstAttempt = !SaveManager.HasAttemptedLevel(levelId);
+        SaveManager.MarkLevelAttempted(levelId);
 
         if (_level.objective != null && _level.objective.type == "rescue" && _level.objective.creature_position?.Count == 2)
         {
@@ -178,7 +181,10 @@ public class GameplayController : MonoBehaviour
     // intento). El costo sube cada vez que se vuelve a usar en la misma partida.
     void OnContinuePressed()
     {
-        SaveManager.Coins -= noMoreShotsPanel.GetCost(_noMoreShotsUsedCount);
+        int cost = noMoreShotsPanel.GetCost(_noMoreShotsUsedCount);
+        if (SaveManager.Coins < cost) return; // el botón ya debería estar deshabilitado, defensivo
+
+        SaveManager.Coins -= cost;
         _noMoreShotsUsedCount++;
         _shotsRemaining += noMoreShotsPanel.ShotsBonus;
         _levelEnded      = false;
@@ -296,23 +302,25 @@ public class GameplayController : MonoBehaviour
     {
         _levelEnded = true;
 
-        // "Primera vez" se infiere igual que LevelMapController: si este nivel es el
-        // MaxUnlockedLevel actual, todavía no se avanzó más allá de él. OJO: mientras el
-        // avance de MaxUnlockedLevel siga TEMP-desactivado más abajo, esto va a dar true
-        // en cada repetición del mismo nivel — es un efecto secundario esperado del TEMP,
-        // se corrige solo apenas se reactive el avance real.
-        bool firstCompletion = won && _level.id >= SaveManager.MaxUnlockedLevel;
+        // "Primera vez" = nunca se había GANADO este nivel antes (issue #49) — reemplaza el
+        // heurístico viejo basado en MaxUnlockedLevel, que quedaba poco confiable mientras
+        // el avance de nivel siguiera TEMP-desactivado más abajo (daba true en cada repetición).
+        bool firstCompletion = won && !SaveManager.HasCompletedLevel(_level.id);
 
-        // TEMP — desactivado a pedido de Diego mientras prueba el loop, para no ir
-        // desbloqueando niveles de verdad todavía. Reactivar sacando el comentario.
-        // if (won && _level.id >= SaveManager.MaxUnlockedLevel)
-        //     SaveManager.MaxUnlockedLevel = _level.id + 1;
+        // Reactivado — Diego ya está probando la progresión real entre niveles. Este mismo
+        // "avance real" es la condición para la animación de retorno al mapa (issue #55).
+        if (won && _level.id >= SaveManager.MaxUnlockedLevel)
+        {
+            SaveManager.MaxUnlockedLevel = _level.id + 1;
+            SaveManager.JustAdvancedFromLevelId = _level.id;
+        }
 
         if (won)
         {
             if (winPanel == null) { Debug.LogWarning("[GameplayController] WinPanel no está asignado."); return; }
             int score  = LiveScore + _shotsRemaining * SCORE_PER_REMAINING_SHOT;
             int stars  = CalculateStars(score);
+            SaveManager.RecordLevelWin(_level.id, stars, _isFirstAttempt);
             var awards = CalculateAwards(firstCompletion);
             winPanel.Show(_level.id, score, stars, awards);
         }
@@ -349,14 +357,17 @@ public class GameplayController : MonoBehaviour
     // separaba este bonus en una moneda "gemas" aparte, pero el juego nunca tuvo una
     // segunda moneda real — todo se unificó en monedas (ver SaveManager.Coins), así que
     // el bonus de primera vez es simplemente parte del mismo total, no un award aparte.
+    // El GDD §6.3 sí especifica monedas por completar nivel (50/75/100 según capítulo, +50%
+    // primera vez) — pero eso asumía DOS monedas separadas (monedas = soft, se gana jugando;
+    // gemas = premium, paga NoMoreMovesPanel). Al consolidar gemas→monedas (nunca hubo arte
+    // para una segunda moneda) se fusionaron sin querer los dos roles: la misma moneda ahora
+    // llovía por ganar Y era la que debía trabar la oferta de "seguir jugando", sin presión de
+    // monetización real. Decisión con Diego: sacar el award de completar nivel — las monedas
+    // van a venir de otros lados cuando se implementen (santuario, daily rewards, misiones,
+    // logros — GDD §6.3), no de la sola acción de pasar un nivel.
     List<(Sprite icon, int amount)> CalculateAwards(bool firstCompletion)
     {
-        int baseCoins = _level.chapter <= 1 ? 50 : _level.chapter <= 3 ? 75 : 100;
-        int coins     = firstCompletion ? Mathf.RoundToInt(baseCoins * 1.5f) : baseCoins;
-        if (firstCompletion) coins += Random.Range(1, 4); // 1-3 bonus por primera vez
-
-        SaveManager.Coins += coins;
-        return new List<(Sprite, int)> { (coinIcon, coins) };
+        return new List<(Sprite, int)>();
     }
 
     void RefreshShotsLabel()

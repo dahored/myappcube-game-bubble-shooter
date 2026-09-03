@@ -49,14 +49,22 @@ public class NoMoreMovesPanel : UIPanel
 
     public void Show(int timesUsed)
     {
+        int cost = GetCost(timesUsed);
+
         if (shotsIconText)  shotsIconText.text  = "+" + shotsBonus;
         if (suggestionText) suggestionText.text = LocaleManager.Get("ui.outofshots.panel.body.suggestion").Replace("{shots}", shotsBonus.ToString());
-        if (buyButtonText)  buyButtonText.text   = GetCost(timesUsed).ToString();
+        if (buyButtonText)  buyButtonText.text   = cost.ToString();
         if (balancePill)
         {
             balancePill.SetValue(SaveManager.Coins);
             balancePill.SetPlusVisible(false);
         }
+
+        // Sin tienda todavía (issue #53) no hay a dónde mandar a "conseguir más monedas" —
+        // por ahora, si no alcanza el balance, se deshabilita el botón en vez de dejar
+        // pagar y que el balance quede en 0 sin haber cubierto el costo real.
+        if (buyButton) buyButton.interactable = SaveManager.Coins >= cost;
+
         Open();
     }
 

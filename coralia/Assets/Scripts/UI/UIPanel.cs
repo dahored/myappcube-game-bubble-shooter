@@ -32,6 +32,11 @@ public abstract class UIPanel : MonoBehaviour
     // sobre quién lo abrió (HomeGame/LevelMap lo abren igual, sin este comportamiento).
     public event System.Action OnClosed;
 
+    // Simétrico a OnClosed — se dispara cuando termina la animación de apertura (la card ya
+    // llegó a escala 1). Lo usa ButtonPopIn para saber cuándo recién ahí animar un botón
+    // adentro del panel, en vez de aparecer de golpe mientras la card todavía está entrando.
+    public event System.Action OnOpened;
+
     CanvasGroup _overlay;
     Vector3     _baseScale;
     Coroutine   _anim;
@@ -79,6 +84,7 @@ public abstract class UIPanel : MonoBehaviour
 
         _overlay.alpha = 1f;
         SetCardScale(1f);
+        OnOpened?.Invoke();
     }
 
     IEnumerator AnimClose()

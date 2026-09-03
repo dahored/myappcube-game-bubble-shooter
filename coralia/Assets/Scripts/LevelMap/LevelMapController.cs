@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,6 +13,7 @@ public class LevelMapController : MonoBehaviour
     [SerializeField] ScrollPinController scrollPinTop;      // pin arriba — nodo está debajo del viewport
     [SerializeField] ScrollPinController scrollPinBottom;   // pin abajo — nodo está arriba del viewport
     [SerializeField] OutOfLivesPanel     outOfLivesPanel;   // se muestra si SaveManager.Lives llega a 0 (issue #52)
+    [SerializeField] StartGamePanel      startGamePanel;    // objetivo + boosters antes de entrar a Gameplay (issue #12)
 
     public const float NODE_SPACING =  300f; // distancia vertical entre nodos
     const float PEARL_SPACING   =  100f; // distancia entre cada perla del path
@@ -58,6 +60,18 @@ public class LevelMapController : MonoBehaviour
         levels.Sort((a, b) => a.id.CompareTo(b.id));
         int maxUnlocked = SaveManager.MaxUnlockedLevel;
 
+        // Si GameplayController acaba de avanzar MaxUnlockedLevel de verdad (issue #55), este
+        // nivel es el que hay que animar completándose — arranca mostrado como "Available"
+        // (visual temporal, ver más abajo) y se revela a su estado real después de armar todo
+        // el mapa, junto con el personaje deslizándose hasta el nuevo nodo actual.
+        int justAdvancedFrom     = SaveManager.ConsumeJustAdvancedFromLevel();
+        LevelNodeView justCompletedNode  = null;
+        int           justCompletedStars = 0;
+        bool          justCompletedGold  = false;
+        Vector2       completionFromCardPos = default;
+        RectTransform playerCardRT          = null;
+        Vector2       playerCardToPos       = default;
+
         // Ajustar altura del Content (pivot bottom → Y positivo sube)
         var contentRT     = contentRoot.GetComponent<RectTransform>();
         float totalHeight = (levels.Count - 1) * NODE_SPACING + BOTTOM_PADDING + TOP_PADDING;
@@ -96,8 +110,18 @@ public class LevelMapController : MonoBehaviour
             var state = GetState(lvl.id, maxUnlocked);
             go.GetComponent<RectTransform>().anchoredPosition = positions[i];
             var nodeView = go.GetComponent<LevelNodeView>();
-            nodeView.Setup(lvl.id, state, 0);
+            nodeView.Setup(lvl.id, state, SaveManager.GetLevelStars(lvl.id));
             nodeView.OnClicked += OnLevelSelected;
+
+            if (lvl.id == justAdvancedFrom)
+            {
+                justCompletedNode     = nodeView;
+                justCompletedStars    = SaveManager.GetLevelStars(lvl.id);
+                justCompletedGold     = state == NodeState.CompleteFirstTry;
+                completionFromCardPos = CardOffsetPosition(positions[i]);
+                // Invisible hasta que PlayCompletionSequence() lo revele con el pop.
+                nodeView.HideForReveal();
+            }
 
             // ScrollPins: inicializar con el RectTransform del nodo actual
             if (state == NodeState.Available)
@@ -106,20 +130,59 @@ public class LevelMapController : MonoBehaviour
             // Card de usuario junto al nodo actual
             if (showPlayerNode && state == NodeState.Available && playerCardPrefab != null)
             {
-                bool isLeft = positions[i].x < 500f; // nodo en col izquierda
-                float cardX = isLeft
-                    ? positions[i].x + CARD_SIDE_OFFSET  // nodo izq → card a la derecha
-                    : positions[i].x - CARD_SIDE_OFFSET; // nodo der → card a la izquierda
+                playerCardToPos = CardOffsetPosition(positions[i]);
                 var card   = Instantiate(playerCardPrefab, contentRoot);
                 var cardRT = card.GetComponent<RectTransform>();
                 cardRT.anchorMin = cardRT.anchorMax = new Vector2(0f, 0f);
                 cardRT.pivot     = new Vector2(0.5f, 0.5f);
-                cardRT.anchoredPosition = new Vector2(cardX, positions[i].y);
+                cardRT.anchoredPosition = justAdvancedFrom > 0 ? completionFromCardPos : playerCardToPos;
+                playerCardRT = cardRT;
             }
         }
+
+        if (justCompletedNode != null && playerCardRT != null)
+            StartCoroutine(PlayCompletionSequence(justCompletedNode, justCompletedStars, justCompletedGold,
+                                                   playerCardRT, completionFromCardPos, playerCardToPos));
     }
 
-    System.Collections.IEnumerator InitScrollPins(RectTransform nodeRT)
+    // Misma cuenta que ya hace el bloque de "Card de usuario junto al nodo actual" — factoreada
+    // para poder calcular también la posición del nodo recién completado (issue #55).
+    static Vector2 CardOffsetPosition(Vector2 nodePos)
+    {
+        bool isLeft = nodePos.x < 500f; // nodo en col izquierda
+        float cardX = isLeft
+            ? nodePos.x + CARD_SIDE_OFFSET  // nodo izq → card a la derecha
+            : nodePos.x - CARD_SIDE_OFFSET; // nodo der → card a la izquierda
+        return new Vector2(cardX, nodePos.y);
+    }
+
+    // Retorno de Gameplay tras un avance real (issue #55): deja que el mapa asiente, revela
+    // el nodo recién completado, y desliza el PlayerCard por el mismo camino de perlas
+    // (CubicBezier) hasta el nuevo nodo actual. completionFromCardPos/playerCardToPos ya
+    // vienen calculadas por CardOffsetPosition() en BuildMap().
+    IEnumerator PlayCompletionSequence(LevelNodeView node, int stars, bool gold,
+                                        RectTransform card, Vector2 from, Vector2 to)
+    {
+        yield return new WaitForSeconds(0.4f);
+        yield return node.PlayCompletionTransition(stars, gold);
+        yield return MoveCardAlongPath(card, from, to);
+    }
+
+    IEnumerator MoveCardAlongPath(RectTransform card, Vector2 from, Vector2 to, float duration = 0.6f)
+    {
+        float   tangent = NODE_SPACING * PEARL_TANGENT;
+        Vector2 p1      = from + new Vector2(0,  tangent);
+        Vector2 p2      = to   + new Vector2(0, -tangent);
+
+        for (float t = 0f; t < 1f; t += Time.deltaTime / duration)
+        {
+            card.anchoredPosition = CubicBezier(from, p1, p2, to, Mathf.Clamp01(t));
+            yield return null;
+        }
+        card.anchoredPosition = to;
+    }
+
+    IEnumerator InitScrollPins(RectTransform nodeRT)
     {
         yield return null; // espera un frame para que el viewport tenga su rect calculado
         scrollPinBottom?.Init(nodeRT, NODE_SPACING);
@@ -130,7 +193,7 @@ public class LevelMapController : MonoBehaviour
     {
         if (levelId > maxUnlocked)  return NodeState.Locked;
         if (levelId == maxUnlocked) return NodeState.Available;
-        return NodeState.Completed; // TODO: NodeState.CompleteFirstTry desde SaveManager
+        return SaveManager.IsLevelGold(levelId) ? NodeState.CompleteFirstTry : NodeState.Completed;
     }
 
     void DrawPearls(Vector2 from, Vector2 to)
@@ -167,8 +230,25 @@ public class LevelMapController : MonoBehaviour
     {
         if (SaveManager.Lives <= 0) { ShowOutOfLives(); return; }
 
-        PlayerPrefs.SetInt("selected_level", levelId);
-        SceneLoader.GoTo(SceneLoader.GAMEPLAY);
+        var level = LevelLoader.LoadById(levelId);
+        if (level == null)
+        {
+            Debug.LogError($"[LevelMapController] No se encontró el nivel {levelId}");
+            return;
+        }
+
+        // StartGamePanel puede no estar asignado todavía (WIP) — en ese caso se navega
+        // directo, como antes, para no dejar el mapa sin poder jugar.
+        if (startGamePanel != null)
+        {
+            startGamePanel.Show(level);
+        }
+        else
+        {
+            Debug.LogWarning("[LevelMapController] Falta asignar 'Start Game Panel' en el Inspector — se navega directo a Gameplay.");
+            PlayerPrefs.SetInt("selected_level", levelId);
+            SceneLoader.GoTo(SceneLoader.GAMEPLAY);
+        }
     }
 
     List<LevelData> LoadAllLevels()

@@ -33,8 +33,10 @@ public class TrajectoryLine : MonoBehaviour
     }
 
     // sprite: el mismo sprite de la burbuja actual (grid.SpriteFor(color)) — así el dot
-    // se ve como una mini burbuja real, sin depender de teñir un sprite genérico.
-    public void ShowPath(Vector2 originLocal, Vector2 dir, Sprite sprite)
+    // se ve como una mini burbuja real, sin depender de teñir un sprite genérico. alpha:
+    // 1 = línea real (default), más bajo = look "fantasma" semitransparente para la demo
+    // del tutorial (ver CannonController.SwayTrajectoryDemo).
+    public void ShowPath(Vector2 originLocal, Vector2 dir, Sprite sprite, float alpha = 1f)
     {
         Vector2 pos       = originLocal;
         Vector2 direction = dir.normalized;
@@ -52,13 +54,13 @@ public class TrajectoryLine : MonoBehaviour
             if (_poolImage[used])
             {
                 _poolImage[used].sprite = sprite;
-                _poolImage[used].color  = Color.white;
+                _poolImage[used].color  = new Color(1f, 1f, 1f, alpha);
             }
             used++;
 
             if (HitsSomething(pos, out var struckCell, out var hitCeiling))
             {
-                ShowLandingPreview(pos, struckCell, hitCeiling);
+                ShowLandingPreview(pos, struckCell, hitCeiling, alpha);
                 landed = true;
                 break;
             }
@@ -76,7 +78,7 @@ public class TrajectoryLine : MonoBehaviour
 
     // Misma lógica que CannonController.ResolveImpact — así el preview nunca miente sobre
     // dónde va a quedar pegada la burbuja real.
-    void ShowLandingPreview(Vector2 pos, Vector2Int struckCell, bool hitCeiling)
+    void ShowLandingPreview(Vector2 pos, Vector2Int struckCell, bool hitCeiling, float alpha)
     {
         if (!landingPreview) return;
 
@@ -87,6 +89,8 @@ public class TrajectoryLine : MonoBehaviour
 
         landingPreview.gameObject.SetActive(true);
         landingPreview.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);
+        var c = landingPreview.color; c.a = alpha;
+        landingPreview.color = c;
     }
 
     bool HitsSomething(Vector2 pos, out Vector2Int struckCell, out bool hitCeiling)

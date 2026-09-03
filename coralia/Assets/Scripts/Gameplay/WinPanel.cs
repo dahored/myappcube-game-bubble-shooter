@@ -24,6 +24,11 @@ public class WinPanel : UIPanel
     [SerializeField] float scoreCountMaxDuration = 1.2f;
     [SerializeField] float scoreCountPerPoint    = 0.0012f; // segundos extra por punto, con tope arriba
 
+    [Header("Next Button — opcional")]
+    [Tooltip("Activado: se muestra el botón Next, comportamiento actual sin cambios. Desactivado: el botón se oculta y, apenas termina el reveal, se espera 'Auto Advance Delay' y se avanza solo.")]
+    [SerializeField] bool  nextButtonActive  = true;
+    [SerializeField] float autoAdvanceDelay  = 2f;
+
     int _levelId;
 
     protected override void Awake()
@@ -49,17 +54,37 @@ public class WinPanel : UIPanel
             if (has) awardItems[i].Set(awards[i].icon, awards[i].amount);
         }
 
+        // Si no hay Next, tampoco hay salida manual con la X — el auto-avance se encarga solo,
+        // sin que el jugador pueda interrumpir la secuencia (mismo criterio que la referencia).
+        if (nextButton)  nextButton.gameObject.SetActive(nextButtonActive);
+        if (closeButton) closeButton.gameObject.SetActive(nextButtonActive);
+
         Open();
         StartCoroutine(PlayRevealSequence(score, stars));
     }
 
     // Espera a que la card termine de entrar (OpenDuration, heredado de UIPanel) y recién ahí
-    // dispara las estrellas en cadena (1, 2, 3) seguidas del contador de score 0 -> final.
+    // dispara las estrellas en cadena (1, 2, 3) seguidas del contador de score 0 -> final. Si
+    // Next Button Active está apagado, no espera el tap — sigue sola después de una pausa.
     IEnumerator PlayRevealSequence(int score, int stars)
     {
         yield return new WaitForSeconds(OpenDuration);
         if (starsView) yield return starsView.PlayStars(stars);
         yield return AnimateScoreCountUp(score);
+
+        if (!nextButtonActive)
+        {
+            yield return new WaitForSeconds(autoAdvanceDelay);
+            OnAutoAdvance();
+        }
+    }
+
+    // Se dispara solo cuando Next Button Active está apagado, después del reveal completo.
+    // Sin panel de recompensas definido todavía (ver conversación con Diego) — por ahora
+    // vuelve directo al mapa. Cuando exista ese panel, enganchar acá en vez del GoTo directo.
+    void OnAutoAdvance()
+    {
+        SceneLoader.GoTo(SceneLoader.LEVEL_MAP);
     }
 
     IEnumerator AnimateScoreCountUp(int target)
