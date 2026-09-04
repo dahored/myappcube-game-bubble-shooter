@@ -438,6 +438,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  starRevealClip: {fileID: 8300000, guid: eb509b35c7f9442b58256776ea9bae06, type: 3}
+  allStarsClip: {fileID: 8300000, guid: dbeded89e7daa48e0a9f310061822499, type: 3}
 --- !u!114 &8992738171485529102
 MonoBehaviour:
   m_ObjectHideFlags: 0

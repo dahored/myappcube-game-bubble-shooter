@@ -241,8 +241,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  starClip: {fileID: 0}
-  allStarsClip: {fileID: 0}
+  starClip: {fileID: 8300000, guid: eb509b35c7f9442b58256776ea9bae06, type: 3}
+  allStarsClip: {fileID: 8300000, guid: dbeded89e7daa48e0a9f310061822499, type: 3}
 --- !u!1 &4126066806657665283
 GameObject:
   m_ObjectHideFlags: 0

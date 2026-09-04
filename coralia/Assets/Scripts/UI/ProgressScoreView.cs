@@ -1,4 +1,5 @@
 using System.Collections;
+using Solo.MOST_IN_ONE;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -89,7 +90,12 @@ public class ProgressScoreView : MonoBehaviour
     {
         if (!stars[index]) yield break;
 
-        AudioManager.Instance?.PlayUi(starClip);
+        // En la última estrella, si hay un clip de "las 3 completas" asignado, ese reemplaza
+        // al de estrella individual (no queremos los dos sonando pisados) — Star Clip solo
+        // suena en la 1ra y 2da, o en la 3ra si All Stars Clip está vacío.
+        bool skipStarClip = isLast && allStarsClip != null;
+        if (!skipStarClip) AudioManager.Instance?.PlayUi(starClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
 
         var t = stars[index].transform;
         float time = 0f;

@@ -1,4 +1,5 @@
 using System.Collections;
+using Solo.MOST_IN_ONE;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -49,6 +50,10 @@ public class LevelNodeView : MonoBehaviour
     [SerializeField] AnimationCurve popCurve = new AnimationCurve(
         new Keyframe(0f, 0f), new Keyframe(0.6f, 1.5f), new Keyframe(1f, 1f));
 
+    [Header("Sonido (opcional — dejar vacío hasta tener el clip, ver LevelStarsView.revealClip en WinPanel)")]
+    [SerializeField] AudioClip starRevealClip; // uno por estrella — mismo momento conceptual que el reveal de WinPanel
+    [SerializeField] AudioClip allStarsClip;   // reemplaza a starRevealClip en la 3ra estrella si está asignado
+
     Coroutine  _pulseRoutine;
     Vector3[]  _starBaseScales;
 
@@ -71,7 +76,9 @@ public class LevelNodeView : MonoBehaviour
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() =>
             {
-                if (_state != NodeState.Locked) OnClicked?.Invoke(_id);
+                if (_state == NodeState.Locked) return;
+                if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
+                OnClicked?.Invoke(_id);
             });
         }
 
@@ -193,15 +200,23 @@ public class LevelNodeView : MonoBehaviour
         // 2. Estrellas ganadas, en cadena, con pop + rotación
         for (int i = 0; i < starsEarned && i < stars.Length; i++)
         {
-            yield return PopStar(i);
+            yield return PopStar(i, isLast: i == stars.Length - 1);
             if (i < starsEarned - 1) yield return new WaitForSeconds(delayBetweenStars);
         }
     }
 
-    IEnumerator PopStar(int index)
+    IEnumerator PopStar(int index, bool isLast)
     {
         var t = stars[index].transform;
         stars[index].gameObject.SetActive(true);
+
+        // En la 3ra estrella, si hay un clip de "las 3 completas" asignado, ese reemplaza al
+        // de estrella individual (no queremos los dos sonando pisados) — mismo criterio que
+        // ProgressScoreView/LevelStarsView.
+        bool skipRevealClip = isLast && allStarsClip != null;
+        if (!skipRevealClip) AudioManager.Instance?.PlayUi(starRevealClip);
+        if (isLast) AudioManager.Instance?.PlayUi(allStarsClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
 
         float time = 0f;
         while (time < popDuration)

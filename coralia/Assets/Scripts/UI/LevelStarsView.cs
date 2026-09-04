@@ -1,4 +1,5 @@
 using System.Collections;
+using Solo.MOST_IN_ONE;
 using UnityEngine;
 
 // Wrapper del prefab LevelStars: "Fields" son los 3 marcos de fondo (siempre visibles),
@@ -21,7 +22,8 @@ public class LevelStarsView : MonoBehaviour
     [SerializeField] float spinRotations = 2f;   // vueltas completas al principio, frena hasta 0°
 
     [Header("Sonido (opcional — clip pendiente)")]
-    [SerializeField] AudioClip revealClip; // uno por estrella — dejar vacío hasta tener el sonido
+    [SerializeField] AudioClip revealClip;    // uno por estrella — dejar vacío hasta tener el sonido
+    [SerializeField] AudioClip allStarsClip;  // reemplaza a revealClip en la 3ra estrella si está asignado
 
     Vector3[] _baseScales;
 
@@ -45,18 +47,24 @@ public class LevelStarsView : MonoBehaviour
         SetStars(0);
         for (int i = 0; i < count && i < stars.Length; i++)
         {
-            yield return PopIn(i);
+            yield return PopIn(i, isLast: i == stars.Length - 1);
             if (i < count - 1) yield return new WaitForSeconds(delayBetweenStars);
         }
     }
 
-    IEnumerator PopIn(int index)
+    IEnumerator PopIn(int index, bool isLast)
     {
         var go = stars[index];
         go.SetActive(true);
         var t = go.transform;
 
-        AudioManager.Instance?.PlayUi(revealClip); // no hace nada si el clip está vacío (PlayOn ya lo maneja)
+        // En la 3ra estrella, si hay un clip de "las 3 completas" asignado, ese reemplaza al
+        // de estrella individual (no queremos los dos sonando pisados) — mismo criterio que
+        // ProgressScoreView.
+        bool skipRevealClip = isLast && allStarsClip != null;
+        if (!skipRevealClip) AudioManager.Instance?.PlayUi(revealClip); // no hace nada si el clip está vacío (PlayOn ya lo maneja)
+        if (isLast) AudioManager.Instance?.PlayUi(allStarsClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
 
         float time = 0f;
         while (time < popDuration)
