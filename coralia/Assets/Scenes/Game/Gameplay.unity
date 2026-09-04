@@ -1168,8 +1168,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 360, y: -95}
-  m_SizeDelta: {x: 500, y: 50}
+  m_AnchoredPosition: {x: 360, y: -116.8309}
+  m_SizeDelta: {x: 500, y: 77.6618}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &96665912
 MonoBehaviour:
@@ -1218,8 +1218,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 60
-  m_fontSizeBase: 60
+  m_fontSize: 80
+  m_fontSizeBase: 80
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -1751,7 +1751,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 360, y: -248.7797}
+  m_AnchoredPosition: {x: 360, y: -238.7797}
   m_SizeDelta: {x: 720, y: 165.1838}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &157983456
@@ -2352,7 +2352,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -80, y: -222.89099}
+  m_SizeDelta: {x: -80, y: -326.3761}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &240995857
 MonoBehaviour:
@@ -7037,8 +7037,8 @@ MonoBehaviour:
   pausedPanel: {fileID: 1363746971}
   openPausedButton: {fileID: 2132985218}
   progressScore: {fileID: 8629596272723401891}
-  popClip: {fileID: 0}
-  dropClip: {fileID: 0}
+  popClip: {fileID: 8300000, guid: a3ff1106d6ce7426eb2237d5eb16c975, type: 3}
+  dropClip: {fileID: 8300000, guid: 623dd2417b6e64d6f95b775bd8b1224e, type: 3}
 --- !u!4 &820312950
 Transform:
   m_ObjectHideFlags: 0
@@ -7688,7 +7688,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 360, y: -81.19574}
+  m_AnchoredPosition: {x: 360, y: -91.19574}
   m_SizeDelta: {x: 720, y: 129.9841}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &962946934
@@ -9643,6 +9643,81 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &1223465681
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1223465682}
+  - component: {fileID: 1223465684}
+  - component: {fileID: 1223465683}
+  m_Layer: 0
+  m_Name: TravelingBubble
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1223465682
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1223465681}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1737611371}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 0, y: 150}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1223465683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1223465681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1223465684
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1223465681}
+  m_CullTransparentMesh: 1
 --- !u!1 &1237494486
 GameObject:
   m_ObjectHideFlags: 0
@@ -10690,7 +10765,7 @@ MonoBehaviour:
   pointPressedSprite: {fileID: 7267704452371279311, guid: cf68912f608dd43398a5eee40f00217a, type: 3}
   canvasGroup: {fileID: 1330918402}
   messageText: {fileID: 1434801717}
-  pauseBetween: 0.6
+  pauseBetween: 3
   pressedDuration: 3
   fadeDuration: 0.25
 --- !u!225 &1330918402
@@ -10877,6 +10952,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   resumeButton: {fileID: 1683567095}
+  closeButton: {fileID: 62784261}
   restartButton: {fileID: 49822015}
   settingsButton: {fileID: 727288104}
   quitButton: {fileID: 201831637}
@@ -11757,8 +11833,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 310.0985}
-  m_SizeDelta: {x: 559.8826, y: 50}
+  m_AnchoredPosition: {x: 0, y: 327.085}
+  m_SizeDelta: {x: 718.1263, y: 107.8299}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1434801717
 MonoBehaviour:
@@ -11807,8 +11883,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 44
+  m_fontSizeBase: 44
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -12509,9 +12585,9 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1737611371}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 343.4, y: 164.3}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 343.4, y: 214.3}
   m_SizeDelta: {x: 80, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1493614528
@@ -12691,9 +12767,14 @@ MonoBehaviour:
   awardItems: []
   nextButton: {fileID: 332282411}
   closeButton: {fileID: 1129801726}
+  winClip: {fileID: 8300000, guid: 302c75bb43f5c4c37910cde97d2e34ea, type: 3}
+  scoreTickClip: {fileID: 0}
+  scoreCompleteClip: {fileID: 0}
+  scoreTickSoundCooldown: 0.06
   scoreCountMinDuration: 0.4
   scoreCountMaxDuration: 1.2
   scoreCountPerPoint: 0.0012
+  scoreCountHapticCooldown: 0.06
   nextButtonActive: 0
   autoAdvanceDelay: 2
 --- !u!114 &1528101479
@@ -12868,7 +12949,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 4
-  m_Spacing: 20
+  m_Spacing: 0
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 1
@@ -13306,7 +13387,7 @@ MonoBehaviour:
     m_Top: 20
     m_Bottom: 0
   m_ChildAlignment: 1
-  m_Spacing: 0
+  m_Spacing: 8
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 0
@@ -13887,6 +13968,7 @@ RectTransform:
   - {fileID: 1839086708}
   - {fileID: 1012796782}
   - {fileID: 1698990555}
+  - {fileID: 1223465682}
   m_Father: {fileID: 58455699}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
@@ -13915,8 +13997,35 @@ MonoBehaviour:
   gridContainer: {fileID: 1795665164}
   canvas: {fileID: 1237494490}
   trajectoryLine: {fileID: 2098913405}
-  shotSpeed: 1500
-  shootClip: {fileID: 0}
+  shotSpeed: 2500
+  shootClip: {fileID: 8300000, guid: 0ab96e0db12e541d58b48936b9963f75, type: 3}
+  landClip: {fileID: 8300000, guid: 2e175ca372d4549bc82222194d3dc259, type: 3}
+  travelingBubbleImage: {fileID: 1223465683}
+  nextIntoCurrentDuration: 0.2
+  nextIntoCurrentCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   shootHint: {fileID: 1330918401}
   idleHintDelay: 10
   hintSwayAngle: 15
@@ -14393,6 +14502,9 @@ MonoBehaviour:
   scrollTriggerRatio: 0.65
   maxScrollOffset: 552
   scrollSpeed: 900
+  shakeThreshold: 8
+  shakeDuration: 0.25
+  shakeMagnitude: 12
 --- !u!1001 &1818290198
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -15117,7 +15229,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 800, y: 790.0113}
+  m_SizeDelta: {x: 800, y: 893.4964}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1911651034
 MonoBehaviour:
@@ -17279,11 +17391,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7229191177392546794, guid: 7b83fba79fe6d481e978395ea0e98479, type: 3}
       propertyPath: m_LocalScale.x
-      value: 2
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 7229191177392546794, guid: 7b83fba79fe6d481e978395ea0e98479, type: 3}
       propertyPath: m_LocalScale.y
-      value: 2
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 7229191177392546794, guid: 7b83fba79fe6d481e978395ea0e98479, type: 3}
       propertyPath: m_LocalPosition.x
@@ -17447,7 +17559,8 @@ MonoBehaviour:
     m_RotationOrder: 4
   spinOnReveal: 0
   spinRotations: 2
-  revealClip: {fileID: 0}
+  revealClip: {fileID: 8300000, guid: eb509b35c7f9442b58256776ea9bae06, type: 3}
+  allStarsClip: {fileID: 8300000, guid: dbeded89e7daa48e0a9f310061822499, type: 3}
 --- !u!114 &5167743466158730072
 MonoBehaviour:
   m_ObjectHideFlags: 0
