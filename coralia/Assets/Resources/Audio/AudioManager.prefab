@@ -57,6 +57,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 571a838ebedbc48c3b824cc5329be7a5, type: 3}
   - {fileID: 8300000, guid: 6558eff7a7c024fc3b5c2329d76c75af, type: 3}
   - {fileID: 8300000, guid: b7e90d552808a4e81815c12cf438ce7f, type: 3}
+  gameplayMusicVolumeScale: 0.3
+  panelOpenClip: {fileID: 8300000, guid: 99f8b8c6b286141b59f440254ae5d913, type: 3}
   ignoreSilentSwitch: 0
 --- !u!82 &5317926526536482864
 AudioSource:

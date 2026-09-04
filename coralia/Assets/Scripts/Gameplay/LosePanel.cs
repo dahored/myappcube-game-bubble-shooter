@@ -11,12 +11,23 @@ public class LosePanel : UIPanel
     [SerializeField] Button tryButton;
     [SerializeField] Button closeButton;
 
+    [Header("Sonido (opcional — dejar vacío hasta tener el clip)")]
+    [SerializeField] AudioClip loseClip; // suena apenas se abre el panel — mismo criterio que WinPanel.winClip
+    [SerializeField, Range(0f, 1f)] float loseClipVolume = 0.6f; // mismo default que winClipVolume, ajustable si suena "duro"
+
     protected override void Awake()
     {
         base.Awake();
         ValidateReferences();
         if (tryButton)   tryButton.onClick.AddListener(Retry);
         if (closeButton) closeButton.onClick.AddListener(GoToMap);
+    }
+
+    public override void Open()
+    {
+        base.Open();
+        AudioManager.Instance?.StopMusic(); // corta la música de gameplay al perder (pedido de Diego) — así se escucha bien el sonido de derrota
+        AudioManager.Instance?.PlayUi(loseClip, loseClipVolume);
     }
 
     void Retry()  => SceneLoader.GoTo(SceneLoader.GAMEPLAY);

@@ -4017,6 +4017,8 @@ MonoBehaviour:
     m_RotationOrder: 4
   tryButton: {fileID: 1223074086}
   closeButton: {fileID: 2004506247}
+  loseClip: {fileID: 8300000, guid: 4d5fb6166ad1e4e8c83b9ca614c1f145, type: 3}
+  loseClipVolume: 0.6
 --- !u!1 &427348537
 GameObject:
   m_ObjectHideFlags: 0
@@ -12768,6 +12770,7 @@ MonoBehaviour:
   nextButton: {fileID: 332282411}
   closeButton: {fileID: 1129801726}
   winClip: {fileID: 8300000, guid: 302c75bb43f5c4c37910cde97d2e34ea, type: 3}
+  winClipVolume: 0.3
   scoreTickClip: {fileID: 0}
   scoreCompleteClip: {fileID: 0}
   scoreTickSoundCooldown: 0.06

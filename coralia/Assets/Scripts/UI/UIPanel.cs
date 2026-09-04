@@ -11,6 +11,10 @@ public abstract class UIPanel : MonoBehaviour
     [SerializeField] float openDuration  = 0.25f;
     [SerializeField] float closeDuration = 0.18f;
 
+    [Header("Sonido (opcional)")]
+    [Tooltip("Vacío (default): usa el clip general de AudioManager.panelOpenClip. Asignado: lo pisa solo para este panel — útil si necesita un sonido distinto o ninguno.")]
+    [SerializeField] AudioClip openSound;
+
     [Header("Card scale curves")]
     [SerializeField] AnimationCurve openCurve  = new AnimationCurve(
         new Keyframe(0f, 0f, 0f, 2f),
@@ -48,6 +52,7 @@ public abstract class UIPanel : MonoBehaviour
     {
         gameObject.SetActive(true);
         Init();
+        AudioManager.Instance?.PlayPanelOpen(openSound);
         Swap(ref _anim, AnimOpen());
     }
 

@@ -69,6 +69,7 @@ public class WinPanel : UIPanel
         if (closeButton) closeButton.gameObject.SetActive(nextButtonActive);
 
         Open();
+        AudioManager.Instance?.StopMusic(); // corta la música de gameplay al ganar (pedido de Diego)
         AudioManager.Instance?.PlayUi(winClip, winClipVolume);
         StartCoroutine(PlayRevealSequence(score, stars));
     }
