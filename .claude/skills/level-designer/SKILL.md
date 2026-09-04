@@ -55,11 +55,11 @@ Matches `LevelData.cs` (`coralia/Assets/Scripts/Data/LevelData.cs`) exactly — 
 Una vez que `min_shots_to_clear` está definido, `star_thresholds` sale de una referencia de score ideal:
 
 ```
-score_ideal = burbujas × 10 + max(0, max_shots − min_shots_to_clear) × 10
+score_ideal = burbujas × 10000 + max(0, max_shots − min_shots_to_clear) × 10000
 star_thresholds = [40%, 65%, 90%] de score_ideal
 ```
 
-(Los pesos 10/10 son `SCORE_PER_POP`/`SCORE_PER_REMAINING_SHOT` de `GameplayController.cs` — mantenerlos sincronizados si esos valores cambian.) Mientras `min_shots_to_clear` siga en `0` (no calibrado), el fallback usa `burbujas` en su lugar — menos preciso, ya que no contempla cadenas largas, pero sirve de placeholder.
+(Los pesos 10000/10000 son `SCORE_PER_POP`/`SCORE_PER_REMAINING_SHOT` de `GameplayController.cs` — escalados x1000 respecto al GDD original a pedido de Diego, para que el score final se sienta "alto" en el orden de cientos de miles en vez de cientos; mantenerlos sincronizados si esos valores cambian de nuevo.) Mientras `min_shots_to_clear` siga en `0` (no calibrado), el fallback usa `burbujas` en su lugar — menos preciso, ya que no contempla cadenas largas, pero sirve de placeholder.
 
 Los tres cortes (40/65/90%) también son el 100% de `ProgressScoreView` — la barra de score en vivo del HUD de gameplay. Su 3er umbral (90%) es exactamente el `STAR_3_RATIO_OF_BAR` hardcodeado en `ProgressScoreView.cs`; si estos porcentajes cambian acá, hay que actualizar esa constante también para que las estrellas sigan cayendo justo donde están los `Field1/2/3` puestos a mano en el prefab.
 

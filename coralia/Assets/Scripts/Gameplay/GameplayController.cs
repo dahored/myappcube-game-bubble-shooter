@@ -35,11 +35,15 @@ public class GameplayController : MonoBehaviour
     const float POP_CHAIN_DELAY      = 0.08f; // segundos entre el pop de cada burbuja del match, en cadena
     const float POP_CHAIN_DELAY_MAX  = 0.4f;   // tope — para que un match gigante no tarde una eternidad en terminar
 
-    // GDD §4.2 / docs/04_Plan_Fase1_Coralia.md — fórmula de score: 10 pts por burbuja
-    // explotada, 15 pts (1.5x) por burbuja caída, +10 pts por cada disparo sobrante al ganar.
-    const int SCORE_PER_POP            = 10;
-    const int SCORE_PER_DROP           = 15;
-    const int SCORE_PER_REMAINING_SHOT = 10;
+    // GDD §4.2 / docs/04_Plan_Fase1_Coralia.md — fórmula de score, escalada x1000 (pedido de
+    // Diego: el score final de un nivel debe sentirse "alto", en el orden de cientos de miles,
+    // no de cientos) — mantiene las mismas proporciones relativas entre pop/drop/disparo
+    // sobrante que el GDD original, solo con más ceros. Si esto cambia, hay que reescalar
+    // también star_thresholds en TODOS los niveles (Resources/Levels/Chapter_N/*.json) y
+    // actualizar la nota equivalente en .claude/skills/level-designer/SKILL.md.
+    const int SCORE_PER_POP            = 10_000;
+    const int SCORE_PER_DROP           = 15_000;
+    const int SCORE_PER_REMAINING_SHOT = 10_000;
 
     // El GDD menciona "combos largos suben score multiplicador" pero sin definir el valor
     // (queda anotado como pendiente) — estos dos valores son una propuesta propia, fáciles
@@ -47,8 +51,8 @@ public class GameplayController : MonoBehaviour
     // - Cadena: bonus por el TAMAÑO del match+drop de un mismo disparo, por cada burbuja
     //   que pasa del mínimo de 3 (un match de 3 no da bonus, uno de 8 sí).
     // - Combo: bonus por RACHA de disparos consecutivos que matchean sin fallar ninguno.
-    const int CHAIN_BONUS_PER_EXTRA_BUBBLE = 5;
-    const int COMBO_BONUS_PER_STREAK       = 15;
+    const int CHAIN_BONUS_PER_EXTRA_BUBBLE = 1_000;
+    const int COMBO_BONUS_PER_STREAK       = 2_000;
 
     LevelData  _level;
     int        _shotsRemaining;
@@ -67,6 +71,10 @@ public class GameplayController : MonoBehaviour
         // Por si se entra a esta escena directo (sin pasar por Splash, donde se activa
         // normalmente) — así las transiciones animadas funcionan igual al testear.
         SceneTransition.Enabled = true;
+
+        // Música propia de gameplay, más calma que la del lobby (Home/LevelMap) — sin esto,
+        // seguiría sonando la del lobby porque AudioManager persiste entre escenas.
+        AudioManager.Instance?.PlayGameplayMusic();
 
         if (!ValidateReferences()) return;
 
@@ -254,29 +262,33 @@ public class GameplayController : MonoBehaviour
         {
             var cell = matched[i];
             if (grid.TryGetBubble(cell, out var view))
-                view.PlayPopAnimation(Mathf.Min(i * POP_CHAIN_DELAY, POP_CHAIN_DELAY_MAX));
+                view.PlayPopAnimation(Mathf.Min(i * POP_CHAIN_DELAY, POP_CHAIN_DELAY_MAX), popClip);
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
         _bubblesPopped += matched.Count;
-        if (matched.Count > 0) AudioManager.Instance?.PlayPop(popClip);
 
         var floating = grid.FindUnreachableFromCeiling();
         foreach (var cell in floating)
         {
-            if (grid.TryGetBubble(cell, out var view)) view.PlayDropAnimation();
+            if (grid.TryGetBubble(cell, out var view)) view.PlayDropAnimation(dropClip);
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
         _bubblesDropped += floating.Count;
-        if (floating.Count > 0) AudioManager.Instance?.PlayPop(dropClip);
 
         // Cadena: bonus por cuánto pasó este disparo del mínimo de 3 (match + todo lo que
-        // cayó con él). Combo: bonus por la racha de disparos seguidos que matchearon.
+        // cayó con él). Combo: bonus FIJO por disparo mientras la racha siga viva (no
+        // multiplicado por el largo de la racha) — la versión anterior multiplicaba por
+        // _comboStreak en cada disparo, lo que acumulaba en forma cuadrática con rachas
+        // largas y hacía que el score total se disparara muy por encima del millón sin
+        // querer (reportado por Diego). Así el combo suma parejo, disparo a disparo.
         int chainSize  = matched.Count + floating.Count;
         int chainBonus = Mathf.Max(0, chainSize - 3) * CHAIN_BONUS_PER_EXTRA_BUBBLE;
-        int comboBonus = (_comboStreak - 1) * COMBO_BONUS_PER_STREAK;
+        int comboBonus = _comboStreak >= 2 ? COMBO_BONUS_PER_STREAK : 0;
         _comboBonus += chainBonus + comboBonus;
+
+        grid.Shake(chainSize); // no hace nada si no llega al umbral — ver GridController.shakeThreshold
 
         return removed;
     }
