@@ -21,8 +21,8 @@ public class ShootHintView : MonoBehaviour
     RectTransform _root; // este mismo GameObject — se mueve entero al seguir el balanceo de la línea
 
     [Header("Gesto de presión (loop) — timer independiente del balanceo de CannonController")]
-    [SerializeField] float pauseBetween    = 4f;   // cuánto se ve "sin presionar" (da tiempo a leer el texto)
-    [SerializeField] float pressedDuration = 1.5f; // cuánto se ve "presionado"
+    [SerializeField] float pauseBetween    = 3f;   // cuánto se ve "sin presionar" (da tiempo a leer el texto)
+    [SerializeField] float pressedDuration = 3f; // cuánto se ve "presionado"
     [SerializeField] float fadeDuration    = 0.25f;
 
     Coroutine _loopRoutine;
