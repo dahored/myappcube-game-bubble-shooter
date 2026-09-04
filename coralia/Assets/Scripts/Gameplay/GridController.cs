@@ -22,6 +22,11 @@ public class GridController : MonoBehaviour
     [SerializeField] float maxScrollOffset    = 6f * HexGridMath.BubbleDiameter; // tope de seguridad, no se retira más que esto
     [SerializeField] float scrollSpeed        = 900f; // px/seg de la animación de scroll
 
+    [Header("Shake — combos grandes (referencia: Candy Crush)")]
+    [SerializeField] int   shakeThreshold = 8;   // match.Count + drop.Count a partir del cual tiembla
+    [SerializeField] float shakeDuration  = 0.25f;
+    [SerializeField] float shakeMagnitude = 12f; // px, se amortigua a 0 durante shakeDuration
+
     readonly Dictionary<Vector2Int, BubbleView> _cells = new();
 
     RectTransform _rt;
@@ -29,6 +34,8 @@ public class GridController : MonoBehaviour
     float         _muzzleReferenceY;
     float         _scrollOffsetY;
     float         _scrollTarget;
+    Vector2       _shakeOffset;
+    float         _shakeTimer;
 
     // Cuánto se retiró el grid del cañón ahora mismo (0 = posición normal) — CannonController
     // lo resta de la posición del muzzle para que el disparo/mira sigan apuntando bien aunque
@@ -36,6 +43,11 @@ public class GridController : MonoBehaviour
     public float ScrollOffsetY => _scrollOffsetY;
 
     public int CellCount => _cells.Count;
+
+    // Tocar una burbuja del grid = apuntar y disparar hacia ella — CannonController se
+    // suscribe en su Start(). No usa la celda struck, avisa la celda de la burbuja tocada.
+    public event System.Action<Vector2Int> OnBubbleTapped;
+    void HandleBubbleViewTapped(BubbleView view) => OnBubbleTapped?.Invoke(view.Cell);
 
     void Awake()
     {
@@ -45,9 +57,30 @@ public class GridController : MonoBehaviour
 
     void Update()
     {
-        if (Mathf.Approximately(_scrollOffsetY, _scrollTarget)) return;
-        _scrollOffsetY = Mathf.MoveTowards(_scrollOffsetY, _scrollTarget, scrollSpeed * Time.deltaTime);
-        _rt.anchoredPosition = _baseAnchoredPos + Vector2.up * _scrollOffsetY;
+        bool scrolling = !Mathf.Approximately(_scrollOffsetY, _scrollTarget);
+        if (scrolling) _scrollOffsetY = Mathf.MoveTowards(_scrollOffsetY, _scrollTarget, scrollSpeed * Time.deltaTime);
+
+        bool shaking = _shakeTimer > 0f;
+        if (shaking)
+        {
+            _shakeTimer -= Time.deltaTime;
+            float damp = Mathf.Clamp01(_shakeTimer / shakeDuration); // se amortigua a 0 al final, no corta de golpe
+            _shakeOffset = _shakeTimer > 0f ? Random.insideUnitCircle * shakeMagnitude * damp : Vector2.zero;
+        }
+
+        // Se suma al offset de scroll, no lo reemplaza — así el shake no pelea con el
+        // retiro del grid si ambos coinciden en el mismo momento.
+        if (scrolling || shaking)
+            _rt.anchoredPosition = _baseAnchoredPos + Vector2.up * _scrollOffsetY + _shakeOffset;
+    }
+
+    // Llamado por GameplayController después de resolver un match+drop — solo tiembla si el
+    // combo fue lo suficientemente grande (shakeThreshold), como el efecto de Candy Crush en
+    // combos grandes.
+    public void Shake(int chainSize)
+    {
+        if (chainSize < shakeThreshold) return;
+        _shakeTimer = shakeDuration;
     }
 
     // Llamado una vez por CannonController.Start() con la posición Y del muzzle (sin scroll) —
@@ -117,6 +150,7 @@ public class GridController : MonoBehaviour
         var go   = Instantiate(bubblePrefab, transform);
         var view = go.GetComponent<BubbleView>();
         view.Setup(cell, color, SpriteFor(color));
+        view.OnTapped += HandleBubbleViewTapped;
         _cells[cell] = view;
         return view;
     }
@@ -128,6 +162,7 @@ public class GridController : MonoBehaviour
         view.transform.SetParent(transform, false);
         view.SetCell(cell);
         ((RectTransform)view.transform).anchoredPosition = HexGridMath.CellToLocalPos(cell);
+        view.OnTapped += HandleBubbleViewTapped; // esta instancia nunca pasó por PlaceBubble (viene de CannonController.Fire)
         _cells[cell] = view;
     }
 

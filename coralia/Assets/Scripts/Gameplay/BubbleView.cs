@@ -1,11 +1,20 @@
 using System.Collections;
+using Solo.MOST_IN_ONE;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class BubbleView : MonoBehaviour
+// IPointerClickHandler: permite tocar directamente una burbuja del grid para apuntar y
+// disparar hacia ella (pedido de Diego, visto en otros bubble shooters) — alternativa rápida
+// al drag normal desde el cañón. CannonController se suscribe vía GridController.OnBubbleTapped.
+public class BubbleView : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] Image bubbleImage;
     [SerializeField] Image creatureIcon;
+
+    public event System.Action<BubbleView> OnTapped;
+
+    public void OnPointerClick(PointerEventData eventData) => OnTapped?.Invoke(this);
 
     const float POP_DURATION      = 0.25f; // GDD 1.5 — animación de explosión
     const float DROP_GRAVITY      = 2600f; // px/s² — caída acelerada en vez de velocidad constante, se siente más real
@@ -41,14 +50,26 @@ public class BubbleView : MonoBehaviour
 
     // delay: para que el match no explote todo junto — GameplayController le pasa un
     // delay creciente según qué tan lejos está cada burbuja de la que disparó el jugador.
-    public void PlayPopAnimation(float delay = 0f) => StartCoroutine(PopAndDestroy(delay));
-    public void PlayDropAnimation() => StartCoroutine(DropAndDestroy());
+    // popClip: se reproduce acá, no en GameplayController — así el sonido (y la vibración
+    // LightImpact que lo acompaña) suenan una vez POR burbuja, en el momento exacto en que
+    // le toca explotar (mismo delay que la animación), no una sola vez para todo el match.
+    // AudioManager.PlayPop ya usa PlayOneShot, así que varias burbujas superponiéndose no se
+    // cortan entre sí.
+    public void PlayPopAnimation(float delay = 0f, AudioClip popClip = null) => StartCoroutine(PopAndDestroy(delay, popClip));
 
-    IEnumerator PopAndDestroy(float delay)
+    // dropClip: mismo criterio que popClip — suena una vez POR burbuja que cae, no una sola
+    // vez para todo el lote. Todas arrancan a la vez (sin delay escalonado, la caída en sí
+    // ya no es instantánea), así que varias sonando juntas es el efecto esperado de "se
+    // desprendió una cadena grande", no un bug.
+    public void PlayDropAnimation(AudioClip dropClip = null) => StartCoroutine(DropAndDestroy(dropClip));
+
+    IEnumerator PopAndDestroy(float delay, AudioClip popClip)
     {
         if (delay > 0f) yield return new WaitForSeconds(delay);
 
         SpawnPopParticles();
+        AudioManager.Instance?.PlayPop(popClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
 
         Vector3 baseScale = transform.localScale;
         float   t = 0f;
@@ -98,8 +119,10 @@ public class BubbleView : MonoBehaviour
 
     // Gravedad simulada (acelera en vez de moverse a velocidad constante) + un giro
     // aleatorio por burbuja, para que la caída en cadena no se vea toda igual/rígida.
-    IEnumerator DropAndDestroy()
+    IEnumerator DropAndDestroy(AudioClip dropClip)
     {
+        AudioManager.Instance?.PlayPop(dropClip);
+
         var     rt       = (RectTransform)transform;
         Vector2 pos      = rt.anchoredPosition;
         float   velocity = 0f;
