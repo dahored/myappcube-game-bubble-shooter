@@ -238,10 +238,12 @@ public static class SaveManager
         PlayerPrefs.Save();
     }
 
-    // Volúmenes de cada canal de audio (0.0 a 1.0). Por defecto: 1 (máximo)
+    // Volúmenes de cada canal de audio (0.0 a 1.0). Por defecto: 1 (máximo), excepto música
+    // que arranca en 0.3 — pedido de Diego, para que no compita con los SFX ni resulte
+    // invasiva de entrada (el jugador puede subirla desde Settings si quiere).
     public static float MusicVolume
     {
-        get => PlayerPrefs.GetFloat(KEY_SOUND_MUSIC, 1f);
+        get => PlayerPrefs.GetFloat(KEY_SOUND_MUSIC, 0.3f);
         set { PlayerPrefs.SetFloat(KEY_SOUND_MUSIC, value); PlayerPrefs.Save(); }
     }
 

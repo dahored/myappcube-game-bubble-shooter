@@ -53,6 +53,11 @@ MonoBehaviour:
   uiSource: {fileID: 8640117027610822244}
   popSource: {fileID: 6060201117537543029}
   lobbyMusic: {fileID: 8300000, guid: 0968a23a99daf47efb4373b54dca255a, type: 3}
+  gameplayMusic:
+  - {fileID: 8300000, guid: 571a838ebedbc48c3b824cc5329be7a5, type: 3}
+  - {fileID: 8300000, guid: 6558eff7a7c024fc3b5c2329d76c75af, type: 3}
+  - {fileID: 8300000, guid: b7e90d552808a4e81815c12cf438ce7f, type: 3}
+  ignoreSilentSwitch: 0
 --- !u!82 &5317926526536482864
 AudioSource:
   m_ObjectHideFlags: 0

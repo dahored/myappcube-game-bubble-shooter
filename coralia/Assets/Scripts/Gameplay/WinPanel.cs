@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Solo.MOST_IN_ONE;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,10 +20,18 @@ public class WinPanel : UIPanel
     [SerializeField] Button         nextButton;
     [SerializeField] Button         closeButton;
 
+    [Header("Sonido (opcional — dejar vacío hasta tener el clip)")]
+    [SerializeField] AudioClip winClip;         // fanfarria de victoria, suena apenas se abre el panel — distinto de LevelStarsView.allStarsClip (remate de las 3 estrellas)
+    [SerializeField, Range(0f, 1f)] float winClipVolume = 0.6f; // volumen propio, más bajo que un click de UI normal — a full sonaba "duro" (reportado por Diego)
+    [SerializeField] AudioClip scoreTickClip;   // tick corto y repetido mientras el contador de score sube
+    [SerializeField] AudioClip scoreCompleteClip; // remate al llegar al valor final — distinto del tick
+    [SerializeField] float     scoreTickSoundCooldown = 0.06f; // mismo criterio que scoreCountHapticCooldown, tunable aparte
+
     [Header("Reveal de score (contador 0 -> score final)")]
     [SerializeField] float scoreCountMinDuration = 0.4f;
     [SerializeField] float scoreCountMaxDuration = 1.2f;
     [SerializeField] float scoreCountPerPoint    = 0.0012f; // segundos extra por punto, con tope arriba
+    [SerializeField] float scoreCountHapticCooldown = 0.06f; // "tick" continuo mientras cuenta, no un pulso único
 
     [Header("Next Button — opcional")]
     [Tooltip("Activado: se muestra el botón Next, comportamiento actual sin cambios. Desactivado: el botón se oculta y, apenas termina el reveal, se espera 'Auto Advance Delay' y se avanza solo.")]
@@ -60,6 +69,7 @@ public class WinPanel : UIPanel
         if (closeButton) closeButton.gameObject.SetActive(nextButtonActive);
 
         Open();
+        AudioManager.Instance?.PlayUi(winClip, winClipVolume);
         StartCoroutine(PlayRevealSequence(score, stars));
     }
 
@@ -93,14 +103,26 @@ public class WinPanel : UIPanel
 
         float duration = Mathf.Clamp(target * scoreCountPerPoint, scoreCountMinDuration, scoreCountMaxDuration);
         float t = 0f;
+        float tickTimer = 0f; // cooldown propio del sonido — PlaySfx no tiene throttle incorporado como GenerateWithCooldown
         while (t < duration)
         {
             t += Time.deltaTime;
             int value = Mathf.RoundToInt(Mathf.Lerp(0f, target, t / duration));
             scorePointsText.text = value.ToString("N0");
+            // Continuo mientras dura el conteo — GenerateWithCooldown ya se auto-limita, así
+            // que llamarlo cada frame no lo satura, se siente como un "tick" parejo.
+            if (SaveManager.Vibration) MOST_HapticFeedback.GenerateWithCooldown(MOST_HapticFeedback.HapticTypes.SoftImpact, scoreCountHapticCooldown);
+
+            tickTimer -= Time.deltaTime;
+            if (tickTimer <= 0f)
+            {
+                AudioManager.Instance?.PlaySfx(scoreTickClip);
+                tickTimer = scoreTickSoundCooldown;
+            }
             yield return null;
         }
         scorePointsText.text = target.ToString("N0");
+        AudioManager.Instance?.PlaySfx(scoreCompleteClip);
     }
 
     void GoToNextLevel()
