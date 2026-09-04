@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class PausedPanel : UIPanel
 {
     [SerializeField] Button             resumeButton;
+    [SerializeField] Button             closeButton; // la X — debe reanudar igual que Resume, no solo cerrar
     [SerializeField] Button             restartButton;
     [SerializeField] Button             settingsButton;
     [SerializeField] Button             quitButton;
@@ -21,6 +22,7 @@ public class PausedPanel : UIPanel
         base.Awake();
         ValidateReferences();
         if (resumeButton)   resumeButton.onClick.AddListener(HandleResume);
+        if (closeButton)    closeButton.onClick.AddListener(HandleResume);
         if (settingsButton) settingsButton.onClick.AddListener(() => OpenSubPanel(settingsPanel, "Settings Panel"));
         if (restartButton)  restartButton.onClick.AddListener(() => OpenSubPanel(resetProgressPanel, "Reset Progress Panel"));
         if (quitButton)      quitButton.onClick.AddListener(() => OpenSubPanel(quitPanel, "Quit Panel"));
@@ -57,6 +59,7 @@ public class PausedPanel : UIPanel
     void ValidateReferences()
     {
         if (!resumeButton)         Debug.LogWarning("[PausedPanel] Falta asignar 'Resume Button' en el Inspector.");
+        if (!closeButton)          Debug.LogWarning("[PausedPanel] Falta asignar 'Close Button' en el Inspector.");
         if (!restartButton)        Debug.LogWarning("[PausedPanel] Falta asignar 'Restart Button' en el Inspector.");
         if (!settingsButton)       Debug.LogWarning("[PausedPanel] Falta asignar 'Settings Button' en el Inspector.");
         if (!quitButton)           Debug.LogWarning("[PausedPanel] Falta asignar 'Quit Button' en el Inspector.");
