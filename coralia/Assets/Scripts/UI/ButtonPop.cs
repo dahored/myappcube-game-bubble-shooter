@@ -17,6 +17,10 @@ public class ButtonPop : MonoBehaviour
 
     static readonly int ClickHash = Animator.StringToHash("Click");
 
+    // GelatineAnimation_v2 lo consulta para pausarse mientras dura este pop — los dos animan
+    // transform.localScale, y sin esta señal se pelearían por escribirlo el mismo frame.
+    public bool IsPlaying { get; private set; }
+
     void Awake()
     {
         _animator      = GetComponent<Animator>();
@@ -34,6 +38,7 @@ public class ButtonPop : MonoBehaviour
 
     IEnumerator DoPop()
     {
+        IsPlaying = true;
         if (_animator != null) _animator.enabled = false;
 
         Vector3 peak = _originalScale * scalePeak;
@@ -56,5 +61,17 @@ public class ButtonPop : MonoBehaviour
 
         transform.localScale = _originalScale;
         if (_animator != null) _animator.enabled = true;
+        IsPlaying = false;
+    }
+
+    // Si el GameObject se desactiva a mitad del pop (ej. un botón que además cierra su panel
+    // al tocarlo, y la animación de cierre termina antes que esta) Unity mata la corutina de
+    // golpe SIN llegar a la línea de arriba que resetea IsPlaying — sin esto quedaba trabado
+    // en true para siempre, y GelatineAnimation_v2 (que lo consulta) se quedaba pausado por el
+    // resto de la vida del objeto. Restaura también la escala por si quedó a mitad de camino.
+    void OnDisable()
+    {
+        IsPlaying = false;
+        transform.localScale = _originalScale;
     }
 }

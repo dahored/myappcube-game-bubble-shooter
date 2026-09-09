@@ -23,7 +23,15 @@ public class PopInView : MonoBehaviour
     [SerializeField] AnimationCurve popCurve = new AnimationCurve(
         new Keyframe(0f, 0f), new Keyframe(0.7f, 1.2f), new Keyframe(1f, 1f));
 
+    [Header("Sonido (opcional — dejar vacío hasta tener el clip)")]
+    [SerializeField] AudioClip popSound; // suena justo cuando arranca el pop visual (después del delay), no al habilitarse
+
     UIPanel _panel;
+
+    // GelatineAnimation_v2 lo consulta para pausarse mientras dura este pop — los dos animan
+    // transform.localScale (mismo criterio que ButtonPop.IsPlaying), y sin esta señal se
+    // pelearían por escribirlo cada frame durante la aparición.
+    public bool IsPlaying { get; private set; }
 
     void Awake()
     {
@@ -38,6 +46,7 @@ public class PopInView : MonoBehaviour
     // durante toda la apertura del panel y recién desaparece de golpe justo antes de animar.
     void OnEnable()
     {
+        IsPlaying = true; // desde ya, no solo durante el pop en sí — el estado "escala 0 esperando" también cuenta
         transform.localScale = Vector3.zero;
         SetClickBlocked(true);
 
@@ -47,6 +56,7 @@ public class PopInView : MonoBehaviour
 
     void OnDisable()
     {
+        IsPlaying = false; // por si se desactiva a mitad del pop — mismo motivo que ButtonPop.OnDisable
         if (_panel != null) _panel.OnOpened -= PlayPop;
     }
 
@@ -55,6 +65,8 @@ public class PopInView : MonoBehaviour
     IEnumerator PopRoutine()
     {
         if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        AudioManager.Instance?.PlayUi(popSound);
 
         float time = 0f;
         while (time < popDuration)
@@ -65,6 +77,7 @@ public class PopInView : MonoBehaviour
         }
         transform.localScale = Vector3.one;
         SetClickBlocked(false);
+        IsPlaying = false;
     }
 
     void SetClickBlocked(bool blocked)

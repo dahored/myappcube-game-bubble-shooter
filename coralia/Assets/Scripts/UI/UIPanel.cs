@@ -16,6 +16,8 @@ public abstract class UIPanel : MonoBehaviour
     [SerializeField] AudioClip openSound;
 
     [Header("Card scale curves")]
+    [Tooltip("Prendido (default): pop de escala + fade, el estilo actual de todos los paneles. Apagado: fade puro (solo alpha) sin tocar la escala de la card — útil para overlays donde el pop no queda bien.")]
+    [SerializeField] bool animateScale = true;
     [SerializeField] AnimationCurve openCurve  = new AnimationCurve(
         new Keyframe(0f, 0f, 0f, 2f),
         new Keyframe(0.7f, 1.1f),
@@ -75,7 +77,7 @@ public abstract class UIPanel : MonoBehaviour
     IEnumerator AnimOpen()
     {
         _overlay.alpha = 0f;
-        SetCardScale(0f);
+        if (animateScale) SetCardScale(0f);
 
         float t = 0f;
         while (t < openDuration)
@@ -83,12 +85,12 @@ public abstract class UIPanel : MonoBehaviour
             t += Time.unscaledDeltaTime;
             float p = Mathf.Clamp01(t / openDuration);
             _overlay.alpha = p;
-            SetCardScale(openCurve.Evaluate(p));
+            if (animateScale) SetCardScale(openCurve.Evaluate(p));
             yield return null;
         }
 
         _overlay.alpha = 1f;
-        SetCardScale(1f);
+        if (animateScale) SetCardScale(1f);
         OnOpened?.Invoke();
     }
 
@@ -100,13 +102,13 @@ public abstract class UIPanel : MonoBehaviour
             t += Time.unscaledDeltaTime;
             float p = Mathf.Clamp01(t / closeDuration);
             _overlay.alpha = 1f - p;
-            SetCardScale(closeCurve.Evaluate(p));
+            if (animateScale) SetCardScale(closeCurve.Evaluate(p));
             yield return null;
         }
 
         gameObject.SetActive(false);
         _overlay.alpha = 1f;
-        SetCardScale(1f);
+        if (animateScale) SetCardScale(1f);
         OnClosed?.Invoke();
     }
 
