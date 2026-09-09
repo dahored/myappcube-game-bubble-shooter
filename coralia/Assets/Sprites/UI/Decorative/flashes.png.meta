@@ -1,0 +1,1820 @@
+fileFormatVersion: 2
+guid: c2a3c5ba5ab3d4bc99675260c5be6c12
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 8314596096987197645
+    second: flashes_0
+  - first:
+      213: -2958011682244901403
+    second: flashes_1
+  - first:
+      213: -6997194751613198230
+    second: flashes_2
+  - first:
+      213: -5084520994085299090
+    second: flashes_3
+  - first:
+      213: -784721903920974138
+    second: flashes_4
+  - first:
+      213: -10002476153758853
+    second: flashes_5
+  - first:
+      213: 8112091808602288676
+    second: flashes_6
+  - first:
+      213: -8325707713772670135
+    second: flashes_7
+  - first:
+      213: 5507374718149288986
+    second: flashes_8
+  - first:
+      213: 1045662737270386800
+    second: flashes_9
+  - first:
+      213: 4288226434404560681
+    second: flashes_10
+  - first:
+      213: 4569217464036039942
+    second: flashes_11
+  - first:
+      213: -481215003351348461
+    second: flashes_12
+  - first:
+      213: 5848237077270416270
+    second: flashes_13
+  - first:
+      213: -8413781848153715054
+    second: flashes_14
+  - first:
+      213: 2837592854179895332
+    second: flashes_15
+  - first:
+      213: 554001639920014313
+    second: flashes_16
+  - first:
+      213: 325882603311966748
+    second: flashes_17
+  - first:
+      213: -5855163900003456517
+    second: flashes_18
+  - first:
+      213: -3721825217674889942
+    second: flashes_19
+  - first:
+      213: 3869068760432695220
+    second: flashes_20
+  - first:
+      213: 1957281347897061781
+    second: flashes_21
+  - first:
+      213: -8084173727767043084
+    second: flashes_22
+  - first:
+      213: 3559322446489338415
+    second: flashes_23
+  - first:
+      213: 4617324188353034516
+    second: flashes_24
+  - first:
+      213: -5454130640118904681
+    second: flashes_25
+  - first:
+      213: 7082383317042612980
+    second: flashes_26
+  - first:
+      213: -6941402437568296703
+    second: flashes_27
+  - first:
+      213: -5251442504491264786
+    second: flashes_28
+  - first:
+      213: 9066892928437812320
+    second: flashes_29
+  - first:
+      213: 6664539423970990476
+    second: flashes_30
+  - first:
+      213: 3788529666432435280
+    second: flashes_31
+  - first:
+      213: 7142781316742024783
+    second: flashes_32
+  - first:
+      213: 8663748573866181702
+    second: flashes_33
+  - first:
+      213: 6002115107759169885
+    second: flashes_34
+  - first:
+      213: 8904054183226034608
+    second: flashes_35
+  - first:
+      213: 7823278155320803650
+    second: flashes_36
+  - first:
+      213: 3825843971796940145
+    second: flashes_37
+  - first:
+      213: -4974170849421917041
+    second: flashes_38
+  - first:
+      213: -7434376982568614063
+    second: flashes_39
+  - first:
+      213: -8580756154114234839
+    second: flashes_40
+  - first:
+      213: 6642328368798660704
+    second: flashes_41
+  - first:
+      213: -1672367821302583683
+    second: flashes_42
+  - first:
+      213: -6018760729792427836
+    second: flashes_43
+  - first:
+      213: 4669563996437634236
+    second: flashes_44
+  - first:
+      213: 4160960359080909746
+    second: flashes_45
+  - first:
+      213: -1808653444287873773
+    second: flashes_46
+  - first:
+      213: -679306734146872209
+    second: flashes_47
+  - first:
+      213: 8351724267610489065
+    second: flashes_48
+  - first:
+      213: 8640823869786414642
+    second: flashes_49
+  - first:
+      213: 9057663238413253744
+    second: flashes_50
+  - first:
+      213: -4018814832754647305
+    second: flashes_51
+  - first:
+      213: -4270743447731511672
+    second: flashes_52
+  - first:
+      213: -8876565367579031934
+    second: flashes_53
+  - first:
+      213: -1912148256322700105
+    second: flashes_54
+  - first:
+      213: 703659460236792040
+    second: flashes_55
+  - first:
+      213: -3442708260787921667
+    second: flashes_56
+  - first:
+      213: -8712545848288618130
+    second: flashes_57
+  - first:
+      213: -3990722354670035590
+    second: flashes_58
+  - first:
+      213: 8988283590071047883
+    second: flashes_59
+  - first:
+      213: -731754863054447151
+    second: flashes_60
+  - first:
+      213: 2309959020747486885
+    second: flashes_61
+  - first:
+      213: 3726064416351487056
+    second: flashes_62
+  - first:
+      213: -300921256202543746
+    second: flashes_63
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: flashes_0
+      rect:
+        serializedVersion: 2
+        x: 232
+        y: 610
+        width: 36
+        height: 75
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dc075cbf811636370800000000000000
+      internalID: 8314596096987197645
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_1
+      rect:
+        serializedVersion: 2
+        x: 294
+        y: 573
+        width: 22
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5e546561c0803f6d0800000000000000
+      internalID: -2958011682244901403
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_2
+      rect:
+        serializedVersion: 2
+        x: 359
+        y: 607
+        width: 13
+        height: 73
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a602ed53278f4ee90800000000000000
+      internalID: -6997194751613198230
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_3
+      rect:
+        serializedVersion: 2
+        x: 406
+        y: 574
+        width: 20
+        height: 66
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e6c978648172079b0800000000000000
+      internalID: -5084520994085299090
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_4
+      rect:
+        serializedVersion: 2
+        x: 465
+        y: 606
+        width: 35
+        height: 76
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6c67255069b1c15f0800000000000000
+      internalID: -784721903920974138
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_5
+      rect:
+        serializedVersion: 2
+        x: 139
+        y: 536
+        width: 55
+        height: 54
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7b1bf90dc67cdff0800000000000000
+      internalID: -10002476153758853
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_6
+      rect:
+        serializedVersion: 2
+        x: 209
+        y: 546
+        width: 40
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 422781d2580f39070800000000000000
+      internalID: 8112091808602288676
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_7
+      rect:
+        serializedVersion: 2
+        x: 475
+        y: 548
+        width: 36
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 943b9d022f4257c80800000000000000
+      internalID: -8325707713772670135
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_8
+      rect:
+        serializedVersion: 2
+        x: 536
+        y: 535
+        width: 53
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a14614870202e6c40800000000000000
+      internalID: 5507374718149288986
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_9
+      rect:
+        serializedVersion: 2
+        x: 46
+        y: 467
+        width: 75
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0703dd928b0f28e00800000000000000
+      internalID: 1045662737270386800
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_10
+      rect:
+        serializedVersion: 2
+        x: 122
+        y: 475
+        width: 59
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 92faf1bd837d28b30800000000000000
+      internalID: 4288226434404560681
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_11
+      rect:
+        serializedVersion: 2
+        x: 291
+        y: 499
+        width: 23
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 60d1165231f196f30800000000000000
+      internalID: 4569217464036039942
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_12
+      rect:
+        serializedVersion: 2
+        x: 324
+        y: 477
+        width: 16
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 31b87a801816259f0800000000000000
+      internalID: -481215003351348461
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_13
+      rect:
+        serializedVersion: 2
+        x: 359
+        y: 496
+        width: 12
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e8bc8f0f2ac192150800000000000000
+      internalID: 5848237077270416270
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_14
+      rect:
+        serializedVersion: 2
+        x: 385
+        y: 478
+        width: 16
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 29e0b2bbcfd3c3b80800000000000000
+      internalID: -8413781848153715054
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_15
+      rect:
+        serializedVersion: 2
+        x: 419
+        y: 496
+        width: 22
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 428549aaaa7216720800000000000000
+      internalID: 2837592854179895332
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_16
+      rect:
+        serializedVersion: 2
+        x: 423
+        y: 465
+        width: 24
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9e39a686e8530b700800000000000000
+      internalID: 554001639920014313
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_17
+      rect:
+        serializedVersion: 2
+        x: 546
+        y: 481
+        width: 56
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c1aa3e84084c58400800000000000000
+      internalID: 325882603311966748
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_18
+      rect:
+        serializedVersion: 2
+        x: 240
+        y: 457
+        width: 33
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bf96a9674774ebea0800000000000000
+      internalID: -5855163900003456517
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_19
+      rect:
+        serializedVersion: 2
+        x: 278
+        y: 462
+        width: 25
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a25b5600fab695cc0800000000000000
+      internalID: -3721825217674889942
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_20
+      rect:
+        serializedVersion: 2
+        x: 457
+        y: 457
+        width: 33
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4b7d625d981b1b530800000000000000
+      internalID: 3869068760432695220
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_21
+      rect:
+        serializedVersion: 2
+        x: 610
+        y: 461
+        width: 74
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 591f6ea0409a92b10800000000000000
+      internalID: 1957281347897061781
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_22
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 407
+        width: 66
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f366ed83de3fcf80800000000000000
+      internalID: -8084173727767043084
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_23
+      rect:
+        serializedVersion: 2
+        x: 189
+        y: 420
+        width: 43
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f22421038e0456130800000000000000
+      internalID: 3559322446489338415
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_24
+      rect:
+        serializedVersion: 2
+        x: 230
+        y: 423
+        width: 35
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 419f99bb2e7041040800000000000000
+      internalID: 4617324188353034516
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_25
+      rect:
+        serializedVersion: 2
+        x: 462
+        y: 427
+        width: 34
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 798832d74190f44b0800000000000000
+      internalID: -5454130640118904681
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_26
+      rect:
+        serializedVersion: 2
+        x: 498
+        y: 416
+        width: 44
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fa4a7f4a1ea94260800000000000000
+      internalID: 7082383317042612980
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_27
+      rect:
+        serializedVersion: 2
+        x: 572
+        y: 412
+        width: 65
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 10906b9924f2baf90800000000000000
+      internalID: -6941402437568296703
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_28
+      rect:
+        serializedVersion: 2
+        x: 211
+        y: 386
+        width: 39
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee419619dd02f17b0800000000000000
+      internalID: -5251442504491264786
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_29
+      rect:
+        serializedVersion: 2
+        x: 477
+        y: 389
+        width: 38
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 06c7908741314dd70800000000000000
+      internalID: 9066892928437812320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_30
+      rect:
+        serializedVersion: 2
+        x: 47
+        y: 359
+        width: 75
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c89906dbb433d7c50800000000000000
+      internalID: 6664539423970990476
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_31
+      rect:
+        serializedVersion: 2
+        x: 190
+        y: 359
+        width: 43
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0540cbcb8af839430800000000000000
+      internalID: 3788529666432435280
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_32
+      rect:
+        serializedVersion: 2
+        x: 495
+        y: 359
+        width: 43
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f4e84b473c1402360800000000000000
+      internalID: 7142781316742024783
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_33
+      rect:
+        serializedVersion: 2
+        x: 607
+        y: 359
+        width: 73
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6444798ec61db3870800000000000000
+      internalID: 8663748573866181702
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_34
+      rect:
+        serializedVersion: 2
+        x: 213
+        y: 323
+        width: 38
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d51adf2d3ebcb4350800000000000000
+      internalID: 6002115107759169885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_35
+      rect:
+        serializedVersion: 2
+        x: 477
+        y: 329
+        width: 39
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b9c40c9a1e819b70800000000000000
+      internalID: 8904054183226034608
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_36
+      rect:
+        serializedVersion: 2
+        x: 91
+        y: 293
+        width: 64
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24148f2680ed19c60800000000000000
+      internalID: 7823278155320803650
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_37
+      rect:
+        serializedVersion: 2
+        x: 189
+        y: 292
+        width: 44
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 175b60972d0281530800000000000000
+      internalID: 3825843971796940145
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_38
+      rect:
+        serializedVersion: 2
+        x: 234
+        y: 279
+        width: 35
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f848a1c77f138fab0800000000000000
+      internalID: -4974170849421917041
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_39
+      rect:
+        serializedVersion: 2
+        x: 463
+        y: 284
+        width: 35
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15748abf589c3d890800000000000000
+      internalID: -7434376982568614063
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_40
+      rect:
+        serializedVersion: 2
+        x: 495
+        y: 289
+        width: 44
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 92626c99db70be880800000000000000
+      internalID: -8580756154114234839
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_41
+      rect:
+        serializedVersion: 2
+        x: 573
+        y: 304
+        width: 66
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0687eb7757a4e2c50800000000000000
+      internalID: 6642328368798660704
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_42
+      rect:
+        serializedVersion: 2
+        x: 46
+        y: 234
+        width: 75
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d7e277db35e8ac8e0800000000000000
+      internalID: -1672367821302583683
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_43
+      rect:
+        serializedVersion: 2
+        x: 129
+        y: 210
+        width: 56
+        height: 41
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c8c6a84101197ca0800000000000000
+      internalID: -6018760729792427836
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_44
+      rect:
+        serializedVersion: 2
+        x: 241
+        y: 241
+        width: 33
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cbc5e9fd6bf9dc040800000000000000
+      internalID: 4669563996437634236
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_45
+      rect:
+        serializedVersion: 2
+        x: 283
+        y: 231
+        width: 24
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2bbdf7f9663beb930800000000000000
+      internalID: 4160960359080909746
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_46
+      rect:
+        serializedVersion: 2
+        x: 328
+        y: 212
+        width: 16
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 31d3f6b664f56e6e0800000000000000
+      internalID: -1808653444287873773
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_47
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 213
+        width: 17
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f6c15a9df1e9296f0800000000000000
+      internalID: -679306734146872209
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_48
+      rect:
+        serializedVersion: 2
+        x: 425
+        y: 234
+        width: 26
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9e0cee8d8f847e370800000000000000
+      internalID: 8351724267610489065
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_49
+      rect:
+        serializedVersion: 2
+        x: 456
+        y: 242
+        width: 33
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 23ed55d478f5ae770800000000000000
+      internalID: 8640823869786414642
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_50
+      rect:
+        serializedVersion: 2
+        x: 548
+        y: 219
+        width: 58
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 07c7cbcc9b843bd70800000000000000
+      internalID: 9057663238413253744
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_51
+      rect:
+        serializedVersion: 2
+        x: 606
+        y: 229
+        width: 75
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7fe9693c33d4a38c0800000000000000
+      internalID: -4018814832754647305
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_52
+      rect:
+        serializedVersion: 2
+        x: 142
+        y: 141
+        width: 53
+        height: 55
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 88ed22f26754bb4c0800000000000000
+      internalID: -4270743447731511672
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_53
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 190
+        width: 22
+        height: 44
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 286cae704da10d480800000000000000
+      internalID: -8876565367579031934
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_54
+      rect:
+        serializedVersion: 2
+        x: 359
+        y: 190
+        width: 12
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7bcb008ba4fa675e0800000000000000
+      internalID: -1912148256322700105
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_55
+      rect:
+        serializedVersion: 2
+        x: 414
+        y: 189
+        width: 23
+        height: 44
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8e0d14a0d86e3c900800000000000000
+      internalID: 703659460236792040
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_56
+      rect:
+        serializedVersion: 2
+        x: 534
+        y: 142
+        width: 54
+        height: 53
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dfcde6ab31b0930d0800000000000000
+      internalID: -3442708260787921667
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_57
+      rect:
+        serializedVersion: 2
+        x: 219
+        y: 124
+        width: 37
+        height: 58
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e69d37746b1d61780800000000000000
+      internalID: -8712545848288618130
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_58
+      rect:
+        serializedVersion: 2
+        x: 302
+        y: 89
+        width: 20
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a7d9ea4892b1e98c0800000000000000
+      internalID: -3990722354670035590
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_59
+      rect:
+        serializedVersion: 2
+        x: 414
+        y: 91
+        width: 23
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc658ae9d4cccbc70800000000000000
+      internalID: 8988283590071047883
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_60
+      rect:
+        serializedVersion: 2
+        x: 479
+        y: 129
+        width: 39
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1dd99fc34d848d5f0800000000000000
+      internalID: -731754863054447151
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_61
+      rect:
+        serializedVersion: 2
+        x: 227
+        y: 47
+        width: 36
+        height: 75
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5a6fc5d9d7f9e0020800000000000000
+      internalID: 2309959020747486885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_62
+      rect:
+        serializedVersion: 2
+        x: 358
+        y: 48
+        width: 13
+        height: 74
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0548ada58d3a5b330800000000000000
+      internalID: 3726064416351487056
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flashes_63
+      rect:
+        serializedVersion: 2
+        x: 460
+        y: 47
+        width: 36
+        height: 74
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e7ddeaa36b9e2dbf0800000000000000
+      internalID: -300921256202543746
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      flashes_0: 8314596096987197645
+      flashes_1: -2958011682244901403
+      flashes_10: 4288226434404560681
+      flashes_11: 4569217464036039942
+      flashes_12: -481215003351348461
+      flashes_13: 5848237077270416270
+      flashes_14: -8413781848153715054
+      flashes_15: 2837592854179895332
+      flashes_16: 554001639920014313
+      flashes_17: 325882603311966748
+      flashes_18: -5855163900003456517
+      flashes_19: -3721825217674889942
+      flashes_2: -6997194751613198230
+      flashes_20: 3869068760432695220
+      flashes_21: 1957281347897061781
+      flashes_22: -8084173727767043084
+      flashes_23: 3559322446489338415
+      flashes_24: 4617324188353034516
+      flashes_25: -5454130640118904681
+      flashes_26: 7082383317042612980
+      flashes_27: -6941402437568296703
+      flashes_28: -5251442504491264786
+      flashes_29: 9066892928437812320
+      flashes_3: -5084520994085299090
+      flashes_30: 6664539423970990476
+      flashes_31: 3788529666432435280
+      flashes_32: 7142781316742024783
+      flashes_33: 8663748573866181702
+      flashes_34: 6002115107759169885
+      flashes_35: 8904054183226034608
+      flashes_36: 7823278155320803650
+      flashes_37: 3825843971796940145
+      flashes_38: -4974170849421917041
+      flashes_39: -7434376982568614063
+      flashes_4: -784721903920974138
+      flashes_40: -8580756154114234839
+      flashes_41: 6642328368798660704
+      flashes_42: -1672367821302583683
+      flashes_43: -6018760729792427836
+      flashes_44: 4669563996437634236
+      flashes_45: 4160960359080909746
+      flashes_46: -1808653444287873773
+      flashes_47: -679306734146872209
+      flashes_48: 8351724267610489065
+      flashes_49: 8640823869786414642
+      flashes_5: -10002476153758853
+      flashes_50: 9057663238413253744
+      flashes_51: -4018814832754647305
+      flashes_52: -4270743447731511672
+      flashes_53: -8876565367579031934
+      flashes_54: -1912148256322700105
+      flashes_55: 703659460236792040
+      flashes_56: -3442708260787921667
+      flashes_57: -8712545848288618130
+      flashes_58: -3990722354670035590
+      flashes_59: 8988283590071047883
+      flashes_6: 8112091808602288676
+      flashes_60: -731754863054447151
+      flashes_61: 2309959020747486885
+      flashes_62: 3726064416351487056
+      flashes_63: -300921256202543746
+      flashes_7: -8325707713772670135
+      flashes_8: 5507374718149288986
+      flashes_9: 1045662737270386800
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

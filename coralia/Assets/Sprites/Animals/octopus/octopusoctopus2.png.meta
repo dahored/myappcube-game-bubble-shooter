@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: b0c6e5d6a9ba64fcdaa62beb4d105ce2
+guid: 26870d8d3074e4ca89ced7f2e5299821
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -804251006635738868
-    second: infinite_letter_0
+      213: -8482489201116290880
+    second: octopusoctopus2_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,7 +46,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -139,23 +139,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: infinite_letter_0
+      name: octopusoctopus2_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 300
-        height: 193
+        x: 40
+        y: 17
+        width: 347
+        height: 367
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c09f93778f9b6d4f0800000000000000
-      internalID: -804251006635738868
+      spriteID: 0c060648305284a80800000000000000
+      internalID: -8482489201116290880
       vertices: []
       indices: 
       edges: []
@@ -164,7 +164,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 309213ecaff404d7c84ef172714295df
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -174,7 +174,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      infinite_letter_0: -804251006635738868
+      octopusoctopus2_0: -8482489201116290880
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
