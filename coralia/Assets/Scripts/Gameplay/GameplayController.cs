@@ -15,6 +15,7 @@ public class GameplayController : MonoBehaviour
     [SerializeField] LosePanel         losePanel;
     [SerializeField] OutOfLivesPanel   outOfLivesPanel; // guard de entrada — ver Start() (issue #52)
     [SerializeField] TMP_Text          shotsLabel;
+    [SerializeField] ClaimPanel        claimPanel; // confirmación al comprar más disparos en NoMoreMovesPanel
 
     [Header("Sin disparos")]
     [Tooltip("Si está desactivado, al quedarse sin disparos se salta la oferta de monedas y se muestra LosePanel directo.")]
@@ -26,6 +27,8 @@ public class GameplayController : MonoBehaviour
 
     [Header("HUD")]
     [SerializeField] ProgressScoreView progressScore;
+    [SerializeField] TMP_Text          totalLivesText;  // vidas actuales al arrancar el nivel (GameDataWrapper/TotalLives)
+    [SerializeField] TMP_Text          levelNumberText; // "LV {id}" del nivel actual (GameDataWrapper/LevelNumberLabel)
 
     [Header("SFX (opcional — dejar vacío hasta tener los clips)")]
     [SerializeField] AudioClip popClip;
@@ -83,15 +86,24 @@ public class GameplayController : MonoBehaviour
         // chequeo de LevelMapController (issue #52). No arma el nivel si no hay vidas.
         // Acá, a diferencia del Level Map, cerrar el panel no puede dejar solo "esconderlo"
         // — no hay nivel armado detrás — así que su X manda de vuelta al mapa.
-        if (SaveManager.Lives <= 0)
+        if (!SaveManager.HasLivesAvailable)
         {
             // Ya se muestra acá — limpiar la bandera para que LevelMapController no lo
             // repita apenas GoToLevelMap() aterrice ahí (ver SaveManager.NotifyOutOfLivesOnMapLoad).
             SaveManager.NotifyOutOfLivesOnMapLoad = false;
 
+            // cannon.Update() corre igual aunque Init() nunca se haya llamado (_inputEnabled
+            // arranca en true por default) — sin esto, el timer de inactividad del tutorial
+            // seguía corriendo detrás del panel y terminaba mostrando "Hold to aim" mientras
+            // el nivel ni siquiera está armado (reportado por Diego). No hace falta
+            // rehabilitarlo después: este camino siempre termina en GoToLevelMap o en recargar
+            // la escena entera (RetryLoad), nunca en seguir jugando esta misma sesión.
+            cannon.SetInputEnabled(false);
+
             if (outOfLivesPanel != null)
             {
-                outOfLivesPanel.OnClosed += GoToLevelMap;
+                outOfLivesPanel.OnCloseButtonPressed += GoToLevelMap;
+                outOfLivesPanel.OnResolved           += RetryLoad; // compró un refill acá mismo — recién ahora hay vidas para armar el nivel
                 outOfLivesPanel.Open();
             }
             else Debug.LogWarning("[GameplayController] Falta asignar 'Out Of Lives Panel' en el Inspector.");
@@ -117,8 +129,16 @@ public class GameplayController : MonoBehaviour
             _creatureCell = new Vector2Int(_level.objective.creature_position[1], _level.objective.creature_position[0]);
         }
 
+        // Se setean una sola vez acá — a diferencia de LivesPillView (Level Map), acá no hace
+        // falta refrescar en vivo cada segundo: las vidas no cambian a mitad de una partida
+        // (perder la última siempre termina en un panel que corta la escena), y el nivel
+        // tampoco cambia sin recargar. Sin timer de regen porque en pleno juego no aplica.
+        if (totalLivesText)  totalLivesText.text  = SaveManager.Lives.ToString();
+        if (levelNumberText) levelNumberText.text = $"LV {_level.id}";
+
         grid.SpawnFromLevel(_level);
-        cannon.Init(_level.available_colors, _level.rainbow_chance);
+        _shotsRemaining = _level.max_shots; // antes de cannon.Init() — necesita el conteo ya listo para el primer RefreshPreview
+        cannon.Init(_level.available_colors, _level.rainbow_chance, _shotsRemaining);
         cannon.OnBubbleLanded += OnBubbleLanded;
 
         // noMoreShotsPanel puede no estar asignado todavía (WIP) — ya se avisó en
@@ -132,7 +152,6 @@ public class GameplayController : MonoBehaviour
         if (openPausedButton != null) openPausedButton.onClick.AddListener(OpenPaused);
         if (pausedPanel      != null) pausedPanel.OnResumePressed += OnResumePressed;
 
-        _shotsRemaining = _level.max_shots;
         RefreshShotsLabel();
     }
 
@@ -155,6 +174,9 @@ public class GameplayController : MonoBehaviour
         if (pausedPanel      == null) Debug.LogWarning("[GameplayController] Falta asignar 'Paused Panel' en el Inspector — el botón de pausa no va a hacer nada todavía.");
         if (openPausedButton == null) Debug.LogWarning("[GameplayController] Falta asignar 'Open Paused Button' en el Inspector.");
         if (progressScore    == null) Debug.LogWarning("[GameplayController] Falta asignar 'Progress Score' en el Inspector — la barra de score no se va a actualizar.");
+        if (totalLivesText   == null) Debug.LogWarning("[GameplayController] Falta asignar 'Total Lives Text' en el Inspector — el HUD no va a mostrar las vidas actuales.");
+        if (levelNumberText  == null) Debug.LogWarning("[GameplayController] Falta asignar 'Level Number Text' en el Inspector — el HUD no va a mostrar el número de nivel.");
+        if (claimPanel       == null) Debug.LogWarning("[GameplayController] Falta asignar 'Claim Panel' en el Inspector — comprar disparos extra no va a mostrar confirmación.");
 
         return ok;
     }
@@ -172,6 +194,10 @@ public class GameplayController : MonoBehaviour
     }
 
     void GoToLevelMap() => SceneLoader.GoTo(SceneLoader.LEVEL_MAP);
+
+    // El guard de entrada de Start() cortó ANTES de armar el nivel — recargar la escena entera
+    // es más simple y seguro que intentar "continuar" Start() a mitad de camino desde acá.
+    void RetryLoad() => SceneLoader.GoTo(SceneLoader.GAMEPLAY);
 
     // Pausa: solo bloquea input y congela el disparo en vuelo (si había uno) — el grid y
     // el HUD quedan tal cual se ven detrás del panel, no hace falta Time.timeScale.
@@ -192,13 +218,32 @@ public class GameplayController : MonoBehaviour
         int cost = noMoreShotsPanel.GetCost(_noMoreShotsUsedCount);
         if (SaveManager.Coins < cost) return; // el botón ya debería estar deshabilitado, defensivo
 
+        int shotsBonus = noMoreShotsPanel.ShotsBonus;
         SaveManager.Coins -= cost;
         _noMoreShotsUsedCount++;
-        _shotsRemaining += noMoreShotsPanel.ShotsBonus;
+        _shotsRemaining += shotsBonus;
         _levelEnded      = false;
         RefreshShotsLabel();
-        cannon.SetInputEnabled(true);
+        cannon.SetShotsRemaining(_shotsRemaining); // el "next" pudo estar oculto por quedarse sin disparos — vuelve a mostrarse con el bonus
         noMoreShotsPanel.Close();
+
+        // El input se re-habilita recién cuando ClaimPanel se cierra (no apenas se cierra
+        // NoMoreMovesPanel) — así no se puede disparar mientras la confirmación sigue abierta.
+        if (claimPanel)
+        {
+            claimPanel.ShowShots(shotsBonus);
+            claimPanel.OnClosed += HandleClaimClosed;
+
+            void HandleClaimClosed()
+            {
+                claimPanel.OnClosed -= HandleClaimClosed;
+                cannon.SetInputEnabled(true);
+            }
+        }
+        else
+        {
+            cannon.SetInputEnabled(true); // sin ClaimPanel asignado, no bloquear al jugador por un campo sin wirear
+        }
     }
 
     // El jugador cerró la oferta de NoMoreMovesPanel sin pagar -> derrota real.
@@ -224,6 +269,14 @@ public class GameplayController : MonoBehaviour
 
         _shotsRemaining--;
         RefreshShotsLabel();
+        // CannonController tiene su propia copia del conteo (para current/next) — sin este
+        // aviso se desincroniza y sigue mostrando el "next" aunque ya no queden disparos para
+        // usarlo. Versión "silently" (sin refrescar la preview ya mismo): ResolveImpact() está
+        // a mitad de camino resolviendo este mismo disparo y va a lanzar su propia animación
+        // (AnimateNextIntoCurrent) apenas termine — usar SetShotsRemaining acá revelaba la
+        // bola de destino de golpe ANTES de que el clon viajero llegara, rompiendo el efecto
+        // de "llegada" (reportado por Diego).
+        cannon.UpdateShotsRemainingSilently(_shotsRemaining);
 
         var removed = ResolveMatchAndDrop(landedCell);
         if (removed.Contains(_creatureCell)) _creatureFreed = true;

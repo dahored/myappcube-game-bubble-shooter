@@ -46,7 +46,18 @@ public class ResourcePillView : MonoBehaviour
     public void SetTimer(TimeSpan remaining)
     {
         if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
-        if (valueText) valueText.text = $"{(int)remaining.TotalMinutes:00}:{remaining.Seconds:00}";
+        if (valueText) valueText.text = FormatTimer(remaining);
+    }
+
+    // Formato adaptable según la magnitud — mostrar siempre MM:SS se vuelve ilegible en el
+    // pill apenas el boost de vidas infinitas acumula varias horas (ej. "899:26", reportado
+    // por Diego). Por debajo de 1h el segundo exacto importa (cuenta regresiva de vida cada
+    // 30 min); por encima, alcanza con una precisión más gruesa.
+    static string FormatTimer(TimeSpan remaining)
+    {
+        if (remaining.TotalDays >= 1d)  return $"{(int)remaining.TotalDays}d {remaining.Hours:00}h";
+        if (remaining.TotalHours >= 1d) return $"{(int)remaining.TotalHours}h {remaining.Minutes:00}m";
+        return $"{(int)remaining.TotalMinutes:00}:{remaining.Seconds:00}";
     }
 
     public void SetInfinite()

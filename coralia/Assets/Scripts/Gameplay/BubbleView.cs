@@ -7,14 +7,27 @@ using UnityEngine.UI;
 // IPointerClickHandler: permite tocar directamente una burbuja del grid para apuntar y
 // disparar hacia ella (pedido de Diego, visto en otros bubble shooters) — alternativa rápida
 // al drag normal desde el cañón. CannonController se suscribe vía GridController.OnBubbleTapped.
-public class BubbleView : MonoBehaviour, IPointerClickHandler
+//
+// También reenvía drag (IBeginDrag/IDrag/IEndDrag): el sistema de eventos de Unity solo sube
+// por los ANCESTROS del objeto tocado buscando quién maneja el drag, nunca cruza a hermanos —
+// como AimArea es hermano de las burbujas (no ancestro), si el gesto de apuntado empieza
+// justo encima de una burbuja, nunca llegaba a AimInputRelay. Con gran parte de la pantalla
+// cubierta de burbujas, en la práctica el drag solo funcionaba en los huecos vacíos (reportado
+// por Diego, comparando con otros bubble shooters que dejan apuntar desde cualquier lado).
+public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [SerializeField] Image bubbleImage;
     [SerializeField] Image creatureIcon;
 
     public event System.Action<BubbleView> OnTapped;
+    public event System.Action<Vector2> OnDragBegin;
+    public event System.Action<Vector2> OnDragMove;
+    public event System.Action<Vector2> OnDragEnd;
 
     public void OnPointerClick(PointerEventData eventData) => OnTapped?.Invoke(this);
+    public void OnBeginDrag(PointerEventData eventData)    => OnDragBegin?.Invoke(eventData.position);
+    public void OnDrag(PointerEventData eventData)         => OnDragMove?.Invoke(eventData.position);
+    public void OnEndDrag(PointerEventData eventData)      => OnDragEnd?.Invoke(eventData.position);
 
     const float POP_DURATION      = 0.25f; // GDD 1.5 — animación de explosión
     const float DROP_GRAVITY      = 2600f; // px/s² — caída acelerada en vez de velocidad constante, se siente más real

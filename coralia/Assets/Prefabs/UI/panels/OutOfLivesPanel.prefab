@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8244824691925338662}
   - component: {fileID: 9038039442596184441}
   - component: {fileID: 7434679249688066778}
+  - component: {fileID: 7947518684397041809}
   m_Layer: 0
   m_Name: CloseButton
   m_TagString: Untagged
@@ -33,11 +34,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1726337610299953126}
-  m_Father: {fileID: 5010842468966745950}
+  m_Father: {fileID: 7329082018484531316}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -20, y: -20}
+  m_AnchoredPosition: {x: -58.499943, y: -59.000027}
   m_SizeDelta: {x: 117, y: 118}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &9086814316083664213
@@ -151,6 +152,55 @@ MonoBehaviour:
   durationDown: 0.2
   clickSound: {fileID: 8300000, guid: a21737853c9534190a557f6d273baf36, type: 3}
   haptic: 1
+--- !u!114 &7947518684397041809
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 59370097476685051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf5aead4ad9ad4594b6efecd4a31ca86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PopInView
+  element: {fileID: 0}
+  delay: 0
+  popDuration: 0.35
+  popCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.7
+      value: 1.2
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  popSound: {fileID: 0}
 --- !u!1 &136341937666792073
 GameObject:
   m_ObjectHideFlags: 0
@@ -451,7 +501,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 169515424746241275}
+  - {fileID: 4783341311335335921}
   m_Father: {fileID: 4548716580754263175}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -787,6 +837,7 @@ GameObject:
   - component: {fileID: 8320349818659786449}
   - component: {fileID: 3802239082261035912}
   - component: {fileID: 1507595341556554995}
+  - component: {fileID: 3005766236884144250}
   m_Layer: 0
   m_Name: RefillLivesButton
   m_TagString: Untagged
@@ -807,10 +858,10 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3527149234735289827}
-  m_Father: {fileID: 5515174082190355569}
+  m_Father: {fileID: 4783341311335335921}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 473, y: 117}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -939,6 +990,55 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &3005766236884144250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3025413604850293454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf5aead4ad9ad4594b6efecd4a31ca86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PopInView
+  element: {fileID: 0}
+  delay: 0
+  popDuration: 0.35
+  popCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.7
+      value: 1.2
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  popSound: {fileID: 0}
 --- !u!1 &3039623475225773109
 GameObject:
   m_ObjectHideFlags: 0
@@ -969,7 +1069,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 5168435249880353848}
+  - {fileID: 7329082018484531316}
   - {fileID: 707291836414405712}
   - {fileID: 4548716580754263175}
   m_Father: {fileID: 8526040135443255975}
@@ -1172,6 +1272,118 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &3462412134691088475
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7329082018484531316}
+  - component: {fileID: 8651569985849511035}
+  m_Layer: 0
+  m_Name: CloseButtonWrapper
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7329082018484531316
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3462412134691088475}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5168435249880353848}
+  m_Father: {fileID: 5010842468966745950}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 380, y: 457.037}
+  m_SizeDelta: {x: 117, y: 118.00003}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &8651569985849511035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3462412134691088475}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cba8e2db8f2cd490b88ef890004b1fd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GelatineAnimation_v2
+  duration: 3
+  startDelay: 0
+  squashAmountX: 0.03
+  squashAmountY: 0.03
+  enableSway: 0
+  swayAngle: 6
+  swayDuration: 4
+--- !u!1 &3714443317913526129
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4783341311335335921}
+  - component: {fileID: 9220746427136400608}
+  m_Layer: 0
+  m_Name: RefillLivesButtonWrapper
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4783341311335335921
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3714443317913526129}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 169515424746241275}
+  m_Father: {fileID: 5515174082190355569}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 473, y: 117}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &9220746427136400608
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3714443317913526129}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cba8e2db8f2cd490b88ef890004b1fd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GelatineAnimation_v2
+  duration: 3
+  startDelay: 0
+  squashAmountX: 0.03
+  squashAmountY: 0.03
+  enableSway: 0
+  swayAngle: 6
+  swayDuration: 4
 --- !u!1 &4352281150276687138
 GameObject:
   m_ObjectHideFlags: 0
@@ -1700,6 +1912,8 @@ MonoBehaviour:
   card: {fileID: 5010842468966745950}
   openDuration: 0.25
   closeDuration: 0.18
+  openSound: {fileID: 0}
+  animateScale: 1
   openCurve:
     serializedVersion: 2
     m_Curve:
@@ -1768,6 +1982,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   closeButton: {fileID: 9038039442596184441}
   refillButton: {fileID: 8320349818659786449}
+  refillLivesPanel: {fileID: 0}
 --- !u!1 &8571034479243018827
 GameObject:
   m_ObjectHideFlags: 0

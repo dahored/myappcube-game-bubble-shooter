@@ -49,6 +49,13 @@ public class GridController : MonoBehaviour
     public event System.Action<Vector2Int> OnBubbleTapped;
     void HandleBubbleViewTapped(BubbleView view) => OnBubbleTapped?.Invoke(view.Cell);
 
+    // Reenvío de drag iniciado sobre una burbuja — mismo destino que AimInputRelay
+    // (CannonController.OnAimBegin/OnAimDrag/OnAimEnd), para que apuntar arrastrando funcione
+    // igual empiece donde empiece el gesto, no solo en huecos vacíos del grid.
+    public event System.Action<Vector2> OnBubbleDragBegin;
+    public event System.Action<Vector2> OnBubbleDragMove;
+    public event System.Action<Vector2> OnBubbleDragEnd;
+
     void Awake()
     {
         _rt = (RectTransform)transform;
@@ -150,7 +157,7 @@ public class GridController : MonoBehaviour
         var go   = Instantiate(bubblePrefab, transform);
         var view = go.GetComponent<BubbleView>();
         view.Setup(cell, color, SpriteFor(color));
-        view.OnTapped += HandleBubbleViewTapped;
+        SubscribeBubbleInput(view);
         _cells[cell] = view;
         return view;
     }
@@ -162,8 +169,16 @@ public class GridController : MonoBehaviour
         view.transform.SetParent(transform, false);
         view.SetCell(cell);
         ((RectTransform)view.transform).anchoredPosition = HexGridMath.CellToLocalPos(cell);
-        view.OnTapped += HandleBubbleViewTapped; // esta instancia nunca pasó por PlaceBubble (viene de CannonController.Fire)
+        SubscribeBubbleInput(view); // esta instancia nunca pasó por PlaceBubble (viene de CannonController.Fire)
         _cells[cell] = view;
+    }
+
+    void SubscribeBubbleInput(BubbleView view)
+    {
+        view.OnTapped    += HandleBubbleViewTapped;
+        view.OnDragBegin += p => OnBubbleDragBegin?.Invoke(p);
+        view.OnDragMove  += p => OnBubbleDragMove?.Invoke(p);
+        view.OnDragEnd   += p => OnBubbleDragEnd?.Invoke(p);
     }
 
     public bool IsOccupied(Vector2Int cell) => _cells.ContainsKey(cell);

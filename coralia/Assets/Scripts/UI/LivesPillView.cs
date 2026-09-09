@@ -10,6 +10,7 @@ using UnityEngine;
 public class LivesPillView : MonoBehaviour
 {
     [SerializeField] ResourcePillView pill;
+    [SerializeField] RefillLivesPanel refillLivesPanel; // el "+" del pill abre esto (issue #53)
 
     const float REFRESH_INTERVAL = 1f;
     float _timer;
@@ -17,6 +18,8 @@ public class LivesPillView : MonoBehaviour
     void Awake()
     {
         if (!pill) Debug.LogWarning("[LivesPillView] Falta asignar 'Pill' en el Inspector.");
+        if (!refillLivesPanel) Debug.LogWarning("[LivesPillView] Falta asignar 'Refill Lives Panel' en el Inspector — el '+' no va a abrir nada.");
+        if (pill) pill.OnPlusClicked += () => refillLivesPanel?.Open();
     }
 
     void OnEnable()

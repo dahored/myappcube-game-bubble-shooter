@@ -20,11 +20,24 @@ public class CannonController : MonoBehaviour
     [SerializeField] float          shotSpeed = 1500f; // GDD 1.5
     [SerializeField] AudioClip      shootClip; // opcional — dejar vacío hasta tener el clip
     [SerializeField] AudioClip      landClip;  // opcional — al pegarse al grid (distinto del match/pop, que ya suena en BubbleView)
+    [SerializeField] AudioClip      swapClip;  // opcional — al tocar Current para intercambiarlo con Next
+
+    [Header("Swap manual (tap en Current)")]
+    [SerializeField] float swapPopDuration = 0.15f;
+    [SerializeField] float swapPopScale    = 0.25f; // qué tan grande llega el pico del pop (1 + esto)
 
     [Header("Animación: 'next' rueda hacia 'current' (almeja) tras cada disparo")]
     [SerializeField] Image           travelingBubbleImage;   // clon temporal — Image aparte, inactivo por defecto, mismo tamaño que Current/Next
     [SerializeField] float           nextIntoCurrentDuration = 0.2f;
     [SerializeField] AnimationCurve  nextIntoCurrentCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+    // Cada "frame" es un GameObject aparte (OctopusSprite1/2/3), no un solo Image que cambia
+    // de sprite — se activa uno y se apagan los otros dos, sin Animator.
+    [Header("Octopus — mascota que entrega la next bubble (3 GameObjects, uno visible a la vez)")]
+    [SerializeField] GameObject octopusIdleSprite;  // OctopusSprite1 — reposo entre disparos
+    [SerializeField] GameObject octopusThrowSprite; // OctopusSprite2 — el lanzamiento, dura lo mismo que el viaje de la bola (nextIntoCurrentDuration)
+    [SerializeField] GameObject octopusWaitSprite;  // OctopusSprite3 — espera breve justo después de entregar, antes de volver a reposo
+    [SerializeField] float      octopusWaitHold = 0.15f; // cuánto se ve el Sprite3 — único tiempo nuevo, todo lo demás reusa nextIntoCurrentDuration
 
     [Header("Mano fantasma — cómo disparar (issue #7)")]
     [SerializeField] ShootHintView shootHint;     // opcional — dejar vacío hasta tener el prefab
@@ -39,6 +52,7 @@ public class CannonController : MonoBehaviour
     List<string>      _availableColors;
     List<BubbleColor> _availableColorsParsed; // fallback de RollColor() si el grid se queda sin colores rastreables
     float             _rainbowChance;
+    int          _shotsRemaining;
     BubbleColor  _current;
     BubbleColor  _next;
     ShotBubble   _flyingShot;
@@ -77,6 +91,13 @@ public class CannonController : MonoBehaviour
             grid.SetMuzzleReferenceY(_muzzleLocalBase.y);
             grid.RecomputeScroll();
             grid.OnBubbleTapped += HandleBubbleTapped;
+
+            // Drag que empieza justo encima de una burbuja — mismo destino que AimInputRelay
+            // (AimArea), para poder apuntar arrastrando desde cualquier parte de la pantalla,
+            // no solo los huecos vacíos del grid (pedido de Diego).
+            grid.OnBubbleDragBegin += OnAimBegin;
+            grid.OnBubbleDragMove  += OnAimDrag;
+            grid.OnBubbleDragEnd   += OnAimEnd;
         }
     }
 
@@ -103,20 +124,40 @@ public class CannonController : MonoBehaviour
         }
     }
 
-    public void Init(List<string> availableColors, float rainbowChance)
+    public void Init(List<string> availableColors, float rainbowChance, int shotsRemaining)
     {
         _availableColors       = availableColors;
         _availableColorsParsed = new List<BubbleColor>();
         foreach (var c in availableColors) _availableColorsParsed.Add(BubbleColorExtensions.Parse(c));
-        _rainbowChance = rainbowChance;
+        _rainbowChance   = rainbowChance;
+        _shotsRemaining  = shotsRemaining;
         _current = RollColor();
         _next    = RollColor();
         RefreshPreview();
+        SetOctopusSprite(octopusIdleSprite);
 
         // Obligatorio mientras nunca se haya disparado en todo el juego (en la práctica,
         // siempre nivel 1) — no depende del idle timer, se muestra ya mismo.
         if (!SaveManager.HasFiredFirstShot) ShowHint();
     }
+
+    // Llamado por GameplayController cuando suma el bonus de NoMoreMovesPanel — ahí sí hace
+    // falta refrescar YA (el "next" pudo haber quedado oculto por quedarse sin disparos, y
+    // acá no hay ninguna animación de por medio que vaya a mostrar el resultado después).
+    public void SetShotsRemaining(int remaining)
+    {
+        _shotsRemaining = remaining;
+        RefreshPreview();
+    }
+
+    // Llamado por GameplayController.OnBubbleLanded justo al gastar el disparo — a propósito
+    // SIN refrescar la preview: ResolveImpact() está a mitad de camino resolviendo este mismo
+    // disparo y va a lanzar AnimateNextIntoCurrent() apenas termine, que ya muestra el
+    // resultado en el momento correcto. Si acá se llamara a SetShotsRemaining (con refresh),
+    // currentBubbleImage se revelaba de golpe ANTES de que el clon viajero llegara, rompiendo
+    // el efecto de "llegada" (reportado por Diego). Solo actualiza el conteo interno para que
+    // esa animación, un instante después, calcule bien si hay/no hay next.
+    public void UpdateShotsRemainingSilently(int remaining) => _shotsRemaining = remaining;
 
     public void SetInputEnabled(bool enabled)
     {
@@ -315,9 +356,17 @@ public class CannonController : MonoBehaviour
     // un swap manual bidireccional no encaja con una animación de un solo sentido.
     IEnumerator AnimateNextIntoCurrent()
     {
-        if (!travelingBubbleImage)
+        // Mismo criterio de RefreshPreview: sin disparos no hay "current" que mostrar — antes
+        // esta corutina ignoraba _shotsRemaining por completo y siempre terminaba reactivando
+        // currentBubbleImage sin condición, dejando una bola visible en el cañón después del
+        // último disparo (reportado por Diego).
+        bool hasCurrent = _shotsRemaining > 0;
+        bool hasNext    = _shotsRemaining > 1;
+
+        if (!hasCurrent || !travelingBubbleImage)
         {
-            RefreshPreview(); // sin el clon asignado en el Editor, cae al swap instantáneo de siempre
+            RefreshPreview(); // sin disparos, o sin el clon asignado en el Editor: cae al camino de siempre
+            SetOctopusSprite(octopusIdleSprite);
             yield break;
         }
 
@@ -331,6 +380,11 @@ public class CannonController : MonoBehaviour
         travelRT.anchoredPosition = fromPos;
         travelingBubbleImage.gameObject.SetActive(true);
 
+        // Sprite1 -> Sprite2 justo cuando arranca el viaje — el lanzamiento dura lo mismo que
+        // la bola tarda en llegar, no un tiempo aparte (pedido de Diego: reusar el timing que
+        // ya existe en vez de inventar uno nuevo).
+        SetOctopusSprite(octopusThrowSprite);
+
         float time = 0f;
         while (time < nextIntoCurrentDuration)
         {
@@ -343,7 +397,21 @@ public class CannonController : MonoBehaviour
         travelingBubbleImage.gameObject.SetActive(false);
         currentBubbleImage.sprite  = grid.SpriteFor(_current);
         currentBubbleImage.enabled = true;
-        nextBubbleImage.sprite     = grid.SpriteFor(_next); // el nuevo "next" recién aparece cuando el clon ya llegó
+        nextBubbleImage.enabled    = hasNext; // sin next si este disparo que llega es el último que queda
+        if (hasNext) nextBubbleImage.sprite = grid.SpriteFor(_next); // recién aparece cuando el clon ya llegó
+
+        // Sprite2 -> Sprite3 al llegar (la nueva "next" ya está puesta arriba) -> pausa breve
+        // -> Sprite1 de nuevo, listo para el próximo ciclo.
+        SetOctopusSprite(octopusWaitSprite);
+        yield return new WaitForSeconds(octopusWaitHold);
+        SetOctopusSprite(octopusIdleSprite);
+    }
+
+    void SetOctopusSprite(GameObject frame)
+    {
+        if (octopusIdleSprite)  octopusIdleSprite.SetActive(frame == octopusIdleSprite);
+        if (octopusThrowSprite) octopusThrowSprite.SetActive(frame == octopusThrowSprite);
+        if (octopusWaitSprite)  octopusWaitSprite.SetActive(frame == octopusWaitSprite);
     }
 
     void SwapCurrentAndNext()
@@ -351,6 +419,35 @@ public class CannonController : MonoBehaviour
         if (_flyingShot != null) return; // GDD 1.3: swap es gratis pero no durante el vuelo
         (_current, _next) = (_next, _current);
         RefreshPreview();
+        StartCoroutine(SwapPopFeedback());
+    }
+
+    // El swap en sí es instantáneo (RefreshPreview ya cambió los sprites arriba) — esto es
+    // solo el "aviso" de que pasó algo: un pop rápido y simétrico en las dos burbujas, más
+    // sonido/háptico, mismo criterio que el resto de eventos del cañón (pedido de Diego: sin
+    // esto el cambio pasaba desapercibido).
+    IEnumerator SwapPopFeedback()
+    {
+        AudioManager.Instance?.PlaySfx(swapClip); // no hace nada si está vacío
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
+
+        Vector3 baseCurrent = currentBubbleImage.transform.localScale;
+        Vector3 baseNext    = nextBubbleImage.transform.localScale;
+
+        float t = 0f;
+        while (t < swapPopDuration)
+        {
+            t += Time.deltaTime;
+            // 0 -> 1 -> 0 simétrico (mitad de un seno) en vez de un overshoot con rebote —
+            // acá el pop es solo un guiño rápido, no necesita el peso de un pop completo.
+            float p = Mathf.Sin(Mathf.Clamp01(t / swapPopDuration) * Mathf.PI);
+            float scale = 1f + swapPopScale * p;
+            currentBubbleImage.transform.localScale = baseCurrent * scale;
+            nextBubbleImage.transform.localScale    = baseNext * scale;
+            yield return null;
+        }
+        currentBubbleImage.transform.localScale = baseCurrent;
+        nextBubbleImage.transform.localScale    = baseNext;
     }
 
     // Smart queue: solo ofrece colores que todavía están en el grid, para no regalar
@@ -365,10 +462,18 @@ public class CannonController : MonoBehaviour
         return pool[Random.Range(0, pool.Count)];
     }
 
+    // "Current" solo se muestra si queda al menos 1 disparo; "next" solo si queda más de 1
+    // (si no, no habría con qué disparar después del actual) — antes se mostraban siempre
+    // los dos sin importar cuántos disparos quedaban de verdad.
     void RefreshPreview()
     {
-        currentBubbleImage.sprite  = grid.SpriteFor(_current);
-        currentBubbleImage.enabled = true; // por si venía oculta de Fire() — vuelve a mostrarse con el color ya rotado
-        nextBubbleImage.sprite     = grid.SpriteFor(_next);
+        bool hasCurrent = _shotsRemaining > 0;
+        bool hasNext    = _shotsRemaining > 1;
+
+        currentBubbleImage.enabled = hasCurrent; // por si venía oculta de Fire() — vuelve a mostrarse con el color ya rotado
+        if (hasCurrent) currentBubbleImage.sprite = grid.SpriteFor(_current);
+
+        nextBubbleImage.enabled = hasNext;
+        if (hasNext) nextBubbleImage.sprite = grid.SpriteFor(_next);
     }
 }

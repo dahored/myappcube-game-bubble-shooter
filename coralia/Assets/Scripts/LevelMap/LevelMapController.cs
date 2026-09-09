@@ -228,7 +228,7 @@ public class LevelMapController : MonoBehaviour
 
     void OnLevelSelected(int levelId)
     {
-        if (SaveManager.Lives <= 0) { ShowOutOfLives(); return; }
+        if (!SaveManager.HasLivesAvailable) { ShowOutOfLives(); return; }
 
         var level = LevelLoader.LoadById(levelId);
         if (level == null)

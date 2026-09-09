@@ -13,6 +13,7 @@ public static class SaveManager
     const string KEY_LIVES            = "lives";
     const string KEY_NEXT_LIFE_AT     = "next_life_at";     // unix seconds (string) — vacío = sin timer corriendo
     const string KEY_INFINITE_LIVES_UNTIL = "infinite_lives_until"; // unix seconds (string) — vacío = sin boost activo
+    const string KEY_REFILL_LIMIT_PURCHASE_COUNT = "refill_limit_purchase_count"; // RefillLivesPanel — alterna descuento por compra
     const string KEY_SOUND_MUSIC      = "vol_music";
     const string KEY_SOUND_SFX        = "vol_sfx";
     const string KEY_SOUND_UI         = "vol_ui";
@@ -149,6 +150,8 @@ public static class SaveManager
     // estaba regenerando, no se reinicia el timer en curso).
     public static void LoseLife()
     {
+        if (IsInfiniteLivesActive) return; // el boost activo hace que perder no cueste nada
+
         int current = Lives; // ya aplica regen pendiente antes de restar
         if (current <= 0) return;
         bool wasFull = current >= MAX_LIVES;
@@ -168,16 +171,35 @@ public static class SaveManager
         return remaining > 0 ? TimeSpan.FromSeconds(remaining) : TimeSpan.Zero;
     }
 
-    // Boost de vidas infinitas por tiempo limitado (GDD §7/§9 — compra todavía sin definir,
-    // ver issue #53). Esto solo guarda el vencimiento; otorgar el boost es responsabilidad
-    // de quien implemente la compra.
+    // Boost de vidas infinitas por tiempo limitado (RefillLivesPanel, issue #53). Se acumula
+    // sobre el tiempo restante en vez de pisarlo — comprar de nuevo con el boost ya activo
+    // suma duration al vencimiento actual, no lo resetea a "ahora + duration" (eso hubiera
+    // hecho perder el tiempo que ya quedaba, reportado por Diego).
     public static void GrantInfiniteLives(TimeSpan duration)
     {
-        PlayerPrefs.SetString(KEY_INFINITE_LIVES_UNTIL, DateTimeOffset.UtcNow.Add(duration).ToUnixTimeSeconds().ToString());
+        var remaining = TimeUntilInfiniteLivesEnds(); // TimeSpan.Zero si no hay boost activo
+        var newExpiry = DateTimeOffset.UtcNow.Add(remaining).Add(duration);
+        PlayerPrefs.SetString(KEY_INFINITE_LIVES_UNTIL, newExpiry.ToUnixTimeSeconds().ToString());
         PlayerPrefs.Save();
     }
 
     public static bool IsInfiniteLivesActive => TimeUntilInfiniteLivesEnds() > TimeSpan.Zero;
+
+    // Único punto de verdad de "¿puede jugar?" — reemplaza los chequeos sueltos de
+    // "Lives <= 0" en GameplayController/LevelMapController, que antes ignoraban el boost
+    // de vidas infinitas (bug: comprar el boost no evitaba el bloqueo si Lives ya estaba en 0).
+    public static bool HasLivesAvailable => Lives > 0 || IsInfiniteLivesActive;
+
+    // RefillLivesPanel (issue #53): descuento alterna por compra de "rellenar vidas" — 1ra
+    // compra con descuento, 2da sin, 3ra con, etc. (pedido de Diego). No aplica a la compra
+    // de vidas infinitas.
+    public static int RefillLimitPurchaseCount
+    {
+        get => PlayerPrefs.GetInt(KEY_REFILL_LIMIT_PURCHASE_COUNT, 0);
+        set { PlayerPrefs.SetInt(KEY_REFILL_LIMIT_PURCHASE_COUNT, value); PlayerPrefs.Save(); }
+    }
+
+    public static bool NextRefillLimitHasDiscount => RefillLimitPurchaseCount % 2 == 0;
 
     public static TimeSpan TimeUntilInfiniteLivesEnds()
     {
