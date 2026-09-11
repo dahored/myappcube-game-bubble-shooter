@@ -25,6 +25,8 @@ public class WorldSphereNodePositioner : MonoBehaviour
 
     [Tooltip("El componente del DragArea que gira la esfera — para poder posicionar el mapa en el nodo actual al abrirlo.")]
     [SerializeField] WorldSphereDragRotate dragRotate;
+    [Tooltip("Opcional — el camino que une los nodos. Se dibuja solo cuando el recorrido ya está armado.")]
+    [SerializeField] WorldSpherePathRibbon pathRibbon;
 
     [Header("Entrar al nivel (mismo flujo que LevelMapController)")]
     [Tooltip("Objetivo + boosters antes de entrar a Gameplay. Si se deja vacío, se navega directo.")]
@@ -90,6 +92,13 @@ public class WorldSphereNodePositioner : MonoBehaviour
     public float CurrentNodeAngle { get; private set; }
     public float AngleSpacing => angleSpacing;
 
+    // Geometría del recorrido, para que otros puedan dibujar sobre él (ej. el camino).
+    // Las rotaciones son las de REPOSO de cada nodo, en el espacio local de la esfera.
+    public IReadOnlyList<Quaternion> NodeRotations     => _restRotations;
+    public IReadOnlyList<int>        NodeChapters      => _chapters;
+    public float                     SurfaceRadiusLocal => _baseRadius;
+    public float                     SphereScale        => _sphereScale;
+
     Transform[] _nodes;
     Quaternion[] _restRotations;
     Camera      _cam;
@@ -97,6 +106,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
     float       _sphereScale;
     bool        _isFlat;       // el prefab es de UI (plano) y no una primitiva con volumen
     float[]       _lateralDeg;  // desvío del zigzag de cada nodo, para saber de qué lado va la card
+    int[]         _chapters;    // capítulo de cada nodo, para cortar el camino entre capítulos
     RectTransform _playerCard;
     Quaternion    _playerCardRot;
     float         _cardRadius;
@@ -127,6 +137,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
         _nodes      = new Transform[count];
         _restRotations = new Quaternion[count];
         _lateralDeg    = new float[count];
+        _chapters      = new int[count];
 
         // El "frente" NO es el -Z local de la esfera: es el punto de la superficie más cercano a
         // la cámara, que depende de dónde esté puesta la esfera. Con la esfera abajo y adelante,
@@ -197,6 +208,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
             node.localRotation = rot; // parado sobre la superficie
             _restRotations[i]  = rot;
             _lateralDeg[i]     = lateral;
+            _chapters[i]       = levels.Count > 0 ? levels[i].chapter : 1;
 
             // 'Node Size' es siempre el diámetro en unidades de MUNDO. Un prefab de UI mide
             // cientos (píxeles) en su propio espacio y una primitiva mide 1, así que hay que
@@ -248,6 +260,9 @@ public class WorldSphereNodePositioner : MonoBehaviour
         // entonces en el lugar del nodo 2. 'Top Padding' recorta todavía un poco más.
         float travel = offset - bottomPadding;
         AngleMax = Mathf.Max(0f, travel - angleSpacing - topPadding);
+
+        // El camino se dibuja recién acá, cuando el recorrido de todos los nodos ya está calculado.
+        if (pathRibbon) pathRibbon.Build();
 
         // Si no hay ninguno disponible (capítulos terminados), se queda en el último.
         if (currentIndex < 0) currentIndex = count - 1;
