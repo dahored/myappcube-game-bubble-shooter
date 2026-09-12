@@ -1,0 +1,22 @@
+{
+  "chapter": 1,
+  "name": "Cala Apagada",
+  "decorations": [
+    { "id": "decoration_1", "at": -0.4, "side": "left",  "offset": 2.6 },
+    { "id": "seashell",     "at": 0.2,  "side": "right", "offset": 2.2, "scale": 0.7 },
+    { "id": "decoration_2", "at": 0.8,  "side": "left",  "offset": 3.4 },
+    { "id": "decoration_3", "at": 1.5,  "side": "right", "offset": 2.8 },
+    { "id": "decoration_1", "at": 2.1,  "side": "left",  "offset": 2.3, "flip": true },
+    { "id": "decoration_4", "at": 2.9,  "side": "right", "offset": 3.6 },
+    { "id": "seashell",     "at": 3.4,  "side": "left",  "offset": 2.0, "scale": 0.6 },
+    { "id": "decoration_5", "at": 4.0,  "side": "left",  "offset": 3.2 },
+    { "id": "decoration_2", "at": 4.6,  "side": "right", "offset": 2.5, "flip": true },
+    { "id": "decoration_6", "at": 5.3,  "side": "left",  "offset": 2.7 },
+    { "id": "decoration_3", "at": 6.0,  "side": "right", "offset": 3.3, "flip": true },
+    { "id": "decoration_1", "at": 6.7,  "side": "left",  "offset": 2.4 },
+    { "id": "seashell",     "at": 7.2,  "side": "right", "offset": 2.1, "scale": 0.8 },
+    { "id": "decoration_4", "at": 7.9,  "side": "left",  "offset": 3.5, "flip": true },
+    { "id": "decoration_5", "at": 8.5,  "side": "right", "offset": 2.6 },
+    { "id": "decoration_6", "at": 9.3,  "side": "left",  "offset": 3.0, "flip": true }
+  ]
+}

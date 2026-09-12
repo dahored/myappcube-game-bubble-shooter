@@ -13,6 +13,12 @@ public class GelatineAnimation : MonoBehaviour
     [Header("Squash & stretch")]
     [SerializeField] float duration      = 3f; // segundos por ciclo completo
     [SerializeField] float startDelay;         // offset inicial — variar entre varias plantas para que no se muevan todas igual
+    [Tooltip("Si está tildado, ignora 'Start Delay' y sortea uno nuevo (entre 0.5 y 2.5s) cada vez que corre el script — evita tener que variarlo a mano planta por planta.")]
+    [SerializeField] bool  randomDelay;
+    [Tooltip("Si está tildado, ignora 'Duration' y sortea uno nuevo (entre Duration Min/Max) cada vez que corre el script.")]
+    [SerializeField] bool  randomDuration;
+    [SerializeField] float durationMin = 8f;
+    [SerializeField] float durationMax = 12f;
     [SerializeField, Range(0f, 0.5f)] float squashAmount = 0.1f; // qué tan lejos de 1 llega la escala en cada extremo — antes hardcodeado, ahora editable por instancia
 
     [Header("Balanceo ondulatorio (opcional)")]
@@ -29,6 +35,8 @@ public class GelatineAnimation : MonoBehaviour
     void Awake()
     {
         _baseScale = transform.localScale;
+        if (randomDelay) startDelay = Random.Range(0.5f, 2.5f);
+        if (randomDuration) duration = Random.Range(durationMin, durationMax);
         _t         = startDelay / duration;
         _swayT     = startDelay / swayDuration;
 

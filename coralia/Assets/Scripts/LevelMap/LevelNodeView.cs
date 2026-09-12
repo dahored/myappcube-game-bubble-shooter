@@ -29,6 +29,12 @@ public class LevelNodeView : MonoBehaviour
     [SerializeField] Sprite spriteCurrent;  // morado — nivel disponible para jugar
     [SerializeField] Sprite spriteGold;     // dorado — completado en el primer intento
 
+    [Header("Materiales — nodo (opcional, experimento LevelMapCurve — dejar vacío en LevelMap real)")]
+    [Tooltip("Si se asigna, pisa el Material de 'background' además del sprite (ej. shader Coralia/GlossyCircle) — si se deja vacío, no toca el Material y el LevelMap real sigue igual que siempre.")]
+    [SerializeField] Material materialDefault;
+    [SerializeField] Material materialCurrent;
+    [SerializeField] Material materialGold;
+
     [Header("Pulse — nodo actual")]
     [SerializeField] float pulseMin      = 1.00f;
     [SerializeField] float pulseMax      = 1.10f;
@@ -90,6 +96,18 @@ public class LevelNodeView : MonoBehaviour
             case NodeState.Completed:        background.sprite = spriteDefault; break;
             case NodeState.CompleteFirstTry: background.sprite = spriteGold;    break;
         }
+
+        // Material opcional (experimento LevelMapCurve) — si no se asignó ninguno de los 3, no
+        // se toca nada acá, así el LevelMap real (que nunca asigna estos campos) sigue exactamente igual.
+        Material stateMaterial = state switch
+        {
+            NodeState.Locked           => materialDefault,
+            NodeState.Available        => materialCurrent,
+            NodeState.Completed        => materialDefault,
+            NodeState.CompleteFirstTry => materialGold,
+            _ => null,
+        };
+        if (stateMaterial) background.material = stateMaterial;
 
         // StarRow visible si el nivel está pasado (los StarFieldX de fondo, siempre grises,
         // quedan visibles ahí adentro por defecto) — Star1/2/3 (dorados) son los que se
