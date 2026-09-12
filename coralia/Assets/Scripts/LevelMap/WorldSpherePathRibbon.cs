@@ -36,7 +36,9 @@ public class WorldSpherePathRibbon : MonoBehaviour
     [SerializeField] float sampleLength = 0.25f;
 
     [Header("Textura")]
-    [Tooltip("Cuántas unidades de MUNDO ocupa una repetición completa de la textura a lo largo del camino.")]
+    [Tooltip("Mantiene la textura sin deformar: a lo largo se repite cada tantas unidades como mide el ancho del camino. Desmárcalo para fijar el largo a mano.")]
+    [SerializeField] bool  textureKeepAspect = true;
+    [Tooltip("Solo si 'Texture Keep Aspect' está desmarcado. Cuántas unidades de MUNDO ocupa una repetición completa a lo largo del camino.")]
     [SerializeField] float textureLength = 4f;
 
     Mesh _mesh;
@@ -134,7 +136,7 @@ public class WorldSpherePathRibbon : MonoBehaviour
         for (int r = 0; r <= rows; r++)
         {
             float f = -overrun + (float)r / rows * spanF;
-            probe[r] = SamplePath(nodeDirs, f, positioner.AngleSpacing);
+            probe[r] = WorldSpherePath.Sample(nodeDirs, f, positioner.AngleSpacing);
             if (r > 0) probeDist[r] = probeDist[r - 1] + Vector3.Angle(probe[r - 1], probe[r]) * Mathf.Deg2Rad * radiusWorld;
         }
 
@@ -175,7 +177,10 @@ public class WorldSpherePathRibbon : MonoBehaviour
             // queda redondeado en vez de cortado en seco.
             float taper = Taper(rowDist[r], capLength) * Taper(totalLength - rowDist[r], capLength);
             float half  = halfWidthRad * taper;
-            float v     = rowDist[r] / Mathf.Max(textureLength, 0.0001f);
+            // A lo ancho la textura entra una vez en 'width'. Para que no salga deformada, a lo
+            // largo tiene que repetirse a ese mismo ritmo — si no, se estira en el sentido de avance.
+            float repeat = textureKeepAspect ? width : textureLength;
+            float v      = rowDist[r] / Mathf.Max(repeat, 0.0001f);
 
             for (int c = 0; c < across; c++)
             {
@@ -283,62 +288,4 @@ public class WorldSpherePathRibbon : MonoBehaviour
         return Mathf.Sqrt(Mathf.Max(0f, 1f - x * x));
     }
 
-    // Punto del camino en la posición 'f' (en "índice de nodo").
-    //
-    // Dentro del rango de nodos manda la spline. Fuera, la prolongación se hace con un arco RECTO
-    // en la dirección de salida: extrapolar la spline hacia afuera hace que se curve sola — el
-    // polinomio cúbico se dispara — y el remate redondo termina montado sobre esa torcedura,
-    // dejando un pico en la punta.
-    static Vector3 SamplePath(Vector3[] pts, float f, float anglePerNode)
-    {
-        int last = pts.Length - 1;
-        if (f >= 0f && f <= last) return SampleCurve(pts, f);
-
-        bool  atStart = f < 0f;
-        float overrun = atStart ? -f : f - last;
-
-        Vector3 anchor = atStart ? pts[0] : pts[last];
-        Vector3 inside = SampleCurve(pts, atStart ? 0.05f : last - 0.05f);
-
-        // Dirección de salida: del interior hacia el extremo, tumbada sobre la superficie.
-        Vector3 outward = anchor - inside;
-        outward = (outward - Vector3.Dot(outward, anchor) * anchor).normalized;
-        if (outward.sqrMagnitude < 0.5f) return anchor;
-
-        float rad = overrun * anglePerNode * Mathf.Deg2Rad;
-        return (anchor * Mathf.Cos(rad) + outward * Mathf.Sin(rad)).normalized;
-    }
-
-    // Catmull-Rom sobre las direcciones de los nodos: la curva pasa exactamente por cada nodo pero
-    // llega y sale con la misma pendiente, que es lo que elimina el quiebre en cada nivel.
-    static Vector3 SampleCurve(Vector3[] pts, float f)
-    {
-        int   i = Mathf.Clamp(Mathf.FloorToInt(f), 0, pts.Length - 2);
-        float t = f - i;
-
-        Vector3 p0 = Control(pts, i - 1);
-        Vector3 p1 = pts[i];
-        Vector3 p2 = pts[i + 1];
-        Vector3 p3 = Control(pts, i + 2);
-
-        float t2 = t * t;
-        float t3 = t2 * t;
-
-        Vector3 p = 0.5f * ((2f * p1)
-                          + (-p0 + p2) * t
-                          + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2
-                          + (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
-
-        // La interpolación se va hacia adentro de la esfera; volver a la superficie es normalizar.
-        return p.normalized;
-    }
-
-    // En los extremos no hay vecino, así que se espeja el siguiente — evita que la curva arranque
-    // o termine con una pendiente inventada.
-    static Vector3 Control(Vector3[] pts, int index)
-    {
-        if (index < 0)           return (2f * pts[0] - pts[1]).normalized;
-        if (index >= pts.Length) return (2f * pts[pts.Length - 1] - pts[pts.Length - 2]).normalized;
-        return pts[index];
-    }
 }

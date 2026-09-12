@@ -27,6 +27,8 @@ public class WorldSphereNodePositioner : MonoBehaviour
     [SerializeField] WorldSphereDragRotate dragRotate;
     [Tooltip("Opcional — el camino que une los nodos. Se dibuja solo cuando el recorrido ya está armado.")]
     [SerializeField] WorldSpherePathRibbon pathRibbon;
+    [Tooltip("Opcional — las decoraciones a los costados del camino, leídas del JSON de cada capítulo.")]
+    [SerializeField] WorldSphereDecorationPositioner decorations;
 
     [Header("Entrar al nivel (mismo flujo que LevelMapController)")]
     [Tooltip("Objetivo + boosters antes de entrar a Gameplay. Si se deja vacío, se navega directo.")]
@@ -261,8 +263,10 @@ public class WorldSphereNodePositioner : MonoBehaviour
         float travel = offset - bottomPadding;
         AngleMax = Mathf.Max(0f, travel - angleSpacing - topPadding);
 
-        // El camino se dibuja recién acá, cuando el recorrido de todos los nodos ya está calculado.
-        if (pathRibbon) pathRibbon.Build();
+        // El camino y las decoraciones se construyen recién acá, cuando el recorrido de todos los
+        // nodos ya está calculado — los dos se apoyan sobre él.
+        if (pathRibbon)  pathRibbon.Build();
+        if (decorations) decorations.Build();
 
         // Si no hay ninguno disponible (capítulos terminados), se queda en el último.
         if (currentIndex < 0) currentIndex = count - 1;
