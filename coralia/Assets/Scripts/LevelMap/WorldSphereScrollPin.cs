@@ -74,6 +74,10 @@ public class WorldSphereScrollPin : MonoBehaviour
     // inercia y por los desplazamientos automáticos, y no hay un único callback que cubra los tres.
     void Update()
     {
+        // El mapa se arma en varios frames; antes de eso el ángulo del nivel actual todavía no
+        // está calculado y el pin aparecería un instante sin motivo.
+        if (!positioner.Ready) return;
+
         float away      = positioner.CurrentNodeAngle - dragRotate.CurrentAngle;
         float threshold = nodesThreshold * positioner.AngleSpacing;
 

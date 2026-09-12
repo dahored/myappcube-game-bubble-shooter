@@ -16,6 +16,7 @@ public class SceneTransition : MonoBehaviour
     const float FADE_IN_DURATION  = 0.3f;
     const float ANIM_DURATION     = 2.5f;
     const float FADE_OUT_DURATION = 0.3f;
+    const float READY_TIMEOUT = 3f; // tope de espera a que la escena termine de armarse
     const int   BUBBLE_COUNT_BACK  = 60;
     const int   BUBBLE_COUNT_FRONT = 50;
     const float SIZE_BACK_MIN  = 200f;
@@ -129,6 +130,18 @@ public class SceneTransition : MonoBehaviour
     IEnumerator WaitThenFade(AsyncOperation op)
     {
         yield return new WaitUntil(() => op.isDone);
+
+        // "Cargada" no es lo mismo que "lista": una escena puede seguir armándose durante varios
+        // frames después de activarse (ver SceneReady). Si se descubre la pantalla antes, se ve el
+        // armado a medias. El tope evita quedarse colgado si alguien olvidó liberar su Hold().
+        float waited = 0f;
+        while (!SceneReady.IsReady && waited < READY_TIMEOUT)
+        {
+            waited += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        SceneReady.Clear();
+
         yield return Fade(1f, 0f, FADE_OUT_DURATION);
     }
 

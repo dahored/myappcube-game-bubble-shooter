@@ -78,6 +78,12 @@ public class WorldSphereNodePositioner : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] float faceCameraMax   = 1f;
 
+    [Header("Rendimiento")]
+    [Tooltip("Cuántos nodos se instancian por frame. Armar el mapa entero en un solo frame traba la animación de transición justo al final. Como en ese momento la pantalla está tapada por el fundido, repartirlo no se ve.")]
+    [SerializeField] int nodesPerFrame = 6;
+    [Tooltip("A cuántos grados del frente se apaga un nodo. Los que quedan detrás del horizonte no se ven pero igual se dibujan y se procesan — apagarlos es el mayor ahorro del mapa. 0 = no apagar ninguno.")]
+    [SerializeField] float cullRange = 55f;
+
     [Header("Padding (en grados)")]
     [Tooltip("En reposo, cuánto se levanta el nodo 1 del punto justo debajo de la cámara — para que no quede pegado al borde de abajo.")]
     [SerializeField] float bottomPadding = 6f;
@@ -93,6 +99,10 @@ public class WorldSphereNodePositioner : MonoBehaviour
     // usan los pines para saber si el jugador se alejó del nivel disponible y para volver a él.
     public float CurrentNodeAngle { get; private set; }
     public float AngleSpacing => angleSpacing;
+
+    // El mapa se arma a lo largo de varios frames, así que hasta que esto no sea true los valores
+    // de arriba todavía no son definitivos.
+    public bool Ready { get; private set; }
 
     // Geometría del recorrido, para que otros puedan dibujar sobre él (ej. el camino).
     // Las rotaciones son las de REPOSO de cada nodo, en el espacio local de la esfera.
@@ -114,12 +124,32 @@ public class WorldSphereNodePositioner : MonoBehaviour
     float         _cardRadius;
     Coroutine     _cardMove;
 
-    void Start()
+    bool _held;
+
+    void Awake()
     {
-        if (!sphere) { Debug.LogWarning("[WorldSphereNodePositioner] Falta asignar 'Sphere' en el Inspector."); return; }
+        // El mapa se arma a lo largo de varios frames, así que le pide a la transición que no
+        // descubra la pantalla hasta que termine.
+        SceneReady.Hold();
+        _held = true;
+    }
+
+    void ReleaseHold()
+    {
+        if (!_held) return;
+        _held = false;
+        SceneReady.Release();
+    }
+
+    void OnDestroy() => ReleaseHold();
+
+    // Corrutina y no Start() normal: ver 'Nodes Per Frame'.
+    IEnumerator Start()
+    {
+        if (!sphere) { Debug.LogWarning("[WorldSphereNodePositioner] Falta asignar 'Sphere' en el Inspector."); ReleaseHold(); yield break; }
 
         var cam = worldCamera ? worldCamera : Camera.main;
-        if (!cam) { Debug.LogWarning("[WorldSphereNodePositioner] No hay cámara (ni 'World Camera' asignada ni Camera.main)."); return; }
+        if (!cam) { Debug.LogWarning("[WorldSphereNodePositioner] No hay cámara (ni 'World Camera' asignada ni Camera.main)."); ReleaseHold(); yield break; }
         _cam = cam;
 
         var levels = LoadAllLevels();
@@ -177,6 +207,9 @@ public class WorldSphereNodePositioner : MonoBehaviour
 
         for (int i = 0; i < count; i++)
         {
+            // Se cede el frame cada tantos nodos para no trabar la animación de transición.
+            if (nodesPerFrame > 0 && i > 0 && i % nodesPerFrame == 0) yield return null;
+
             // Separación pareja entre niveles, más un hueco extra al cambiar de capítulo — así
             // los capítulos se leen como tramos distintos del camino sin necesitar ningún dato
             // nuevo en el JSON: alcanza con el campo 'chapter' que los niveles ya traen.
@@ -282,7 +315,9 @@ public class WorldSphereNodePositioner : MonoBehaviour
         if (!dragRotate)
         {
             Debug.LogWarning("[WorldSphereNodePositioner] Falta asignar 'Drag Rotate' en el Inspector — el mapa va a abrir en el nodo 1 en vez del actual.");
-            return;
+            Ready = true;
+            ReleaseHold();
+            yield break;
         }
 
         if (justCompletedIndex >= 0)
@@ -297,6 +332,9 @@ public class WorldSphereNodePositioner : MonoBehaviour
             // Entrada normal al mapa: directo al nivel disponible.
             dragRotate.JumpTo(currentAngle);
         }
+
+        Ready = true;
+        ReleaseHold();
     }
 
     // Mismo criterio que LevelMapController.PlayCompletionSequence(): deja que el mapa asiente un
@@ -331,7 +369,18 @@ public class WorldSphereNodePositioner : MonoBehaviour
             // esfera, sale de la posición actual del nodo, así no hay que rastrear el scroll.
             Vector3 outward = (node.position - sphere.position).normalized;
             float   away    = Vector3.Angle(outward, frontDir);
-            float   t       = (1f - Mathf.Clamp01(away / faceCameraRange)) * faceCameraMax;
+
+            // Los nodos que quedaron detrás del horizonte no se ven: apagarlos saca de la cuenta
+            // su Canvas, sus cilindros y sus sombras. Transform.position sigue siendo válido
+            // aunque el objeto esté apagado, así que esto se puede evaluar igual cada frame.
+            if (cullRange > 0.01f)
+            {
+                bool visible = away <= cullRange;
+                if (node.gameObject.activeSelf != visible) node.gameObject.SetActive(visible);
+                if (!visible) continue;
+            }
+
+            float t = (1f - Mathf.Clamp01(away / faceCameraRange)) * faceCameraMax;
 
             // La altura acompaña al giro: un nodo plano acostado no necesita levantarse nada,
             // pero al enderezarse gira sobre su centro y su mitad de abajo se enterraría.
