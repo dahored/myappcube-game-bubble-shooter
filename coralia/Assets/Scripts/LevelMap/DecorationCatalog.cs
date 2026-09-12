@@ -30,6 +30,9 @@ public class DecorationCatalog : ScriptableObject
         [Tooltip("Variación de tamaño al azar, como fracción. 0.2 = hasta 20% más grande o más chico.")]
         [Range(0f, 0.6f)]
         public float sizeVariation = 0.15f;
+
+        [Tooltip("Ancho de la sombra de contacto en unidades de MUNDO. En 0 se calcula del alto — súbelo en piezas anchas y bajas, como una roca chata.")]
+        public float shadowWidth;
     }
 
     [SerializeField] Entry[] entries;

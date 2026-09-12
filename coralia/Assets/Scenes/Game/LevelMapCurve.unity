@@ -494,6 +494,37 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 2817202749637503339, guid: 60522c6550b264786bae1d1d8fe52eee, type: 3}
   m_PrefabInstance: {fileID: 53427326}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &54720717
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 54720718}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &54720718
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 54720717}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.39977, y: -0.58086, z: -5.31388}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &58184264
 GameObject:
   m_ObjectHideFlags: 0
@@ -2431,6 +2462,7 @@ Transform:
   - {fileID: 796965310}
   - {fileID: 1112379735}
   - {fileID: 40516030}
+  - {fileID: 1079508373}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &601587117
@@ -3407,6 +3439,7 @@ MonoBehaviour:
   worldCamera: {fileID: 0}
   dragRotate: {fileID: 1084414388}
   pathRibbon: {fileID: 1665893802}
+  decorations: {fileID: 1079508372}
   startGamePanel: {fileID: 2134257804}
   outOfLivesPanel: {fileID: 691907224}
   nodePrefab: {fileID: 9175291161930039358, guid: 738d1fdfa4e11420ba02b58686badf61, type: 3}
@@ -3425,6 +3458,8 @@ MonoBehaviour:
   zigzagPeriod: 4
   faceCameraRange: 56
   faceCameraMax: 0
+  nodesPerFrame: 6
+  cullRange: 55
   bottomPadding: 5
   topPadding: 0
 --- !u!4 &796965310
@@ -4018,6 +4053,60 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   popSound: {fileID: 0}
+--- !u!1 &1079508371
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1079508373}
+  - component: {fileID: 1079508372}
+  m_Layer: 0
+  m_Name: Decorations
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1079508372
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1079508371}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa6a26efea4914df28e1202da1ba084a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WorldSphereDecorationPositioner
+  positioner: {fileID: 796965309}
+  sphere: {fileID: 491838901}
+  catalog: {fileID: 11400000, guid: 6cee3a7b8e65b4881b78a86744f930d9, type: 2}
+  worldCamera: {fileID: 0}
+  sink: 0.05
+  cameraOffset: 0.3
+  cullRange: 55
+  contactShadow: 1
+  shadowColor: {r: 0, g: 0.06, b: 0.16, a: 0.4}
+  shadowScale: 0.8
+--- !u!4 &1079508373
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1079508371}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 593939763}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1084414386
 GameObject:
   m_ObjectHideFlags: 0
@@ -4069,9 +4158,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorldSphereDragRotate
   sphere: {fileID: 491838901}
-  dragSpeed: 0.004
+  dragSpeed: 0.006
   nodePositioner: {fileID: 796965309}
-  decelerationRate: 0.002
+  decelerationRate: 0.005
 --- !u!114 &1084414389
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4619,14 +4708,14 @@ RectTransform:
   - {fileID: 58455699}
   - {fileID: 2020300065}
   - {fileID: 1970351473}
+  - {fileID: 705602690}
+  - {fileID: 342455046}
   - {fileID: 765818508}
   - {fileID: 300409664}
   - {fileID: 691907225}
   - {fileID: 858054907}
   - {fileID: 2134257803}
   - {fileID: 1847672080}
-  - {fileID: 342455046}
-  - {fileID: 705602690}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -5375,7 +5464,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 65.55368, y: -52}
+  m_AnchoredPosition: {x: 65.55371, y: -51.999634}
   m_SizeDelta: {x: 270.9123, y: 364.1773}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1392643786
@@ -5874,7 +5963,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorldSpherePathRibbon
   positioner: {fileID: 796965309}
   pathMaterial: {fileID: 2100000, guid: a4ab21100a2dd4aba82359510929e39b, type: 2}
-  width: 2
+  width: 4
   lift: 0.03
   extend: 4
   endCapLength: 1
@@ -7967,3 +8056,4 @@ SceneRoots:
   - {fileID: 667721663}
   - {fileID: 1583541690}
   - {fileID: 1397182235}
+  - {fileID: 54720718}
