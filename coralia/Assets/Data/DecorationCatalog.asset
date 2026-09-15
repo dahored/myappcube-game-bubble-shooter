@@ -13,9 +13,63 @@ MonoBehaviour:
   m_Name: DecorationCatalog
   m_EditorClassIdentifier: Assembly-CSharp::DecorationCatalog
   entries:
+  - id: group_1
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: 213ecc42ecbc54b5bb886ba8c8f0ac23, type: 3}
+    height: 2.5
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: group_2
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: f6a057c0bddfe4e97b12f35e3d9b137a, type: 3}
+    height: 2.5
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: group_3
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: dd2d33a4e31204aa596adaca7180b3f2, type: 3}
+    height: 2.5
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: group_4
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: 05006a90f8df34fbe891dd0d32a3bc9c, type: 3}
+    height: 2.5
+    sizeVariation: 0
+    shadowWidth: 3
   - id: rock_1
     sprite: {fileID: 21300000, guid: 7abe2f9497a744b15a82e8a89d016874, type: 3}
     prefab: {fileID: 0}
-    height: 3
+    height: 2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: rock_2
+    sprite: {fileID: 21300000, guid: 98de1e8159c554e4ea053799b8c36598, type: 3}
+    prefab: {fileID: 0}
+    height: 2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: plants_2
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: f6f88c3f78bd94395b2e822f7a9b6404, type: 3}
+    height: 1.2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: plants_1
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: 34401a93649d444adb4504c0d3584b98, type: 3}
+    height: 1.2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: rock_4
+    sprite: {fileID: 21300000, guid: 9ecfa9a429f574bcbb1ca915863870ab, type: 3}
+    prefab: {fileID: 0}
+    height: 2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: rock_3
+    sprite: {fileID: 21300000, guid: a3b3dee6dc66643848bd363b1993750b, type: 3}
+    prefab: {fileID: 0}
+    height: 2
     sizeVariation: 0
     shadowWidth: 3

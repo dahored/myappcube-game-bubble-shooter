@@ -14,6 +14,14 @@ public class DecorationTextureImporter : AssetPostprocessor
     const string FOLDER   = "Assets/Sprites/Decorations/";
     const int    MAX_SIZE = 512;
 
+    // Sesgo de mipmap: le dice a la GPU que use un nivel más nítido del que le correspondería por
+    // distancia. Sin esto, una pieza cerca del horizonte se resuelve con unos pocos píxeles, casi
+    // todos de BORDE — donde el alfa no es 1 — y la pieza entera se ve translúcida mucho antes de
+    // estar realmente lejos. En -1 el desvanecimiento arranca al doble de distancia.
+    //
+    // Unity ya no expone este campo en el Inspector, solo se puede poner por código.
+    const float MIP_BIAS = -1f;
+
     void OnPreprocessTexture()
     {
         if (!assetPath.StartsWith(FOLDER)) return;
@@ -26,8 +34,18 @@ public class DecorationTextureImporter : AssetPostprocessor
         if (!importer.importSettingsMissing) return;
 
         Apply(importer);
+
+        // El pivot solo se pone en la primera importación. Es un valor por defecto razonable para
+        // esta carpeta, pero en piezas irregulares hay que correrlo al punto de apoyo real, y eso
+        // no se puede adivinar por código.
+        var settings = new TextureImporterSettings();
+        importer.ReadTextureSettings(settings);
+        settings.spriteAlignment = (int)SpriteAlignment.BottomCenter;
+        importer.SetTextureSettings(settings);
     }
 
+    // Solo ajustes de textura. NO toca el pivot: esto se reaplica sobre assets ya trabajados y
+    // pisarles el pivot les borraría el ajuste manual.
     static void Apply(TextureImporter importer)
     {
         importer.textureType          = TextureImporterType.Sprite;
@@ -35,6 +53,7 @@ public class DecorationTextureImporter : AssetPostprocessor
         importer.mipmapEnabled        = true;   // sin esto, las piezas lejanas titilan al scrollear
         importer.mipMapsPreserveCoverage = true; // sin esto, se ven translúcidas a la distancia
         importer.alphaTestReferenceValue = 0.5f;
+        importer.mipMapBias              = MIP_BIAS;
         importer.wrapMode             = TextureWrapMode.Clamp;
         importer.maxTextureSize       = MAX_SIZE;
 
@@ -42,9 +61,7 @@ public class DecorationTextureImporter : AssetPostprocessor
         importer.ReadTextureSettings(settings);
         // Malla ajustada al contorno: con 'Full Rect' cada pieza pinta su PNG cuadrado entero,
         // transparencia incluida, y eso en móvil se paga en fill rate.
-        settings.spriteMeshType  = SpriteMeshType.Tight;
-        // Apoyadas en el suelo. En las piezas irregulares hay que ajustarlo a mano después.
-        settings.spriteAlignment = (int)SpriteAlignment.BottomCenter;
+        settings.spriteMeshType = SpriteMeshType.Tight;
         importer.SetTextureSettings(settings);
     }
 
@@ -63,8 +80,8 @@ public class DecorationTextureImporter : AssetPostprocessor
         if (!EditorUtility.DisplayDialog(
                 "Reaplicar ajustes de decoración",
                 $"Se van a reconfigurar {guids.Length} texturas de {FOLDER}\n\n" +
-                "Ojo: esto pisa el pivot de cada una y lo deja en Bottom Center. " +
-                "Los pivots ajustados a mano hay que volver a ponerlos.",
+                "Solo ajustes de textura: mipmaps, sesgo, tamaño y malla. " +
+                "Los pivots NO se tocan.",
                 "Aplicar", "Cancelar"))
             return;
 
