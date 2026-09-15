@@ -28,6 +28,8 @@ public class WorldSphereScrollPin : MonoBehaviour
 
     [Header("Animación")]
     [SerializeField] float fadeDuration = 0.20f;
+    [Tooltip("A partir de cuántos niveles de distancia el regreso es instantáneo en vez de animado. Animar un recorrido largo se ve como un borrón, y además obliga a reconstruir el mapa decenas de veces en un segundo.")]
+    [SerializeField] int instantBeyondNodes = 8;
 
     CanvasGroup   _cg;
     RectTransform _rt;
@@ -100,7 +102,16 @@ public class WorldSphereScrollPin : MonoBehaviour
     // Se engancha al Button del pin desde el Inspector.
     public void OnTap()
     {
-        if (dragRotate && positioner) dragRotate.AnimateTo(positioner.CurrentNodeAngle);
+        if (!dragRotate || !positioner) return;
+
+        float target   = positioner.CurrentNodeAngle;
+        float distance = Mathf.Abs(target - dragRotate.CurrentAngle);
+        float limit    = instantBeyondNodes * positioner.AngleSpacing;
+
+        // De cerca conviene animar: se entiende que el mapa volvió hacia el nivel actual. De lejos
+        // el giro deja de leerse como recorrido y pasa a ser un borrón, así que va directo.
+        if (instantBeyondNodes > 0 && distance > limit) dragRotate.JumpTo(target);
+        else                                            dragRotate.AnimateTo(target);
     }
 
     void StopJump()

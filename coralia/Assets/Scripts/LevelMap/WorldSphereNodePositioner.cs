@@ -106,13 +106,38 @@ public class WorldSphereNodePositioner : MonoBehaviour
 
     // Geometría del recorrido, para que otros puedan dibujar sobre él (ej. el camino).
     // Las rotaciones son las de REPOSO de cada nodo, en el espacio local de la esfera.
-    public IReadOnlyList<Quaternion> NodeRotations     => _restRotations;
     public IReadOnlyList<int>        NodeChapters      => _chapters;
+    public int                       LevelCount        => _restAngle?.Length ?? 0;
+
+    // Qué tramo de niveles está en pantalla ahora mismo. El camino y las decoraciones se
+    // reconstruyen sobre esta ventana en vez de sobre el capítulo entero.
+    public int WindowFirst { get; private set; }
+    public int WindowLast  { get; private set; }
+    public event System.Action OnWindowChanged;
     public float                     SurfaceRadiusLocal => _baseRadius;
     public float                     SphereScale        => _sphereScale;
 
-    Transform[] _nodes;
-    Quaternion[] _restRotations;
+    // Geometría de TODOS los niveles: son solo floats, así que tener miles no cuesta nada.
+    // Lo que se recicla son los objetos, no estos datos.
+    float[] _restAngle;     // ángulo de reposo de cada nivel
+    float[] _scrollAngle;   // cuánto hay que girar para centrarlo
+    List<LevelData> _levels;
+
+    // El grupo de nodos que se recicla. El slot de un nivel es su índice módulo el tamaño del
+    // grupo: como la ventana visible siempre es un tramo contiguo más corto que el grupo, dos
+    // niveles visibles nunca pueden caer en el mismo slot.
+    Transform[]  _pool;
+    int[]        _poolLevel;   // qué nivel tiene cada slot, -1 si está libre
+    Quaternion[] _poolRot;
+
+    float _frontAngle;        // punto de la esfera más cercano a la cámara
+    float _nodeRadius;        // radio de apoyo de los nodos, en unidades locales
+    int   _currentIndex = -1; // el nivel disponible
+    int   _justAdvancedFrom;
+
+    // Cuánto se deja ver por detrás del frente antes de soltar un nodo.
+    const float BACK_MARGIN = 12f;
+
     Camera      _cam;
     float       _baseRadius;   // radio de apoyo, en unidades locales de la esfera
     float       _sphereScale;
@@ -122,6 +147,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
     RectTransform _playerCard;
     Quaternion    _playerCardRot;
     float         _cardRadius;
+    float         _cardScrollAngle;  // a qué altura del recorrido está la card, sin dar la vuelta
     Coroutine     _cardMove;
 
     bool _held;
@@ -166,17 +192,18 @@ public class WorldSphereNodePositioner : MonoBehaviour
             Debug.LogWarning($"[WorldSphereNodePositioner] 'Debug Max Nodes' está en {debugMaxNodes} — se están mostrando solo los primeros {count} niveles. Ponlo en 0 para ver todos.");
         }
 
-        _nodes      = new Transform[count];
-        _restRotations = new Quaternion[count];
-        _lateralDeg    = new float[count];
-        _chapters      = new int[count];
+        _levels      = levels;
+        _restAngle   = new float[count];
+        _scrollAngle = new float[count];
+        _lateralDeg  = new float[count];
+        _chapters    = new int[count];
 
         // El "frente" NO es el -Z local de la esfera: es el punto de la superficie más cercano a
         // la cámara, que depende de dónde esté puesta la esfera. Con la esfera abajo y adelante,
         // ese punto queda decenas de grados por encima del -Z — si no se tiene en cuenta, el
         // nodo 1 termina detrás de la cámara y el orden se ve al revés.
-        Vector3 toCamera  = cam.transform.position - sphere.position;
-        float frontAngle  = Mathf.Atan2(toCamera.y, -toCamera.z) * Mathf.Rad2Deg;
+        Vector3 toCamera = cam.transform.position - sphere.position;
+        _frontAngle      = Mathf.Atan2(toCamera.y, -toCamera.z) * Mathf.Rad2Deg;
 
         // Todo sale del Scale real de la esfera, no de un campo a mano — así no puede quedar
         // desincronizado si se cambia la escala.
@@ -185,31 +212,18 @@ public class WorldSphereNodePositioner : MonoBehaviour
         _baseRadius  = SurfaceRadius(sphere);
         _sphereScale = sphereScale;
         _isFlat      = nodePrefab is RectTransform;
+        _nodeRadius  = _baseRadius + NodeLift(1f) / sphereScale;
 
-        float radius = _baseRadius + NodeLift(1f) / sphereScale;
+        _justAdvancedFrom = SaveManager.ConsumeJustAdvancedFromLevel();
+        int maxUnlocked   = SaveManager.MaxUnlockedLevel;
+        int currentIndex  = -1;
 
-        int   maxUnlocked = SaveManager.MaxUnlockedLevel;
-        float offset      = bottomPadding; // ángulo acumulado desde el frente
-
-        // Si GameplayController acaba de avanzar el progreso (issue #55), ese nivel arranca
-        // invisible y se revela con el pop + las estrellas en cadena, igual que en el mapa real.
-        // La bandera se CONSUME al leerla, así que solo la puede leer un mapa — y en esta escena
-        // LevelMapController está desactivado.
-        int           justAdvancedFrom   = SaveManager.ConsumeJustAdvancedFromLevel();
-        LevelNodeView justCompletedNode  = null;
-        int           justCompletedStars = 0;
-        bool          justCompletedGold  = false;
-        int           justCompletedIndex = -1;
-        int           currentIndex       = -1; // el nivel disponible, donde arranca el mapa
-
-        // Cuánto hay que girar para dejar cada nodo en la posición de arranque del nodo 1.
-        var scrollAngles = new float[count];
-
+        // Precálculo de la geometría de TODOS los niveles. Son cuatro arrays de números: aunque
+        // hubiera miles, el costo es despreciable. Lo caro son los GameObjects, y de esos solo se
+        // crean los del grupo reciclable.
+        float offset = bottomPadding;
         for (int i = 0; i < count; i++)
         {
-            // Se cede el frame cada tantos nodos para no trabar la animación de transición.
-            if (nodesPerFrame > 0 && i > 0 && i % nodesPerFrame == 0) yield return null;
-
             // Separación pareja entre niveles, más un hueco extra al cambiar de capítulo — así
             // los capítulos se leen como tramos distintos del camino sin necesitar ningún dato
             // nuevo en el JSON: alcanza con el campo 'chapter' que los niveles ya traen.
@@ -219,31 +233,34 @@ public class WorldSphereNodePositioner : MonoBehaviour
                 if (levels.Count > 0 && levels[i].chapter != levels[i - 1].chapter) offset += chapterGap;
             }
 
-            // Nivel 1 (i=0) justo arriba del frente (por 'Bottom Padding'), y de ahí subiendo
-            // hacia el horizonte: el menor abajo, el mayor arriba. Ese es su ángulo EN REPOSO.
-            float restAngle     = frontAngle + offset;
-            scrollAngles[i]     = offset - bottomPadding;
+            _restAngle[i]   = _frontAngle + offset;
+            _scrollAngle[i] = offset - bottomPadding;
+            _lateralDeg[i]  = zigzagPeriod > 0.01f
+                ? Mathf.Sin(i / zigzagPeriod * Mathf.PI * 2f) * zigzagAmount
+                : 0f;
+            _chapters[i]    = levels.Count > 0 ? levels[i].chapter : 1;
+
+            if (levels.Count > 0 && GetState(levels[i].id, maxUnlocked) == NodeState.Available)
+                currentIndex = i;
+        }
+
+        // Tamaño del grupo: lo que entra en la ventana visible más margen. Se calcula solo a
+        // partir del rango de descarte y la separación, así que si se cambia cualquiera de los
+        // dos sigue alcanzando sin tocar nada más.
+        float visibleSpan = (cullRange > 0.01f ? cullRange : 60f) + BACK_MARGIN;
+        int   poolSize    = Mathf.Min(count, Mathf.CeilToInt(visibleSpan / Mathf.Max(angleSpacing, 0.01f)) + 4);
+
+        _pool      = new Transform[poolSize];
+        _poolLevel = new int[poolSize];
+        _poolRot   = new Quaternion[poolSize];
+
+        for (int slot = 0; slot < poolSize; slot++)
+        {
+            // Se cede el frame cada tantos nodos para no trabar la animación de transición.
+            if (nodesPerFrame > 0 && slot > 0 && slot % nodesPerFrame == 0) yield return null;
 
             Transform node = nodePrefab ? Instantiate(nodePrefab, sphere) : CreatePlaceholder();
             node.SetParent(sphere, false);
-            node.name = levels.Count > 0 ? $"Node_{levels[i].id:000}" : $"NodeProto_{i + 1}";
-
-            // Dos rotaciones encadenadas sobre la esfera: el vaivén lateral (eje Y) desvía el
-            // camino a los costados, y el avance del recorrido (eje X) lo sube hacia el horizonte.
-            // Al componerlas sobre un vector unitario, el nodo queda siempre sobre la superficie
-            // — no hay forma de que el zigzag lo despegue o lo hunda.
-            float lateral = zigzagPeriod > 0.01f
-                ? Mathf.Sin(i / zigzagPeriod * Mathf.PI * 2f) * zigzagAmount
-                : 0f;
-            Quaternion rot = Quaternion.Euler(restAngle, 0f, 0f) * Quaternion.Euler(0f, lateral, 0f);
-
-            // Como el nodo es HIJO de la esfera (que tiene Scale grande), hay que dividir tanto
-            // el radio como la escala — si no, Unity multiplica todo por la escala del padre.
-            node.localPosition = rot * (Vector3.back * radius);
-            node.localRotation = rot; // parado sobre la superficie
-            _restRotations[i]  = rot;
-            _lateralDeg[i]     = lateral;
-            _chapters[i]       = levels.Count > 0 ? levels[i].chapter : 1;
 
             // 'Node Size' es siempre el diámetro en unidades de MUNDO. Un prefab de UI mide
             // cientos (píxeles) en su propio espacio y una primitiva mide 1, así que hay que
@@ -251,39 +268,12 @@ public class WorldSphereNodePositioner : MonoBehaviour
             float sourceSize = node is RectTransform rt && rt.rect.width > 0.001f ? rt.rect.width : 1f;
             node.localScale  = Vector3.one * (nodeSize / sourceSize / sphereScale);
 
-            _nodes[i]      = node;
-
-            // El prefab real trae LevelNodeView adentro (colgando del Canvas envoltorio), y se
-            // configura igual que en LevelMapController. Si no lo tiene, es un placeholder de
-            // prueba y se le pone el número a mano.
             var view = node.GetComponentInChildren<LevelNodeView>(true);
-            if (view && levels.Count > 0)
-            {
-                int levelId = levels[i].id;
-                var state   = GetState(levelId, maxUnlocked);
-                view.Setup(levelId, state, SaveManager.GetLevelStars(levelId));
-                view.OnClicked += OnLevelSelected;
+            if (view) view.OnClicked += OnLevelSelected;
 
-                // Los cilindros del canto no los toca LevelNodeView (es un archivo compartido con
-                // el mapa real), así que su material lo cambia este componente aparte.
-                var edges = node.GetComponentInChildren<CurvedMapNodeEdgeMaterials>(true);
-                if (edges) edges.ApplyState(state);
-
-                if (state == NodeState.Available) currentIndex = i;
-
-                if (levelId == justAdvancedFrom)
-                {
-                    justCompletedNode  = view;
-                    justCompletedStars = SaveManager.GetLevelStars(levelId);
-                    justCompletedGold  = state == NodeState.CompleteFirstTry;
-                    justCompletedIndex = i;
-                    view.HideForReveal(); // invisible hasta que la corrutina lo revele
-                }
-            }
-            else if (!view)
-            {
-                SetLabel(node, i + 1);
-            }
+            node.gameObject.SetActive(false);
+            _pool[slot]      = node;
+            _poolLevel[slot] = -1;
         }
 
         // El scroll (giro de la esfera) RESTA ángulo: trae el mundo hacia la cámara y va bajando
@@ -296,45 +286,166 @@ public class WorldSphereNodePositioner : MonoBehaviour
         float travel = offset - bottomPadding;
         AngleMax = Mathf.Max(0f, travel - angleSpacing - topPadding);
 
-        // El camino y las decoraciones se construyen recién acá, cuando el recorrido de todos los
-        // nodos ya está calculado — los dos se apoyan sobre él.
-        if (pathRibbon)  pathRibbon.Build();
-        if (decorations) decorations.Build();
-
         // Si no hay ninguno disponible (capítulos terminados), se queda en el último.
         if (currentIndex < 0) currentIndex = count - 1;
+        _currentIndex = currentIndex;
+
+        int justCompletedIndex = _justAdvancedFrom > 0 && levels.Count > 0
+            ? levels.FindIndex(lvl => lvl.id == _justAdvancedFrom)
+            : -1;
+
+        float currentAngle = Mathf.Clamp(_scrollAngle[currentIndex], 0f, AngleMax);
+        CurrentNodeAngle   = currentAngle;
+
+        // El scroll se posiciona ANTES de poblar la ventana: qué niveles hay que mostrar depende
+        // de dónde esté el scroll, así que al revés se poblaría la ventana equivocada y habría un
+        // frame con los nodos del principio del capítulo.
+        float startAngle = justCompletedIndex >= 0
+            ? Mathf.Clamp(_scrollAngle[justCompletedIndex], 0f, AngleMax)
+            : currentAngle;
+
+        if (dragRotate) dragRotate.JumpTo(startAngle);
+        else Debug.LogWarning("[WorldSphereNodePositioner] Falta asignar 'Drag Rotate' en el Inspector — el mapa va a abrir en el nodo 1 en vez del actual.");
+
+        UpdateWindow(startAngle);
+
+        // El camino y las decoraciones se apoyan sobre el recorrido, así que se construyen recién
+        // cuando la ventana ya está poblada.
+        if (pathRibbon)  pathRibbon.Build();
+        if (decorations) decorations.Build();
 
         // Si se vuelve de ganar, la tarjeta aparece todavía al lado del nivel que se acaba de
         // pasar, y se desliza al siguiente una vez terminada la revelación del nodo.
         if (playerCardPrefab)
-            CreatePlayerCard(justCompletedIndex >= 0 ? justCompletedIndex : currentIndex, radius, sphereScale);
-
-        float currentAngle = Mathf.Clamp(scrollAngles[currentIndex], 0f, AngleMax);
-        CurrentNodeAngle   = currentAngle;
-
-        if (!dragRotate)
-        {
-            Debug.LogWarning("[WorldSphereNodePositioner] Falta asignar 'Drag Rotate' en el Inspector — el mapa va a abrir en el nodo 1 en vez del actual.");
-            Ready = true;
-            ReleaseHold();
-            yield break;
-        }
+            CreatePlayerCard(justCompletedIndex >= 0 ? justCompletedIndex : currentIndex, _nodeRadius, sphereScale);
 
         if (justCompletedIndex >= 0)
         {
-            // Se vuelve de ganar: el mapa abre donde quedó el nivel recién pasado, y una vez
-            // revelado se desplaza solo hasta el siguiente.
-            dragRotate.JumpTo(Mathf.Clamp(scrollAngles[justCompletedIndex], 0f, AngleMax));
-            StartCoroutine(PlayCompletion(justCompletedNode, justCompletedStars, justCompletedGold, currentAngle, currentIndex));
-        }
-        else
-        {
-            // Entrada normal al mapa: directo al nivel disponible.
-            dragRotate.JumpTo(currentAngle);
+            var view = ViewOf(justCompletedIndex);
+            if (view)
+            {
+                int  levelId = levels[justCompletedIndex].id;
+                bool gold    = GetState(levelId, maxUnlocked) == NodeState.CompleteFirstTry;
+                view.HideForReveal();
+                StartCoroutine(PlayCompletion(view, SaveManager.GetLevelStars(levelId), gold, currentAngle, currentIndex));
+            }
         }
 
         Ready = true;
         ReleaseHold();
+    }
+
+    // Qué slot le toca a un nivel. Como la ventana visible es siempre un tramo contiguo más corto
+    // que el grupo, dos niveles visibles nunca caen en el mismo slot.
+    int SlotOf(int levelIndex) => ((levelIndex % _pool.Length) + _pool.Length) % _pool.Length;
+
+    LevelNodeView ViewOf(int levelIndex)
+    {
+        int slot = SlotOf(levelIndex);
+        return _poolLevel[slot] == levelIndex ? _pool[slot].GetComponentInChildren<LevelNodeView>(true) : null;
+    }
+
+    // Decide qué niveles entran en pantalla con el scroll actual y le asigna a cada uno su slot.
+    // Solo reconfigura los que cambiaron: al scrollear entra y sale un nivel por vez, así que el
+    // trabajo por frame es casi nulo por más largo que sea el capítulo.
+    void UpdateWindow(float scroll)
+    {
+        int count = _restAngle.Length;
+        float visibleMax = cullRange > 0.01f ? cullRange : 180f;
+
+        // El ángulo de reposo crece con el índice, así que la ventana es un tramo contiguo.
+        int first = 0, last = count - 1;
+        while (first < count && _restAngle[first] - scroll - _frontAngle < -BACK_MARGIN) first++;
+        while (last >= first && _restAngle[last] - scroll - _frontAngle > visibleMax) last--;
+
+        if (first > last) { first = Mathf.Clamp(first, 0, count - 1); last = first; }
+
+        // Soltar los slots que quedaron fuera.
+        for (int slot = 0; slot < _pool.Length; slot++)
+        {
+            int held = _poolLevel[slot];
+            if (held < 0) continue;
+            if (held >= first && held <= last) continue;
+
+            _poolLevel[slot] = -1;
+            _pool[slot].gameObject.SetActive(false);
+        }
+
+        for (int i = first; i <= last; i++) Bind(i);
+
+        WindowFirst = first;
+        WindowLast  = last;
+    }
+
+    void Bind(int levelIndex)
+    {
+        int slot = SlotOf(levelIndex);
+        if (_poolLevel[slot] == levelIndex) return; // ya está puesto, no hay nada que rehacer
+
+        var node = _pool[slot];
+        if (!node) return; // slot todavía sin crear
+
+        _poolLevel[slot] = levelIndex;
+
+        Quaternion rot = RestRotation(levelIndex);
+        _poolRot[slot]     = rot;
+        node.localPosition = rot * (Vector3.back * _nodeRadius);
+        node.localRotation = rot;
+        node.gameObject.SetActive(true);
+
+        // Mismo criterio de orden que las decoraciones, para que puedan taparse entre sí según
+        // quién esté más adelante en el camino. Un nodo es un Canvas en World Space, y por defecto
+        // todos quedan en orden 0 — o sea siempre por encima de cualquier decoración, aunque esta
+        // esté claramente más cerca de la cámara.
+        //
+        // Se ordena por el ÁNGULO real sobre la esfera, no por el índice de nivel: entre capítulos
+        // hay un hueco ('Chapter Gap') que el índice no refleja, así que el primer nodo de un
+        // capítulo está mucho más lejos de lo que su número sugiere.
+        var canvas = node.GetComponent<Canvas>();
+        if (canvas) canvas.sortingOrder = DrawOrderAt(_restAngle[levelIndex]);
+
+        var view = node.GetComponentInChildren<LevelNodeView>(true);
+        if (view && _levels.Count > 0)
+        {
+            int levelId = _levels[levelIndex].id;
+            var state   = GetState(levelId, SaveManager.MaxUnlockedLevel);
+
+            node.name = $"Node_{levelId:000}";
+            view.Setup(levelId, state, SaveManager.GetLevelStars(levelId));
+
+            // Los cilindros del canto no los toca LevelNodeView (es un archivo compartido con el
+            // mapa real), así que su material lo cambia este componente aparte.
+            var edges = node.GetComponentInChildren<CurvedMapNodeEdgeMaterials>(true);
+            if (edges) edges.ApplyState(state);
+        }
+        else if (!view)
+        {
+            node.name = $"NodeProto_{levelIndex + 1}";
+        }
+    }
+
+    // Rotación de reposo de un nivel: el vaivén lateral (eje Y) desvía el camino a los costados y
+    // el avance del recorrido (eje X) lo sube hacia el horizonte. Al componerlas sobre un vector
+    // unitario, el nodo queda siempre sobre la superficie.
+    // Orden de dibujo que le corresponde a un punto del recorrido, a partir de su ángulo sobre la
+    // esfera. Lo comparten nodos y decoraciones para que puedan taparse entre sí correctamente:
+    // lo que está más adelante en el camino está más lejos, y se dibuja antes.
+    //
+    // El x8 reserva capas para el orden interno de los grupos de decoración.
+    public static int DrawOrderAt(float restAngle) => -Mathf.RoundToInt(restAngle * 4f) * 8;
+
+    // Ángulo de reposo de un nivel. Lo usa el camino para anclar su textura al capítulo.
+    public float RestAngleAt(int levelIndex)
+    {
+        if (_restAngle == null || _restAngle.Length == 0) return 0f;
+        return _restAngle[Mathf.Clamp(levelIndex, 0, _restAngle.Length - 1)];
+    }
+
+    public Quaternion RestRotation(int levelIndex)
+    {
+        levelIndex = Mathf.Clamp(levelIndex, 0, _restAngle.Length - 1);
+        return Quaternion.Euler(_restAngle[levelIndex], 0f, 0f)
+             * Quaternion.Euler(0f, _lateralDeg[levelIndex], 0f);
     }
 
     // Mismo criterio que LevelMapController.PlayCompletionSequence(): deja que el mapa asiente un
@@ -347,7 +458,11 @@ public class WorldSphereNodePositioner : MonoBehaviour
 
         // El mundo gira hasta el nivel siguiente y la tarjeta se desliza hasta él, a la vez.
         if (dragRotate) dragRotate.AnimateTo(nextAngle);
-        if (_playerCard) _cardMove = StartCoroutine(MovePlayerCard(PlayerCardRotation(nextIndex)));
+        if (_playerCard)
+        {
+            _cardScrollAngle = _scrollAngle[Mathf.Clamp(nextIndex, 0, _scrollAngle.Length - 1)];
+            _cardMove = StartCoroutine(MovePlayerCard(PlayerCardRotation(nextIndex)));
+        }
     }
 
     // Los nodos giran con la esfera (son sus hijos), pero su ORIENTACIÓN se recalcula cada frame:
@@ -356,38 +471,37 @@ public class WorldSphereNodePositioner : MonoBehaviour
     // que es lo que da la sensación de que ya se está yendo.
     void LateUpdate()
     {
-        if (_nodes == null || !_cam || !sphere || faceCameraRange <= 0f) return;
+        // 'Ready' y no solo '_pool != null': el grupo se crea repartido en varios frames, y
+        // LateUpdate corre durante esos frames. Sin esperar a que esté completo, se encontraría
+        // slots todavía vacíos.
+        if (!Ready || _pool == null || !_cam || !sphere || faceCameraRange <= 0f) return;
+
+        // Qué niveles entran en pantalla depende del scroll, así que la ventana se revisa antes de
+        // orientar nada. Si no cambió, esto no hace prácticamente trabajo.
+        int beforeFirst = WindowFirst, beforeLast = WindowLast;
+        UpdateWindow(dragRotate ? dragRotate.CurrentAngle : 0f);
+        if (WindowFirst != beforeFirst || WindowLast != beforeLast) OnWindowChanged?.Invoke();
 
         Vector3 frontDir = (_cam.transform.position - sphere.position).normalized;
 
-        for (int i = 0; i < _nodes.Length; i++)
+        for (int slot = 0; slot < _pool.Length; slot++)
         {
-            var node = _nodes[i];
-            if (!node) continue;
+            var node = _pool[slot];
+            if (!node || _poolLevel[slot] < 0) continue;
 
             // Distancia angular al punto más cercano a cámara — sin depender de cuánto giró la
             // esfera, sale de la posición actual del nodo, así no hay que rastrear el scroll.
             Vector3 outward = (node.position - sphere.position).normalized;
             float   away    = Vector3.Angle(outward, frontDir);
 
-            // Los nodos que quedaron detrás del horizonte no se ven: apagarlos saca de la cuenta
-            // su Canvas, sus cilindros y sus sombras. Transform.position sigue siendo válido
-            // aunque el objeto esté apagado, así que esto se puede evaluar igual cada frame.
-            if (cullRange > 0.01f)
-            {
-                bool visible = away <= cullRange;
-                if (node.gameObject.activeSelf != visible) node.gameObject.SetActive(visible);
-                if (!visible) continue;
-            }
-
             float t = (1f - Mathf.Clamp01(away / faceCameraRange)) * faceCameraMax;
 
             // La altura acompaña al giro: un nodo plano acostado no necesita levantarse nada,
             // pero al enderezarse gira sobre su centro y su mitad de abajo se enterraría.
-            node.localPosition = _restRotations[i]
+            node.localPosition = _poolRot[slot]
                                * (Vector3.back * (_baseRadius + NodeLift(t) / _sphereScale));
 
-            Quaternion onSurface = sphere.rotation * _restRotations[i];
+            Quaternion onSurface = sphere.rotation * _poolRot[slot];
             if (t <= 0f) { node.rotation = onSurface; continue; }
 
             // La cara visible del nodo es su -Z (ahí va el contenido), así que para encararlo a
@@ -414,6 +528,19 @@ public class WorldSphereNodePositioner : MonoBehaviour
             // MovePlayerCard — así el deslizamiento de un nodo al otro no necesita tocar nada más.
             _playerCard.localPosition = _playerCardRot * (Vector3.back * _cardRadius);
 
+            // Se apaga cuando su nivel queda lejos del scroll actual.
+            //
+            // La distancia se mide en el ESPACIO DEL SCROLL, no como ángulo en 3D. Con muchos
+            // niveles el recorrido da más de una vuelta a la esfera, así que un ángulo de 3D se
+            // repite: la card del capítulo 1 volvía a entrar en cuadro al llegar al capítulo 3.
+            // El scroll, en cambio, crece sin repetirse.
+            if (cullRange > 0.01f && dragRotate)
+            {
+                bool visible = Mathf.Abs(_cardScrollAngle - dragRotate.CurrentAngle) <= cullRange;
+                if (_playerCard.gameObject.activeSelf != visible) _playerCard.gameObject.SetActive(visible);
+                if (!visible) return;
+            }
+
             Vector3 axis    = sphere.rotation * Vector3.right;
             Vector3 toCam   = _cam.transform.position - _playerCard.position;
             Vector3 forward = Vector3.ProjectOnPlane(-toCam, axis).normalized;
@@ -429,7 +556,11 @@ public class WorldSphereNodePositioner : MonoBehaviour
     void CreatePlayerCard(int nodeIndex, float radius, float sphereScale)
     {
         var card = Instantiate(playerCardPrefab, sphere);
-        card.name = "PlayerCard";
+        // El nivel va en el nombre: si alguna vez aparece donde no corresponde, se lee de un
+        // vistazo en la Hierarchy a qué nodo cree estar pegada.
+        card.name = _levels != null && nodeIndex < _levels.Count
+            ? $"PlayerCard_nivel_{_levels[nodeIndex].id}"
+            : $"PlayerCard_indice_{nodeIndex}";
 
         // El prefab de la card es UI, y la UI necesita un Canvas para dibujarse. Acá no hay
         // ninguno, así que se le agrega uno propio en World Space — lo mismo que hace a mano el
@@ -438,6 +569,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
             card.gameObject.AddComponent<Canvas>().renderMode = RenderMode.WorldSpace;
 
         _cardRadius        = radius;
+        _cardScrollAngle   = _scrollAngle[Mathf.Clamp(nodeIndex, 0, _scrollAngle.Length - 1)];
         _playerCardRot     = PlayerCardRotation(nodeIndex);
         card.localPosition = _playerCardRot * (Vector3.back * radius);
         card.localRotation = _playerCardRot;
@@ -466,7 +598,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
         // nodo y recorre siempre el mismo arco. Aplicado antes sería sobre el eje polar de la
         // esfera, que recorre mucha distancia cerca del ecuador y ninguna cerca del polo — por eso
         // la tarjeta se iba acercando hasta montarse encima del nodo a medida que subía el camino.
-        return _restRotations[nodeIndex] * Quaternion.Euler(0f, sideDeg, 0f);
+        return RestRotation(nodeIndex) * Quaternion.Euler(0f, sideDeg, 0f);
     }
 
     // Deslizamiento de la tarjeta de un nodo al siguiente — el equivalente al recorrido por el

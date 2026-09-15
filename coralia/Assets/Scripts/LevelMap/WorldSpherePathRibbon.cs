@@ -41,7 +41,21 @@ public class WorldSpherePathRibbon : MonoBehaviour
     [Tooltip("Solo si 'Texture Keep Aspect' está desmarcado. Cuántas unidades de MUNDO ocupa una repetición completa a lo largo del camino.")]
     [SerializeField] float textureLength = 4f;
 
+    // Cuántos niveles de más se generan a cada lado de la ventana visible, para que el camino
+    // nunca termine justo en el borde de la pantalla.
+    const int WINDOW_MARGIN = 4;
+
     Mesh _mesh;
+
+    void OnEnable()
+    {
+        if (positioner) positioner.OnWindowChanged += Build;
+    }
+
+    void OnDisable()
+    {
+        if (positioner) positioner.OnWindowChanged -= Build;
+    }
 
     // Lo llama WorldSphereNodePositioner cuando ya tiene el recorrido listo — no se puede hacer en
     // Start() propio porque Unity no garantiza el orden entre los dos.
@@ -53,9 +67,15 @@ public class WorldSpherePathRibbon : MonoBehaviour
             return;
         }
 
-        var rotations = positioner.NodeRotations;
-        var chapters  = positioner.NodeChapters;
-        if (rotations == null || rotations.Count < 2) return;
+        var chapters = positioner.NodeChapters;
+        int count    = positioner.LevelCount;
+        if (count < 2) return;
+
+        // Solo el tramo que está en pantalla, más margen. Reconstruir esto es barato (unos cientos
+        // de vértices) y es lo que permite que un capítulo tenga cientos de niveles sin que el
+        // camino dé la vuelta a la esfera y se pise a sí mismo.
+        int from = Mathf.Max(0, positioner.WindowFirst - WINDOW_MARGIN);
+        int to   = Mathf.Min(count - 1, positioner.WindowLast + WINDOW_MARGIN);
 
         if (!pathMaterial)
             Debug.LogWarning("[WorldSpherePathRibbon] Falta asignar 'Path Material' — el camino se va a ver con el material rosa de error.", this);
@@ -74,15 +94,16 @@ public class WorldSpherePathRibbon : MonoBehaviour
 
         // Un tramo por capítulo: entre capítulos el camino se corta, que es lo que hace que se
         // lean como etapas separadas y no como un continuo.
-        int from = 0;
-        for (int i = 1; i <= rotations.Count; i++)
+        int runStart = from;
+        for (int i = from + 1; i <= to + 1; i++)
         {
-            bool isBreak = i == rotations.Count
-                        || (chapters != null && i < chapters.Count && chapters[i] != chapters[from]);
+            bool isBreak = i > to
+                        || (chapters != null && i < chapters.Count && chapters[i] != chapters[runStart]);
             if (!isBreak) continue;
 
-            BuildRun(rotations, from, i - 1, radius, radiusWorld, halfWidthRad, halfWidth, verts, uvs, norms, tris);
-            from = i;
+            BuildRun(runStart, i - 1, count, chapters, radius, radiusWorld, halfWidthRad, halfWidth,
+                     verts, uvs, norms, tris);
+            runStart = i;
         }
 
         if (!_mesh) _mesh = new Mesh { name = "PathRibbon", hideFlags = HideFlags.DontSave };
@@ -99,11 +120,11 @@ public class WorldSpherePathRibbon : MonoBehaviour
     }
 
     // Un tramo continuo de camino, del nodo 'first' al nodo 'last'.
-    void BuildRun(IReadOnlyList<Quaternion> rotations, int first, int last,
+    void BuildRun(int first, int last, int count, IReadOnlyList<int> chapters,
                   float radius, float radiusWorld, float halfWidthRad, float halfWidth,
                   List<Vector3> verts, List<Vector2> uvs, List<Vector3> norms, List<int> tris)
     {
-        if (last <= first) return; // un capítulo de un solo nodo no tiene camino que dibujar
+        if (last <= first) return; // un tramo de un solo nodo no tiene camino que dibujar
 
         int segments = last - first;
 
@@ -111,12 +132,30 @@ public class WorldSpherePathRibbon : MonoBehaviour
         // centro de la esfera.
         var nodeDirs = new Vector3[segments + 1];
         for (int j = 0; j <= segments; j++)
-            nodeDirs[j] = (rotations[first + j] * Vector3.back).normalized;
+            nodeDirs[j] = (positioner.RestRotation(first + j) * Vector3.back).normalized;
+
+        // El remate redondeado solo va en los extremos REALES del capítulo. En el borde de la
+        // ventana el camino tiene que salir cortado a secas: si se le pusiera punta, se vería el
+        // camino afinarse en el aire a media pantalla cada vez que la ventana se corre.
+        bool capStart = first == 0 || (chapters != null && first < chapters.Count && chapters[first] != chapters[first - 1]);
+        bool capEnd   = last == count - 1 || (chapters != null && last + 1 < chapters.Count && chapters[last + 1] != chapters[last]);
+
+        // Desde dónde se empieza a contar la textura. Tiene que ser el principio del CAPÍTULO y no
+        // el de la ventana: si arrancara en cero en cada reconstrucción, el patrón saltaría a otra
+        // posición cada vez que la ventana avanza, y se ve como si el piso se moviera solo.
+        int chapterStart = first;
+        if (chapters != null)
+            while (chapterStart > 0 && chapters[chapterStart - 1] == chapters[first]) chapterStart--;
+
+        float baseDist = (positioner.RestAngleAt(first) - positioner.RestAngleAt(chapterStart))
+                       * Mathf.Deg2Rad * radiusWorld;
 
         // Cuánto se prolonga más allá del primer y último nodo, en "nodos", para poder extrapolar
         // con la misma spline del resto del recorrido.
-        float overrun = extend / Mathf.Max(positioner.AngleSpacing, 0.0001f);
-        float spanF   = segments + 2f * overrun;
+        float overrunStart = capStart ? extend / Mathf.Max(positioner.AngleSpacing, 0.0001f) : 0f;
+        float overrunEnd   = capEnd   ? extend / Mathf.Max(positioner.AngleSpacing, 0.0001f) : 0f;
+        float overrun = overrunStart; // el muestreo arranca acá
+        float spanF   = segments + overrunStart + overrunEnd;
 
         // La densidad se fija por longitud real y no por nodo: así las puntas redondeadas tienen
         // suficientes tramos para verse curvas aunque el camino sea corto.
@@ -143,9 +182,11 @@ public class WorldSpherePathRibbon : MonoBehaviour
         float totalLength = probeDist[rows];
         // Si el tramo es más corto que dos remates, los dos se comerían el camino entero y
         // quedaría una lente en vez de una ruta. Se achican para que siempre quede tramo recto.
-        float capLength   = Mathf.Min(Mathf.Max(endCapLength, 0f), totalLength * 0.45f);
+        float capLength     = Mathf.Min(Mathf.Max(endCapLength, 0f), totalLength * 0.45f);
+        float capLengthStart = capStart ? capLength : 0f;
+        float capLengthEnd   = capEnd   ? capLength : 0f;
 
-        var rowDist = BuildRowDistances(totalLength, capLength);
+        var rowDist = BuildRowDistances(totalLength, capLengthStart, capLengthEnd);
         var centers = new Vector3[rowDist.Count];
         for (int r = 0; r < rowDist.Count; r++)
             centers[r] = SampleAtDistance(probe, probeDist, rowDist[r]);
@@ -175,12 +216,12 @@ public class WorldSpherePathRibbon : MonoBehaviour
 
             // Las puntas se afinan siguiendo un perfil de semicírculo, así el final del camino
             // queda redondeado en vez de cortado en seco.
-            float taper = Taper(rowDist[r], capLength) * Taper(totalLength - rowDist[r], capLength);
+            float taper = Taper(rowDist[r], capLengthStart) * Taper(totalLength - rowDist[r], capLengthEnd);
             float half  = halfWidthRad * taper;
             // A lo ancho la textura entra una vez en 'width'. Para que no salga deformada, a lo
             // largo tiene que repetirse a ese mismo ritmo — si no, se estira en el sentido de avance.
             float repeat = textureKeepAspect ? width : textureLength;
-            float v      = rowDist[r] / Mathf.Max(repeat, 0.0001f);
+            float v      = (baseDist + rowDist[r]) / Mathf.Max(repeat, 0.0001f);
 
             for (int c = 0; c < across; c++)
             {
@@ -217,18 +258,18 @@ public class WorldSpherePathRibbon : MonoBehaviour
     // semicírculo, no por longitud: la punta tiene curvatura altísima, y con filas parejas le
     // tocaba una sola, que la dejaba en pico. Repartidas por ángulo, la punta queda redonda sin
     // tener que subir la resolución de todo el resto del camino.
-    List<float> BuildRowDistances(float totalLength, float capLength)
+    List<float> BuildRowDistances(float totalLength, float capLengthStart, float capLengthEnd)
     {
         var result = new List<float>();
         float step = Mathf.Max(sampleLength, 0.01f);
 
-        if (capLength > 0.0001f)
+        if (capLengthStart > 0.0001f)
         {
-            int capSteps = Mathf.Clamp(Mathf.CeilToInt(capLength / step) * 3, 8, 64);
+            int capSteps = Mathf.Clamp(Mathf.CeilToInt(capLengthStart / step) * 3, 8, 64);
             for (int k = 0; k <= capSteps; k++)
             {
                 float angle = (float)k / capSteps * Mathf.PI * 0.5f;
-                result.Add(capLength * (1f - Mathf.Cos(angle)));
+                result.Add(capLengthStart * (1f - Mathf.Cos(angle)));
             }
         }
         else
@@ -239,18 +280,18 @@ public class WorldSpherePathRibbon : MonoBehaviour
         // El cuerpo se divide en partes IGUALES entre los dos remates, en vez de avanzar de a un
         // paso fijo y cortar donde toque. Así no queda un tramo suelto más largo justo en la unión
         // con el remate — que en una curva se ve como una faceta recta de un solo lado.
-        float bodyLength = totalLength - 2f * capLength;
+        float bodyLength = totalLength - capLengthStart - capLengthEnd;
         int   bodySteps  = Mathf.Max(1, Mathf.CeilToInt(bodyLength / step));
         for (int k = 1; k < bodySteps; k++)
-            result.Add(capLength + bodyLength * k / bodySteps);
+            result.Add(capLengthStart + bodyLength * k / bodySteps);
 
-        if (capLength > 0.0001f)
+        if (capLengthEnd > 0.0001f)
         {
-            int capSteps = Mathf.Clamp(Mathf.CeilToInt(capLength / step) * 3, 8, 64);
+            int capSteps = Mathf.Clamp(Mathf.CeilToInt(capLengthEnd / step) * 3, 8, 64);
             for (int k = capSteps; k >= 0; k--)
             {
                 float angle = (float)k / capSteps * Mathf.PI * 0.5f;
-                result.Add(totalLength - capLength * (1f - Mathf.Cos(angle)));
+                result.Add(totalLength - capLengthEnd * (1f - Mathf.Cos(angle)));
             }
         }
         else

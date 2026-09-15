@@ -38,18 +38,117 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
     [Tooltip("Ancho por defecto de la sombra, como fracción del alto de la decoración. El catálogo puede pisarlo pieza por pieza.")]
     [SerializeField] float shadowScale   = 0.8f;
 
-    Camera   _cam;
-    Material _shadowMaterial;
+    Camera     _cam;
+    Material   _shadowMaterial;
+    GameObject _shadowObject;
+    Mesh       _shadowMesh;
 
     // Se guarda el punto de apoyo aparte de la posición final: la decoración se dibuja adelantada
     // hacia la cámara, pero su lugar en el mundo sigue siendo el de la superficie.
     struct Planted
     {
-        public Transform transform;
-        public Vector3   anchor;   // en espacio local de la esfera
+        public Transform        transform;
+        public Vector3          anchor;    // en espacio local de la esfera
+        public SpriteRenderer[] renderers;  // cacheados: buscarlos cada frame sería tirar rendimiento
+        public int[]            baseOrders; // el 'Order in Layer' que traía cada pieza del prefab
+        public string           id;          // para devolverla al depósito que le corresponde
+        public Vector3          direction;   // dirección sobre la esfera, para rearmar su sombra
+        public float            shadowWidth; // ancho ya resuelto, del catálogo o del alto
     }
 
-    readonly List<Planted> _decorations = new List<Planted>();
+    // Cuántos niveles de más se pueblan a cada lado de la ventana visible.
+    const int WINDOW_MARGIN = 4;
+
+    // Las decoraciones vivas, por capítulo y posición dentro de su JSON.
+    readonly Dictionary<(int chapter, int placement), Planted> _active =
+        new Dictionary<(int, int), Planted>();
+
+    // Depósito por tipo de pieza: al salir de la ventana no se destruyen, se guardan apagadas para
+    // reusarlas. Destruir e instanciar en cada paso del scroll generaría basura constante.
+    readonly Dictionary<string, Stack<Transform>> _idle = new Dictionary<string, Stack<Transform>>();
+
+    // Qué piezas están puestas ahora mismo. Sin esto, si una llegara a entrar dos veces al
+    // depósito, dos decoraciones distintas se quedarían con el MISMO objeto y una de las dos
+    // aparecería encima de la otra.
+    readonly HashSet<Transform> _inUse = new HashSet<Transform>();
+
+    // Alto de cada tipo de pieza, medido UNA vez sobre una recién creada y guardado.
+    // No se puede medir en cada reuso: renderer.bounds está en espacio de mundo, así que incluye
+    // la escala que la pieza ya tiene y la de la esfera de la que cuelga. Al dividir por esa
+    // medida ya encogida, la escala se dispara — y cada reuso lo multiplica de nuevo.
+    readonly Dictionary<string, float> _sizeCache = new Dictionary<string, float>();
+
+    // El 'Order in Layer' con el que vino cada pieza del prefab, guardado la PRIMERA vez que se
+    // crea. No se puede releer al reusarla: para entonces ya fue sobrescrito por el orden por
+    // profundidad de la vuelta anterior, y el número se iría desviando en cada reuso.
+    readonly Dictionary<Transform, (SpriteRenderer[] renderers, int[] baseOrders)> _cached =
+        new Dictionary<Transform, (SpriteRenderer[], int[])>();
+
+    (SpriteRenderer[] renderers, int[] baseOrders) RenderersOf(Transform decoration)
+    {
+        if (_cached.TryGetValue(decoration, out var cached)) return cached;
+
+        var renderers  = decoration.GetComponentsInChildren<SpriteRenderer>(true);
+        var baseOrders = new int[renderers.Length];
+        for (int r = 0; r < renderers.Length; r++) baseOrders[r] = renderers[r].sortingOrder;
+
+        cached = (renderers, baseOrders);
+        _cached[decoration] = cached;
+        return cached;
+    }
+
+    static readonly List<(int, int)> _expired = new List<(int, int)>();
+
+    void OnEnable()
+    {
+        if (positioner) positioner.OnWindowChanged += Build;
+    }
+
+    void OnDisable()
+    {
+        if (positioner) positioner.OnWindowChanged -= Build;
+    }
+
+    // Guarda las que quedaron fuera de la ventana. El 'at' de una decoración está en niveles, así
+    // que se compara contra el mismo rango que usan los nodos.
+    void ReleaseOutside(int windowFirst, int windowLast)
+    {
+        var chapters = positioner.NodeChapters;
+        _expired.Clear();
+
+        foreach (var pair in _active)
+        {
+            var data = LoadChapter(pair.Key.chapter);
+            if (data?.decorations == null || pair.Key.placement >= data.decorations.Length) { _expired.Add(pair.Key); continue; }
+
+            // El 'at' es relativo al primer nivel del capítulo: hay que llevarlo a índice global.
+            int start = 0;
+            while (start < chapters.Count && chapters[start] != pair.Key.chapter) start++;
+            float global = start + data.decorations[pair.Key.placement].at;
+
+            // Un poco más tolerante que el alta, para que una decoración en el borde no entre y
+            // salga en frames alternos.
+            if (global < windowFirst - WINDOW_MARGIN - 1f || global > windowLast + WINDOW_MARGIN + 1f)
+                _expired.Add(pair.Key);
+        }
+
+        foreach (var key in _expired)
+        {
+            var planted = _active[key];
+            _active.Remove(key);
+            if (!planted.transform) continue;
+
+            planted.transform.gameObject.SetActive(false);
+            if (!_inUse.Remove(planted.transform)) continue; // ya estaba guardada, no duplicarla
+
+            if (!_idle.TryGetValue(planted.id, out var stack))
+            {
+                stack = new Stack<Transform>();
+                _idle[planted.id] = stack;
+            }
+            stack.Push(planted.transform);
+        }
+    }
 
     // Lo llama WorldSphereNodePositioner cuando ya tiene el recorrido listo — no se puede hacer en
     // Start() propio porque Unity no garantiza el orden entre los dos.
@@ -68,9 +167,14 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
 
         _cam = worldCamera ? worldCamera : Camera.main;
 
-        var rotations = positioner.NodeRotations;
-        var chapters  = positioner.NodeChapters;
-        if (rotations == null || rotations.Count == 0 || chapters == null) return;
+        var chapters = positioner.NodeChapters;
+        int count    = positioner.LevelCount;
+        if (count == 0 || chapters == null) return;
+
+        // Solo el tramo en pantalla, más margen. Sin esto, con capítulos largos habría cientos de
+        // decoraciones instanciadas para mostrar una docena, y además darían la vuelta a la esfera.
+        int windowFirst = Mathf.Max(0, positioner.WindowFirst - WINDOW_MARGIN);
+        int windowLast  = Mathf.Min(count - 1, positioner.WindowLast + WINDOW_MARGIN);
 
         float radiusWorld = positioner.SurfaceRadiusLocal * positioner.SphereScale;
         float anglePerNode = positioner.AngleSpacing;
@@ -82,21 +186,33 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         var shadowNorms = new List<Vector3>();
         var shadowTris  = new List<int>();
 
-        int from = 0;
-        for (int i = 1; i <= chapters.Count; i++)
+        // Las que estaban y ya no entran en la ventana vuelven al depósito, para no instanciar y
+        // destruir en cada paso del scroll.
+        ReleaseOutside(windowFirst, windowLast);
+
+        int from = windowFirst;
+        for (int i = windowFirst + 1; i <= windowLast + 1; i++)
         {
-            bool isBreak = i == chapters.Count || chapters[i] != chapters[from];
+            bool isBreak = i > windowLast || chapters[i] != chapters[from];
             if (!isBreak) continue;
 
-            BuildChapter(chapters[from], rotations, from, i - 1, radiusWorld, anglePerNode,
+            BuildChapter(chapters[from], from, i - 1, count, chapters, radiusWorld, anglePerNode,
                          shadowVerts, shadowUvs, shadowNorms, shadowTris);
             from = i;
         }
 
+        // Las sombras se rearman con TODAS las activas, no solo con las que acaban de entrar: son
+        // una sola malla, así que si se generara incremental le faltarían las de antes.
+        if (contactShadow)
+        {
+            shadowVerts.Clear(); shadowUvs.Clear(); shadowNorms.Clear(); shadowTris.Clear();
+            foreach (var planted in _active.Values)
+                AppendShadow(planted, shadowVerts, shadowUvs, shadowNorms, shadowTris);
+        }
         BuildShadowMesh(shadowVerts, shadowUvs, shadowNorms, shadowTris);
     }
 
-    void BuildChapter(int chapter, IReadOnlyList<Quaternion> rotations, int first, int last,
+    void BuildChapter(int chapter, int first, int last, int count, IReadOnlyList<int> chapters,
                       float radiusWorld, float anglePerNode,
                       List<Vector3> shadowVerts, List<Vector2> shadowUvs,
                       List<Vector3> shadowNorms, List<int> shadowTris)
@@ -104,9 +220,25 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         var data = LoadChapter(chapter);
         if (data?.decorations == null || data.decorations.Length == 0) return;
 
+        // El 'at' del JSON es relativo al PRIMER nivel del capítulo, no al primero de la ventana:
+        // hay que restar ese desplazamiento para ubicarlo dentro del tramo que se está armando.
+        int chapterStart = first;
+        while (chapterStart > 0 && chapters[chapterStart - 1] == chapter) chapterStart--;
+        float shift = first - chapterStart;
+
+        // Fuera del tramo que se está calculando, la curva se extrapola en línea RECTA, sin el
+        // zigzag. Eso solo es correcto en los extremos reales del capítulo, donde el camino
+        // también sale recto. En el borde de la ventana, en cambio, la extrapolación se desvía
+        // del camino y la decoración termina cayendo sobre él.
+        bool atChapterStart = first == chapterStart;
+        bool atChapterEnd   = last == count - 1 || chapters[last + 1] != chapter;
+
+        float lowBound  = atChapterStart ? -WINDOW_MARGIN : -0.5f;
+        float highBound = (last - first) + (atChapterEnd ? WINDOW_MARGIN : 0.5f);
+
         var nodeDirs = new Vector3[last - first + 1];
         for (int j = 0; j < nodeDirs.Length; j++)
-            nodeDirs[j] = (rotations[first + j] * Vector3.back).normalized;
+            nodeDirs[j] = (positioner.RestRotation(first + j) * Vector3.back).normalized;
 
         // Semilla fija por capítulo: la variación de tamaño sale igual en cada partida. Un mundo
         // que cambia de forma cada vez que se abre el mapa se siente roto.
@@ -114,8 +246,21 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
 
         float radiusLocal = positioner.SurfaceRadiusLocal - sink / Mathf.Max(positioner.SphereScale, 0.0001f);
 
-        foreach (var placement in data.decorations)
+        for (int p = 0; p < data.decorations.Length; p++)
         {
+            var placement = data.decorations[p];
+
+            // Fuera del tramo que se está armando, o ya puesta desde antes.
+            //
+            // El margen tiene que ser amplio a los dos lados: un capítulo puede tener decoraciones
+            // con 'at' negativo, que adornan la entrada antes del primer nivel, y la ventana nunca
+            // arranca por debajo de cero. Con un margen chico esas nunca llegaban a crearse.
+            float local = placement.at - shift;
+            if (local < lowBound || local > highBound) continue;
+
+            var key = (chapter, p);
+            if (_active.ContainsKey(key)) continue;
+
             var entry = catalog.Find(placement.id);
             if (entry == null)
             {
@@ -124,7 +269,7 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
             }
 
             float signedOffset = placement.side == "right" ? -placement.offset : placement.offset;
-            Vector3 direction  = WorldSpherePath.SampleOffset(nodeDirs, placement.at, anglePerNode, signedOffset, radiusWorld);
+            Vector3 direction  = WorldSpherePath.SampleOffset(nodeDirs, local, anglePerNode, signedOffset, radiusWorld);
 
             var decoration = Spawn(entry, placement, random);
             if (!decoration) continue;
@@ -132,47 +277,112 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
             Vector3 anchor = direction * radiusLocal;
             decoration.SetParent(sphere, false);
             decoration.localPosition = anchor;
-            _decorations.Add(new Planted { transform = decoration, anchor = anchor });
+            var (renderers, baseOrders) = RenderersOf(decoration);
 
-            if (contactShadow) AppendShadow(entry, placement, direction, shadowVerts, shadowUvs, shadowNorms, shadowTris);
+            // Orden de dibujo FIJO, calculado desde el ángulo sobre la esfera y no desde la
+            // distancia a la cámara. Con la distancia, dos piezas a profundidad parecida se cruzan
+            // al scrollear y el orden se invierte de golpe — eso es el salto que se ve. El avance
+            // por el camino, en cambio, no cambia nunca.
+            //
+            // Se usa el ángulo y no el 'at' porque entre capítulos hay un hueco que el índice de
+            // nivel no refleja; es la misma cuenta que usan los nodos, así que unos y otros se
+            // ordenan entre sí correctamente.
+            float angle = positioner.RestAngleAt(chapterStart) + placement.at * anglePerNode;
+            int   order = WorldSphereNodePositioner.DrawOrderAt(angle);
+            for (int r = 0; r < renderers.Length; r++)
+                if (renderers[r]) renderers[r].sortingOrder = order + baseOrders[r];
+
+            _active[key] = new Planted
+            {
+                transform  = decoration,
+                anchor     = anchor,
+                renderers  = renderers,
+                baseOrders = baseOrders,
+                id         = placement.id,
+                direction  = direction,
+                shadowWidth = entry.shadowWidth > 0.0001f
+                    ? entry.shadowWidth
+                    : entry.height * placement.scale * shadowScale,
+            };
+
         }
     }
 
     Transform Spawn(DecorationCatalog.Entry entry, DecorationPlacement placement, System.Random random)
     {
-        GameObject go;
+        Transform tr = null;
 
-        if (entry.prefab)
+        // Primero el depósito: si hay una pieza de este tipo apagada, se reusa en vez de crear otra.
+        if (_idle.TryGetValue(placement.id, out var stack))
         {
-            go = Instantiate(entry.prefab);
-        }
-        else if (entry.sprite)
-        {
-            go = new GameObject(placement.id);
-            var renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = entry.sprite;
-            renderer.flipX  = placement.flip;
-        }
-        else
-        {
-            Debug.LogWarning($"[WorldSphereDecorationPositioner] La entrada '{entry.id}' del catálogo no tiene ni sprite ni prefab.", this);
-            return null;
+            while (stack.Count > 0 && !tr)
+            {
+                var candidate = stack.Pop();
+                if (candidate && !_inUse.Contains(candidate)) tr = candidate;
+            }
         }
 
-        go.name = $"Deco_{placement.id}";
+        if (!tr)
+        {
+            GameObject go;
+
+            if (entry.prefab)
+            {
+                // Prefab + sprite es la combinación útil: un único prefab con la animación adentro,
+                // reusado por todas las plantas, y cada entrada aportando solo su imagen.
+                go = Instantiate(entry.prefab);
+                if (entry.sprite)
+                {
+                    var target = go.GetComponentInChildren<SpriteRenderer>(true);
+                    if (target) target.sprite = entry.sprite;
+                    else Debug.LogWarning($"[WorldSphereDecorationPositioner] El prefab de '{entry.id}' no tiene ningún SpriteRenderer donde poner el sprite.", this);
+                }
+            }
+            else if (entry.sprite)
+            {
+                go = new GameObject(placement.id);
+                go.AddComponent<SpriteRenderer>().sprite = entry.sprite;
+            }
+            else
+            {
+                Debug.LogWarning($"[WorldSphereDecorationPositioner] La entrada '{entry.id}' del catálogo no tiene ni sprite ni prefab.", this);
+                return null;
+            }
+
+            // Se mide acá, con la pieza recién instanciada: todavía está en escala 1 y sin padre,
+            // que es la única situación en la que renderer.bounds coincide con su tamaño real.
+            if (!_sizeCache.ContainsKey(placement.id))
+                _sizeCache[placement.id] = SpriteHeight(go);
+
+            tr = go.transform;
+        }
+
+        // Todo lo que sigue corre igual para una pieza nueva que para una reusada. Antes el reuso
+        // salía antes de acá y se quedaba con el espejado y el tamaño de quien la usó la vez
+        // anterior.
+        _inUse.Add(tr);
+        tr.gameObject.SetActive(true);
+        tr.name = $"Deco_{placement.id}";
+
+        var (renderers, _) = RenderersOf(tr);
+        foreach (var renderer in renderers)
+            if (renderer) renderer.flipX = placement.flip;
 
         // El tamaño se pide en unidades de MUNDO, pero el sprite mide lo que mide según sus pixels
         // por unidad — hay que convertir. Y como cuelga de la esfera, que tiene una escala enorme,
         // encima hay que dividir por ella.
-        float variation = 1f + ((float)random.NextDouble() * 2f - 1f) * entry.sizeVariation;
-        float worldSize = entry.height * placement.scale * variation;
-        float spriteSize = SpriteHeight(go);
-        float scale = worldSize / Mathf.Max(spriteSize, 0.0001f) / Mathf.Max(positioner.SphereScale, 0.0001f);
+        float variation  = 1f + ((float)random.NextDouble() * 2f - 1f) * entry.sizeVariation;
+        float worldSize  = entry.height * placement.scale * variation;
+        float spriteSize = _sizeCache.TryGetValue(placement.id, out var cachedSize) ? cachedSize : 1f;
+        tr.localScale = Vector3.one * (worldSize / Mathf.Max(spriteSize, 0.0001f) / Mathf.Max(positioner.SphereScale, 0.0001f));
 
-        go.transform.localScale = Vector3.one * scale;
-        return go.transform;
+        return tr;
     }
 
+    // Alto de la pieza tal como viene del prefab, antes de escalarla. En un grupo es el de TODA la
+    // composición: si se midiera solo el primer SpriteRenderer que aparece, el 'Height' del catálogo
+    // acabaría refiriéndose al alto de la roca o al de la planta según cuál viniera primero en la
+    // jerarquía, que es un detalle invisible desde el JSON.
     // Las sombras se acumulan en UNA sola malla en vez de un objeto por decoración. No se mueven
     // nunca respecto de la esfera, así que no hay razón para que sean objetos separados: así son
     // un solo draw call en vez de uno por pieza.
@@ -180,12 +390,11 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
     // Además evita GameObject.CreatePrimitive, que siempre intenta agregar un MeshCollider — y en
     // un build para dispositivo esa clase la elimina el code stripping, lo que tira un error por
     // cada sombra.
-    void AppendShadow(DecorationCatalog.Entry entry, DecorationPlacement placement, Vector3 direction,
+    void AppendShadow(Planted planted,
                       List<Vector3> verts, List<Vector2> uvs, List<Vector3> norms, List<int> tris)
     {
-        float width = entry.shadowWidth > 0.0001f
-            ? entry.shadowWidth
-            : entry.height * placement.scale * shadowScale;
+        Vector3 direction = planted.direction;
+        float   width     = planted.shadowWidth;
 
         float sphereScale = Mathf.Max(positioner.SphereScale, 0.0001f);
         float half        = width * 0.5f / sphereScale;
@@ -225,7 +434,9 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         var material = ShadowMaterial();
         if (!material) return;
 
-        var mesh = new Mesh { name = "DecorationShadows", hideFlags = HideFlags.DontSave };
+        if (!_shadowMesh) _shadowMesh = new Mesh { name = "DecorationShadows", hideFlags = HideFlags.DontSave };
+        var mesh = _shadowMesh;
+        mesh.Clear();
         mesh.indexFormat = verts.Count > 65535
             ? UnityEngine.Rendering.IndexFormat.UInt32
             : UnityEngine.Rendering.IndexFormat.UInt16;
@@ -235,14 +446,21 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         mesh.SetTriangles(tris, 0);
         mesh.RecalculateBounds();
 
-        var go = new GameObject("ContactShadows");
-        go.transform.SetParent(sphere, false);
-        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        // Un solo objeto reusado: esto se rearma en cada corrimiento de la ventana, y crear uno
+        // nuevo cada vez iría dejando objetos muertos colgando de la esfera.
+        if (!_shadowObject)
+        {
+            _shadowObject = new GameObject("ContactShadows");
+            _shadowObject.transform.SetParent(sphere, false);
+            _shadowObject.AddComponent<MeshFilter>();
 
-        var renderer = go.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = material;
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows    = false;
+            var renderer = _shadowObject.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial    = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows    = false;
+        }
+
+        _shadowObject.GetComponent<MeshFilter>().sharedMesh = mesh;
     }
 
     // Un único material y una única textura para todas las sombras — se generan la primera vez y
@@ -267,10 +485,8 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         _shadowMaterial.SetFloat("_ZWrite",   0f);
         _shadowMaterial.SetFloat("_Cull",     (float)UnityEngine.Rendering.CullMode.Off);
         _shadowMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-        // Antes que el resto de los transparentes, no junto con ellos. Unity los ordena por la
-        // distancia del CENTRO de cada objeto, y como todas las sombras son una sola malla, ese
-        // centro cae en medio del capítulo: sin esto, las sombras se dibujan por encima de las
-        // decoraciones que quedaron más lejos que ese punto.
+        // Antes que el resto de los transparentes: como todas las sombras son una sola malla,
+        // Unity las ordenaría por un único centro y taparían las decoraciones más lejanas.
         _shadowMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent - 50;
 
         var texture = ShadowTexture();
@@ -313,15 +529,20 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
 
     static float SpriteHeight(GameObject go)
     {
-        var renderer = go.GetComponentInChildren<SpriteRenderer>();
-        return renderer && renderer.sprite ? renderer.sprite.bounds.size.y : 1f;
+        var renderers = go.GetComponentsInChildren<SpriteRenderer>();
+        if (renderers.Length == 0) return 1f;
+
+        var bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+
+        return bounds.size.y > 0.0001f ? bounds.size.y : 1f;
     }
 
     // La orientación se recalcula por frame: la esfera gira, así que la relación entre cada
     // decoración y la cámara cambia todo el tiempo.
     void LateUpdate()
     {
-        if (_decorations.Count == 0 || !_cam) return;
+        if (_active.Count == 0 || !_cam) return;
 
         Vector3 camPos = _cam.transform.position;
 
@@ -331,7 +552,7 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         Vector3 axis     = sphere.rotation * Vector3.right;
         Vector3 frontDir = (camPos - sphere.position).normalized;
 
-        foreach (var planted in _decorations)
+        foreach (var planted in _active.Values)
         {
             var decoration = planted.transform;
             if (!decoration) continue;
@@ -352,6 +573,7 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
 
             decoration.position = anchor + toCam.normalized * cameraOffset;
             decoration.rotation = Quaternion.LookRotation(forward, Vector3.Cross(forward, axis));
+
         }
     }
 
