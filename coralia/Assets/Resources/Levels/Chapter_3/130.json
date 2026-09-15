@@ -1,0 +1,182 @@
+{
+  "id": 130,
+  "chapter": 3,
+  "name": "Nivel 130",
+  "objective": {
+    "type": "clear_all"
+  },
+  "max_shots": 18,
+  "available_colors": [
+    "red",
+    "blue"
+  ],
+  "rainbow_chance": 0.015,
+  "bubbles": [
+    {
+      "row": 0,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 1,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "color": "red"
+    },
+    {
+      "row": 0,
+      "col": 5,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 6,
+      "color": "red"
+    },
+    {
+      "row": 0,
+      "col": 7,
+      "color": "red"
+    },
+    {
+      "row": 0,
+      "col": 8,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 9,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 10,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 5,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 6,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 7,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 8,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 9,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 5,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 6,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 7,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 8,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 9,
+      "color": "blue"
+    },
+    {
+      "row": 2,
+      "col": 10,
+      "color": "red"
+    }
+  ],
+  "obstacles": [],
+  "star_thresholds": [
+    128000,
+    207360,
+    288000
+  ]
+}
