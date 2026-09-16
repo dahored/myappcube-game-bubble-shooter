@@ -35,6 +35,8 @@ public class GameplayController : MonoBehaviour
     [SerializeField] AudioClip dropClip;
 
     const float END_LEVEL_DELAY      = 1.1f;  // espera a que terminen las animaciones de pop/drop antes de mostrar el panel
+    const float WIN_PANEL_PAUSE      = 0.35f; // respiro tras llenarse la barra, para que se vea la última estrella
+    const float PROGRESS_BAR_TIMEOUT = 3f;    // tope de espera de esa barra, para no colgar el fin de nivel
     const float POP_CHAIN_DELAY      = 0.08f; // segundos entre el pop de cada burbuja del match, en cadena
     const float POP_CHAIN_DELAY_MAX  = 0.4f;   // tope — para que un match gigante no tarde una eternidad en terminar
 
@@ -68,6 +70,7 @@ public class GameplayController : MonoBehaviour
     bool       _levelEnded;
     bool       _isFirstAttempt; // nunca se había intentado este nivel antes de esta partida (issue #49)
     int        _noMoreShotsUsedCount; // cuántas veces ya se pagó la oferta en esta partida — sube el costo
+    bool       _endingPending;        // hay un cierre de nivel esperando a que terminen las animaciones
 
     void Start()
     {
@@ -133,12 +136,16 @@ public class GameplayController : MonoBehaviour
         // falta refrescar en vivo cada segundo: las vidas no cambian a mitad de una partida
         // (perder la última siempre termina en un panel que corta la escena), y el nivel
         // tampoco cambia sin recargar. Sin timer de regen porque en pleno juego no aplica.
-        if (totalLivesText)  totalLivesText.text  = SaveManager.Lives.ToString();
+        // Con el boost de vidas infinitas activo, el número no significa nada: perder no cuesta
+        // vidas (ver SaveManager.LoseLife), así que mostrar "4" es engañoso. Mismo criterio que
+        // LivesPillView en el Level Map, que ahí lo resuelve con SetBadgeInfinite().
+        if (totalLivesText)
+            totalLivesText.text = SaveManager.IsInfiniteLivesActive ? "∞" : SaveManager.Lives.ToString();
         if (levelNumberText) levelNumberText.text = $"LV {_level.id}";
 
         grid.SpawnFromLevel(_level);
         _shotsRemaining = _level.max_shots; // antes de cannon.Init() — necesita el conteo ya listo para el primer RefreshPreview
-        cannon.Init(_level.available_colors, _level.rainbow_chance, _shotsRemaining);
+        cannon.Init(_level.available_colors, _shotsRemaining);
         cannon.OnBubbleLanded += OnBubbleLanded;
 
         // noMoreShotsPanel puede no estar asignado todavía (WIP) — ya se avisó en
@@ -281,11 +288,6 @@ public class GameplayController : MonoBehaviour
         var removed = ResolveMatchAndDrop(landedCell);
         if (removed.Contains(_creatureCell)) _creatureFreed = true;
 
-        // El grid ya refleja el estado final de este disparo (match + drop aplicados) —
-        // recién acá tiene sentido decidir si hay que retirarlo del cañón o si puede volver
-        // a bajar (ver GridController.RecomputeScroll).
-        grid.RecomputeScroll();
-
         if (progressScore != null) progressScore.SetScore(LiveScore, _level.star_thresholds);
 
         CheckWinLose();
@@ -296,6 +298,10 @@ public class GameplayController : MonoBehaviour
     HashSet<Vector2Int> ResolveMatchAndDrop(Vector2Int landedCell)
     {
         var removed = new HashSet<Vector2Int>();
+
+        // Antes del flood-fill: si lo que aterrizó fue una arcoíris, acá elige de qué color se
+        // vuelve. Si no, sería la semilla de un match que se lleva el grid completo.
+        grid.ResolveRainbow(landedCell);
 
         var matched = grid.FindConnectedSameColor(landedCell);
         if (matched.Count < 3)
@@ -348,9 +354,20 @@ public class GameplayController : MonoBehaviour
 
     void CheckWinLose()
     {
+        // El cierre no es inmediato: EndLevelAfterAnimations espera a que terminen los pops. En
+        // ese rato se puede llegar acá otra vez y encolar un segundo cierre — y lo peor no es el
+        // duplicado, es que si el jugador COMPRA disparos mientras uno está pendiente, esa
+        // corrutina vieja igual va a terminar y cerrar el nivel con los disparos recién pagados.
+        if (_levelEnded || _endingPending) return;
+
         bool objectiveMet = _level.objective.type == "rescue" ? _creatureFreed : grid.CellCount == 0;
-        if (objectiveMet) { StartCoroutine(EndLevelAfterAnimations(true)); return; }
-        if (_shotsRemaining <= 0) StartCoroutine(EndLevelAfterAnimations(false));
+        if (objectiveMet) { _endingPending = true; StartCoroutine(EndLevelAfterAnimations(true)); return; }
+
+        if (_shotsRemaining <= 0)
+        {
+            _endingPending = true;
+            StartCoroutine(EndLevelAfterAnimations(false));
+        }
     }
 
     // El grid (el diccionario de celdas) ya está lógicamente vacío/definido apenas termina
@@ -360,6 +377,8 @@ public class GameplayController : MonoBehaviour
     {
         cannon.SetInputEnabled(false); // bloquea el input ya mismo, no hace falta esperar
         yield return new WaitForSeconds(END_LEVEL_DELAY);
+
+        _endingPending = false;
         EndLevel(won);
     }
 
@@ -387,7 +406,8 @@ public class GameplayController : MonoBehaviour
             int stars  = CalculateStars(score);
             SaveManager.RecordLevelWin(_level.id, stars, _isFirstAttempt);
             var awards = CalculateAwards(firstCompletion);
-            winPanel.Show(_level.id, score, stars, awards);
+
+            StartCoroutine(ShowWinAfterProgressBar(score, () => winPanel.Show(_level.id, score, stars, awards)));
         }
         else if (enableNoMoreShotsOffer)
         {
@@ -398,6 +418,38 @@ public class GameplayController : MonoBehaviour
         {
             ShowRealLoss();
         }
+    }
+
+    // Durante la partida la barra muestra LiveScore, que NO incluye el bonus por disparos
+    // sobrantes — ese solo existe al ganar. Así que al terminar puede quedarle medio recorrido
+    // por delante y hasta dos estrellas sin encender.
+    //
+    // Si el panel se abriera en el mismo frame, ese remate pasaría entero detrás del modal y el
+    // jugador se enteraría de sus tres estrellas recién al ver el resultado, sin haberlas visto
+    // ganarse. Acá la barra termina su recorrido con el puntaje final, y el panel espera.
+    IEnumerator ShowWinAfterProgressBar(int finalScore, System.Action show)
+    {
+        if (progressScore != null)
+        {
+            progressScore.SetScore(finalScore, _level.star_thresholds);
+
+            yield return null; // un frame para que arranquen el llenado y los pops
+
+            // Con tope: si la barra no llegara nunca a su destino (umbrales vacíos, el
+            // componente desactivado a mitad de camino), el panel de victoria no aparecería y
+            // el nivel quedaría colgado sin nada en pantalla. Perder la animación es barato;
+            // dejar al jugador encerrado en un nivel terminado, no.
+            float waited = 0f;
+            while (progressScore.IsAnimating && waited < PROGRESS_BAR_TIMEOUT)
+            {
+                waited += Time.deltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(WIN_PANEL_PAUSE);
+        }
+
+        show();
     }
 
     // Score sin el bonus de disparos sobrantes — ese solo se conoce al terminar el nivel

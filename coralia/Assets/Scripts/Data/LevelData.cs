@@ -13,7 +13,11 @@ public class LevelData
                                        // calibrado). max_shots - min_shots_to_clear es el margen real
                                        // que determina si el nivel es fácil/difícil, y de ahí salen
                                        // los star_thresholds — ver GameplayController.CalculateStars.
-    public float rainbow_chance;      // probabilidad de burbuja arcoíris (0.0–1.0)
+    // SIN USO. La arcoíris salía del cañón con esta probabilidad, pero como burbuja no funciona:
+    // conecta con cualquier color, así que un solo disparo se llevaba el grid entero. Pasa a ser
+    // un booster. El campo sigue acá porque está escrito en los 180 JSON; el día que exista el
+    // booster se borra de todos de una vez.
+    public float rainbow_chance;
     public List<string> available_colors;
     public List<int> star_thresholds; // [1 estrella, 2 estrellas, 3 estrellas]
     public List<string> obstacles;

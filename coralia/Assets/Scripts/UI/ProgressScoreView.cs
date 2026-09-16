@@ -29,16 +29,26 @@ public class ProgressScoreView : MonoBehaviour
     [SerializeField] AudioClip allStarsClip; // se reproduce cuando se completan las 3
 
     // El 3er umbral (3 estrellas) es el 90% del "score ideal" con el que se calculan los
-    // star_thresholds — ver .claude/skills/level-designer/SKILL.md. Reconstruir el 100% de
-    // la barra a partir de ese dato (en vez de usar el 3er umbral como el 100%) es lo que
-    // hace que las 3 estrellas caigan exactas en 40/65/90% del ancho, donde están los Fields
-    // puestos a mano — si ese % cambia algún día, hay que actualizarlo acá también.
+    // star_thresholds. Reconstruir el 100% de la barra a partir de ese dato (en vez de usar el
+    // 3er umbral como el 100%) es lo que hace que las 3 estrellas caigan exactas en 40/65/90%
+    // del ancho, donde están los Fields puestos a mano.
+    //
+    // Este 0.90 y los 40/65 implícitos están TAMBIÉN en LevelDifficultyEstimator.BAR_STAR_*, que
+    // es donde el editor de niveles calcula los umbrales. Los tres números tienen que coincidir
+    // en los dos lados y con la posición de los marcos en la escena: si no, la barra cruza una
+    // estrella sin encenderla. El editor avisa cuando un nivel queda desalineado.
     const float STAR_3_RATIO_OF_BAR = 0.90f;
 
     Vector3[] _baseScales;
     float     _targetFill;
     int       _starsEarned;
+    int       _popping;
     Coroutine _fillRoutine;
+
+    // Si la barra todavía se está llenando o queda alguna estrella por reventar. GameplayController
+    // lo consulta para no tapar el remate con el panel de victoria.
+    public bool IsAnimating =>
+        _popping > 0 || (fillImage && !Mathf.Approximately(fillImage.fillAmount, _targetFill));
 
     void Awake()
     {
@@ -90,6 +100,8 @@ public class ProgressScoreView : MonoBehaviour
     {
         if (!stars[index]) yield break;
 
+        _popping++;
+
         // En la última estrella, si hay un clip de "las 3 completas" asignado, ese reemplaza
         // al de estrella individual (no queremos los dos sonando pisados) — Star Clip solo
         // suena en la 1ra y 2da, o en la 3ra si All Stars Clip está vacío.
@@ -106,6 +118,7 @@ public class ProgressScoreView : MonoBehaviour
             yield return null;
         }
         t.localScale = _baseScales[index];
+        _popping--;
 
         if (isLast) AudioManager.Instance?.PlayUi(allStarsClip);
     }

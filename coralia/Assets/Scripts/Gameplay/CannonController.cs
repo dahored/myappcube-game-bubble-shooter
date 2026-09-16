@@ -51,7 +51,6 @@ public class CannonController : MonoBehaviour
 
     List<string>      _availableColors;
     List<BubbleColor> _availableColorsParsed; // fallback de RollColor() si el grid se queda sin colores rastreables
-    float             _rainbowChance;
     int          _shotsRemaining;
     BubbleColor  _current;
     BubbleColor  _next;
@@ -88,8 +87,7 @@ public class CannonController : MonoBehaviour
         _muzzleLocalBase = WorldToGridLocal(muzzlePoint.position);
         if (grid != null)
         {
-            grid.SetMuzzleReferenceY(_muzzleLocalBase.y);
-            grid.RecomputeScroll();
+            grid.SetMuzzleReferenceY(_muzzleLocalBase.y); // deja el grid ya colocado, sin animar
             grid.OnBubbleTapped += HandleBubbleTapped;
 
             // Drag que empieza justo encima de una burbuja — mismo destino que AimInputRelay
@@ -124,12 +122,11 @@ public class CannonController : MonoBehaviour
         }
     }
 
-    public void Init(List<string> availableColors, float rainbowChance, int shotsRemaining)
+    public void Init(List<string> availableColors, int shotsRemaining)
     {
         _availableColors       = availableColors;
         _availableColorsParsed = new List<BubbleColor>();
         foreach (var c in availableColors) _availableColorsParsed.Add(BubbleColorExtensions.Parse(c));
-        _rainbowChance   = rainbowChance;
         _shotsRemaining  = shotsRemaining;
         _current = RollColor();
         _next    = RollColor();
@@ -224,6 +221,16 @@ public class CannonController : MonoBehaviour
 
     public void OnAimDrag(Vector2 screenPos)
     {
+        // El dedo pudo apoyarse mientras la burbuja anterior todavía volaba. En ese momento
+        // OnAimBegin se ignoró, y Unity no vuelve a emitir un "begin" con el dedo ya apoyado: sin
+        // esto la mira no reaparece hasta levantar y volver a tocar, y peor, al soltar tampoco
+        // dispara porque OnAimEnd se corta en su propio guard.
+        if (!_dragging && _inputEnabled && _flyingShot == null)
+        {
+            _dragging = true;
+            HideHint();
+        }
+
         if (_dragging) UpdateAim(screenPos);
     }
 
@@ -453,12 +460,22 @@ public class CannonController : MonoBehaviour
     // Smart queue: solo ofrece colores que todavía están en el grid, para no regalar
     // burbujas con las que no se puede matchear nada. Si el grid no tiene ninguno
     // rastreable (ej. solo quedan rainbow, o está vacío), cae al pool del nivel.
+    //
+    // La arcoíris NO sale de acá. Como burbuja de cañón no funciona: conecta con todo, así que o
+    // se lleva medio nivel de un disparo o hay que recortarla hasta volverla un color más. Pasa a
+    // ser un booster, que el jugador usa cuando decide y no cuando el azar se lo entrega.
     BubbleColor RollColor()
     {
-        if (Random.value < _rainbowChance) return BubbleColor.Rainbow;
+        // Primero el frente alcanzable, que además viene pesado por utilidad. Si el grid está
+        // tapado o vacío se cae a los colores que haya, y de ahí al pool del nivel.
+        var pool = grid.ReachableColorPool();
 
-        var onGrid = grid.ColorsOnGrid();
-        List<BubbleColor> pool = onGrid.Count > 0 ? new List<BubbleColor>(onGrid) : _availableColorsParsed;
+        if (pool.Count == 0)
+        {
+            var onGrid = grid.ColorsOnGrid();
+            pool = onGrid.Count > 0 ? new List<BubbleColor>(onGrid) : _availableColorsParsed;
+        }
+
         return pool[Random.Range(0, pool.Count)];
     }
 
