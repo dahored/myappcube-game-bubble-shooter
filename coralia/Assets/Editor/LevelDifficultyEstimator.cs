@@ -54,6 +54,11 @@ public static class LevelDifficultyEstimator
         public int  popped;         // burbujas reventadas por match en ese recorrido
         public int  dropped;        // burbujas que cayeron por quedar sueltas
         public bool rescue;         // la simulación paró al liberar la criatura, no al vaciar
+
+        // Qué fracción del nivel se lleva el MEJOR primer disparo. Es la medida de lo frágil que
+        // es el layout: con 0.6, más de la mitad del grid se cae de una y el nivel se termina en
+        // tres jugadas por más disparos que tenga asignados.
+        public float collapse;
     }
 
     public static Report Analyze(LevelData level)
@@ -87,7 +92,34 @@ public static class LevelDifficultyEstimator
 
         Simulate(cells, target, out report.minShots, out report.popped, out report.dropped);
         report.realisticShots = Realistic(report.minShots, report.colors);
+        report.collapse       = Collapse(cells);
         return report;
+    }
+
+    // Cuánto se lleva el disparo más destructivo que hay disponible al empezar, como fracción del
+    // nivel. No mide dificultad: mide si el layout se sostiene.
+    //
+    // Lo que lo dispara casi siempre es el techo. La fila 0 es lo único que sujeta al resto, así
+    // que una franja larga de un mismo color ahí arriba es una cuerda cortable: se revienta y
+    // todo lo que colgaba se desprende junto. Un nivel puede tener 14 disparos asignados y
+    // terminarse en 3 por esto.
+    static float Collapse(Dictionary<Vector2Int, BubbleColor> cells)
+    {
+        if (cells.Count == 0) return 0f;
+
+        int worst = 0;
+
+        foreach (var group in Clusters(cells))
+        {
+            if (group.Count < 2) continue; // un grupo de uno no explota con un solo disparo
+
+            var trial = new Dictionary<Vector2Int, BubbleColor>(cells);
+            foreach (var cell in group) trial.Remove(cell);
+
+            worst = Mathf.Max(worst, group.Count + Falling(trial).Count);
+        }
+
+        return worst / (float)cells.Count;
     }
 
     // El simulador juega perfecto, pero nadie juega así — y no solo por puntería.

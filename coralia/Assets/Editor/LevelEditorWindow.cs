@@ -481,6 +481,15 @@ public class LevelEditorWindow : EditorWindow
         EditorGUILayout.LabelField("Burbujas", $"{_report.bubbles} en {_report.clusters} grupos" +
                                                (_report.lone > 0 ? $" ({_report.lone} sueltas)" : ""));
         EditorGUILayout.LabelField("Puntaje óptimo", $"~{LevelDifficultyEstimator.OptimalScore(_report, level.max_shots):n0}");
+        EditorGUILayout.LabelField("Peor disparo", $"se lleva el {_report.collapse:P0} del nivel");
+
+        // El aviso que faltaba: un nivel puede tener los disparos bien calculados y aun así
+        // terminarse en tres jugadas porque el techo se corta de un match.
+        if (_report.collapse > 0.30f)
+            EditorGUILayout.HelpBox(
+                $"Un solo disparo se lleva el {_report.collapse:P0} del nivel. Suele ser el techo: " +
+                "si la fila de arriba tiene varias burbujas seguidas del mismo color, al reventarlas " +
+                "cae todo lo que colgaba de ellas.", MessageType.Warning);
 
         var actual   = LevelDifficultyEstimator.Rate(realistic, level.max_shots);
         var expected = LevelDifficultyEstimator.Expected(PositionInChapter(level));
@@ -853,6 +862,10 @@ public class LevelEditorWindow : EditorWindow
 
         // Misma clave que usa LevelMapController al entrar a un nivel.
         PlayerPrefs.SetInt(SELECTED_LEVEL, _current.data.id);
+
+        // Y la marca de prueba: GameplayController la consume al cargar y no guarda nada de esta
+        // partida. Sin esto, ganar el nivel 60 para ver cómo quedó dejaba desbloqueados los 60.
+        PlayerPrefs.SetInt(GameplayController.EDITOR_TEST_KEY, 1);
         PlayerPrefs.Save();
 
         EditorSceneManager.OpenScene(GAMEPLAY_SCENE);

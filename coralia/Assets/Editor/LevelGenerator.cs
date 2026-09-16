@@ -7,15 +7,14 @@ using Difficulty = LevelDifficultyEstimator.Difficulty;
 //
 // Son tres pasos separados a propósito:
 //
-//   1. SILUETA — qué celdas se ocupan. Sale de un repertorio de formas reconocibles (bloque,
-//      cúpula, copa, rombo, columnas, onda), no de ruido. Después se espeja, que es lo que más
-//      hace que un nivel "se vea diseñado", y se le aplican mordidas y huecos para que no quede
-//      con cara de plantilla.
+//   1. SILUETA — qué celdas se ocupan. Es UNA figura dibujada a mano (LevelShapeLibrary),
+//      estirada por su cuerpo hasta la altura del nivel y a veces espejada. Una sola y no varias
+//      apiladas: el nivel tiene que leerse como una pieza.
 //
-//   2. COLOR — manchas, no celdas sueltas. Se siembran semillas y crecen por vecindad hasta
-//      cubrir la silueta, así cada color queda en grupos conectados de tamaño parecido. El tamaño
-//      de mancha es la palanca de dificultad más fuerte que hay: manchas grandes se revientan de
-//      un disparo y arrastran cascadas; manchas chicas obligan a gastar disparos de a uno.
+//   2. COLOR — manchas chicas, de tres o cuatro burbujas. Se siembran semillas y crecen por
+//      vecindad hasta cubrir la silueta. El tamaño de mancha es la palanca más delicada del
+//      generador: una mancha grande del mismo color es un combo ya servido, y basta con unas
+//      pocas para que un nivel de 38 disparos se resuelva en 11.
 //
 //   3. SELECCIÓN — se generan muchos candidatos y se MIDEN con LevelDifficultyEstimator, que es
 //      el mismo simulador que evalúa los niveles hechos a mano. Gana el que mide más parecido a
@@ -28,9 +27,16 @@ public static class LevelGenerator
     // Burbujas quitadas por disparo que debería tener cada dificultad. Es la medida con la que se
     // elige el candidato: un nivel fácil se limpia en pocas jugadas grandes, uno difícil exige
     // muchas jugadas chicas. Salen de medir los niveles del capítulo 1 hechos a mano.
-    const float EFFICIENCY_EASY   = 6.5f;
-    const float EFFICIENCY_MEDIUM = 5.0f;
-    const float EFFICIENCY_HARD   = 3.5f;
+    const float EFFICIENCY_EASY   = 5.0f;
+    const float EFFICIENCY_MEDIUM = 4.0f;
+    const float EFFICIENCY_HARD   = 3.0f;
+
+    // Cuánto puede llevarse el mejor disparo del nivel. Un quinto ya es una cascada vistosa; más
+    // que eso y el nivel se termina en un puñado de jugadas por más disparos que tenga asignados.
+    //
+    // Va de la mano del tamaño de mancha: manchas grandes del mismo color son combos servidos, y
+    // son la razón por la que un nivel de 38 disparos se resolvía en 11.
+    const float COLLAPSE_LIMIT = 0.22f;
 
     // Un nivel tiene que llenar la pantalla para leerse como nivel. Por debajo de 8 filas se ve a
     // media hecho por más que los números den bien. El tope son 12 porque más abajo el grid nace
@@ -38,16 +44,17 @@ public static class LevelGenerator
     const int MIN_ROWS = 8;
     const int MAX_ROWS = 25;
 
-    // Celdas por fila en promedio (alternan 10 y 9), para estimar cuántas burbujas debería tener
-    // un layout de N filas antes de generarlo.
+    // Celdas por fila en promedio (alternan 10 y 9) y qué proporción de ellas ocupa una figura
+    // típica del catálogo, contando sus bordes en diagonal. Juntas estiman cuántas burbujas
+    // debería tener un layout de N filas antes de generarlo.
     const float CELLS_PER_ROW = 9.5f;
+    const float SHAPE_FILL    = 0.85f;
 
     struct Recipe
     {
         public int   rows;
         public int   colors;
         public float blobSize;   // burbujas por mancha de color
-        public float density;    // cuánto de la silueta sobrevive a las mordidas
     }
 
     // Escribe el layout, los colores, los disparos y los umbrales sobre el nivel. NO toca id,
@@ -80,14 +87,22 @@ public static class LevelGenerator
             // vuelve a tirar. Salía de acá el nivel de dos filas.
             if (shape.Count == 0 || shape.Max(cell => cell.y) + 1 < attemptRecipe.rows - 1) continue;
 
-            // La mayoría de las veces el color también se espeja. Es lo que termina de hacer que
-            // el nivel se lea como una figura y no como un relleno: la silueta simétrica sola no
-            // alcanza si encima las manchas van cada una por su lado.
-            var painted = Paint(shape, palette, attemptRecipe.colors, attemptRecipe.blobSize, rng);
-            if (rng.NextDouble() < 0.75) MirrorColors(painted);
+            // Tres de cada cuatro niveles llevan un patrón de color — anillos, franjas, equis,
+            // rombos. Es lo que hace que se lean como algo dibujado, y de paso mantiene los
+            // grupos de un color acotados por construcción. El resto va con manchas orgánicas,
+            // que rompen la regularidad cuando varios niveles seguidos usarían patrón.
+            var painted = rng.NextDouble() < 0.75
+                ? PaintPattern(shape, palette, attemptRecipe.colors, attemptRecipe.rows, rng)
+                : Paint(shape, palette, attemptRecipe.colors, attemptRecipe.blobSize, rng);
 
-            // Después del espejo, no antes: reflejar puede dejar sin representación a un color que
-            // solo vivía de un lado.
+            if (rng.NextDouble() < 0.5) MirrorColors(painted);
+
+            // El techo se refuerza DESPUÉS del espejo, porque espejar puede volver a juntar dos
+            // mitades del mismo color justo en el centro de la fila 0.
+            ReinforceCeiling(painted, painted.Values.Distinct().ToArray(), rng);
+
+            // Y consolidar al final: los dos pasos anteriores pueden dejar un color con una sola
+            // burbuja en todo el nivel.
             Consolidate(painted);
             var bubbles = painted.Select(kv => new BubbleEntry { row = kv.Key.y, col = kv.Key.x, color = kv.Value })
                                  .ToList();
@@ -143,7 +158,7 @@ public static class LevelGenerator
 
         // El tamaño pesa tanto como la eficiencia. Sin esto gana cualquier layout diminuto: trece
         // burbujas limpiadas en dos disparos dan una eficiencia impecable y un nivel que no lo es.
-        float expected = recipe.rows * CELLS_PER_ROW * recipe.density;
+        float expected = recipe.rows * CELLS_PER_ROW * SHAPE_FILL;
         score -= Mathf.Abs(report.bubbles - expected) / expected * 5f;
 
         // Que falte un color pedido descalifica el candidato casi por sí solo: si el nivel dice
@@ -154,6 +169,14 @@ public static class LevelGenerator
         // difícil son parte del desafío; en uno fácil, un error.
         float lonePenalty = target == Difficulty.Facil ? 0.30f : 0.08f;
         score -= report.lone * lonePenalty;
+
+        // Fragilidad: cuánto se lleva el disparo más destructivo disponible al empezar. Un nivel
+        // que pierde más de un tercio de una sola jugada se siente roto por más que la cuenta de
+        // disparos dé bien — el jugador ve desmoronarse media pantalla sin haber hecho nada
+        // especial. Se penaliza fuerte y creciendo, para que estos candidatos no ganen nunca
+        // aunque su eficiencia sea la pedida.
+        if (report.collapse > COLLAPSE_LIMIT)
+            score -= (report.collapse - COLLAPSE_LIMIT) * 25f;
 
         return score;
     }
@@ -168,24 +191,21 @@ public static class LevelGenerator
         {
             Difficulty.Facil => new Recipe
             {
-                rows     = Mathf.RoundToInt(Mathf.Lerp(9f, 13f, progress)),
+                rows     = Mathf.RoundToInt(Mathf.Lerp(9f, 12f, progress)),
                 colors   = Mathf.RoundToInt(Mathf.Lerp(2f, 3f, progress)),
-                blobSize = Mathf.Lerp(12f, 9f, progress),
-                density  = 1f,
+                blobSize = Mathf.Lerp(4.5f, 4f, progress),
             },
             Difficulty.Dificil => new Recipe
             {
-                rows     = Mathf.RoundToInt(Mathf.Lerp(17f, 25f, progress)),
+                rows     = Mathf.RoundToInt(Mathf.Lerp(18f, 24f, progress)),
                 colors   = Mathf.RoundToInt(Mathf.Lerp(4f, 5f, progress)),
-                blobSize = Mathf.Lerp(5f, 4f, progress),
-                density  = 0.92f,
+                blobSize = Mathf.Lerp(3f, 2.5f, progress),
             },
             _ => new Recipe
             {
-                rows     = Mathf.RoundToInt(Mathf.Lerp(13f, 18f, progress)),
+                rows     = Mathf.RoundToInt(Mathf.Lerp(13f, 17f, progress)),
                 colors   = Mathf.RoundToInt(Mathf.Lerp(3f, 4f, progress)),
-                blobSize = Mathf.Lerp(8f, 6f, progress),
-                density  = 0.97f,
+                blobSize = Mathf.Lerp(3.5f, 3f, progress),
             },
         };
 
@@ -205,124 +225,54 @@ public static class LevelGenerator
 
     // ---------------------------------------------------------------- silueta
 
+    // UNA figura por nivel, estirada a la altura pedida.
+    //
+    // Una sola y no varias apiladas: un nivel tiene que leerse como una pieza. Apilando figuras
+    // distintas cada tramo se ve sin relación con el de arriba, y el resultado parece amontonado
+    // en vez de compuesto. La variedad sale del catálogo y del espejado, no de mezclar.
     static HashSet<Vector2Int> Silhouette(Recipe recipe, System.Random rng)
     {
-        // Siluetas que se reconocen de un vistazo. El perfil dice cuánto se mete el borde en cada
-        // fila: 0 es fila entera, 1 es la más angosta.
-        var cells = (rng.Next(7)) switch
+        var shape = LevelShapeLibrary.All[rng.Next(LevelShapeLibrary.All.Length)];
+        var rows  = LevelShapeLibrary.Expand(shape, recipe.rows);
+
+        // Espejar duplica el repertorio sin dibujar nada. En las simétricas no cambia nada y no
+        // molesta; en las que no lo son, se leen distinto.
+        bool flip  = rng.NextDouble() < 0.5;
+        var  cells = new HashSet<Vector2Int>();
+
+        for (int row = 0; row < rows.Count; row++)
         {
-            0 => Shape(recipe, t => 0f),                                    // bloque
-            1 => Shape(recipe, t => t),                                     // cúpula: cierra abajo
-            2 => Shape(recipe, t => 1f - t),                                // copa: abre abajo
-            3 => Shape(recipe, t => Mathf.Abs(t - 0.5f) * 2f),              // rombo
-            4 => Shape(recipe, t => 1f - Mathf.Abs(t - 0.5f) * 2f),         // reloj de arena
-            5 => Shape(recipe, t => Mathf.Floor(t * 3f) / 3f),              // escalonada
-            _ => Columns(recipe, rng),
-        };
+            string line = rows[row];
+            if (flip) line = new string(line.Reverse().ToArray());
 
-        if (recipe.density < 1f) Erode(cells, recipe.density, rng);
+            for (int col = 0; col < HexGridMath.ColsInRow(row); col++)
+                if (Filled(line, col, HexGridMath.IsOddRow(row))) cells.Add(new Vector2Int(col, row));
+        }
 
-        // La cavidad va antes del espejo, así que también sale simétrica. Solo de vez en cuando:
-        // es el detalle que evita la cara de plantilla, pero de a mucho deforma la figura.
-        if (rng.NextDouble() < 0.25) Punch(cells, rng);
-
-        cells = Mirror(cells);
+        // Nada de morder el contorno. Una celda quitada al azar no se lee como diseño sino como
+        // una burbuja que falta, y en los niveles difíciles eso salpicaba el borde entero. La
+        // figura se usa tal como está dibujada.
         PruneFloating(cells);
         return cells;
     }
 
-    // Familia de formas definidas por cuánto se mete el borde en cada fila. Un solo generador
-    // cubre bloque, cúpula, copa, rombo y onda según qué perfil se le pase.
+    // Si la celda 'col' de esta fila cae dentro del dibujo.
     //
-    // El perfil trabaja en fracciones (recibe 0 en la fila de arriba y 1 en la de abajo, devuelve
-    // 0 para fila entera y 1 para la más angosta) en vez de en columnas. Así la misma forma se ve
-    // igual con 8 filas que con 12; con valores absolutos, una cúpula alta se cerraba a dos
-    // celdas por la mitad y el resto del nivel quedaba en un hilo.
-    static HashSet<Vector2Int> Shape(Recipe recipe, System.Func<float, float> profile)
+    // Las filas impares tienen nueve celdas y van corridas media burbuja, así que su celda 'col'
+    // no cae sobre la columna 'col' del dibujo sino JUSTO ENTRE la 'col' y la 'col + 1'. Se mira
+    // ese par y alcanza con que una esté llena.
+    //
+    // Recortar el dibujo a nueve columnas, que era lo que se hacía antes, borra la columna de la
+    // derecha: una fila simétrica como "..######.." quedaba "..######." y la figura entera salía
+    // corrida hacia un lado. Este emparejado sí conserva la simetría — si el dibujo cumple
+    // line[i] == line[9-i], la fila impar cumple mark[c] == mark[8-c].
+    static bool Filled(string line, int col, bool oddRow)
     {
-        var cells = new HashSet<Vector2Int>();
+        if (!oddRow) return col < line.Length && line[col] == '#';
 
-        for (int row = 0; row < recipe.rows; row++)
-        {
-            int cols     = HexGridMath.ColsInRow(row);
-            int maxInset = Mathf.Max(0, cols / 2 - 2);   // deja al menos cuatro celdas por fila
-
-            float t   = recipe.rows <= 1 ? 0f : row / (float)(recipe.rows - 1);
-            int inset = Mathf.Clamp(Mathf.RoundToInt(profile(t) * maxInset), 0, maxInset);
-
-            for (int col = inset; col < cols - inset; col++)
-                cells.Add(new Vector2Int(col, row));
-        }
-
-        return cells;
-    }
-
-    // Columnas colgando de un techo lleno — la silueta de estalactitas. La fila 0 completa es lo
-    // que las sostiene: sin ella caerían todas al primer disparo.
-    static HashSet<Vector2Int> Columns(Recipe recipe, System.Random rng)
-    {
-        var cells = new HashSet<Vector2Int>();
-        int cols  = HexGridMath.ColsInRow(0);
-
-        for (int col = 0; col < cols; col++) cells.Add(new Vector2Int(col, 0));
-
-        for (int col = 0; col < cols; col += 2)
-        {
-            // Las columnas bajan entre el 70% y el total de la altura pedida: desparejas, pero
-            // ninguna se queda a mitad de camino dejando el nivel corto.
-            int depth = rng.Next(Mathf.CeilToInt(recipe.rows * 0.7f), recipe.rows + 1);
-
-            for (int row = 1; row < depth; row++)
-                if (col < HexGridMath.ColsInRow(row)) cells.Add(new Vector2Int(col, row));
-        }
-
-        return cells;
-    }
-
-    // Mordidas en el contorno. Solo toca celdas del borde, así el interior queda macizo y la
-    // silueta se ve gastada en vez de agujereada.
-    static void Erode(HashSet<Vector2Int> cells, float density, System.Random rng)
-    {
-        var edge = cells.Where(cell => HexGridMath.GetNeighbors(cell).Any(n => !cells.Contains(n))).ToList();
-
-        foreach (var cell in edge)
-        {
-            if (cell.y == 0) continue;                       // el techo sostiene todo
-            if (rng.NextDouble() >= 1f - density) continue;
-            cells.Remove(cell);
-        }
-    }
-
-    // Una cavidad interior. Le da al nivel un lugar donde las burbujas quedan colgando, que es de
-    // donde salen las cascadas grandes.
-    static void Punch(HashSet<Vector2Int> cells, System.Random rng)
-    {
-        var inner = cells.Where(cell => cell.y > 1 && HexGridMath.GetNeighbors(cell).All(cells.Contains)).ToList();
-        if (inner.Count == 0) return;
-
-        var center = inner[rng.Next(inner.Count)];
-        cells.Remove(center);
-
-        foreach (var neighbor in HexGridMath.GetNeighbors(center))
-            if (neighbor.y > 0 && rng.NextDouble() < 0.5) cells.Remove(neighbor);
-    }
-
-    // Se queda con la mitad izquierda y la refleja. La simetría es lo que más separa un nivel
-    // compuesto de uno generado: el ojo la lee como intención.
-    static HashSet<Vector2Int> Mirror(HashSet<Vector2Int> cells)
-    {
-        var result = new HashSet<Vector2Int>();
-
-        foreach (var cell in cells)
-        {
-            int cols = HexGridMath.ColsInRow(cell.y);
-            if (cell.x * 2 >= cols) continue;
-
-            result.Add(cell);
-            result.Add(new Vector2Int(cols - 1 - cell.x, cell.y));
-        }
-
-        return result;
+        bool left  = col     < line.Length && line[col]     == '#';
+        bool right = col + 1 < line.Length && line[col + 1] == '#';
+        return left || right;
     }
 
     // Lo que no llega al techo caería apenas empieza el nivel, así que no es parte del layout.
@@ -342,6 +292,36 @@ public static class LevelGenerator
     }
 
     // ---------------------------------------------------------------- color
+
+    // Pinta con un patrón del catálogo: cada celda cae en una banda y cada banda toma un color.
+    //
+    // Es la forma en que están hechos los niveles de los bubble shooters que se ven bien: una masa
+    // densa con un dibujo de color encima. Y tiene una ventaja que no se ve: las bandas acotan los
+    // grupos por construcción — un anillo o una franja tienen un ancho fijo, mientras que una
+    // mancha que crece libre puede terminar con veinte burbujas del mismo color.
+    //
+    // Las bandas se reparten en la paleta con módulo, así que el mismo patrón se lee distinto con
+    // dos colores que con cinco.
+    static Dictionary<Vector2Int, string> PaintPattern(HashSet<Vector2Int> cells, string[] palette,
+                                                       int colorCount, int rows, System.Random rng)
+    {
+        var colors  = palette.Take(Mathf.Clamp(colorCount, 2, palette.Length)).ToArray();
+        var pattern = LevelPatternLibrary.All[rng.Next(LevelPatternLibrary.All.Length)];
+        var field   = LevelPatternLibrary.FieldOf(cells, rows);
+
+        // Corrimiento al azar: si no, el patrón siempre empieza por el mismo color de la paleta y
+        // todos los niveles que lo usan se parecen entre sí.
+        int shift = rng.Next(colors.Length);
+
+        var result = new Dictionary<Vector2Int, string>(cells.Count);
+        foreach (var cell in cells)
+        {
+            int band = pattern.band(cell, field);
+            result[cell] = colors[((band + shift) % colors.Length + colors.Length) % colors.Length];
+        }
+
+        return result;
+    }
 
     // Manchas que crecen desde semillas repartidas, todas al mismo ritmo. El resultado se parece a
     // un mapa de regiones: cada color ocupa zonas conectadas de tamaño parecido, en vez de quedar
@@ -403,6 +383,49 @@ public static class LevelGenerator
             if (!result.ContainsKey(cell)) result[cell] = colors[rng.Next(colors.Length)];
 
         return result;
+    }
+
+    // Cuántas burbujas seguidas del mismo color se toleran en el techo.
+    const int MAX_CEILING_RUN = 2;
+
+    // Rompe las franjas largas de un mismo color en la fila 0.
+    //
+    // Es el arreglo más importante del generador, y no se nota mirando el nivel quieto. La fila 0
+    // es lo ÚNICO que sujeta al resto: todo lo demás cuelga de ella. Si hay cinco burbujas
+    // seguidas del mismo color arriba, un solo match las borra y la mitad del nivel se desprende
+    // y cae junta. De ahí salían los niveles de 14 disparos que se terminaban en 3.
+    //
+    // Cortando las franjas, cada match del techo abre un hueco pero deja el resto colgando de las
+    // burbujas de al lado, y el nivel se desarma de a poco — que es como se siente un nivel hecho
+    // a mano.
+    static void ReinforceCeiling(Dictionary<Vector2Int, string> painted, string[] colors, System.Random rng)
+    {
+        int cols = HexGridMath.ColsInRow(0);
+        int run  = 1;
+
+        for (int col = 1; col < cols; col++)
+        {
+            var current  = new Vector2Int(col, 0);
+            var previous = new Vector2Int(col - 1, 0);
+
+            if (!painted.TryGetValue(current, out var color) ||
+                !painted.TryGetValue(previous, out var before))
+            {
+                run = 1;
+                continue;
+            }
+
+            if (color != before) { run = 1; continue; }
+            if (++run <= MAX_CEILING_RUN) continue;
+
+            // Cualquier otro color del nivel corta la franja; se elige al azar para no dejar un
+            // patrón regular visible.
+            var others = colors.Where(c => c != color).ToArray();
+            if (others.Length == 0) continue;
+
+            painted[current] = others[rng.Next(others.Length)];
+            run = 1;
+        }
     }
 
     // Copia el color de cada celda sobre su espejo. Las manchas quedan reflejadas y el nivel gana
