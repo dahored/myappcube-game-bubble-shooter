@@ -14,12 +14,15 @@ public static class SceneLoader
     // GAME SCREENS
     public const string GAMEPLAY       = "Gameplay";
 
-    // TEMPORAL — mientras se prototipa el mapa curvo en 3D, TODO el juego navega ahí: el botón
-    // de jugar del Home y los regresos desde Gameplay (WinPanel, LosePanel, QuitPanel).
-    // Para volver al mapa real, esta línea pasa a "LevelMap" y hay que marcar la escena en
-    // File -> Build Profiles. Es el único lugar que hay que tocar.
-    public const string LEVEL_MAP      = "LevelMapCurve";
-    public const string LEVEL_MAP_REAL = "LevelMap";
+    // El mapa del juego es el curvo (mundo 3D sobre una esfera): ahí van el botón de jugar del
+    // Home y todos los regresos desde Gameplay (WinPanel, LosePanel, QuitPanel).
+    public const string LEVEL_MAP = "LevelMapCurve";
+
+    // El mapa plano original, que ya no se navega. Se conserva porque es la única referencia
+    // funcionando de varias cosas que el curvo todavía resuelve distinto, y para poder comparar
+    // comportamiento. Para volver a él alcanza con apuntar LEVEL_MAP acá y marcar la escena en
+    // File -> Build Profiles.
+    public const string LEVEL_MAP_FLAT = "LevelMap";
 
     public static void GoTo(string sceneName) => SceneTransition.GoTo(sceneName);
 }
