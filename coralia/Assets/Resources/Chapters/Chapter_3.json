@@ -1,6 +1,6 @@
 {
-  "chapter": 1,
-  "name": "Coralia",
+  "chapter": 3,
+  "name": "Profundidades",
   "decorations": [
     { "id": "group_1", "at": -1.6, "side": "left", "offset": 0.4 },
     { "id": "group_2", "at": -1.6, "side": "right", "offset": 0.4 },

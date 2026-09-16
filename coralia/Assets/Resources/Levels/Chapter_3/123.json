@@ -1,7 +1,7 @@
 {
   "id": 123,
   "chapter": 3,
-  "name": "Nivel 123",
+  "name": "Presión creciente",
   "objective": {
     "type": "clear_all"
   },
