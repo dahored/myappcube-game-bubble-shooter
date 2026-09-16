@@ -38,7 +38,7 @@ public class ShotBubble : MonoBehaviour
     public ImpactInfo? Tick(float dt)
     {
         Vector2 pos = _rt.anchoredPosition + Velocity * dt;
-        HexGridMath.ReflectIfNeeded(ref pos, ref Velocity, _container.rect.width);
+        HexGridMath.ReflectIfNeeded(ref pos, ref Velocity);
         _rt.anchoredPosition = pos;
 
         // El techo está en y=0 (fila 0 vive en y=-BubbleRadius); "toca techo" cuando el

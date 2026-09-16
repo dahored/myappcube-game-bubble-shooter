@@ -100,6 +100,18 @@ public class WorldSphereNodePositioner : MonoBehaviour
     public float CurrentNodeAngle { get; private set; }
     public float AngleSpacing => angleSpacing;
 
+    // Los tamaños en unidades de mundo de este componente (y los del camino y las decoraciones)
+    // están ajustados a ojo para un planeta de este radio. No es un ajuste: es el punto de
+    // partida de toda la calibración, y solo cambiaría si algún día se rehiciera entera.
+    const float SIZES_CALIBRATED_FOR_RADIUS = 20f;
+
+    // Cuánto hay que multiplicar cualquier medida en unidades de MUNDO para que conserve su
+    // proporción con el planeta. Con el Scale del Sphere en 40 (radio 20) da 1 y todo queda como
+    // se calibró; en 20 (radio 10) da 0.5 y todo se achica a la mitad solo.
+    //
+    // Los ángulos no lo necesitan: ya son proporcionales por naturaleza.
+    public float WorldScale => (_sphereScale * 0.5f) / SIZES_CALIBRATED_FOR_RADIUS;
+
     // El mapa se arma a lo largo de varios frames, así que hasta que esto no sea true los valores
     // de arriba todavía no son definitivos.
     public bool Ready { get; private set; }
@@ -266,7 +278,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
             // cientos (píxeles) en su propio espacio y una primitiva mide 1, así que hay que
             // normalizar por su tamaño propio antes de dividir por la escala de la esfera.
             float sourceSize = node is RectTransform rt && rt.rect.width > 0.001f ? rt.rect.width : 1f;
-            node.localScale  = Vector3.one * (nodeSize / sourceSize / sphereScale);
+            node.localScale  = Vector3.one * (nodeSize * WorldScale / sourceSize / sphereScale);
 
             var view = node.GetComponentInChildren<LevelNodeView>(true);
             if (view) view.OnClicked += OnLevelSelected;
@@ -575,7 +587,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
         card.localRotation = _playerCardRot;
 
         float sourceSize = card.rect.width > 0.001f ? card.rect.width : 1f;
-        card.localScale   = Vector3.one * (playerCardSize / sourceSize / sphereScale);
+        card.localScale   = Vector3.one * (playerCardSize * WorldScale / sourceSize / sphereScale);
 
         _playerCard = card;
     }
@@ -586,7 +598,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
     Quaternion PlayerCardRotation(int nodeIndex)
     {
         float radiusWorld = _baseRadius * _sphereScale;
-        float apart       = (nodeSize + playerCardSize) * 0.5f + playerCardGap;
+        float apart       = ((nodeSize + playerCardSize) * 0.5f + playerCardGap) * WorldScale;
         float sideDeg     = apart / Mathf.Max(radiusWorld, 0.0001f) * Mathf.Rad2Deg;
 
         // Al lado CONTRARIO de hacia donde el zigzag desvió al nodo: así la tarjeta siempre cae
@@ -623,8 +635,9 @@ public class WorldSphereNodePositioner : MonoBehaviour
     // La esfera placeholder no tiene "canto": su espesor es su propio diámetro.
     float NodeLift(float facing)
     {
-        float resting = _isFlat ? nodeThickness * 0.5f : nodeSize * 0.5f;
-        return Mathf.Lerp(resting, nodeSize * 0.5f, facing);
+        float w       = WorldScale;
+        float resting = (_isFlat ? nodeThickness : nodeSize) * 0.5f * w;
+        return Mathf.Lerp(resting, nodeSize * 0.5f * w, facing);
     }
 
     // Mismo flujo que LevelMapController.OnLevelSelected(): sin vidas no se entra, y si hay un

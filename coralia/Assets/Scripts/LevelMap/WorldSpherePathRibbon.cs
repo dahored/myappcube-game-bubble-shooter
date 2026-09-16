@@ -80,9 +80,12 @@ public class WorldSpherePathRibbon : MonoBehaviour
         if (!pathMaterial)
             Debug.LogWarning("[WorldSpherePathRibbon] Falta asignar 'Path Material' — el camino se va a ver con el material rosa de error.", this);
 
-        float radius      = positioner.SurfaceRadiusLocal + lift / Mathf.Max(positioner.SphereScale, 0.0001f);
+        // Todas las medidas en unidades de MUNDO se reescalan con el tamaño del planeta, para que
+        // la escala de la esfera funcione como un zoom. Ver 'Reference Radius' en el posicionador.
+        float w           = positioner.WorldScale;
+        float radius      = positioner.SurfaceRadiusLocal + lift * w / Mathf.Max(positioner.SphereScale, 0.0001f);
         float radiusWorld = radius * positioner.SphereScale;
-        float halfWidth   = width * 0.5f;
+        float halfWidth   = width * w * 0.5f;
         // El ancho se recorre como un arco sobre la superficie, no como un desplazamiento plano:
         // así mide lo mismo en todo el recorrido y nunca se hunde por debajo del suelo.
         float halfWidthRad = halfWidth / Mathf.Max(radiusWorld, 0.0001f);
@@ -160,7 +163,7 @@ public class WorldSpherePathRibbon : MonoBehaviour
         // La densidad se fija por longitud real y no por nodo: así las puntas redondeadas tienen
         // suficientes tramos para verse curvas aunque el camino sea corto.
         float approxLength = spanF * positioner.AngleSpacing * Mathf.Deg2Rad * radiusWorld;
-        int   rows = Mathf.Clamp(Mathf.CeilToInt(approxLength / Mathf.Max(sampleLength, 0.01f)), 2, 4000);
+        int   rows = Mathf.Clamp(Mathf.CeilToInt(approxLength / Mathf.Max(sampleLength * positioner.WorldScale, 0.01f)), 2, 4000);
 
         // Subdivisión a lo ancho, calculada sola: un vértice cada ~1.5 grados de arco. Con solo
         // dos bordes, el cuadrilátero plano que los une sería una cuerda y se hundiría bajo la
@@ -182,7 +185,7 @@ public class WorldSpherePathRibbon : MonoBehaviour
         float totalLength = probeDist[rows];
         // Si el tramo es más corto que dos remates, los dos se comerían el camino entero y
         // quedaría una lente en vez de una ruta. Se achican para que siempre quede tramo recto.
-        float capLength     = Mathf.Min(Mathf.Max(endCapLength, 0f), totalLength * 0.45f);
+        float capLength     = Mathf.Min(Mathf.Max(endCapLength * positioner.WorldScale, 0f), totalLength * 0.45f);
         float capLengthStart = capStart ? capLength : 0f;
         float capLengthEnd   = capEnd   ? capLength : 0f;
 
@@ -220,7 +223,7 @@ public class WorldSpherePathRibbon : MonoBehaviour
             float half  = halfWidthRad * taper;
             // A lo ancho la textura entra una vez en 'width'. Para que no salga deformada, a lo
             // largo tiene que repetirse a ese mismo ritmo — si no, se estira en el sentido de avance.
-            float repeat = textureKeepAspect ? width : textureLength;
+            float repeat = (textureKeepAspect ? width : textureLength) * positioner.WorldScale;
             float v      = (baseDist + rowDist[r]) / Mathf.Max(repeat, 0.0001f);
 
             for (int c = 0; c < across; c++)
@@ -261,7 +264,7 @@ public class WorldSpherePathRibbon : MonoBehaviour
     List<float> BuildRowDistances(float totalLength, float capLengthStart, float capLengthEnd)
     {
         var result = new List<float>();
-        float step = Mathf.Max(sampleLength, 0.01f);
+        float step = Mathf.Max(sampleLength * positioner.WorldScale, 0.01f);
 
         if (capLengthStart > 0.0001f)
         {

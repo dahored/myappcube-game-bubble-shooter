@@ -244,7 +244,10 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         // que cambia de forma cada vez que se abre el mapa se siente roto.
         var random = new System.Random(chapter * 7919);
 
-        float radiusLocal = positioner.SurfaceRadiusLocal - sink / Mathf.Max(positioner.SphereScale, 0.0001f);
+        // Las medidas en unidades de MUNDO se reescalan con el tamaño del planeta — ver
+        // 'Reference Radius' en el posicionador de nodos.
+        float w           = positioner.WorldScale;
+        float radiusLocal = positioner.SurfaceRadiusLocal - sink * w / Mathf.Max(positioner.SphereScale, 0.0001f);
 
         for (int p = 0; p < data.decorations.Length; p++)
         {
@@ -268,7 +271,7 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
                 continue;
             }
 
-            float signedOffset = placement.side == "right" ? -placement.offset : placement.offset;
+            float signedOffset = (placement.side == "right" ? -placement.offset : placement.offset) * w;
             Vector3 direction  = WorldSpherePath.SampleOffset(nodeDirs, local, anglePerNode, signedOffset, radiusWorld);
 
             var decoration = Spawn(entry, placement, random);
@@ -300,9 +303,9 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
                 baseOrders = baseOrders,
                 id         = placement.id,
                 direction  = direction,
-                shadowWidth = entry.shadowWidth > 0.0001f
+                shadowWidth = (entry.shadowWidth > 0.0001f
                     ? entry.shadowWidth
-                    : entry.height * placement.scale * shadowScale,
+                    : entry.height * placement.scale * shadowScale) * w,
             };
 
         }
@@ -372,7 +375,7 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         // por unidad — hay que convertir. Y como cuelga de la esfera, que tiene una escala enorme,
         // encima hay que dividir por ella.
         float variation  = 1f + ((float)random.NextDouble() * 2f - 1f) * entry.sizeVariation;
-        float worldSize  = entry.height * placement.scale * variation;
+        float worldSize  = entry.height * placement.scale * variation * positioner.WorldScale;
         float spriteSize = _sizeCache.TryGetValue(placement.id, out var cachedSize) ? cachedSize : 1f;
         tr.localScale = Vector3.one * (worldSize / Mathf.Max(spriteSize, 0.0001f) / Mathf.Max(positioner.SphereScale, 0.0001f));
 
@@ -400,7 +403,7 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         float half        = width * 0.5f / sphereScale;
 
         // Apenas por encima de la superficie, lo justo para no pelear en profundidad con el suelo.
-        Vector3 center = direction * (positioner.SurfaceRadiusLocal + 0.02f / sphereScale);
+        Vector3 center = direction * (positioner.SurfaceRadiusLocal + 0.02f * positioner.WorldScale / sphereScale);
 
         // Marco plano apoyado en la superficie. La sombra es chica comparada con la esfera, así que
         // un cuadrado plano alcanza: no hace falta curvarlo.
@@ -571,7 +574,7 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
             Vector3 forward = Vector3.ProjectOnPlane(-toCam, axis).normalized;
             if (forward.sqrMagnitude < 0.5f) continue;
 
-            decoration.position = anchor + toCam.normalized * cameraOffset;
+            decoration.position = anchor + toCam.normalized * (cameraOffset * positioner.WorldScale);
             decoration.rotation = Quaternion.LookRotation(forward, Vector3.Cross(forward, axis));
 
         }

@@ -40,14 +40,13 @@ public class TrajectoryLine : MonoBehaviour
     {
         Vector2 pos       = originLocal;
         Vector2 direction = dir.normalized;
-        float   width     = gridContainer.rect.width;
         int     used      = 0;
         bool    landed    = false;
 
         while (used < maxDots)
         {
             pos += direction * stepSize;
-            HexGridMath.ReflectIfNeeded(ref pos, ref direction, width); // rebota todas las veces que haga falta — se muestra el camino completo
+            HexGridMath.ReflectIfNeeded(ref pos, ref direction); // rebota todas las veces que haga falta — se muestra el camino completo
 
             _pool[used].gameObject.SetActive(true);
             _pool[used].anchoredPosition = pos;

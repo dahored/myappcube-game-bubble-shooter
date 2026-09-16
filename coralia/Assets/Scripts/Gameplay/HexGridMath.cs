@@ -67,15 +67,22 @@ public static class HexGridMath
         return result;
     }
 
-    // Rebote en las paredes izquierda/derecha del contenedor — sin rebote de techo,
-    // eso se maneja aparte como impacto (GDD 1.5). Devuelve true si hubo rebote,
-    // para que quien llama (ShotBubble, TrajectoryLine) pueda contar rebotes.
-    // containerWidth es el ancho total de GridContainer, pero su anchor está centrado
-    // (X=0 es el centro, no el borde izquierdo) — las paredes reales quedan en ±width/2.
-    public static bool ReflectIfNeeded(ref Vector2 pos, ref Vector2 dir, float containerWidth)
+    // Rebote en las paredes izquierda/derecha del grid — sin rebote de techo, eso se maneja
+    // aparte como impacto (GDD 1.5). Devuelve true si hubo rebote, para que quien llama
+    // (ShotBubble, TrajectoryLine) pueda contar rebotes.
+    //
+    // Las paredes se sacan de DesignWidth, NO del ancho real del contenedor en pantalla.
+    // Las celdas se posicionan con DesignWidth (fijo), así que si los rebotes usaran el ancho
+    // real, en pantallas anchas la pelota rebotaría más afuera de donde terminan las columnas
+    // y al pegarse se ajustaría a la columna más cercana, que está más adentro: la trayectoria
+    // indica un punto y la bola llega a otro. En iPhone casi no se nota; en iPad, mucho.
+    //
+    // El anchor del grid está centrado (X=0 es el centro, no el borde izquierdo), así que las
+    // paredes quedan en ±DesignWidth/2.
+    public static bool ReflectIfNeeded(ref Vector2 pos, ref Vector2 dir)
     {
-        float leftWall  = -containerWidth / 2f + BubbleRadius;
-        float rightWall =  containerWidth / 2f - BubbleRadius;
+        float leftWall  = -DesignWidth / 2f + BubbleRadius;
+        float rightWall =  DesignWidth / 2f - BubbleRadius;
 
         if (pos.x < leftWall)
         {

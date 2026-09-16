@@ -22,6 +22,8 @@ public static class WorldSpherePath
     // polinomio cúbico se dispara — y deja la punta torcida.
     public static Vector3 Sample(Vector3[] nodeDirs, float f, float anglePerNode)
     {
+        if (nodeDirs == null || nodeDirs.Length == 0) return Vector3.forward;
+
         int last = nodeDirs.Length - 1;
         if (f >= 0f && f <= last) return SampleSpline(nodeDirs, f);
 
@@ -71,6 +73,14 @@ public static class WorldSpherePath
     // llega y sale con la misma pendiente, que es lo que elimina el quiebre en cada nivel.
     static Vector3 SampleSpline(Vector3[] pts, float f)
     {
+        // Con un solo punto no hay curva que interpolar, y sin esto revienta: el Clamp de abajo
+        // recibe un máximo de -1 y devuelve -1, que entra como índice del array.
+        //
+        // Pasa de verdad, en la frontera entre capítulos: cuando la ventana visible asoma apenas
+        // el primer nivel del capítulo siguiente, ese tramo se arma con un único nodo.
+        if (pts.Length == 0) return Vector3.forward;
+        if (pts.Length == 1) return pts[0];
+
         int   i = Mathf.Clamp(Mathf.FloorToInt(f), 0, pts.Length - 2);
         float t = f - i;
 
