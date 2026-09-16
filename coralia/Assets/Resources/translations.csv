@@ -80,10 +80,10 @@ ui.paused.panel.body.resumeButton,Reanudar,Resume,Riprendi,Reprendre,Fortsetzen,
 ui.paused.panel.body.restartButton,Reiniciar,Restart,Ricomincia,Recommencer,Neu starten,Reiniciar
 ui.paused.panel.body.settingsButton,Ajustes,Settings,Impostazioni,Paramètres,Einstellungen,Ajustes
 ui.quitlevel.panel.title,Salir del nivel,Quit Level,Esci dal livello,Quitter le niveau,Level verlassen,Sair do nível
-ui.quitlevel.panel.body.question,¿Seguro que quieres salir del nivel?,Are you sure you want to quit the level?,Sei sicuro di voler uscire dal livello?,Tu es sûr de vouloir quitter le niveau ?,Bist du sicher, dass du das Level verlassen möchtest?,Tem certeza que quer sair do nível?
+ui.quitlevel.panel.body.question,¿Seguro que quieres salir del nivel?,Are you sure you want to quit the level?,Sei sicuro di voler uscire dal livello?,Tu es sûr de vouloir quitter le niveau ?,Willst du das Level wirklich verlassen?,Tem certeza que quer sair do nível?
 ui.refilllives.panel.title,Recargar vidas,Refill lives,Ricarica vite,Recharger des vies,Leben auffüllen,Recarregar vidas
 ui.resetlevel.panel.title,Reiniciar nivel,Reset Level,Reimposta livello,Réinitialiser le niveau,Level zurücksetzen,Reiniciar nível
-ui.resetlevel.panel.body.question,¿Seguro que quieres reiniciar el nivel?,Are you sure you want to reset the level?,Sei sicuro di voler reimpostare il livello?,Tu es sûr de vouloir réinitialiser le niveau ?,Bist du sicher, dass du das Level zurücksetzen möchtest?,Tem certeza que quer reiniciar o nível?
+ui.resetlevel.panel.body.question,¿Seguro que quieres reiniciar el nivel?,Are you sure you want to reset the level?,Sei sicuro di voler reimpostare il livello?,Tu es sûr de vouloir réinitialiser le niveau ?,Willst du das Level wirklich zurücksetzen?,Tem certeza que quer reiniciar o nível?
 ui.resetlevel.panel.body.warning,Esta acción no se puede deshacer.,This action cannot be undone.,Questa azione non può essere annullata.,Cette action est irréversible.,Diese Aktion kann nicht rückgängig gemacht werden.,Essa ação não pode ser desfeita.
 ui.startgame.panel.select_boosters,Elegir boosters,Select boosters,Scegli i booster,Choisir des boosters,Booster auswählen,Escolher boosters
 ui.daily.title,Recompensa diaria,Daily reward,Ricompensa giornaliera,Récompense quotidienne,Tägliche Belohnung,Recompensa diária
@@ -110,3 +110,186 @@ ui.level_select.locked,Completa el anterior,Complete previous,Completa il preced
 ui.level_select.best,Mejor: {score},Best: {score},Migliore: {score},Meilleur: {score},Beste: {score},Melhor: {score}
 ui.level_select.play_again,Volver a jugar,Play again,Rigioca,Rejouer,Nochmal spielen,Jogar novamente
 ui.gameplay.exit_sanctuary,← Salir,← Exit,← Esci,← Quitter,← Verlassen,← Sair
+level.1.name,Tu primer disparo,Your First Shot,Il primo tiro,Ton premier tir,Dein erster Schuss,Seu primeiro disparo
+level.2.name,Aguas tranquilas,Calm Waters,Acque tranquille,Eaux calmes,Ruhige Gewässer,Águas tranquilas
+level.3.name,Primeras olas,First Waves,Le prime onde,Premières vagues,Erste Wellen,Primeiras ondas
+level.4.name,Corriente suave,Gentle Current,Corrente leggera,Courant doux,Sanfte Strömung,Corrente suave
+level.5.name,Ritmo constante,Steady Rhythm,Ritmo costante,Rythme constant,Gleichmäßiger Takt,Ritmo constante
+level.6.name,Marea baja,Low Tide,Bassa marea,Marée basse,Ebbe,Maré baixa
+level.7.name,Reflejos de coral,Coral Reflections,Riflessi di corallo,Reflets de corail,Korallenschimmer,Reflexos de coral
+level.8.name,Ecos del arrecife,Reef Echoes,Echi della barriera,Échos du récif,Riffechos,Ecos do recife
+level.9.name,Umbral de la cala,Threshold of the Cove,La soglia della cala,Le seuil de la crique,Schwelle der Bucht,Limiar da enseada
+level.10.name,El guardián del arrecife,Guardian of the Reef,Il guardiano della barriera,Le gardien du récif,Wächter des Riffs,O guardião do recife
+level.11.name,Burbujas de sal,Salt Bubbles,Bolle di sale,Bulles de sel,Salzblasen,Bolhas de sal
+level.12.name,Arena fina,Fine Sand,Sabbia fine,Sable fin,Feiner Sand,Areia fina
+level.13.name,El bajío,The Shallows,La secca,Les hauts-fonds,Die Untiefe,O baixio
+level.14.name,Luz de superficie,Surface Light,Luce di superficie,Lumière de surface,Licht von oben,Luz da superfície
+level.15.name,Cardumen dorado,Golden Shoal,Banco dorato,Banc doré,Goldener Schwarm,Cardume dourado
+level.16.name,El arrecife,The Reef,La barriera,Le récif,Das Riff,O recife
+level.17.name,Lluvia de burbujas,Bubble Rain,Pioggia di bolle,Pluie de bulles,Blasenregen,Chuva de bolhas
+level.18.name,El banco de peces,The Fish Shoal,Il banco di pesci,Le banc de poissons,Der Fischschwarm,O cardume
+level.19.name,Corriente cruzada,Crosscurrent,Corrente incrociata,Courant croisé,Querströmung,Corrente cruzada
+level.20.name,La barrera de coral,The Coral Barrier,La barriera corallina,La barrière de corail,Die Korallenbarriere,A barreira de coral
+level.21.name,Cascada coral,Coral Cascade,Cascata di corallo,Cascade de corail,Korallenkaskade,Cascata de coral
+level.22.name,Anémonas dormidas,Sleeping Anemones,Anemoni addormentati,Anémones endormies,Schlafende Anemonen,Anêmonas adormecidas
+level.23.name,El laberinto,The Labyrinth,Il labirinto,Le labyrinthe,Das Labyrinth,O labirinto
+level.24.name,Corales rotos,Broken Corals,Coralli spezzati,Coraux brisés,Zerbrochene Korallen,Corais partidos
+level.25.name,Aguas turbias,Murky Waters,Acque torbide,Eaux troubles,Trübes Wasser,Águas turvas
+level.26.name,Espuma de mar,Sea Foam,Schiuma di mare,Écume de mer,Meerschaum,Espuma do mar
+level.27.name,Burbuja gigante,Giant Bubble,Bolla gigante,Bulle géante,Riesenblase,Bolha gigante
+level.28.name,El remolino,The Whirlpool,Il vortice,Le tourbillon,Der Strudel,O redemoinho
+level.29.name,La tormenta,The Storm,La tempesta,La tempête,Der Sturm,A tempestade
+level.30.name,Jefe del abismo,Lord of the Abyss,Il signore dell'abisso,Le maître de l'abîme,Herr des Abgrunds,Senhor do abismo
+level.31.name,Resaca,Undertow,Risacca,Ressac,Sog,Ressaca
+level.32.name,Nido de erizos,Urchin Nest,Nido di ricci,Nid d'oursins,Seeigelnest,Ninho de ouriços
+level.33.name,Sombras bajo el agua,Shadows Below,Ombre sott'acqua,Ombres sous l'eau,Schatten im Wasser,Sombras sob a água
+level.34.name,Perlas dispersas,Scattered Pearls,Perle sparse,Perles éparses,Verstreute Perlen,Pérolas dispersas
+level.35.name,El pasaje angosto,The Narrow Pass,Il passaggio stretto,Le passage étroit,Der enge Pfad,A passagem estreita
+level.36.name,Marea creciente,Rising Tide,Marea crescente,Marée montante,Steigende Flut,Maré cheia
+level.37.name,Coral quebrado,Cracked Coral,Corallo incrinato,Corail fissuré,Rissige Koralle,Coral rachado
+level.38.name,Ecos profundos,Deep Echoes,Echi profondi,Échos profonds,Tiefe Echos,Ecos profundos
+level.39.name,La grieta,The Crevice,La fenditura,La crevasse,Der Spalt,A fenda
+level.40.name,El coloso de coral,The Coral Colossus,Il colosso di corallo,Le colosse de corail,Der Korallenkoloss,O colosso de coral
+level.41.name,Agua fría,Cold Water,Acqua fredda,Eau froide,Kaltes Wasser,Água fria
+level.42.name,Rastro de burbujas,Bubble Trail,Scia di bolle,Traînée de bulles,Blasenspur,Rastro de bolhas
+level.43.name,El cardumen perdido,The Lost Shoal,Il banco perduto,Le banc perdu,Der verlorene Schwarm,O cardume perdido
+level.44.name,Corriente inversa,Reverse Current,Corrente inversa,Courant inverse,Gegenströmung,Corrente inversa
+level.45.name,Algas flotantes,Drifting Kelp,Alghe alla deriva,Algues à la dérive,Treibender Tang,Algas à deriva
+level.46.name,Roca partida,Split Rock,Roccia spaccata,Roche fendue,Gespaltener Fels,Rocha partida
+level.47.name,Silencio marino,Sea Silence,Silenzio marino,Silence marin,Stille der See,Silêncio do mar
+level.48.name,El descenso,The Descent,La discesa,La descente,Der Abstieg,A descida
+level.49.name,Última luz,Last Light,Ultima luce,Dernière lueur,Letztes Licht,Última luz
+level.50.name,La caverna sellada,The Sealed Cavern,La caverna sigillata,La caverne scellée,Die versiegelte Höhle,A caverna selada
+level.51.name,Fondo de arena,Sandy Bottom,Fondo di sabbia,Fond de sable,Sandgrund,Fundo de areia
+level.52.name,Estrellas de mar,Starfish,Stelle marine,Étoiles de mer,Seesterne,Estrelas-do-mar
+level.53.name,Agua quieta,Still Water,Acqua ferma,Eau dormante,Stilles Wasser,Água parada
+level.54.name,Túnel sumergido,Sunken Tunnel,Tunnel sommerso,Tunnel submergé,Versunkener Tunnel,Túnel submerso
+level.55.name,Restos del naufragio,Shipwreck Remains,Resti del naufragio,Restes du naufrage,Wrackreste,Restos do naufrágio
+level.56.name,Corriente helada,Frozen Current,Corrente gelata,Courant glacé,Eisige Strömung,Corrente gelada
+level.57.name,La cornisa,The Ledge,La cornice,La corniche,Der Sims,A saliência
+level.58.name,Al borde,On the Edge,Sull'orlo,Au bord du vide,Am Abgrund,À beira
+level.59.name,Puerta de Coralia,Gate of Coralia,La porta di Coralia,La porte de Coralia,Tor von Coralia,Portal de Coralia
+level.60.name,El corazón de Coralia,The Heart of Coralia,Il cuore di Coralia,Le cœur de Coralia,Das Herz von Coralia,O coração de Coralia
+level.61.name,Primeras anémonas,First Anemones,Le prime anemoni,Premières anémones,Erste Anemonen,Primeiras anêmonas
+level.62.name,Pétalos de mar,Sea Petals,Petali di mare,Pétales de mer,Meeresblüten,Pétalas do mar
+level.63.name,Jardín despierto,The Garden Awakes,Il giardino si sveglia,Le jardin s'éveille,Der Garten erwacht,O jardim desperta
+level.64.name,Colores vivos,Vivid Colors,Colori vividi,Couleurs vives,Leuchtende Farben,Cores vivas
+level.65.name,Danza lenta,Slow Dance,Danza lenta,Danse lente,Langsamer Tanz,Dança lenta
+level.66.name,Tentáculos suaves,Soft Tentacles,Tentacoli morbidi,Tentacules doux,Weiche Tentakel,Tentáculos macios
+level.67.name,Brisa submarina,Underwater Breeze,Brezza sottomarina,Brise sous-marine,Unterwasserbrise,Brisa submarina
+level.68.name,Claro de anémonas,Anemone Clearing,Radura di anemoni,Clairière d'anémones,Anemonenlichtung,Clareira de anêmonas
+level.69.name,Sendero florido,Flowered Path,Sentiero fiorito,Sentier fleuri,Blumenpfad,Trilha florida
+level.70.name,La anémona reina,The Anemone Queen,La regina degli anemoni,La reine des anémones,Die Anemonenkönigin,A rainha das anêmonas
+level.71.name,Polen de mar,Sea Pollen,Polline di mare,Pollen marin,Meerespollen,Pólen do mar
+level.72.name,Raíces blandas,Soft Roots,Radici morbide,Racines souples,Weiche Wurzeln,Raízes macias
+level.73.name,El vivero,The Nursery,Il vivaio,La pépinière,Die Baumschule,O viveiro
+level.74.name,Espirales verdes,Green Spirals,Spirali verdi,Spirales vertes,Grüne Spiralen,Espirais verdes
+level.75.name,Aguas templadas,Warm Waters,Acque tiepide,Eaux tièdes,Laues Wasser,Águas mornas
+level.76.name,Follaje denso,Dense Foliage,Fogliame fitto,Feuillage dense,Dichtes Laub,Folhagem densa
+level.77.name,Refugio de peces,Fish Shelter,Rifugio dei pesci,Refuge des poissons,Fischversteck,Refúgio dos peixes
+level.78.name,Corriente tibia,Mild Current,Corrente mite,Courant tiède,Milde Strömung,Corrente morna
+level.79.name,El claro central,The Central Glade,La radura centrale,La clairière centrale,Die Mittellichtung,A clareira central
+level.80.name,El jardinero del fondo,The Deep Gardener,Il giardiniere del fondo,Le jardinier des fonds,Der Gärtner der Tiefe,O jardineiro do fundo
+level.81.name,Ramas blandas,Soft Branches,Rami morbidi,Branches molles,Weiche Zweige,Ramos macios
+level.82.name,Sombra de hojas,Leaf Shadow,Ombra di foglie,Ombre des feuilles,Blattschatten,Sombra das folhas
+level.83.name,Néctar salado,Salted Nectar,Nettare salato,Nectar salé,Salziger Nektar,Néctar salgado
+level.84.name,Enredadera marina,Sea Vine,Rampicante marino,Liane marine,Meeresranke,Trepadeira marinha
+level.85.name,Bancos de algas,Kelp Beds,Distese di alghe,Bancs d'algues,Tangbänke,Bancos de algas
+level.86.name,Luz filtrada,Filtered Light,Luce filtrata,Lumière filtrée,Gefiltertes Licht,Luz filtrada
+level.87.name,El invernadero,The Greenhouse,La serra,La serre,Das Gewächshaus,A estufa
+level.88.name,Flores cerradas,Closed Flowers,Fiori chiusi,Fleurs closes,Geschlossene Blüten,Flores fechadas
+level.89.name,Umbral del jardín,Garden Threshold,Soglia del giardino,Seuil du jardin,Schwelle des Gartens,Limiar do jardim
+level.90.name,La flor que no duerme,The Flower That Never Sleeps,Il fiore che non dorme,La fleur qui ne dort pas,Die Blume ohne Schlaf,A flor que não dorme
+level.91.name,Semillas flotantes,Floating Seeds,Semi galleggianti,Graines flottantes,Treibende Samen,Sementes flutuantes
+level.92.name,Brotes nuevos,New Shoots,Germogli nuovi,Nouvelles pousses,Neue Triebe,Brotos novos
+level.93.name,Camino de espinas,Path of Thorns,Cammino di spine,Chemin d'épines,Dornenpfad,Caminho de espinhos
+level.94.name,Anémonas rojas,Red Anemones,Anemoni rossi,Anémones rouges,Rote Anemonen,Anêmonas vermelhas
+level.95.name,El estanque quieto,The Quiet Pool,Lo stagno quieto,Le bassin tranquille,Der stille Teich,O lago quieto
+level.96.name,Marea de pétalos,Tide of Petals,Marea di petali,Marée de pétales,Blütenflut,Maré de pétalas
+level.97.name,Nudo de raíces,Knot of Roots,Nodo di radici,Nœud de racines,Wurzelknoten,Nó de raízes
+level.98.name,Jardín torcido,Twisted Garden,Giardino contorto,Jardin tordu,Verdrehter Garten,Jardim retorcido
+level.99.name,Última flor,The Last Flower,L'ultimo fiore,La dernière fleur,Die letzte Blüte,A última flor
+level.100.name,El guardián del jardín,Guardian of the Garden,Il guardiano del giardino,Le gardien du jardin,Wächter des Gartens,O guardião do jardim
+level.101.name,Savia marina,Sea Sap,Linfa marina,Sève marine,Meeressaft,Seiva marinha
+level.102.name,Espinas ocultas,Hidden Thorns,Spine nascoste,Épines cachées,Verborgene Dornen,Espinhos ocultos
+level.103.name,El seto,The Hedge,La siepe,La haie,Die Hecke,A cerca viva
+level.104.name,Rocío de sal,Salt Dew,Rugiada salata,Rosée salée,Salziger Tau,Orvalho salgado
+level.105.name,Anémonas negras,Black Anemones,Anemoni neri,Anémones noires,Schwarze Anemonen,Anêmonas negras
+level.106.name,Terreno hostil,Hostile Ground,Terreno ostile,Terrain hostile,Feindlicher Grund,Terreno hostil
+level.107.name,Maleza densa,Thick Undergrowth,Sottobosco fitto,Sous-bois dense,Dichtes Gestrüpp,Mato denso
+level.108.name,El pasaje verde,The Green Passage,Il passaggio verde,Le passage vert,Der grüne Gang,A passagem verde
+level.109.name,Salida del jardín,Leaving the Garden,Uscita dal giardino,Sortie du jardin,Ausgang des Gartens,Saída do jardim
+level.110.name,La raíz profunda,The Deep Root,La radice profonda,La racine profonde,Die tiefe Wurzel,A raiz profunda
+level.111.name,Tierra removida,Turned Earth,Terra smossa,Terre remuée,Aufgewühlte Erde,Terra revolvida
+level.112.name,Aguas espesas,Thick Waters,Acque dense,Eaux épaisses,Dickes Wasser,Águas espessas
+level.113.name,Jardín marchito,Withered Garden,Giardino appassito,Jardin fané,Welker Garten,Jardim murcho
+level.114.name,Último brote,The Last Bud,L'ultimo germoglio,Le dernier bourgeon,Die letzte Knospe,O último broto
+level.115.name,Sombra sobre el jardín,Shadow Over the Garden,Ombra sul giardino,Ombre sur le jardin,Schatten über dem Garten,Sombra sobre o jardim
+level.116.name,El cerco,The Fence,Il recinto,L'enclos,Die Umzäunung,O cercado
+level.117.name,Nudo final,Final Knot,Nodo finale,Nœud final,Letzter Knoten,Nó final
+level.118.name,Puerta de anémonas,Gate of Anemones,Porta di anemoni,Porte des anémones,Tor der Anemonen,Portal das anêmonas
+level.119.name,Antes del descenso,Before the Descent,Prima della discesa,Avant la descente,Vor dem Abstieg,Antes da descida
+level.120.name,El fin del jardín,The End of the Garden,La fine del giardino,La fin du jardin,Das Ende des Gartens,O fim do jardim
+level.121.name,Primer descenso,First Descent,Prima discesa,Première descente,Erster Abstieg,Primeira descida
+level.122.name,Agua sin luz,Lightless Water,Acqua senza luce,Eau sans lumière,Wasser ohne Licht,Água sem luz
+level.123.name,Presión creciente,Rising Pressure,Pressione crescente,Pression croissante,Wachsender Druck,Pressão crescente
+level.124.name,Ecos lejanos,Distant Echoes,Echi lontani,Échos lointains,Ferne Echos,Ecos distantes
+level.125.name,Fondo oscuro,Dark Seabed,Fondale scuro,Fond obscur,Dunkler Meeresgrund,Fundo escuro
+level.126.name,Corriente fría,Cold Current,Corrente fredda,Courant froid,Kalte Strömung,Corrente fria
+level.127.name,Siluetas,Silhouettes,Sagome,Silhouettes,Silhouetten,Silhuetas
+level.128.name,Sin superficie,No Surface,Nessuna superficie,Plus de surface,Keine Oberfläche,Sem superfície
+level.129.name,El vacío azul,The Blue Void,Il vuoto blu,Le vide bleu,Die blaue Leere,O vazio azul
+level.130.name,El centinela del fondo,Sentinel of the Deep,La sentinella del fondo,La sentinelle des fonds,Wächter der Tiefe,Sentinela do fundo
+level.131.name,Luces en la nada,Lights in the Void,Luci nel nulla,Lueurs dans le vide,Lichter im Nichts,Luzes no nada
+level.132.name,Grietas abiertas,Open Fissures,Fessure aperte,Fissures ouvertes,Offene Spalten,Fendas abertas
+level.133.name,Cañón submarino,Undersea Canyon,Canyon sottomarino,Canyon sous-marin,Unterseeischer Canyon,Cânion submarino
+level.134.name,Restos antiguos,Ancient Remains,Resti antichi,Vestiges anciens,Alte Überreste,Restos antigos
+level.135.name,Nada alrededor,Nothing Around,Nulla intorno,Rien alentour,Nichts ringsum,Nada ao redor
+level.136.name,Frío en los huesos,Cold to the Bone,Freddo nelle ossa,Le froid jusqu'aux os,Kälte bis in die Knochen,Frio nos ossos
+level.137.name,El abismo llama,The Abyss Calls,L'abisso chiama,L'abîme appelle,Der Abgrund ruft,O abismo chama
+level.138.name,Sombras largas,Long Shadows,Ombre lunghe,Ombres longues,Lange Schatten,Sombras longas
+level.139.name,Descenso continuo,Endless Descent,Discesa continua,Descente continue,Endloser Abstieg,Descida contínua
+level.140.name,La criatura ciega,The Blind Creature,La creatura cieca,La créature aveugle,Die blinde Kreatur,A criatura cega
+level.141.name,Fosa marina,Ocean Trench,Fossa marina,Fosse marine,Meeresgraben,Fossa marinha
+level.142.name,Sedimento suspendido,Suspended Sediment,Sedimento sospeso,Sédiment en suspension,Schwebender Schlamm,Sedimento suspenso
+level.143.name,El corredor negro,The Black Corridor,Il corridoio nero,Le couloir noir,Der schwarze Gang,O corredor negro
+level.144.name,Corales muertos,Dead Corals,Coralli morti,Coraux morts,Tote Korallen,Corais mortos
+level.145.name,Respiración profunda,Deep Breath,Respiro profondo,Souffle profond,Tiefer Atem,Respiração profunda
+level.146.name,Susurros de agua,Whispers of Water,Sussurri d'acqua,Murmures de l'eau,Flüstern des Wassers,Sussurros de água
+level.147.name,Cámara sumergida,Flooded Chamber,Camera sommersa,Salle immergée,Geflutete Kammer,Câmara submersa
+level.148.name,Sin retorno,No Way Back,Senza ritorno,Sans retour,Kein Zurück,Sem retorno
+level.149.name,El límite,The Limit,Il limite,La limite,Die Grenze,O limite
+level.150.name,El coloso dormido,The Sleeping Colossus,Il colosso dormiente,Le colosse endormi,Der schlafende Koloss,O colosso adormecido
+level.151.name,Aguas negras,Black Waters,Acque nere,Eaux noires,Schwarze Wasser,Águas negras
+level.152.name,Cristales fríos,Cold Crystals,Cristalli freddi,Cristaux froids,Kalte Kristalle,Cristais frios
+level.153.name,La sima,The Chasm,La voragine,Le gouffre,Der Schlund,O sumidouro
+level.154.name,Peso del océano,Weight of the Ocean,Il peso dell'oceano,Le poids de l'océan,Last des Ozeans,O peso do oceano
+level.155.name,Ruinas hundidas,Sunken Ruins,Rovine sommerse,Ruines englouties,Versunkene Ruinen,Ruínas afundadas
+level.156.name,Corriente traicionera,Treacherous Current,Corrente infida,Courant traître,Tückische Strömung,Corrente traiçoeira
+level.157.name,El pasaje estrecho,The Narrow Passage,Il passaggio angusto,Le passage étroit,Der schmale Durchlass,A passagem estreita
+level.158.name,Cerca del fondo,Near the Bottom,Vicino al fondo,Près du fond,Nahe dem Grund,Perto do fundo
+level.159.name,Último tramo,Final Stretch,Ultimo tratto,Dernière ligne,Letztes Stück,Último trecho
+level.160.name,El trono del abismo,Throne of the Abyss,Il trono dell'abisso,Le trône de l'abîme,Thron des Abgrunds,Trono do abismo
+level.161.name,Huellas de la Sombra,Traces of the Shadow,Tracce dell'Ombra,Traces de l'Ombre,Spuren des Schattens,Rastros da Sombra
+level.162.name,Rastro helado,Frozen Trail,Scia gelata,Piste glacée,Eisige Fährte,Trilha gelada
+level.163.name,Cámara vacía,Empty Chamber,Camera vuota,Salle vide,Leere Kammer,Câmara vazia
+level.164.name,Silencio absoluto,Absolute Silence,Silenzio assoluto,Silence absolu,Vollkommene Stille,Silêncio absoluto
+level.165.name,Fractura profunda,Deep Fracture,Frattura profonda,Fracture profonde,Tiefer Bruch,Fratura profunda
+level.166.name,La antesala,The Antechamber,L'anticamera,L'antichambre,Das Vorzimmer,A antecâmara
+level.167.name,Ecos de la Sombra,Echoes of the Shadow,Echi dell'Ombra,Échos de l'Ombre,Echos des Schattens,Ecos da Sombra
+level.168.name,Umbral final,Final Threshold,Soglia finale,Seuil final,Letzte Schwelle,Limiar final
+level.169.name,Frente a frente,Face to Face,Faccia a faccia,Face à face,Von Angesicht zu Angesicht,Frente a frente
+level.170.name,La Sombra despierta,The Shadow Awakens,L'Ombra si risveglia,L'Ombre s'éveille,Der Schatten erwacht,A Sombra desperta
+level.171.name,Primera herida,First Wound,La prima ferita,La première blessure,Die erste Wunde,A primeira ferida
+level.172.name,Dolor antiguo,Ancient Pain,Dolore antico,Douleur ancienne,Alter Schmerz,Dor antiga
+level.173.name,Recuerdos del abismo,Memories of the Abyss,Ricordi dell'abisso,Souvenirs de l'abîme,Erinnerungen des Abgrunds,Memórias do abismo
+level.174.name,La verdad del fondo,The Truth Below,La verità del fondo,La vérité des fonds,Die Wahrheit der Tiefe,A verdade do fundo
+level.175.name,Compasión,Compassion,Compassione,Compassion,Mitgefühl,Compaixão
+level.176.name,Luz en la oscuridad,Light in the Dark,Luce nel buio,Lumière dans le noir,Licht im Dunkel,Luz na escuridão
+level.177.name,El perdón,Forgiveness,Il perdono,Le pardon,Vergebung,O perdão
+level.178.name,Últimas burbujas,Last Bubbles,Ultime bolle,Dernières bulles,Letzte Blasen,Últimas bolhas
+level.179.name,El adiós,Farewell,L'addio,L'adieu,Abschied,A despedida
+level.180.name,La Sombra Profunda,The Deep Shadow,L'Ombra Profonda,L'Ombre Profonde,Der Tiefe Schatten,A Sombra Profunda
+chapter.1.name,Coralia,Coralia,Coralia,Coralia,Coralia,Coralia
+chapter.2.name,Jardín de Anémonas,Anemone Garden,Giardino di Anemoni,Jardin d'Anémones,Anemonengarten,Jardim de Anêmonas
+chapter.3.name,Profundidades,The Depths,Le Profondità,Les Profondeurs,Die Tiefen,As Profundezas
