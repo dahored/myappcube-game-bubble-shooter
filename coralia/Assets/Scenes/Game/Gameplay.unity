@@ -4415,6 +4415,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 427348537}
   m_CullTransparentMesh: 1
+--- !u!1 &431250394 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2091940752555009746, guid: 887a68e12b56143f58d0c46df9ad1aea, type: 3}
+  m_PrefabInstance: {fileID: 1337692464}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &437650013
 GameObject:
   m_ObjectHideFlags: 0
@@ -12468,11 +12473,11 @@ PrefabInstance:
     - target: {fileID: 948994334023560921, guid: 887a68e12b56143f58d0c46df9ad1aea, type: 3}
       propertyPath: shootsItemRoot
       value: 
-      objectReference: {fileID: 1053177624}
+      objectReference: {fileID: 431250394}
     - target: {fileID: 948994334023560921, guid: 887a68e12b56143f58d0c46df9ad1aea, type: 3}
       propertyPath: totalShootsText
       value: 
-      objectReference: {fileID: 1053177626}
+      objectReference: {fileID: 1695636890}
     - target: {fileID: 3588830722398191144, guid: 887a68e12b56143f58d0c46df9ad1aea, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -16482,6 +16487,17 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &1695636890 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2928778701081513040, guid: 887a68e12b56143f58d0c46df9ad1aea, type: 3}
+  m_PrefabInstance: {fileID: 1337692464}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!1 &1698990554
 GameObject:
   m_ObjectHideFlags: 0
