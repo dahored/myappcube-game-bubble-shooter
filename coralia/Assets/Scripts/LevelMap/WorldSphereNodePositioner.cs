@@ -414,7 +414,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
         // hay un hueco ('Chapter Gap') que el índice no refleja, así que el primer nodo de un
         // capítulo está mucho más lejos de lo que su número sugiere.
         var canvas = node.GetComponent<Canvas>();
-        if (canvas) canvas.sortingOrder = DrawOrderAt(_restAngle[levelIndex]);
+        if (canvas) canvas.sortingOrder = DrawOrderAt(_restAngle[levelIndex]) + NODE_ORDER_BIAS;
 
         var view = node.GetComponentInChildren<LevelNodeView>(true);
         if (view && _levels.Count > 0)
@@ -443,8 +443,41 @@ public class WorldSphereNodePositioner : MonoBehaviour
     // esfera. Lo comparten nodos y decoraciones para que puedan taparse entre sí correctamente:
     // lo que está más adelante en el camino está más lejos, y se dibuja antes.
     //
-    // El x8 reserva capas para el orden interno de los grupos de decoración.
-    public static int DrawOrderAt(float restAngle) => -Mathf.RoundToInt(restAngle * 4f) * 8;
+    // ORDER_LAYERS son las capas que quedan libres dentro de cada paso angular, para el orden
+    // interno de los grupos de decoración y para el bias del nodo.
+    //
+    // La resolución NO es arbitraria: Unity limita sortingOrder a ±32767, y el ángulo del último
+    // nivel de tres capítulos de 60 ronda los 1450°. Antes esto era Round(ángulo * 4) * 8, que
+    // llegaba a -46400: se saturaba, y a partir de ahí TODOS los nodos y decoraciones compartían
+    // orden y se tapaban al azar. Un grado por paso con 16 capas da el mismo detalle y deja el
+    // máximo en unos -23000.
+    //
+    // Si algún día se agregan capítulos o crece angleSpacing hay que bajar ORDER_LAYERS, por eso
+    // el tope avisa en vez de saturar en silencio.
+    const int   ORDER_RANGE      = 32767;
+    const int   ORDER_LAYERS     = 16;
+    const float ORDER_RESOLUTION = 1f;
+
+    public static int DrawOrderAt(float restAngle)
+    {
+        int order = -Mathf.RoundToInt(restAngle * ORDER_RESOLUTION) * ORDER_LAYERS;
+
+        if (order >= -ORDER_RANGE) return order;
+
+        Debug.LogWarning($"[WorldSphereNodePositioner] El orden de dibujo ({order}) se pasó del " +
+                         "rango de sortingOrder: hay que bajar ORDER_LAYERS o el mapa va a " +
+                         "mostrar nodos y decoraciones superpuestos al final.");
+        return -ORDER_RANGE;
+    }
+
+    // El nodo se dibuja en la mitad alta de su paso angular, por delante de las decoraciones que
+    // caen en el MISMO paso — nada más. Entre pasos distintos manda la profundidad: una
+    // decoración que va antes en el camino tapa al nodo que hay detrás, y así tiene que ser.
+    //
+    // Sin este bias empatan, porque el redondeo manda a la misma capa a un nodo y a una
+    // decoración con 'at' casi entero, y el desempate lo termina decidiendo el orden de creación
+    // — que con el pooling cambia en cada pasada.
+    const int NODE_ORDER_BIAS = ORDER_LAYERS / 2;
 
     // Ángulo de reposo de un nivel. Lo usa el camino para anclar su textura al capítulo.
     public float RestAngleAt(int levelIndex)

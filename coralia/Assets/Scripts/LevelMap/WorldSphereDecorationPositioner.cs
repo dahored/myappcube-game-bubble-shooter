@@ -212,6 +212,37 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         BuildShadowMesh(shadowVerts, shadowUvs, shadowNorms, shadowTris);
     }
 
+    // Nodos a cada lado del punto: los que Catmull-Rom necesita para tener pendiente de entrada y
+    // de salida.
+    const int SPLINE_SPAN = 2;
+
+    // Posición de un 'at' sobre el camino de SU capítulo, con los mismos nodos siempre.
+    //
+    // Antes esto se resolvía con los nodos de la ventana visible. Mientras la decoración estaba
+    // bien adentro daba igual, pero en el borde el camino se extrapola en línea recta, y una
+    // decoración plantada en ese momento quedaba corrida — normalmente encima del primer nodo del
+    // capítulo, que es justo cuando el tramo recién asoma. Al seguir scrolleando y volver, la
+    // misma decoración se recreaba con la ventana centrada y aparecía en su sitio: de ahí que se
+    // "acomodaran solas".
+    //
+    // Tomando los vecinos por índice de capítulo, la posición ya no depende de cuánto scroll
+    // había cuando se plantó.
+    Vector3 SampleAlongChapter(float at, int chapterStart, int chapterEnd,
+                               float anglePerNode, float offsetWorld, float radiusWorld)
+    {
+        int anchor = chapterStart + Mathf.FloorToInt(at);
+        int from   = Mathf.Clamp(anchor - SPLINE_SPAN,     chapterStart, chapterEnd);
+        int to     = Mathf.Clamp(anchor + SPLINE_SPAN + 1, chapterStart, chapterEnd);
+
+        var dirs = new Vector3[to - from + 1];
+        for (int j = 0; j < dirs.Length; j++)
+            dirs[j] = (positioner.RestRotation(from + j) * Vector3.back).normalized;
+
+        // 'at' es relativo al primer nivel del capítulo; el muestreo, al primero de este tramo.
+        return WorldSpherePath.SampleOffset(dirs, at - (from - chapterStart),
+                                            anglePerNode, offsetWorld, radiusWorld);
+    }
+
     void BuildChapter(int chapter, int first, int last, int count, IReadOnlyList<int> chapters,
                       float radiusWorld, float anglePerNode,
                       List<Vector3> shadowVerts, List<Vector2> shadowUvs,
@@ -236,9 +267,10 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         float lowBound  = atChapterStart ? -WINDOW_MARGIN : -0.5f;
         float highBound = (last - first) + (atChapterEnd ? WINDOW_MARGIN : 0.5f);
 
-        var nodeDirs = new Vector3[last - first + 1];
-        for (int j = 0; j < nodeDirs.Length; j++)
-            nodeDirs[j] = (positioner.RestRotation(first + j) * Vector3.back).normalized;
+        // Dónde termina el capítulo de verdad, no dónde termina la ventana. La posición de una
+        // decoración se calcula con los nodos de su capítulo, nunca con los que haya en pantalla.
+        int chapterEnd = last;
+        while (chapterEnd + 1 < count && chapters[chapterEnd + 1] == chapter) chapterEnd++;
 
         // Semilla fija por capítulo: la variación de tamaño sale igual en cada partida. Un mundo
         // que cambia de forma cada vez que se abre el mapa se siente roto.
@@ -272,7 +304,8 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
             }
 
             float signedOffset = (placement.side == "right" ? -placement.offset : placement.offset) * w;
-            Vector3 direction  = WorldSpherePath.SampleOffset(nodeDirs, local, anglePerNode, signedOffset, radiusWorld);
+            Vector3 direction  = SampleAlongChapter(placement.at, chapterStart, chapterEnd,
+                                                    anglePerNode, signedOffset, radiusWorld);
 
             var decoration = Spawn(entry, placement, random);
             if (!decoration) continue;
