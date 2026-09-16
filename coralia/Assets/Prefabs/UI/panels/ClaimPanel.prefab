@@ -2321,8 +2321,8 @@ MonoBehaviour:
   timeText: {fileID: 6223637223977529732}
   coinsItemRoot: {fileID: 7408151081076598628}
   totalCoinsText: {fileID: 5895201215764280779}
-  shootsItemRoot: {fileID: 0}
-  totalShootsText: {fileID: 0}
+  shootsItemRoot: {fileID: 2091940752555009746}
+  totalShootsText: {fileID: 2928778701081513040}
 --- !u!1 &8963280138749629800
 GameObject:
   m_ObjectHideFlags: 0

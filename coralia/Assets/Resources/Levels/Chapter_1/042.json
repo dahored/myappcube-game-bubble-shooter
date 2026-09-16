@@ -1,0 +1,468 @@
+{
+    "id": 42,
+    "chapter": 1,
+    "name": "Rastro de burbujas",
+    "max_shots": 30,
+    "min_shots_to_clear": 9,
+    "rainbow_chance": 0.0689999982714653,
+    "available_colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green",
+        "purple"
+    ],
+    "star_thresholds": [
+        526000,
+        855000,
+        1184000
+    ],
+    "obstacles": [],
+    "objective": {
+        "type": "clear_all",
+        "creature_id": "",
+        "creature_position": []
+    },
+    "bubbles": [
+        {
+            "row": 0,
+            "col": 0,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 2,
+            "color": "yellow"
+        },
+        {
+            "row": 0,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 4,
+            "color": "green"
+        },
+        {
+            "row": 0,
+            "col": 5,
+            "color": "green"
+        },
+        {
+            "row": 0,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 7,
+            "color": "yellow"
+        },
+        {
+            "row": 0,
+            "col": 8,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 9,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 0,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 2,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 3,
+            "color": "purple"
+        },
+        {
+            "row": 1,
+            "col": 4,
+            "color": "purple"
+        },
+        {
+            "row": 1,
+            "col": 5,
+            "color": "purple"
+        },
+        {
+            "row": 1,
+            "col": 6,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 8,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 0,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 3,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 4,
+            "color": "purple"
+        },
+        {
+            "row": 2,
+            "col": 5,
+            "color": "purple"
+        },
+        {
+            "row": 2,
+            "col": 6,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 8,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 9,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 0,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 3,
+            "color": "yellow"
+        },
+        {
+            "row": 3,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 3,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 3,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 8,
+            "color": "red"
+        },
+        {
+            "row": 4,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 4,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 5,
+            "col": 3,
+            "color": "yellow"
+        },
+        {
+            "row": 5,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 5,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 6,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 5,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 8,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 5,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 8,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 8,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 8,
+            "col": 4,
+            "color": "green"
+        },
+        {
+            "row": 8,
+            "col": 5,
+            "color": "green"
+        },
+        {
+            "row": 8,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 8,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 9,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 9,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 9,
+            "col": 3,
+            "color": "blue"
+        },
+        {
+            "row": 9,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 9,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 9,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 9,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 10,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 10,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 10,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 10,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 10,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 10,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 11,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 11,
+            "col": 2,
+            "color": "blue"
+        },
+        {
+            "row": 11,
+            "col": 3,
+            "color": "blue"
+        },
+        {
+            "row": 11,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 11,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 11,
+            "col": 6,
+            "color": "blue"
+        },
+        {
+            "row": 11,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 12,
+            "col": 3,
+            "color": "blue"
+        },
+        {
+            "row": 12,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 12,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 12,
+            "col": 6,
+            "color": "blue"
+        }
+    ]
+}

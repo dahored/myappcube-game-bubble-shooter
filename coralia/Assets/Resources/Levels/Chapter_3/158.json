@@ -1,0 +1,289 @@
+{
+  "id": 158,
+  "chapter": 3,
+  "name": "Cerca del fondo",
+  "objective": {
+    "type": "clear_all"
+  },
+  "max_shots": 26,
+  "available_colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "rainbow_chance": 0.063,
+  "bubbles": [
+    {
+      "row": 0,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 1,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "color": "green"
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "color": "yellow"
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "color": "red"
+    },
+    {
+      "row": 0,
+      "col": 5,
+      "color": "red"
+    },
+    {
+      "row": 0,
+      "col": 6,
+      "color": "yellow"
+    },
+    {
+      "row": 0,
+      "col": 7,
+      "color": "blue"
+    },
+    {
+      "row": 0,
+      "col": 8,
+      "color": "yellow"
+    },
+    {
+      "row": 0,
+      "col": 9,
+      "color": "red"
+    },
+    {
+      "row": 0,
+      "col": 10,
+      "color": "blue"
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "color": "yellow"
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "color": "yellow"
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "color": "yellow"
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "color": "green"
+    },
+    {
+      "row": 1,
+      "col": 5,
+      "color": "green"
+    },
+    {
+      "row": 1,
+      "col": 6,
+      "color": "green"
+    },
+    {
+      "row": 1,
+      "col": 7,
+      "color": "yellow"
+    },
+    {
+      "row": 1,
+      "col": 8,
+      "color": "red"
+    },
+    {
+      "row": 1,
+      "col": 9,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "color": "green"
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "color": "yellow"
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "color": "yellow"
+    },
+    {
+      "row": 2,
+      "col": 5,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 6,
+      "color": "green"
+    },
+    {
+      "row": 2,
+      "col": 7,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 8,
+      "color": "green"
+    },
+    {
+      "row": 2,
+      "col": 9,
+      "color": "red"
+    },
+    {
+      "row": 2,
+      "col": 10,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "color": "blue"
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "color": "red"
+    },
+    {
+      "row": 3,
+      "col": 4,
+      "color": "yellow"
+    },
+    {
+      "row": 3,
+      "col": 5,
+      "color": "green"
+    },
+    {
+      "row": 3,
+      "col": 6,
+      "color": "yellow"
+    },
+    {
+      "row": 3,
+      "col": 7,
+      "color": "green"
+    },
+    {
+      "row": 3,
+      "col": 8,
+      "color": "green"
+    },
+    {
+      "row": 3,
+      "col": 9,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "color": "green"
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "color": "yellow"
+    },
+    {
+      "row": 4,
+      "col": 5,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 6,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 7,
+      "color": "yellow"
+    },
+    {
+      "row": 4,
+      "col": 8,
+      "color": "blue"
+    },
+    {
+      "row": 4,
+      "col": 9,
+      "color": "red"
+    },
+    {
+      "row": 4,
+      "col": 10,
+      "color": "blue"
+    }
+  ],
+  "obstacles": [],
+  "star_thresholds": [
+    212000,
+    343440,
+    477000
+  ]
+}

@@ -19,14 +19,33 @@ public class TMPPerspectiveWarp : MonoBehaviour
     [SerializeField] Vector2 bottomRight;
 
     TMP_Text _text;
-    string   _lastText;
+    bool     _applying;
 
     void Awake() => _text = GetComponent<TMP_Text>();
 
     void OnEnable()
     {
         if (!_text) _text = GetComponent<TMP_Text>();
+
+        // TMP avisa CADA vez que regenera su malla, no solo cuando cambia el string: también
+        // al reconstruirse el Canvas (abrir o cerrar un panel encima), al reactivarse el objeto
+        // o al recalcularse el layout. En todas ellas la malla vuelve sin deformar, así que el
+        // warp hay que reponerlo ahí — comparar el texto en LateUpdate se perdía todos esos
+        // casos y el número terminaba fuera del cartel.
+        TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextRegenerated);
         ApplyWarp();
+    }
+
+    void OnDisable() => TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(OnTextRegenerated);
+
+    void OnTextRegenerated(Object obj)
+    {
+        // El guard corta la recursión: ApplyWarp fuerza una regeneración, que volvería a entrar acá.
+        if (_applying || !_text || obj != _text) return;
+
+        // Sin ForceMeshUpdate: la malla que acaba de emitir el evento ya está fresca, y pedir
+        // otra regeneración desde su propio callback es lo que suele colgar a TMP.
+        Warp();
     }
 
     // Cambiar cualquier campo en el Inspector dispara esto — así se ve el resultado en vivo
@@ -38,20 +57,19 @@ public class TMPPerspectiveWarp : MonoBehaviour
         ApplyWarp();
     }
 
-    void LateUpdate()
-    {
-        if (!_text) return;
-        // En Play mode el texto cambia por código (ShotsLabel), no por el Inspector — hay que
-        // reaplicar el warp cada vez que cambia, si no queda "pegado" a la forma del texto
-        // anterior (distinta cantidad de dígitos = distinto ancho de bloque).
-        if (_text.text == _lastText) return;
-        _lastText = _text.text;
-        ApplyWarp();
-    }
-
     void ApplyWarp()
     {
+        if (!_text) return;
+
+        _applying = true;
         _text.ForceMeshUpdate();
+        _applying = false;
+
+        Warp();
+    }
+
+    void Warp()
+    {
         var textInfo = _text.textInfo;
         int count = textInfo.characterCount;
         if (count == 0) return;

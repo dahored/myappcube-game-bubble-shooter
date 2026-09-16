@@ -102,7 +102,15 @@ public class ClaimPanel : UIPanel
     public void ShowShots(int total)
     {
         ShowOnly(shootsItemRoot);
-        if (totalShootsText) totalShootsText.text = total.ToString();
+
+        // El texto se activa explícitamente, igual que en ShowLives: puede venir apagado desde la
+        // escena, y activar solo el root no alcanza — el panel se abriría sin nada adentro.
+        if (totalShootsText)
+        {
+            totalShootsText.gameObject.SetActive(true);
+            totalShootsText.text = total.ToString();
+        }
+
         Open();
     }
 

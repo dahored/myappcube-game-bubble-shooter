@@ -15,6 +15,9 @@ public class LevelMapController : MonoBehaviour
     [SerializeField] OutOfLivesPanel     outOfLivesPanel;   // se muestra si SaveManager.Lives llega a 0 (issue #52)
     [SerializeField] StartGamePanel      startGamePanel;    // objetivo + boosters antes de entrar a Gameplay (issue #12)
 
+    [Tooltip("Opcional — fondo (ej. carretera/camino) que debe cubrir TODO el scroll, no solo la altura fija de la imagen. Vacío en LevelMap normal, asignado solo en el experimento LevelMapCurve. Tiene que ser hijo de Content, con Image Type = Tiled si es una textura repetible.")]
+    [SerializeField] RectTransform       bgToStretch;
+
     public const float NODE_SPACING =  300f; // distancia vertical entre nodos
     const float PEARL_SPACING   =  100f; // distancia entre cada perla del path
     const float PEARL_SIZE      =   45f; // tamaño de cada perla (width y height)
@@ -76,6 +79,10 @@ public class LevelMapController : MonoBehaviour
         var contentRT     = contentRoot.GetComponent<RectTransform>();
         float totalHeight = (levels.Count - 1) * NODE_SPACING + BOTTOM_PADDING + TOP_PADDING;
         contentRT.sizeDelta = new Vector2(contentRT.sizeDelta.x, totalHeight);
+
+        // Mismo alto que el Content — así el fondo cubre todo el scroll sin importar cuántos
+        // niveles haya, en vez de quedarse corto (o sobrar) con una altura fija a mano.
+        if (bgToStretch) bgToStretch.sizeDelta = new Vector2(bgToStretch.sizeDelta.x, totalHeight);
 
         // Pre-calcular posiciones: nivel 1 abajo (Y pequeño), último arriba (Y grande)
         var positions = new Vector2[levels.Count];

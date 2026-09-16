@@ -55,6 +55,13 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
 
     public void SetCell(Vector2Int cell) => Cell = cell;
 
+    // Cambia el color sin tocar la posición, para la arcoíris que adopta el color al aterrizar.
+    public void SetColor(BubbleColor color, Sprite sprite)
+    {
+        ColorType = color;
+        if (bubbleImage) bubbleImage.sprite = sprite;
+    }
+
     public void SetCreatureMarker(bool isCreature)
     {
         IsCreature = isCreature;
@@ -68,6 +75,32 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     // le toca explotar (mismo delay que la animación), no una sola vez para todo el match.
     // AudioManager.PlayPop ya usa PlayOneShot, así que varias burbujas superponiéndose no se
     // cortan entre sí.
+    // Cuántas burbujas están explotando o cayendo ahora mismo. El grid lo consulta para no
+    // moverse mientras tanto: todas ellas son hijas suyas, así que un scroll a mitad de camino
+    // les arrastra la animación y se ve cortada.
+    public static int AnimatingCount { get; private set; }
+
+    bool _animating;
+
+    void BeginAnimation()
+    {
+        if (_animating) return;
+        _animating = true;
+        AnimatingCount++;
+    }
+
+    void EndAnimation()
+    {
+        if (!_animating) return;
+        _animating = false;
+        AnimatingCount--;
+    }
+
+    // Por si la burbuja se destruye a mitad de la animación (fin de nivel, Clear del grid): sin
+    // esto el contador quedaría colgado en un número que nunca vuelve a cero y el grid no
+    // volvería a moverse nunca.
+    void OnDestroy() => EndAnimation();
+
     public void PlayPopAnimation(float delay = 0f, AudioClip popClip = null) => StartCoroutine(PopAndDestroy(delay, popClip));
 
     // dropClip: mismo criterio que popClip — suena una vez POR burbuja que cae, no una sola
@@ -78,6 +111,8 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
 
     IEnumerator PopAndDestroy(float delay, AudioClip popClip)
     {
+        BeginAnimation();   // ya cuenta durante el delay: el pop en cadena es parte de la misma
+
         if (delay > 0f) yield return new WaitForSeconds(delay);
 
         SpawnPopParticles();
@@ -134,6 +169,8 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     // aleatorio por burbuja, para que la caída en cadena no se vea toda igual/rígida.
     IEnumerator DropAndDestroy(AudioClip dropClip)
     {
+        BeginAnimation();
+
         AudioManager.Instance?.PlayPop(dropClip);
 
         var     rt       = (RectTransform)transform;

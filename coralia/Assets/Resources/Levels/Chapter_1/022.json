@@ -1,0 +1,317 @@
+{
+    "id": 22,
+    "chapter": 1,
+    "name": "Anémonas dormidas",
+    "max_shots": 24,
+    "min_shots_to_clear": 8,
+    "rainbow_chance": 0.07999999821186066,
+    "available_colors": [
+        "red",
+        "blue",
+        "green",
+        "yellow"
+    ],
+    "star_thresholds": [
+        326000,
+        530000,
+        734000
+    ],
+    "obstacles": [],
+    "objective": {
+        "type": "clear_all",
+        "creature_id": "",
+        "creature_position": []
+    },
+    "bubbles": [
+        {
+            "row": 0,
+            "col": 3,
+            "color": "blue"
+        },
+        {
+            "row": 0,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 0,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 0,
+            "col": 6,
+            "color": "blue"
+        },
+        {
+            "row": 1,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 3,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 3,
+            "color": "blue"
+        },
+        {
+            "row": 2,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 6,
+            "color": "blue"
+        },
+        {
+            "row": 2,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 0,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 1,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 2,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 3,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 6,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 7,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 0,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 1,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 2,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 3,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 6,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 7,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 9,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 0,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 1,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 2,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 3,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 6,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 7,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 6,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 5,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 5,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 8,
+            "col": 3,
+            "color": "green"
+        },
+        {
+            "row": 8,
+            "col": 4,
+            "color": "green"
+        },
+        {
+            "row": 8,
+            "col": 5,
+            "color": "green"
+        },
+        {
+            "row": 8,
+            "col": 6,
+            "color": "green"
+        }
+    ]
+}

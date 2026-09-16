@@ -1,0 +1,253 @@
+{
+    "id": 19,
+    "chapter": 1,
+    "name": "Corriente cruzada",
+    "max_shots": 11,
+    "min_shots_to_clear": 4,
+    "rainbow_chance": 0.05000000074505806,
+    "available_colors": [
+        "red",
+        "blue",
+        "green",
+        "yellow",
+        "purple"
+    ],
+    "star_thresholds": [
+        264000,
+        429000,
+        594000
+    ],
+    "obstacles": [],
+    "objective": {
+        "type": "clear_all",
+        "creature_id": "",
+        "creature_position": []
+    },
+    "bubbles": [
+        {
+            "row": 0,
+            "col": 0,
+            "color": "purple"
+        },
+        {
+            "row": 0,
+            "col": 1,
+            "color": "purple"
+        },
+        {
+            "row": 0,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 0,
+            "col": 6,
+            "color": "blue"
+        },
+        {
+            "row": 0,
+            "col": 7,
+            "color": "blue"
+        },
+        {
+            "row": 0,
+            "col": 8,
+            "color": "purple"
+        },
+        {
+            "row": 0,
+            "col": 9,
+            "color": "purple"
+        },
+        {
+            "row": 1,
+            "col": 0,
+            "color": "purple"
+        },
+        {
+            "row": 1,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 6,
+            "color": "blue"
+        },
+        {
+            "row": 1,
+            "col": 8,
+            "color": "purple"
+        },
+        {
+            "row": 2,
+            "col": 0,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 4,
+            "color": "green"
+        },
+        {
+            "row": 2,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 9,
+            "color": "purple"
+        },
+        {
+            "row": 3,
+            "col": 0,
+            "color": "yellow"
+        },
+        {
+            "row": 3,
+            "col": 4,
+            "color": "green"
+        },
+        {
+            "row": 3,
+            "col": 8,
+            "color": "purple"
+        },
+        {
+            "row": 4,
+            "col": 0,
+            "color": "yellow"
+        },
+        {
+            "row": 4,
+            "col": 4,
+            "color": "green"
+        },
+        {
+            "row": 4,
+            "col": 5,
+            "color": "green"
+        },
+        {
+            "row": 4,
+            "col": 9,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 0,
+            "color": "yellow"
+        },
+        {
+            "row": 5,
+            "col": 4,
+            "color": "green"
+        },
+        {
+            "row": 5,
+            "col": 8,
+            "color": "purple"
+        },
+        {
+            "row": 6,
+            "col": 0,
+            "color": "yellow"
+        },
+        {
+            "row": 6,
+            "col": 4,
+            "color": "purple"
+        },
+        {
+            "row": 6,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 6,
+            "col": 9,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 4,
+            "color": "green"
+        },
+        {
+            "row": 8,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 8,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 9,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 10,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 10,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 11,
+            "col": 4,
+            "color": "green"
+        },
+        {
+            "row": 12,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 12,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 13,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 14,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 14,
+            "col": 5,
+            "color": "green"
+        }
+    ]
+}

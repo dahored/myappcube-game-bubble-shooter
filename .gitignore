@@ -77,3 +77,10 @@ logs/
 
 # graphify (knowledge graph, regenerar con /graphify --update)
 graphify-out/
+# Fuentes de arte generadas con IA — pesadas y no las usa el juego.
+# Solo va al repo lo exportado en design/exported/.
+design/Seasons/
+
+# Generados por el framework de tests de performance de Unity
+coralia/Assets/Resources/PerformanceTestRun*.json
+coralia/Assets/Resources/PerformanceTestRun*.json.meta

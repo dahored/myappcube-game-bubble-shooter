@@ -14,6 +14,14 @@ public class GridController : MonoBehaviour
     [SerializeField] Sprite spriteGreen;
     [SerializeField] Sprite spritePurple;
     [SerializeField] Sprite spriteOrange;
+    [SerializeField] Sprite spritePink;
+    [SerializeField] Sprite spriteGrey;
+    [SerializeField] Sprite spriteBrown;
+    [SerializeField] Sprite spriteBlack;
+    [SerializeField] Sprite spriteRedWine;
+    [SerializeField] Sprite spriteMintGreen;
+    [SerializeField] Sprite spriteDarkBlue;
+    [SerializeField] Sprite spriteDarkGrey;
     [SerializeField] Sprite spriteRainbow;
 
     [Header("Scroll de retirada (GDD: el grid se aleja del cañón cuando se llena)")]
@@ -34,6 +42,11 @@ public class GridController : MonoBehaviour
     float         _muzzleReferenceY;
     float         _scrollOffsetY;
     float         _scrollTarget;
+    float         _scrollWait;   // cuánto lleva esperando a que terminen las animaciones
+
+    // Tope de esa espera. Una caída dura hasta 1s (BubbleView.DROP_MAX_DURATION) más el pop en
+    // cadena, así que con 1.5s alcanza para el caso normal y sigue cortando cualquier cuelgue.
+    const float WAIT_TIMEOUT = 1.5f;
     Vector2       _shakeOffset;
     float         _shakeTimer;
 
@@ -64,8 +77,27 @@ public class GridController : MonoBehaviour
 
     void Update()
     {
-        bool scrolling = !Mathf.Approximately(_scrollOffsetY, _scrollTarget);
+        RecomputeScroll();
+
+        // El retiro espera a que no quede ninguna burbuja explotando ni cayendo. Todas son hijas
+        // de este RectTransform, así que moverlo mientras se animan les arrastra la posición: el
+        // pop se ve desplazarse a mitad de la explosión y las que caen cambian de rumbo.
+        //
+        // El destino (_scrollTarget) ya está calculado desde que se resolvió el disparo — lo
+        // único que espera es el movimiento, así que no se pierde ni se acumula nada.
+        //
+        // WAIT_TIMEOUT es la red de seguridad: una animación que no termine nunca dejaría el
+        // grid encima del cañón para siempre, y eso es mucho peor que un pop que se corte.
+        bool pending = !Mathf.Approximately(_scrollOffsetY, _scrollTarget);
+
+        if (pending && BubbleView.AnimatingCount > 0 && _scrollWait < WAIT_TIMEOUT)
+        {
+            _scrollWait += Time.deltaTime;
+        }
+
+        bool scrolling = pending && (BubbleView.AnimatingCount == 0 || _scrollWait >= WAIT_TIMEOUT);
         if (scrolling) _scrollOffsetY = Mathf.MoveTowards(_scrollOffsetY, _scrollTarget, scrollSpeed * Time.deltaTime);
+        if (!pending) _scrollWait = 0f;
 
         bool shaking = _shakeTimer > 0f;
         if (shaking)
@@ -92,16 +124,25 @@ public class GridController : MonoBehaviour
 
     // Llamado una vez por CannonController.Start() con la posición Y del muzzle (sin scroll) —
     // es la referencia contra la que medimos qué tan cerca está la fila más baja del cañón.
-    public void SetMuzzleReferenceY(float muzzleLocalY) => _muzzleReferenceY = muzzleLocalY;
+    public void SetMuzzleReferenceY(float muzzleLocalY)
+    {
+        _muzzleReferenceY = muzzleLocalY;
 
-    // Recalcula cuánto debería retirarse el grid ahora — llamar después de cada disparo
-    // resuelto (match + drop ya aplicados), así reacciona tanto a que el grid creció
-    // (dispara el retiro) como a que se vació por un match (permite que vuelva a bajar).
+        // Recién con la referencia del cañón se puede saber si el nivel YA nace demasiado bajo.
+        // Un nivel largo llega al cañón desde el primer frame, y hasta acá el retiro solo se
+        // recalculaba después de disparar — o sea que el jugador veía el grid encima del cañón
+        // hasta que tiraba la primera burbuja.
+        RecomputeScroll(immediate: true);
+    }
+
+    // Cuánto debería retirarse el grid ahora mismo. Se recalcula cada frame desde Update: el
+    // grid crece hacia abajo con cada disparo que no matchea y se vacía con cada match, así que
+    // el destino tiene que seguir el estado real y no depender de que alguien avise.
     //
     // El umbral es un % de la distancia TOTAL techo→cañón (no un gap fijo en píxeles) —
     // así escala solo con niveles que tengan más o menos espacio disponible, en vez de
     // disparar siempre al mismo puñado de píxeles sin importar qué tan largo sea el grid.
-    public void RecomputeScroll()
+    public void RecomputeScroll(bool immediate = false)
     {
         if (_cells.Count == 0) { _scrollTarget = 0f; return; }
 
@@ -118,7 +159,23 @@ public class GridController : MonoBehaviour
 
         float requiredGap = (1f - scrollTriggerRatio) * totalSpan; // colchón mínimo según el % configurado
         float rawGap      = lowestRowY - _muzzleReferenceY;        // colchón actual sin scroll (ambos valores son negativos)
-        _scrollTarget = Mathf.Clamp(requiredGap - rawGap, 0f, maxScrollOffset);
+
+        // El tope no puede ser un número fijo de diámetros: un nivel de 20 filas mide más de
+        // 1600px y necesita retirarse mucho más que uno de 8. Se toma el mayor entre el valor
+        // configurado y la altura real del grid, así el límite acompaña al nivel en vez de
+        // dejar las burbujas encima del cañón.
+        float gridSpan = ceilingY - lowestRowY;
+        float allowed  = Mathf.Max(maxScrollOffset, gridSpan);
+
+        _scrollTarget = Mathf.Clamp(requiredGap - rawGap, 0f, allowed);
+
+        // Al cargar el nivel no hay nada que animar: si el grid ya nace bajo, tiene que estar
+        // en su sitio desde el primer frame en vez de deslizarse a la vista del jugador.
+        if (!immediate) return;
+
+        _scrollOffsetY = _scrollTarget;
+        _scrollWait    = 0f;
+        if (_rt) _rt.anchoredPosition = _baseAnchoredPos + Vector2.up * _scrollOffsetY;
     }
 
     // Colores que todavía están en el grid — usado por CannonController para no ofrecer
@@ -130,6 +187,51 @@ public class GridController : MonoBehaviour
         foreach (var view in _cells.Values)
             if (view.ColorType != BubbleColor.Rainbow) colors.Add(view.ColorType);
         return colors;
+    }
+
+    // Colores del FRENTE del grid, repetidos según cuánto conviene ofrecer cada uno. La lista
+    // sale con repeticiones a propósito: sortear un elemento al azar ya respeta los pesos.
+    //
+    // Que un color exista en el grid no significa que se pueda usar. Una burbuja enterrada
+    // detrás de tres filas es inalcanzable, y ofrecerla es regalarle al jugador un disparo que
+    // solo puede soltar en cualquier lado — que es de donde salen los dos o tres disparos
+    // desperdiciados seguidos.
+    //
+    // Cuenta doble la burbuja que ya tiene un vecino de su mismo color: ahí un solo disparo
+    // completa el match, así que es el color más útil que se puede entregar.
+    public List<BubbleColor> ReachableColorPool()
+    {
+        var pool = new List<BubbleColor>();
+
+        foreach (var pair in _cells)
+        {
+            var color = pair.Value.ColorType;
+            if (color == BubbleColor.Rainbow || !IsReachable(pair.Key)) continue;
+
+            pool.Add(color);
+            if (HasNeighborOfColor(pair.Key, color)) pool.Add(color);
+        }
+
+        return pool;
+    }
+
+    // Alcanzable = tiene un hueco al lado o por debajo. Los huecos de ARRIBA no cuentan: una
+    // burbuja disparada sube, no baja, así que nunca entra por encima de otra.
+    bool IsReachable(Vector2Int cell)
+    {
+        foreach (var neighbor in HexGridMath.GetNeighbors(cell))
+        {
+            if (neighbor.y < cell.y || !HexGridMath.IsValidCell(neighbor)) continue;
+            if (!IsOccupied(neighbor)) return true;
+        }
+        return false;
+    }
+
+    bool HasNeighborOfColor(Vector2Int cell, BubbleColor color)
+    {
+        foreach (var neighbor in HexGridMath.GetNeighbors(cell))
+            if (TryGetBubble(neighbor, out var view) && view.ColorType.LinksWith(color)) return true;
+        return false;
     }
 
     public void SpawnFromLevel(LevelData level)
@@ -222,6 +324,46 @@ public class GridController : MonoBehaviour
         }
     }
 
+    // Una arcoíris recién aterrizada se vuelve un color de verdad, el que más le conviene al
+    // jugador: se prueba cada color que tiene al lado y gana el que forme el grupo más grande.
+    //
+    // No es cosmético. LinksWith trata a la arcoíris como comodín EN AMBAS DIRECCIONES, así que
+    // si queda de semilla del flood-fill conecta con todo lo que toque, y eso con todo lo que
+    // toque: un solo disparo limpiaba el nivel entero. Como comodín pasivo dentro de un grupo de
+    // otro color sigue funcionando igual — el problema era solo cuando arrancaba la búsqueda.
+    public void ResolveRainbow(Vector2Int cell)
+    {
+        if (!TryGetBubble(cell, out var view) || view.ColorType != BubbleColor.Rainbow) return;
+
+        var best      = BubbleColor.Rainbow;
+        int bestCount = 0;
+
+        foreach (var candidate in NeighborColors(cell))
+        {
+            view.SetColor(candidate, SpriteFor(candidate));
+
+            int count = FindConnectedSameColor(cell).Count;
+            if (count <= bestCount) continue;
+
+            bestCount = count;
+            best      = candidate;
+        }
+
+        // Si no tenía ningún vecino con color (cayó entre arcoíris, o sola), vuelve a ser comodín.
+        view.SetColor(best, SpriteFor(best));
+    }
+
+    HashSet<BubbleColor> NeighborColors(Vector2Int cell)
+    {
+        var colors = new HashSet<BubbleColor>();
+
+        foreach (var neighbor in HexGridMath.GetNeighbors(cell))
+            if (TryGetBubble(neighbor, out var view) && view.ColorType != BubbleColor.Rainbow)
+                colors.Add(view.ColorType);
+
+        return colors;
+    }
+
     // Match (GDD 1.4): flood-fill desde `start` conectando por color, rainbow como comodín.
     public List<Vector2Int> FindConnectedSameColor(Vector2Int start)
     {
@@ -281,13 +423,21 @@ public class GridController : MonoBehaviour
 
     public Sprite SpriteFor(BubbleColor color) => color switch
     {
-        BubbleColor.Red     => spriteRed,
-        BubbleColor.Blue    => spriteBlue,
-        BubbleColor.Yellow  => spriteYellow,
-        BubbleColor.Green   => spriteGreen,
-        BubbleColor.Purple  => spritePurple,
-        BubbleColor.Orange  => spriteOrange,
-        BubbleColor.Rainbow => spriteRainbow,
-        _                   => null,
+        BubbleColor.Red       => spriteRed,
+        BubbleColor.Blue      => spriteBlue,
+        BubbleColor.Yellow    => spriteYellow,
+        BubbleColor.Green     => spriteGreen,
+        BubbleColor.Purple    => spritePurple,
+        BubbleColor.Orange    => spriteOrange,
+        BubbleColor.Pink      => spritePink,
+        BubbleColor.Grey      => spriteGrey,
+        BubbleColor.Brown     => spriteBrown,
+        BubbleColor.Black     => spriteBlack,
+        BubbleColor.RedWine   => spriteRedWine,
+        BubbleColor.MintGreen => spriteMintGreen,
+        BubbleColor.DarkBlue  => spriteDarkBlue,
+        BubbleColor.DarkGrey  => spriteDarkGrey,
+        BubbleColor.Rainbow   => spriteRainbow,
+        _                     => null,
     };
 }

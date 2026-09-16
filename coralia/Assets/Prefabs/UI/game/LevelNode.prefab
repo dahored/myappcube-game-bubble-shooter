@@ -218,7 +218,7 @@ MonoBehaviour:
   m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 11e5e54ccc3684b0eb88a1b4bb13ddb2, type: 2}
-  m_sharedMaterial: {fileID: 6286699744156901190, guid: 11e5e54ccc3684b0eb88a1b4bb13ddb2, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: f05dd456b67cf4c8ca7fbd0b8d59b222, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -392,6 +392,9 @@ MonoBehaviour:
   spriteDefault: {fileID: -4190337762811870514, guid: 42d72ee115e104cec97bad30246b46e2, type: 3}
   spriteCurrent: {fileID: 2097371483251685808, guid: 4273215e24033434e9824adffdecb25d, type: 3}
   spriteGold: {fileID: 9214126699357180723, guid: 9d6b3baec859c4f05883bf3347ddce6c, type: 3}
+  materialDefault: {fileID: 0}
+  materialCurrent: {fileID: 0}
+  materialGold: {fileID: 0}
   pulseMin: 1
   pulseMax: 1.1
   pulseDuration: 0.25
