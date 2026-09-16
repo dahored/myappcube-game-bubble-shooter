@@ -2,8 +2,8 @@
     "id": 16,
     "chapter": 1,
     "name": "El arrecife",
-    "max_shots": 47,
-    "min_shots_to_clear": 16,
+    "max_shots": 28,
+    "min_shots_to_clear": 9,
     "rainbow_chance": 0.05000000074505806,
     "available_colors": [
         "red",
@@ -12,9 +12,9 @@
         "green"
     ],
     "star_thresholds": [
-        466000,
-        757000,
-        1048000
+        408000,
+        663000,
+        918000
     ],
     "obstacles": [],
     "objective": {
@@ -25,18 +25,8 @@
     "bubbles": [
         {
             "row": 0,
-            "col": 0,
-            "color": "green"
-        },
-        {
-            "row": 0,
-            "col": 1,
-            "color": "red"
-        },
-        {
-            "row": 0,
             "col": 2,
-            "color": "green"
+            "color": "red"
         },
         {
             "row": 0,
@@ -46,17 +36,17 @@
         {
             "row": 0,
             "col": 4,
-            "color": "yellow"
+            "color": "green"
         },
         {
             "row": 0,
             "col": 5,
-            "color": "yellow"
+            "color": "green"
         },
         {
             "row": 0,
             "col": 6,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 0,
@@ -64,39 +54,29 @@
             "color": "green"
         },
         {
-            "row": 0,
-            "col": 8,
-            "color": "red"
-        },
-        {
-            "row": 0,
-            "col": 9,
-            "color": "green"
-        },
-        {
             "row": 1,
             "col": 0,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 1,
             "col": 1,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 1,
             "col": 2,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 1,
             "col": 3,
-            "color": "yellow"
+            "color": "green"
         },
         {
             "row": 1,
             "col": 4,
-            "color": "yellow"
+            "color": "green"
         },
         {
             "row": 1,
@@ -111,22 +91,22 @@
         {
             "row": 1,
             "col": 7,
-            "color": "red"
+            "color": "green"
         },
         {
             "row": 1,
             "col": 8,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 2,
             "col": 0,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 2,
             "col": 1,
-            "color": "red"
+            "color": "green"
         },
         {
             "row": 2,
@@ -136,12 +116,12 @@
         {
             "row": 2,
             "col": 3,
-            "color": "yellow"
+            "color": "green"
         },
         {
             "row": 2,
             "col": 4,
-            "color": "yellow"
+            "color": "green"
         },
         {
             "row": 2,
@@ -151,302 +131,257 @@
         {
             "row": 2,
             "col": 6,
-            "color": "yellow"
+            "color": "green"
         },
         {
             "row": 2,
             "col": 7,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 2,
             "col": 8,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 2,
             "col": 9,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 3,
             "col": 0,
-            "color": "red"
+            "color": "green"
         },
         {
             "row": 3,
             "col": 1,
-            "color": "red"
+            "color": "green"
         },
         {
             "row": 3,
             "col": 2,
-            "color": "red"
+            "color": "green"
         },
         {
             "row": 3,
             "col": 3,
-            "color": "yellow"
+            "color": "green"
         },
         {
             "row": 3,
-            "col": 4,
-            "color": "yellow"
-        },
-        {
-            "row": 3,
-            "col": 5,
-            "color": "yellow"
-        },
-        {
-            "row": 3,
-            "col": 6,
-            "color": "red"
-        },
-        {
-            "row": 3,
-            "col": 7,
-            "color": "red"
-        },
-        {
-            "row": 3,
-            "col": 8,
-            "color": "red"
-        },
-        {
-            "row": 4,
-            "col": 1,
-            "color": "red"
-        },
-        {
-            "row": 4,
-            "col": 2,
-            "color": "red"
-        },
-        {
-            "row": 4,
-            "col": 3,
-            "color": "red"
-        },
-        {
-            "row": 4,
-            "col": 4,
-            "color": "yellow"
-        },
-        {
-            "row": 4,
-            "col": 5,
-            "color": "yellow"
-        },
-        {
-            "row": 4,
-            "col": 6,
-            "color": "red"
-        },
-        {
-            "row": 4,
-            "col": 7,
-            "color": "red"
-        },
-        {
-            "row": 4,
-            "col": 8,
-            "color": "red"
-        },
-        {
-            "row": 5,
-            "col": 1,
-            "color": "blue"
-        },
-        {
-            "row": 5,
-            "col": 2,
-            "color": "blue"
-        },
-        {
-            "row": 5,
-            "col": 3,
-            "color": "yellow"
-        },
-        {
-            "row": 5,
-            "col": 4,
-            "color": "yellow"
-        },
-        {
-            "row": 5,
-            "col": 5,
-            "color": "yellow"
-        },
-        {
-            "row": 5,
-            "col": 6,
-            "color": "blue"
-        },
-        {
-            "row": 5,
-            "col": 7,
-            "color": "blue"
-        },
-        {
-            "row": 6,
-            "col": 1,
-            "color": "blue"
-        },
-        {
-            "row": 6,
-            "col": 2,
-            "color": "blue"
-        },
-        {
-            "row": 6,
-            "col": 3,
-            "color": "blue"
-        },
-        {
-            "row": 6,
-            "col": 4,
-            "color": "blue"
-        },
-        {
-            "row": 6,
-            "col": 5,
-            "color": "blue"
-        },
-        {
-            "row": 6,
-            "col": 6,
-            "color": "blue"
-        },
-        {
-            "row": 6,
-            "col": 7,
-            "color": "blue"
-        },
-        {
-            "row": 6,
-            "col": 8,
-            "color": "blue"
-        },
-        {
-            "row": 7,
-            "col": 1,
-            "color": "blue"
-        },
-        {
-            "row": 7,
-            "col": 2,
-            "color": "blue"
-        },
-        {
-            "row": 7,
-            "col": 3,
-            "color": "blue"
-        },
-        {
-            "row": 7,
             "col": 4,
             "color": "green"
         },
         {
-            "row": 7,
+            "row": 3,
             "col": 5,
-            "color": "blue"
+            "color": "green"
         },
         {
-            "row": 7,
+            "row": 3,
             "col": 6,
-            "color": "blue"
+            "color": "green"
         },
         {
-            "row": 7,
+            "row": 3,
             "col": 7,
             "color": "blue"
         },
         {
-            "row": 8,
-            "col": 2,
+            "row": 3,
+            "col": 8,
             "color": "blue"
         },
         {
-            "row": 8,
-            "col": 3,
+            "row": 4,
+            "col": 0,
             "color": "blue"
         },
         {
-            "row": 8,
-            "col": 4,
-            "color": "blue"
-        },
-        {
-            "row": 8,
-            "col": 5,
-            "color": "blue"
-        },
-        {
-            "row": 8,
-            "col": 6,
-            "color": "blue"
-        },
-        {
-            "row": 8,
-            "col": 7,
-            "color": "blue"
-        },
-        {
-            "row": 9,
+            "row": 4,
             "col": 1,
             "color": "blue"
         },
         {
-            "row": 9,
+            "row": 4,
             "col": 2,
             "color": "blue"
         },
         {
-            "row": 9,
+            "row": 4,
             "col": 3,
             "color": "blue"
         },
         {
-            "row": 9,
+            "row": 4,
             "col": 4,
             "color": "blue"
         },
         {
-            "row": 9,
+            "row": 4,
             "col": 5,
             "color": "blue"
         },
         {
-            "row": 9,
+            "row": 4,
+            "col": 6,
+            "color": "yellow"
+        },
+        {
+            "row": 4,
+            "col": 7,
+            "color": "yellow"
+        },
+        {
+            "row": 4,
+            "col": 8,
+            "color": "yellow"
+        },
+        {
+            "row": 4,
+            "col": 9,
+            "color": "yellow"
+        },
+        {
+            "row": 5,
+            "col": 0,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 1,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 2,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 3,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 5,
             "col": 6,
             "color": "blue"
         },
         {
-            "row": 9,
+            "row": 5,
             "col": 7,
             "color": "blue"
         },
         {
-            "row": 10,
-            "col": 3,
-            "color": "blue"
+            "row": 5,
+            "col": 8,
+            "color": "green"
         },
         {
-            "row": 10,
+            "row": 6,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 3,
+            "color": "yellow"
+        },
+        {
+            "row": 6,
             "col": 4,
             "color": "blue"
         },
         {
-            "row": 10,
+            "row": 6,
             "col": 5,
-            "color": "blue"
+            "color": "green"
         },
         {
-            "row": 10,
+            "row": 6,
             "col": 6,
-            "color": "blue"
+            "color": "green"
+        },
+        {
+            "row": 6,
+            "col": 7,
+            "color": "green"
+        },
+        {
+            "row": 6,
+            "col": 8,
+            "color": "green"
+        },
+        {
+            "row": 7,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 7,
+            "col": 6,
+            "color": "green"
+        },
+        {
+            "row": 7,
+            "col": 7,
+            "color": "green"
+        },
+        {
+            "row": 8,
+            "col": 3,
+            "color": "yellow"
+        },
+        {
+            "row": 8,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 8,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 8,
+            "col": 6,
+            "color": "yellow"
         }
     ]
 }

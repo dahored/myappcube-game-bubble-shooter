@@ -2,17 +2,17 @@
     "id": 3,
     "chapter": 1,
     "name": "Primeras olas",
-    "max_shots": 14,
-    "min_shots_to_clear": 6,
+    "max_shots": 22,
+    "min_shots_to_clear": 9,
     "rainbow_chance": 0.0,
     "available_colors": [
         "red",
         "yellow"
     ],
     "star_thresholds": [
-        402000,
-        653000,
-        904000
+        376000,
+        611000,
+        846000
     ],
     "obstacles": [],
     "objective": {
@@ -59,22 +59,22 @@
         {
             "row": 0,
             "col": 7,
-            "color": "yellow"
-        },
-        {
-            "row": 0,
-            "col": 8,
             "color": "red"
         },
         {
             "row": 0,
+            "col": 8,
+            "color": "yellow"
+        },
+        {
+            "row": 0,
             "col": 9,
             "color": "red"
         },
         {
             "row": 1,
             "col": 0,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 1,
@@ -114,27 +114,22 @@
         {
             "row": 1,
             "col": 8,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 2,
             "col": 0,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 2,
             "col": 1,
-            "color": "red"
-        },
-        {
-            "row": 2,
-            "col": 2,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 2,
             "col": 3,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 2,
@@ -149,22 +144,17 @@
         {
             "row": 2,
             "col": 6,
-            "color": "red"
-        },
-        {
-            "row": 2,
-            "col": 7,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 2,
             "col": 8,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 2,
             "col": 9,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 3,
@@ -223,32 +213,22 @@
         },
         {
             "row": 4,
-            "col": 2,
+            "col": 3,
             "color": "red"
         },
         {
             "row": 4,
-            "col": 3,
-            "color": "yellow"
-        },
-        {
-            "row": 4,
             "col": 4,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 4,
             "col": 5,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 4,
             "col": 6,
-            "color": "yellow"
-        },
-        {
-            "row": 4,
-            "col": 7,
             "color": "red"
         },
         {
@@ -269,12 +249,12 @@
         {
             "row": 5,
             "col": 1,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 5,
             "col": 2,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 5,
@@ -294,22 +274,17 @@
         {
             "row": 5,
             "col": 6,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 5,
             "col": 7,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 5,
             "col": 8,
             "color": "red"
-        },
-        {
-            "row": 6,
-            "col": 0,
-            "color": "yellow"
         },
         {
             "row": 6,
@@ -329,12 +304,12 @@
         {
             "row": 6,
             "col": 4,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 6,
             "col": 5,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 6,
@@ -349,57 +324,42 @@
         {
             "row": 6,
             "col": 8,
-            "color": "yellow"
-        },
-        {
-            "row": 6,
-            "col": 9,
-            "color": "yellow"
-        },
-        {
-            "row": 7,
-            "col": 0,
             "color": "yellow"
         },
         {
             "row": 7,
             "col": 1,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 7,
             "col": 2,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 7,
             "col": 3,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 7,
             "col": 4,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 7,
             "col": 5,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 7,
             "col": 6,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 7,
             "col": 7,
-            "color": "yellow"
-        },
-        {
-            "row": 7,
-            "col": 8,
-            "color": "yellow"
+            "color": "red"
         }
     ]
 }
