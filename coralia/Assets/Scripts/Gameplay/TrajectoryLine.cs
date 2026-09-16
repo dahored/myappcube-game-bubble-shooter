@@ -18,6 +18,15 @@ public class TrajectoryLine : MonoBehaviour
     readonly List<RectTransform> _pool      = new();
     readonly List<Image>         _poolImage = new();
 
+    // Dónde dice esta mira que va a quedar la burbuja. CannonController la toma al disparar y la
+    // respeta al aterrizar, así el círculo transparente deja de ser una predicción y pasa a ser
+    // el destino: la burbuja queda exactamente ahí y no en la celda de al lado.
+    //
+    // Sin esto, la mira y el disparo recorren el mismo camino pero con distinta resolución — la
+    // mira de a 24px, el disparo en tramos de medio radio — y terminan en puntos apenas distintos
+    // que a veces caen del otro lado de la frontera entre dos celdas.
+    public Vector2Int? LandingCell { get; private set; }
+
     void Awake()
     {
         for (int i = 0; i < maxDots; i++)
@@ -65,7 +74,12 @@ public class TrajectoryLine : MonoBehaviour
             }
         }
 
-        if (!landed && landingPreview) landingPreview.gameObject.SetActive(false);
+        if (!landed)
+        {
+            LandingCell = null;
+            if (landingPreview) landingPreview.gameObject.SetActive(false);
+        }
+
         for (int i = used; i < maxDots; i++) _pool[i].gameObject.SetActive(false);
     }
 
@@ -79,12 +93,16 @@ public class TrajectoryLine : MonoBehaviour
     // dónde va a quedar pegada la burbuja real.
     void ShowLandingPreview(Vector2 pos, Vector2Int struckCell, bool hitCeiling, float alpha)
     {
-        if (!landingPreview) return;
-
         var reference = hitCeiling
             ? new Vector2Int(HexGridMath.EstimateNearestCell(pos).x, 0)
             : struckCell;
         var cell = gridController.FindNearestEmptyCell(pos, reference);
+
+        // Se guarda aunque no haya sprite de preview asignado: el destino del disparo no depende
+        // de que se esté dibujando el círculo.
+        LandingCell = cell;
+
+        if (!landingPreview) return;
 
         landingPreview.gameObject.SetActive(true);
         landingPreview.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);

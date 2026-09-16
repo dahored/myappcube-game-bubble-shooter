@@ -107,7 +107,8 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     // vez para todo el lote. Todas arrancan a la vez (sin delay escalonado, la caída en sí
     // ya no es instantánea), así que varias sonando juntas es el efecto esperado de "se
     // desprendió una cadena grande", no un bug.
-    public void PlayDropAnimation(AudioClip dropClip = null) => StartCoroutine(DropAndDestroy(dropClip));
+    public void PlayDropAnimation(AudioClip dropClip = null, float delay = 0f) =>
+        StartCoroutine(DropAndDestroy(dropClip, delay));
 
     IEnumerator PopAndDestroy(float delay, AudioClip popClip)
     {
@@ -167,11 +168,17 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
 
     // Gravedad simulada (acelera en vez de moverse a velocidad constante) + un giro
     // aleatorio por burbuja, para que la caída en cadena no se vea toda igual/rígida.
-    IEnumerator DropAndDestroy(AudioClip dropClip)
+    IEnumerator DropAndDestroy(AudioClip dropClip, float delay)
     {
-        BeginAnimation();
+        BeginAnimation();   // cuenta desde ya: el grid no debe moverse mientras esta espera su turno
+
+        if (delay > 0f) yield return new WaitForSeconds(delay);
 
         AudioManager.Instance?.PlayPop(dropClip);
+
+        // Un toque al desprenderse, igual que el pop. Sin esto un derrumbe de quince burbujas se
+        // ve pero no se siente.
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
 
         var     rt       = (RectTransform)transform;
         Vector2 pos      = rt.anchoredPosition;

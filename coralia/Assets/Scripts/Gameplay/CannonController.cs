@@ -55,6 +55,7 @@ public class CannonController : MonoBehaviour
     BubbleColor  _current;
     BubbleColor  _next;
     ShotBubble   _flyingShot;
+    Vector2Int?  _predictedCell;   // dónde prometió la mira que iba a quedar este disparo
     bool         _inputEnabled = true;
     bool         _dragging;
     bool         _hintShown;
@@ -313,6 +314,10 @@ public class CannonController : MonoBehaviour
         // la cola avanza.
         if (currentBubbleImage) currentBubbleImage.enabled = false;
 
+        // La celda que marcó la mira en este instante. Es la que va a usarse al aterrizar: el
+        // círculo transparente promete un lugar y el disparo lo cumple, sin recalcular nada.
+        _predictedCell = trajectoryLine.LandingCell;
+
         var go   = Instantiate(bubblePrefab, gridContainer);
         var shot = go.AddComponent<ShotBubble>();
         shot.Init(gridContainer, grid, MuzzleLocal, _aimDir, shotSpeed, _current, grid.SpriteFor(_current));
@@ -326,11 +331,25 @@ public class CannonController : MonoBehaviour
 
     void ResolveImpact(ShotBubble.ImpactInfo impact)
     {
-        var shotView  = _flyingShot.GetComponent<BubbleView>();
-        var reference = impact.HitCeiling
-            ? new Vector2Int(HexGridMath.EstimateNearestCell(impact.LocalPos).x, 0)
-            : impact.StruckCell;
-        var cell = grid.FindNearestEmptyCell(impact.LocalPos, reference);
+        var shotView = _flyingShot.GetComponent<BubbleView>();
+
+        // Primero la celda que prometió la mira. Solo se recalcula si no hay predicción o si esa
+        // celda se ocupó mientras la burbuja volaba — cosa que hoy no puede pasar, pero es la
+        // única situación en la que la promesa dejaría de ser cumplible.
+        Vector2Int cell;
+        if (_predictedCell.HasValue && !grid.IsOccupied(_predictedCell.Value))
+        {
+            cell = _predictedCell.Value;
+        }
+        else
+        {
+            var reference = impact.HitCeiling
+                ? new Vector2Int(HexGridMath.EstimateNearestCell(impact.LocalPos).x, 0)
+                : impact.StruckCell;
+            cell = grid.FindNearestEmptyCell(impact.LocalPos, reference);
+        }
+
+        _predictedCell = null;
 
         grid.RegisterExisting(shotView, cell);
         AudioManager.Instance?.PlaySfx(landClip);
@@ -346,12 +365,14 @@ public class CannonController : MonoBehaviour
         // del techo, no solo las que matchearon directo).
         OnBubbleLanded?.Invoke(cell);
 
-        // El "current" recién promovido pudo quedar huérfano por esa misma cascada (aunque
-        // su color no haya matcheado nada, puede haber caído igual). Se re-sortea antes de
-        // mostrarlo — mejor una burbuja distinta a una que no puede matchear con nada.
-        if (_current != BubbleColor.Rainbow && !grid.ColorsOnGrid().Contains(_current))
-            _current = RollColor();
-
+        // El "current" NO se re-sortea aunque la cascada haya borrado todas las burbujas de su
+        // color. El jugador ya lo vio como "next" durante todo el vuelo del disparo anterior: es
+        // una promesa, y cambiárselo justo al promoverlo se siente como si el juego le hubiera
+        // cambiado la burbuja en la mano — reportado como "disparo un color y sale otro".
+        //
+        // Si quedó sin uso, el swap está para eso, y el nuevo "next" ya se sortea contra el grid
+        // de después de la cascada, así que siempre sirve. Vale más no mentir sobre lo que se va a
+        // disparar que ahorrarle un disparo perdido de vez en cuando.
         _next = RollColor();
         StartCoroutine(AnimateNextIntoCurrent());
     }

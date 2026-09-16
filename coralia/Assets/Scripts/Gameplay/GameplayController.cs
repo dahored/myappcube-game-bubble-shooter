@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,7 +39,16 @@ public class GameplayController : MonoBehaviour
     const float WIN_PANEL_PAUSE      = 0.35f; // respiro tras llenarse la barra, para que se vea la última estrella
     const float PROGRESS_BAR_TIMEOUT = 3f;    // tope de espera de esa barra, para no colgar el fin de nivel
     const float POP_CHAIN_DELAY      = 0.08f; // segundos entre el pop de cada burbuja del match, en cadena
-    const float POP_CHAIN_DELAY_MAX  = 0.4f;   // tope — para que un match gigante no tarde una eternidad en terminar
+    const float DROP_CHAIN_DELAY     = 0.05f; // ídem para las que caen — algo más rápido, son más
+    const float CHAIN_TOTAL_MAX      = 0.7f;  // cuánto puede durar la cadena entera, por larga que sea
+
+    // Separación entre un elemento de la cadena y el siguiente. Con pocas burbujas usa el paso
+    // natural; con muchas lo comprime para que la cadena entre en CHAIN_TOTAL_MAX.
+    //
+    // La clave es que NINGUNA comparte instante con otra: un combo de veinte explota veinte veces
+    // seguidas, muy rápido, en vez de cinco veces y un golpe.
+    static float ChainStep(int count, float naturalStep) =>
+        count > 1 ? Mathf.Min(naturalStep, CHAIN_TOTAL_MAX / (count - 1)) : 0f;
 
     // GDD §4.2 / docs/04_Plan_Fase1_Coralia.md — fórmula de score, escalada x1000 (pedido de
     // Diego: el score final de un nivel debe sentirse "alto", en el orden de cientos de miles,
@@ -71,6 +81,11 @@ public class GameplayController : MonoBehaviour
     bool       _isFirstAttempt; // nunca se había intentado este nivel antes de esta partida (issue #49)
     int        _noMoreShotsUsedCount; // cuántas veces ya se pagó la oferta en esta partida — sube el costo
     bool       _endingPending;        // hay un cierre de nivel esperando a que terminen las animaciones
+    bool       _isEditorTest;         // se entró desde el editor de niveles: nada de esta partida se guarda
+
+    // La pone el editor de niveles justo antes de entrar a Play. No es una constante de SaveManager
+    // porque no es progreso: es una marca de un solo uso entre el editor y esta escena.
+    public const string EDITOR_TEST_KEY = "level_editor_test";
 
     void Start()
     {
@@ -121,10 +136,23 @@ public class GameplayController : MonoBehaviour
             return;
         }
 
+        // Probar un nivel desde el editor no puede tocar la partida. Ganar el 60 para ver cómo
+        // quedó dejaba desbloqueados los 60 niveles de golpe, y no hay forma de volver atrás.
+        //
+        // La marca se consume acá: vale para esta partida y para ninguna más. Si el jugador vuelve
+        // al mapa y entra a un nivel normalmente, ya no está.
+        _isEditorTest = PlayerPrefs.GetInt(EDITOR_TEST_KEY, 0) == 1;
+        if (_isEditorTest)
+        {
+            PlayerPrefs.DeleteKey(EDITOR_TEST_KEY);
+            PlayerPrefs.Save();
+            Debug.Log($"[GameplayController] Nivel {levelId} en modo prueba: no se guarda progreso.");
+        }
+
         // Leer ANTES de marcar — si nunca se intentó este nivel, esta partida es el intento
         // #1 (condición para el nodo dorado, ver SaveManager.RecordLevelWin en EndLevel()).
         _isFirstAttempt = !SaveManager.HasAttemptedLevel(levelId);
-        SaveManager.MarkLevelAttempted(levelId);
+        if (!_isEditorTest) SaveManager.MarkLevelAttempted(levelId);
 
         if (_level.objective != null && _level.objective.type == "rescue" && _level.objective.creature_position?.Count == 2)
         {
@@ -265,7 +293,7 @@ public class GameplayController : MonoBehaviour
     // enableNoMoreShotsOffer está apagado, directo al quedarse sin disparos.
     void ShowRealLoss()
     {
-        SaveManager.LoseLife();
+        if (!_isEditorTest) SaveManager.LoseLife(); // probar un nivel no cuesta vidas
         if (losePanel != null) losePanel.Open();
         else Debug.LogWarning("[GameplayController] LosePanel no está asignado.");
     }
@@ -317,20 +345,32 @@ public class GameplayController : MonoBehaviour
         // una, y alcanza con escalonar el pop según ese orden para que explote en cadena
         // en vez de todas juntas. El estado lógico del grid (RemoveBubble) sigue siendo
         // instantáneo — solo la animación visual del pop se demora.
+        // El intervalo se COMPRIME en los combos grandes en vez de toparse. Antes era
+        // Min(i * paso, tope): pasadas las cinco o seis primeras, todas quedaban con el mismo
+        // retraso y reventaban a la vez — junto con su vibración, que se sentía como un golpe
+        // único en lugar de una cadena.
+        float popStep = ChainStep(matched.Count, POP_CHAIN_DELAY);
+
         for (int i = 0; i < matched.Count; i++)
         {
             var cell = matched[i];
             if (grid.TryGetBubble(cell, out var view))
-                view.PlayPopAnimation(Mathf.Min(i * POP_CHAIN_DELAY, POP_CHAIN_DELAY_MAX), popClip);
+                view.PlayPopAnimation(i * popStep, popClip);
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
         _bubblesPopped += matched.Count;
 
-        var floating = grid.FindUnreachableFromCeiling();
-        foreach (var cell in floating)
+        // Las que caen, de abajo hacia arriba y también escalonadas: es un desmoronamiento, y
+        // soltarlas todas en el mismo frame lo convertía en un bloque que baja de una pieza.
+        var floating  = grid.FindUnreachableFromCeiling();
+        var collapsing = floating.OrderByDescending(cell => cell.y).ToList();
+        float dropStep = ChainStep(collapsing.Count, DROP_CHAIN_DELAY);
+
+        for (int i = 0; i < collapsing.Count; i++)
         {
-            if (grid.TryGetBubble(cell, out var view)) view.PlayDropAnimation(dropClip);
+            var cell = collapsing[i];
+            if (grid.TryGetBubble(cell, out var view)) view.PlayDropAnimation(dropClip, i * dropStep);
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
@@ -347,9 +387,34 @@ public class GameplayController : MonoBehaviour
         int comboBonus = _comboStreak >= 2 ? COMBO_BONUS_PER_STREAK : 0;
         _comboBonus += chainBonus + comboBonus;
 
-        grid.Shake(chainSize); // no hace nada si no llega al umbral — ver GridController.shakeThreshold
+        // Un golpe de temblor por burbuja, al ritmo de sus pops. Antes era una sola sacudida
+        // disparada acá, o sea cuando las burbujas todavía no habían empezado a explotar.
+        if (grid.ShakeWorthIt(chainSize))
+            StartCoroutine(ShakeAlongChain(matched.Count, popStep, collapsing.Count, dropStep));
 
         return removed;
+    }
+
+    // Acompaña la cadena con un golpe de temblor por burbuja, con los mismos tiempos que se le
+    // pasaron a las animaciones. Los pops primero y las caídas después, porque así es como
+    // ocurren en pantalla.
+    //
+    // La energía del temblor se acumula y decae sola (GridController.ShakePulse), así que esto no
+    // produce sacudidas sueltas: mientras los pops llegan más rápido de lo que la energía baja, la
+    // pantalla tiembla de forma sostenida y se apaga cuando termina la cadena.
+    IEnumerator ShakeAlongChain(int popCount, float popStep, int dropCount, float dropStep)
+    {
+        for (int i = 0; i < popCount; i++)
+        {
+            grid.ShakePulse();
+            if (popStep > 0f) yield return new WaitForSeconds(popStep);
+        }
+
+        for (int i = 0; i < dropCount; i++)
+        {
+            grid.ShakePulse();
+            if (dropStep > 0f) yield return new WaitForSeconds(dropStep);
+        }
     }
 
     void CheckWinLose()
@@ -393,7 +458,7 @@ public class GameplayController : MonoBehaviour
 
         // Reactivado — Diego ya está probando la progresión real entre niveles. Este mismo
         // "avance real" es la condición para la animación de retorno al mapa (issue #55).
-        if (won && _level.id >= SaveManager.MaxUnlockedLevel)
+        if (won && !_isEditorTest && _level.id >= SaveManager.MaxUnlockedLevel)
         {
             SaveManager.MaxUnlockedLevel = _level.id + 1;
             SaveManager.JustAdvancedFromLevelId = _level.id;
@@ -404,7 +469,11 @@ public class GameplayController : MonoBehaviour
             if (winPanel == null) { Debug.LogWarning("[GameplayController] WinPanel no está asignado."); return; }
             int score  = LiveScore + _shotsRemaining * SCORE_PER_REMAINING_SHOT;
             int stars  = CalculateStars(score);
-            SaveManager.RecordLevelWin(_level.id, stars, _isFirstAttempt);
+
+            // El panel igual se muestra con sus estrellas y su puntaje: probar un nivel sirve
+            // justamente para ver cómo queda eso. Lo que no pasa es que quede registrado.
+            if (!_isEditorTest) SaveManager.RecordLevelWin(_level.id, stars, _isFirstAttempt);
+
             var awards = CalculateAwards(firstCompletion);
 
             StartCoroutine(ShowWinAfterProgressBar(score, () => winPanel.Show(_level.id, score, stars, awards)));
