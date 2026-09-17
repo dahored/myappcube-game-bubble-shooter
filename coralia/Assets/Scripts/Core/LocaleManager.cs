@@ -13,6 +13,15 @@ public static class LocaleManager
         return _keys.TryGetValue(key, out var val) ? val : key;
     }
 
+    // Para texto que tiene un original razonable fuera del CSV — los nombres de nivel, que se
+    // escriben en el editor y viven en el JSON. Si la clave todavía no se exportó, se muestra ese
+    // original en vez de la clave cruda ("level.7.name" en pantalla).
+    public static string Get(string key, string fallback)
+    {
+        if (!_loaded) Load();
+        return _keys.TryGetValue(key, out var val) && val.Length > 0 ? val : fallback;
+    }
+
     static void Load()
     {
         _loaded = true;
@@ -30,8 +39,15 @@ public static class LocaleManager
         for (int i = 1; i < lines.Length; i++)
         {
             var parts = lines[i].Trim().Split(',');
-            if (parts.Length > col && parts[0].Length > 0)
-                _keys[parts[0]] = parts[col];
+            if (parts.Length <= col || parts[0].Length == 0) continue;
+
+            // Celda vacía = todavía sin traducir. Se cae al español en vez de dejar el texto en
+            // blanco, que es lo que permite ir traduciendo de a poco sin romper nada: una clave
+            // nueva se ve en español en los otros idiomas hasta que alguien la complete.
+            string value = parts[col];
+            if (value.Length == 0 && parts.Length > 1) value = parts[1];
+
+            _keys[parts[0]] = value;
         }
     }
 

@@ -12,7 +12,12 @@ using System;
 public class ChapterData
 {
     public int    chapter;
+
+    // El nombre en español; para mostrarlo se usa DisplayName. Mismo criterio que LevelData.
     public string name;
+
+    public string NameKey     => $"chapter.{chapter}.name";
+    public string DisplayName => LocaleManager.Get(NameKey, name);
 
     public DecorationPlacement[] decorations;
 }
