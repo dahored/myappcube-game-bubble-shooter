@@ -815,6 +815,9 @@ public class LevelEditorWindow : EditorWindow
         File.WriteAllText(entry.path, JsonUtility.ToJson(entry.data, true));
         AssetDatabase.ImportAsset(entry.path);
 
+        // El índice guarda id, capítulo y nombre: los tres se pueden haber editado recién.
+        LevelIndexBuilder.RebuildSilently();
+
         _dirty = false;
         Debug.Log($"[Editor de niveles] Guardado {entry.path}");
     }
@@ -840,6 +843,11 @@ public class LevelEditorWindow : EditorWindow
 
         File.WriteAllText(path, JsonUtility.ToJson(copy, true));
         AssetDatabase.ImportAsset(path);
+
+        // Un nivel que no está en el índice no aparece en el mapa. Se regenera acá para que no
+        // dependa de acordarse de hacerlo.
+        LevelIndexBuilder.RebuildSilently();
+
         Reload();
 
         var created = _levels.FirstOrDefault(e => e.path == path);
