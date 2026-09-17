@@ -7,6 +7,12 @@ public class GridController : MonoBehaviour
 {
     [SerializeField] GameObject bubblePrefab;
 
+    [Tooltip("Número que sale de cada burbuja al reventar. Opcional — sin esto se juega igual, solo no se ven los puntos.")]
+    [SerializeField] ScorePopup scorePopupPrefab;
+
+    [Tooltip("Cuánto por encima del cañón sale el número de las burbujas que caen. La burbuja sigue cayendo; el número se queda acá.")]
+    [SerializeField] float dropScoreHeight = 2f * HexGridMath.BubbleDiameter;
+
     [Header("Sprites por color (arrastrar el sub-sprite bubble_X_0 de cada PNG)")]
     [SerializeField] Sprite spriteRed;
     [SerializeField] Sprite spriteBlue;
@@ -297,6 +303,45 @@ public class GridController : MonoBehaviour
             var view  = PlaceBubble(cell, color);
             if (cell == creatureCell) view.SetCreatureMarker(true);
         }
+    }
+
+    // El número de puntos sobre una celda. Lo pide GameplayController, que es el único que sabe
+    // cuánto vale la burbuja: el valor depende de la racha del disparo, no de la burbuja.
+    //
+    // Se instancia acá y no en BubbleView porque la burbuja se destruye con su propia animación
+    // y se llevaría el número a mitad de camino; este vive suelto en el grid y se autodestruye.
+    public void SpawnScorePopup(Vector2Int cell, int points, float delay, float lifetime)
+    {
+        Spawn(HexGridMath.CellToLocalPos(cell), points, delay, lifetime);
+    }
+
+    // El número de una burbuja que CAE no sale en su celda sino abajo, por encima del cañón, y
+    // justo cuando la burbuja pasa por ahí. La burbuja sigue de largo y desaparece; el número
+    // se queda flotando donde se lee.
+    //
+    // El tiempo se calcula por burbuja, no es fijo: cada una arranca en una fila distinta, así
+    // que la de arriba tarda bastante más en llegar abajo que la de la última fila. Con un delay
+    // fijo, las de abajo mostraban el número mucho después de haber desaparecido.
+    public void SpawnDropScorePopup(Vector2Int cell, int points, float extraDelay)
+    {
+        var origin  = HexGridMath.CellToLocalPos(cell);
+        float targetY = _muzzleReferenceY + dropScoreHeight;
+
+        Spawn(new Vector2(origin.x, targetY), points,
+              extraDelay + BubbleView.DropDuration(origin.y - targetY), ScorePopup.DROP_LIFETIME);
+    }
+
+    // Para los puntos que no salen de una celda — el remate de los disparos sobrantes al ganar.
+    public void SpawnScorePopupAt(Vector2 localPos, int points, float delay, float lifetime) =>
+        Spawn(localPos, points, delay, lifetime);
+
+    void Spawn(Vector2 localPos, int points, float delay, float lifetime)
+    {
+        if (!scorePopupPrefab) return;
+
+        var popup = Instantiate(scorePopupPrefab, transform);
+        ((RectTransform)popup.transform).anchoredPosition = localPos;
+        popup.Play(points, delay, lifetime);
     }
 
     public BubbleView PlaceBubble(Vector2Int cell, BubbleColor color)

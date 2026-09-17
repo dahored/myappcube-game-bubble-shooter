@@ -135,7 +135,7 @@ public static class LevelGenerator
         level.available_colors = bestColors.ToList();
         level.min_shots_to_clear = bestReport.minShots;
         level.max_shots          = LevelDifficultyEstimator.Suggest(bestReport.realisticShots, target);
-        level.star_thresholds    = LevelDifficultyEstimator.SuggestStars(bestReport, level.max_shots).ToList();
+        level.star_thresholds    = LevelDifficultyEstimator.SuggestStars(bestReport).ToList();
 
         if (level.objective?.type == "rescue") PlaceCreature(level, best);
 

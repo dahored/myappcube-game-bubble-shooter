@@ -33,12 +33,6 @@ public static class LevelDifficultyEstimator
     const float SUGGEST_MEDIUM = 1.55f;
     const float SUGGEST_EASY   = 1.95f;
 
-    // Puntaje del juego (GameplayController). Duplicados acá a propósito: son constantes privadas
-    // de un MonoBehaviour de runtime y esto es código de editor. Si allá cambian, acá también.
-    const int SCORE_PER_POP            = 10_000;
-    const int SCORE_PER_DROP           = 15_000;
-    const int SCORE_PER_REMAINING_SHOT = 10_000;
-
     public struct Report
     {
         public bool valid;          // false si el grid tiene un color que el enum no conoce
@@ -52,6 +46,7 @@ public static class LevelDifficultyEstimator
         public int  minShots;       // disparos jugando perfecto
         public int  realisticShots; // lo mismo, más lo que se pierde por azar y por fallar
         public int  popped;         // burbujas reventadas por match en ese recorrido
+        public int  popScore;       // lo que valieron esas burbujas: depende de la racha de cada disparo
         public int  dropped;        // burbujas que cayeron por quedar sueltas
         public bool rescue;         // la simulación paró al liberar la criatura, no al vaciar
 
@@ -90,7 +85,7 @@ public static class LevelDifficultyEstimator
 
         report.rescue = target.HasValue;
 
-        Simulate(cells, target, out report.minShots, out report.popped, out report.dropped);
+        Simulate(cells, target, out report.minShots, out report.popped, out report.dropped, out report.popScore);
         report.realisticShots = Realistic(report.minShots, report.colors);
         report.collapse       = Collapse(cells);
         return report;
@@ -143,10 +138,14 @@ public static class LevelDifficultyEstimator
     // disparo. Codicioso y no exhaustivo — el óptimo real exigiría explorar todo el árbol de
     // jugadas, que es exponencial y no vale la pena para una sugerencia.
     static void Simulate(Dictionary<Vector2Int, BubbleColor> start, Vector2Int? target,
-                         out int shots, out int popped, out int dropped)
+                         out int shots, out int popped, out int dropped, out int popScore)
     {
         var cells = new Dictionary<Vector2Int, BubbleColor>(start);
-        shots = popped = dropped = 0;
+        shots = popped = dropped = popScore = 0;
+
+        // Jugando perfecto la racha sube en cada disparo, salvo cuando hay que gastar uno
+        // pegando una burbuja que todavía no llega a tres: ese no matchea y la corta.
+        int streak = 0;
 
         // Cada vuelta quita al menos una burbuja, así que el tope solo cubre un caso imprevisto.
         int guard = cells.Count * 2 + 16;
@@ -188,9 +187,13 @@ public static class LevelDifficultyEstimator
             foreach (var cell in bestGroup)   cells.Remove(cell);
             foreach (var cell in bestFalling) cells.Remove(cell);
 
-            shots   += bestCost;
-            popped  += bestGroup.Count;
-            dropped += bestFalling.Count;
+            if (bestCost > 1) streak = 0;
+            streak++;
+
+            shots    += bestCost;
+            popped   += bestGroup.Count;
+            dropped  += bestFalling.Count;
+            popScore += ScoreRules.PopScore(bestGroup.Count, streak);
 
             if (target.HasValue && !cells.ContainsKey(target.Value)) return;
         }
@@ -328,15 +331,15 @@ public static class LevelDifficultyEstimator
     // desde el layout. Eso empuja el puntaje real hacia arriba, así que los umbrales quedan algo
     // conservadores — deseable, porque errar hacia "se ganó una estrella de más" es mejor que
     // hacia "es imposible sacar tres".
-    public static int[] SuggestStars(Report report, int maxShots)
+    public static int[] SuggestStars(Report report)
     {
-        int optimal = OptimalScore(report, maxShots);
+        int target = RealisticScore(report);
 
         return new[]
         {
-            Round(optimal * BAR_STAR_1),
-            Round(optimal * BAR_STAR_2),
-            Round(optimal * BAR_STAR_3),
+            Round(target * BAR_STAR_1),
+            Round(target * BAR_STAR_2),
+            Round(target * BAR_STAR_3),
         };
     }
 
@@ -351,13 +354,36 @@ public static class LevelDifficultyEstimator
     public const float BAR_STAR_2 = 0.65f;
     public const float BAR_STAR_3 = 0.90f;
 
-    // A millares, que es como se leen en el JSON y en el panel de victoria.
-    static int Round(float value) => Mathf.Max(1, Mathf.RoundToInt(value / 1000f)) * 1000;
+    // A decenas. Antes era a millares, que con puntajes de siete dígitos no se notaba; con la
+    // escala nueva un nivel entero puede valer unos pocos miles y redondear así lo destruiría.
+    static int Round(float value) => Mathf.Max(1, Mathf.RoundToInt(value / 10f)) * 10;
 
-    public static int OptimalScore(Report report, int maxShots) =>
-        report.popped * SCORE_PER_POP +
-        report.dropped * SCORE_PER_DROP +
-        Mathf.Max(0, maxShots - report.minShots) * SCORE_PER_REMAINING_SHOT;
+    // El puntaje que se espera de una partida BUENA, no de una perfecta. Es la base de los
+    // umbrales de estrellas, así que la diferencia importa más que en cualquier otro número de
+    // acá.
+    //
+    // report.popScore viene del recorrido perfecto: el simulador no falla un disparo, así que la
+    // racha sube 1, 2, 3… hasta el final y las últimas burbujas valen diez o veinte veces las
+    // primeras. Un jugador real falla, y cada fallo corta la racha y la devuelve a 10. Pedir el
+    // 90% del recorrido perfecto era pedir una partida sin un solo error.
+    //
+    // Acá se reparte el recorrido en tantos tramos como fallos se esperan (realisticShots menos
+    // los mínimos) y se cobra la racha media de un tramo, no la de la partida entera.
+    //
+    // El bonus por disparos sobrantes NO entra. El umbral es lo que vale el TABLERO: todas sus
+    // burbujas, reventadas o caídas. El bonus es un extra que el jugador suma encima y que le
+    // ayuda a cruzar esa meta — no la meta misma. Por eso tampoco depende de max_shots.
+    public static int RealisticScore(Report report)
+    {
+        int misses = Mathf.Max(0, report.realisticShots - report.minShots);
+        int runs   = misses + 1;                       // en cuántos tramos queda partida la racha
+        float runLength   = report.minShots / (float)runs;
+        float averageStreak = (runLength + 1f) / 2f;   // media de 1..runLength
+
+        int popScore = Mathf.RoundToInt(report.popped * ScoreRules.POINTS_PER_POP_BASE * averageStreak);
+
+        return popScore + ScoreRules.DropScore(report.dropped);
+    }
 
     static bool TryParse(string value, out BubbleColor color)
     {

@@ -157,6 +157,82 @@ public class CannonController : MonoBehaviour
     // esa animación, un instante después, calcule bien si hay/no hay next.
     public void UpdateShotsRemainingSilently(int remaining) => _shotsRemaining = remaining;
 
+    // Los disparos que sobraron al ganar no se evaporan con el nivel: se gastan en pantalla.
+    // Es el MISMO ciclo que un disparo real — se apaga la burbuja de la recámara, sale la que
+    // estaba ahí, y la cola avanza con la animación del pulpo — solo que en vez de aterrizar en
+    // el grid revienta a mitad de camino, sin rebotar.
+    //
+    // Sube RECTO. La variedad no viene de inclinar el disparo sino de dónde revienta: quien
+    // llama le pasa un corrimiento lateral chico y acá la burbuja va del cañón a ese punto.
+    // Inclinar el tiro obligaba a pensar en grados, y un ángulo que en el papel parece mínimo
+    // manda la burbuja lejísimos cuando el recorrido es largo.
+    //
+    // Avisa por onBurst dónde reventó (espacio local del grid) para que quien llama ponga ahí el
+    // número de puntos: acá no sabemos cuánto vale, eso lo lleva GameplayController.
+    public IEnumerator PlayCelebrationShot(float lateralOffset, float minDistance, float maxDistance,
+                                           float flightTime, AudioClip popClip, System.Action<Vector2> onBurst)
+    {
+        if (!bubblePrefab || !gridContainer) yield break;
+
+        Vector2 start = MuzzleLocal;
+        Vector2 burst = new Vector2(start.x + lateralOffset,
+                                    start.y + Random.Range(minDistance, maxDistance));
+
+        // Igual que Fire(): se apaga el ícono de la recámara para que no se vea la bola quieta
+        // ahí Y la que vuela al mismo tiempo.
+        if (currentBubbleImage) currentBubbleImage.enabled = false;
+
+        var go   = Instantiate(bubblePrefab, gridContainer);
+        var view = go.GetComponent<BubbleView>();
+        var rt   = (RectTransform)go.transform;
+
+        view.Setup(Vector2Int.zero, _current, grid.SpriteFor(_current)); // Setup la pone en la celda 0,0
+        rt.anchoredPosition = start;                                     // y acá la mandamos al cañón
+
+        AudioManager.Instance?.PlaySfx(shootClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
+
+        // Por tiempo y no por velocidad: el remate entero tiene que durar lo mismo sobren tres
+        // disparos o treinta, así que quien llama reparte el presupuesto y acá solo se cumple.
+        for (float t = 0f; t < flightTime; t += Time.deltaTime)
+        {
+            rt.anchoredPosition = Vector2.Lerp(start, burst, t / flightTime);
+            yield return null;
+        }
+        rt.anchoredPosition = burst;
+
+        onBurst?.Invoke(burst);
+        view.PlayPopAnimation(0f, popClip); // se destruye sola al terminar
+
+        // La cola avanza como después de un disparo real, pero SIN la animación de recarga:
+        // AnimateNextIntoCurrent dura nextIntoCurrentDuration + octopusWaitHold (0.35s con los
+        // valores actuales) y esperarla acá hacía que el remate durara el triple de lo pedido,
+        // por más que se bajara el tiempo de vuelo. Con los disparos a menos de 200ms de
+        // distancia no llegaría a terminar ninguna igual.
+        _shotsRemaining = Mathf.Max(0, _shotsRemaining - 1);
+        _current = _next;
+        _next    = LevelColor();
+
+        RefreshPreview();
+        SetOctopusSprite(_shotsRemaining > 0 ? octopusThrowSprite : octopusIdleSprite);
+    }
+
+    // Para el remate: un color de los que el NIVEL tenía disponibles, no de los que quedan en el
+    // grid. Al ganar el grid está vacío, así que RollColor no tendría de dónde elegir.
+    BubbleColor LevelColor() =>
+        _availableColorsParsed.Count > 0
+            ? _availableColorsParsed[Random.Range(0, _availableColorsParsed.Count)]
+            : _current;
+
+    // Deja la recámara con colores del nivel antes de arrancar el remate: los que traía vienen
+    // del grid de la última jugada y pueden ser uno solo repetido.
+    public void PrepareCelebrationColors()
+    {
+        _current = LevelColor();
+        _next    = LevelColor();
+        RefreshPreview();
+    }
+
     public void SetInputEnabled(bool enabled)
     {
         _inputEnabled = enabled;

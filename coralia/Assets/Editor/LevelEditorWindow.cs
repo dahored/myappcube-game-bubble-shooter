@@ -480,7 +480,7 @@ public class LevelEditorWindow : EditorWindow
         EditorGUILayout.LabelField("Jugando normal", $"{realistic} disparos");
         EditorGUILayout.LabelField("Burbujas", $"{_report.bubbles} en {_report.clusters} grupos" +
                                                (_report.lone > 0 ? $" ({_report.lone} sueltas)" : ""));
-        EditorGUILayout.LabelField("Puntaje óptimo", $"~{LevelDifficultyEstimator.OptimalScore(_report, level.max_shots):n0}");
+        EditorGUILayout.LabelField("Puntaje óptimo", $"~{LevelDifficultyEstimator.RealisticScore(_report):n0}");
         EditorGUILayout.LabelField("Peor disparo", $"se lleva el {_report.collapse:P0} del nivel");
 
         // El aviso que faltaba: un nivel puede tener los disparos bien calculados y aun así
@@ -535,7 +535,7 @@ public class LevelEditorWindow : EditorWindow
 
     void DrawStarSuggestion(LevelData level)
     {
-        var stars = LevelDifficultyEstimator.SuggestStars(_report, level.max_shots);
+        var stars = LevelDifficultyEstimator.SuggestStars(_report);
 
         bool same = level.star_thresholds != null && level.star_thresholds.Count >= 3 &&
                     level.star_thresholds[0] == stars[0] &&

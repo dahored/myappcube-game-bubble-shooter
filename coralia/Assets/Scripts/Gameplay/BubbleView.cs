@@ -34,6 +34,15 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     const float DROP_MAX_DURATION = 1f;    // tope de seguridad
     const float DROP_FADE_START   = 0.5f;  // a partir de acá empieza a desvanecerse
 
+    // Cuánto tarda una burbuja en caer 'distance' px. Es gravedad pura desde reposo, así que
+    // sale de la fórmula sin simular nada — lo usa GridController para saber CUÁNDO mostrar el
+    // número de puntos: recién cuando la burbuja llegó abajo y desapareció.
+    //
+    // Con el mismo tope que la animación: pasado DROP_MAX_DURATION la burbuja ya se destruyó,
+    // y un número que salga después de eso no acompaña a nada.
+    public static float DropDuration(float distance) =>
+        Mathf.Min(DROP_MAX_DURATION, Mathf.Sqrt(2f * Mathf.Max(0f, distance) / DROP_GRAVITY));
+
     const int   POP_PARTICLE_COUNT    = 8;
     const float POP_PARTICLE_SIZE     = 22f;  // px — bastante más chico que la burbuja (92px)
     const float POP_PARTICLE_SPEED    = 260f; // px/s

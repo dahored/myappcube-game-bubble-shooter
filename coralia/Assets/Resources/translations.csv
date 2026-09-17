@@ -52,8 +52,7 @@ ui.gameplay.objective.clear_all,Limpiar todas las burbujas,Clear all bubbles,Eli
 ui.gameplay.objective.rescue,Rescatar a {creature},Rescue {creature},Salva {creature},Sauver {creature},Rette {creature},Resgatar {creature}
 ui.gameplay.level_label,Nivel {id} — {name},Level {id} — {name},Livello {id} — {name},Niveau {id} — {name},Level {id} — {name},Nível {id} — {name}
 ui.gameplay.level_label_with_best,Nivel {id} — {name} · Mejor: {best},Level {id} — {name} · Best: {best},Livello {id} — {name} · Miglior: {best},Niveau {id} — {name} · Meilleur : {best},Level {id} — {name} · Beste: {best},Nível {id} — {name} · Melhor: {best}
-ui.victory.subtitle.new_record,¡Nuevo récord! Puntuación: {score} (anterior: {best}),New record! Score: {score} (previous: {best}),Nuovo record! Punteggio: {score} (precedente: {best}),Nouveau record ! Score : {score} (précédent : {best}),Neuer Rekord! Punkte: {score} (vorher: {best}),Novo recorde! Pontuação: {score} (anterior: {best})
-ui.victory.subtitle.score,Puntuación: {score} (mejor: {best}),Score: {score} (best: {best}),Punteggio: {score} (miglior: {best}),Score : {score} (meilleur : {best}),Punkte: {score} (beste: {best}),Pontuação: {score} (melhor: {best})
+ui.victory.subtitle.new_record,¡Nuevo récord!,New record!,Nuovo record!,Nouveau record !,Neuer Rekord!,Novo recorde!
 ui.button.next_level,Siguiente nivel →,Next level →,Prossimo livello →,Niveau suivant →,Nächstes Level →,Próximo nível →
 ui.victory.title,¡Lo lograste!,You did it!,Ce l'hai fatta!,Bien joué !,Geschafft!,Você conseguiu!
 ui.victory.level_banner,Nivel {id},Level {id},Livello {id},Niveau {id},Level {id},Nível {id}
