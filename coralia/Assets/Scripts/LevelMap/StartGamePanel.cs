@@ -9,6 +9,8 @@ using UnityEngine.UI;
 public class StartGamePanel : UIPanel
 {
     [SerializeField] TMP_Text levelBannerText;
+    [Tooltip("Nombre del nivel. Opcional — si se deja vacío, el panel funciona igual sin mostrarlo.")]
+    [SerializeField] TMP_Text levelTitleText;
     [SerializeField] TMP_Text objectiveText;
     [SerializeField] Button   playButton;
     [SerializeField] Button   closeButton;
@@ -33,6 +35,10 @@ public class StartGamePanel : UIPanel
         _levelId = level.id;
 
         if (levelBannerText) levelBannerText.text = LocaleManager.Get("ui.victory.level_banner").Replace("{id}", level.id.ToString());
+
+        // DisplayName y no level.name: el JSON guarda el original en español y la traducción sale
+        // de translations.csv (clave level.N.name), con el español de respaldo.
+        if (levelTitleText) levelTitleText.text = level.DisplayName;
 
         bool isRescue = level.objective != null && level.objective.type == "rescue";
 

@@ -6,7 +6,18 @@ public class LevelData
 {
     public int id;
     public int chapter;
+
+    // El nombre EN ESPAÑOL, que es lo que se escribe en el editor de niveles. No es el que va a
+    // pantalla: para mostrarlo se usa DisplayName, que busca la traducción.
     public string name;
+
+    // Clave de traducción derivada del id, así los 180 JSON no tienen que repetirla. La exporta
+    // a translations.csv el menú Coralia → Exportar nombres de nivel a traducciones.
+    public string NameKey => $"level.{id}.name";
+
+    // Lo que se muestra al jugador. Mientras la clave no esté en el CSV cae al nombre en
+    // español, así que traducir de a poco nunca deja una pantalla en blanco ni con la clave cruda.
+    public string DisplayName => LocaleManager.Get(NameKey, name);
     public int max_shots;
     public int min_shots_to_clear;    // mínimo de disparos jugando óptimo (definido a mano por el
                                        // diseñador al calibrar el nivel, jugándolo — 0 = todavía no
