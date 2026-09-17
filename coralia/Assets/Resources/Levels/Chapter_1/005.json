@@ -12,9 +12,9 @@
         "green"
     ],
     "star_thresholds": [
-        758000,
-        1232000,
-        1706000
+        1630,
+        2660,
+        3680
     ],
     "obstacles": [],
     "objective": {

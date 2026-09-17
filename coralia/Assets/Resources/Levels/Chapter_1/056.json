@@ -13,9 +13,9 @@
         "purple"
     ],
     "star_thresholds": [
-        500000,
-        812000,
-        1125000
+        870,
+        1420,
+        1960
     ],
     "obstacles": [],
     "objective": {

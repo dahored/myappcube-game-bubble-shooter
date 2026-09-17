@@ -14,9 +14,9 @@
         "orange"
     ],
     "star_thresholds": [
-        1222000,
-        1986000,
-        2750000
+        2530,
+        4120,
+        5700
     ],
     "obstacles": [],
     "objective": {

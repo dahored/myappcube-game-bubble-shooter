@@ -1,233 +1,236 @@
 {
-  "id": 77,
-  "chapter": 2,
-  "name": "Refugio de peces",
-  "objective": {
-    "type": "clear_all"
-  },
-  "max_shots": 22,
-  "available_colors": [
-    "red",
-    "blue",
-    "yellow"
-  ],
-  "rainbow_chance": 0.027,
-  "bubbles": [
-    {
-      "row": 0,
-      "col": 0,
-      "color": "red"
+    "id": 77,
+    "chapter": 2,
+    "name": "Refugio de peces",
+    "max_shots": 22,
+    "min_shots_to_clear": 0,
+    "rainbow_chance": 0.027000000700354576,
+    "available_colors": [
+        "red",
+        "blue",
+        "yellow"
+    ],
+    "star_thresholds": [
+        390,
+        640,
+        880
+    ],
+    "obstacles": [],
+    "objective": {
+        "type": "clear_all",
+        "creature_id": "",
+        "creature_position": []
     },
-    {
-      "row": 0,
-      "col": 1,
-      "color": "yellow"
-    },
-    {
-      "row": 0,
-      "col": 2,
-      "color": "yellow"
-    },
-    {
-      "row": 0,
-      "col": 3,
-      "color": "yellow"
-    },
-    {
-      "row": 0,
-      "col": 4,
-      "color": "red"
-    },
-    {
-      "row": 0,
-      "col": 5,
-      "color": "red"
-    },
-    {
-      "row": 0,
-      "col": 6,
-      "color": "yellow"
-    },
-    {
-      "row": 0,
-      "col": 7,
-      "color": "red"
-    },
-    {
-      "row": 0,
-      "col": 8,
-      "color": "blue"
-    },
-    {
-      "row": 0,
-      "col": 9,
-      "color": "red"
-    },
-    {
-      "row": 0,
-      "col": 10,
-      "color": "red"
-    },
-    {
-      "row": 1,
-      "col": 0,
-      "color": "red"
-    },
-    {
-      "row": 1,
-      "col": 1,
-      "color": "blue"
-    },
-    {
-      "row": 1,
-      "col": 2,
-      "color": "red"
-    },
-    {
-      "row": 1,
-      "col": 3,
-      "color": "yellow"
-    },
-    {
-      "row": 1,
-      "col": 4,
-      "color": "red"
-    },
-    {
-      "row": 1,
-      "col": 5,
-      "color": "blue"
-    },
-    {
-      "row": 1,
-      "col": 6,
-      "color": "yellow"
-    },
-    {
-      "row": 1,
-      "col": 7,
-      "color": "yellow"
-    },
-    {
-      "row": 1,
-      "col": 8,
-      "color": "blue"
-    },
-    {
-      "row": 1,
-      "col": 9,
-      "color": "red"
-    },
-    {
-      "row": 2,
-      "col": 0,
-      "color": "yellow"
-    },
-    {
-      "row": 2,
-      "col": 1,
-      "color": "yellow"
-    },
-    {
-      "row": 2,
-      "col": 2,
-      "color": "yellow"
-    },
-    {
-      "row": 2,
-      "col": 3,
-      "color": "yellow"
-    },
-    {
-      "row": 2,
-      "col": 4,
-      "color": "blue"
-    },
-    {
-      "row": 2,
-      "col": 5,
-      "color": "red"
-    },
-    {
-      "row": 2,
-      "col": 6,
-      "color": "red"
-    },
-    {
-      "row": 2,
-      "col": 7,
-      "color": "blue"
-    },
-    {
-      "row": 2,
-      "col": 8,
-      "color": "blue"
-    },
-    {
-      "row": 2,
-      "col": 9,
-      "color": "blue"
-    },
-    {
-      "row": 2,
-      "col": 10,
-      "color": "blue"
-    },
-    {
-      "row": 3,
-      "col": 0,
-      "color": "yellow"
-    },
-    {
-      "row": 3,
-      "col": 1,
-      "color": "blue"
-    },
-    {
-      "row": 3,
-      "col": 2,
-      "color": "blue"
-    },
-    {
-      "row": 3,
-      "col": 3,
-      "color": "red"
-    },
-    {
-      "row": 3,
-      "col": 4,
-      "color": "yellow"
-    },
-    {
-      "row": 3,
-      "col": 5,
-      "color": "red"
-    },
-    {
-      "row": 3,
-      "col": 6,
-      "color": "blue"
-    },
-    {
-      "row": 3,
-      "col": 7,
-      "color": "red"
-    },
-    {
-      "row": 3,
-      "col": 8,
-      "color": "blue"
-    },
-    {
-      "row": 3,
-      "col": 9,
-      "color": "red"
-    }
-  ],
-  "obstacles": [],
-  "star_thresholds": [
-    168000,
-    272160,
-    378000
-  ]
+    "bubbles": [
+        {
+            "row": 0,
+            "col": 0,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 1,
+            "color": "yellow"
+        },
+        {
+            "row": 0,
+            "col": 2,
+            "color": "yellow"
+        },
+        {
+            "row": 0,
+            "col": 3,
+            "color": "yellow"
+        },
+        {
+            "row": 0,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 5,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 6,
+            "color": "yellow"
+        },
+        {
+            "row": 0,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 0,
+            "col": 9,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 10,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 0,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 1,
+            "color": "blue"
+        },
+        {
+            "row": 1,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 3,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 1,
+            "col": 6,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 7,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 1,
+            "col": 9,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 0,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 1,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 2,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 3,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 2,
+            "col": 5,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 7,
+            "color": "blue"
+        },
+        {
+            "row": 2,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 2,
+            "col": 9,
+            "color": "blue"
+        },
+        {
+            "row": 2,
+            "col": 10,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 0,
+            "color": "yellow"
+        },
+        {
+            "row": 3,
+            "col": 1,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 2,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 3,
+            "col": 5,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 6,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 9,
+            "color": "red"
+        }
+    ]
 }

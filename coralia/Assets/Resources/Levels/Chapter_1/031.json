@@ -4,7 +4,7 @@
     "name": "Resaca",
     "max_shots": 41,
     "min_shots_to_clear": 14,
-    "rainbow_chance": 0.050999999046325687,
+    "rainbow_chance": 0.050999999046325684,
     "available_colors": [
         "red",
         "blue",
@@ -12,9 +12,9 @@
         "green"
     ],
     "star_thresholds": [
-        556000,
-        903000,
-        1251000
+        1110,
+        1800,
+        2500
     ],
     "obstacles": [],
     "objective": {

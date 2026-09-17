@@ -4,7 +4,7 @@
     "name": "La grieta",
     "max_shots": 97,
     "min_shots_to_clear": 35,
-    "rainbow_chance": 0.06400000303983689,
+    "rainbow_chance": 0.06400000303983688,
     "available_colors": [
         "red",
         "blue",
@@ -14,9 +14,9 @@
         "orange"
     ],
     "star_thresholds": [
-        976000,
-        1586000,
-        2196000
+        1720,
+        2800,
+        3870
     ],
     "obstacles": [],
     "objective": {

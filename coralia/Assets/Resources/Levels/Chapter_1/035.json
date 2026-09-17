@@ -4,7 +4,7 @@
     "name": "El pasaje angosto",
     "max_shots": 66,
     "min_shots_to_clear": 26,
-    "rainbow_chance": 0.057999998331069949,
+    "rainbow_chance": 0.057999998331069946,
     "available_colors": [
         "red",
         "blue",
@@ -13,9 +13,9 @@
         "purple"
     ],
     "star_thresholds": [
-        892000,
-        1450000,
-        2007000
+        2020,
+        3280,
+        4540
     ],
     "obstacles": [],
     "objective": {

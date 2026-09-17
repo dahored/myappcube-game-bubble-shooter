@@ -4,7 +4,7 @@
     "name": "Coral quebrado",
     "max_shots": 36,
     "min_shots_to_clear": 11,
-    "rainbow_chance": 0.061000000685453418,
+    "rainbow_chance": 0.061000000685453415,
     "available_colors": [
         "red",
         "blue",
@@ -13,9 +13,9 @@
         "purple"
     ],
     "star_thresholds": [
-        406000,
-        660000,
-        914000
+        560,
+        900,
+        1250
     ],
     "obstacles": [],
     "objective": {

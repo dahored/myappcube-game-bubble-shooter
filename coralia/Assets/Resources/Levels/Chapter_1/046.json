@@ -4,7 +4,7 @@
     "name": "Roca partida",
     "max_shots": 41,
     "min_shots_to_clear": 13,
-    "rainbow_chance": 0.07599999755620957,
+    "rainbow_chance": 0.07599999755620956,
     "available_colors": [
         "red",
         "blue",
@@ -13,9 +13,9 @@
         "purple"
     ],
     "star_thresholds": [
-        494000,
-        803000,
-        1112000
+        780,
+        1270,
+        1760
     ],
     "obstacles": [],
     "objective": {
