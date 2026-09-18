@@ -21,7 +21,7 @@ EditorBuildSettings:
     path: Assets/Scenes/Game/Gameplay.unity
     guid: 4cfe17cb069aa4a3581bafdafdd12e4c
   - enabled: 1
-    path: Assets/Scenes/Game/LevelMapCurve.unity
+    path: Assets/Scenes/Game/LevelMapCurve3d.unity
     guid: dd87c9ab466544458be8b802235fb27a
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
