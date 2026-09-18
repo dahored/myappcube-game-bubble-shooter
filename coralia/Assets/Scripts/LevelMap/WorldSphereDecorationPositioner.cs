@@ -54,6 +54,7 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         public string           id;          // para devolverla al depósito que le corresponde
         public Vector3          direction;   // dirección sobre la esfera, para rearmar su sombra
         public float            shadowWidth; // ancho ya resuelto, del catálogo o del alto
+        public float            angle;       // su ángulo sobre la esfera, para recalcular el orden
     }
 
     // Cuántos niveles de más se pueblan a cada lado de la ventana visible.
@@ -190,6 +191,11 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
         // destruir en cada paso del scroll.
         ReleaseOutside(windowFirst, windowLast);
 
+        // El orden de dibujo se cuenta desde el primer nodo de la ventana, así que al moverse hay
+        // que rehacerlo en las que ya estaban plantadas: si no, conviven órdenes calculados con
+        // anclas distintas y unas tapan a otras sin criterio.
+        RefreshDrawOrders();
+
         int from = windowFirst;
         for (int i = windowFirst + 1; i <= windowLast + 1; i++)
         {
@@ -210,6 +216,20 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
                 AppendShadow(planted, shadowVerts, shadowUvs, shadowNorms, shadowTris);
         }
         BuildShadowMesh(shadowVerts, shadowUvs, shadowNorms, shadowTris);
+    }
+
+    // Reasigna el orden de dibujo de todo lo que está plantado, contra el ancla actual. Son unas
+    // pocas decenas de piezas, así que se rehace entero en vez de llevar la cuenta de cuáles
+    // quedaron desfasadas.
+    void RefreshDrawOrders()
+    {
+        foreach (var planted in _active.Values)
+        {
+            int order = WorldSphereNodePositioner.DrawOrderAt(planted.angle);
+
+            for (int r = 0; r < planted.renderers.Length; r++)
+                if (planted.renderers[r]) planted.renderers[r].sortingOrder = order + planted.baseOrders[r];
+        }
     }
 
     // Nodos a cada lado del punto: los que Catmull-Rom necesita para tener pendiente de entrada y
@@ -336,6 +356,7 @@ public class WorldSphereDecorationPositioner : MonoBehaviour
                 baseOrders = baseOrders,
                 id         = placement.id,
                 direction  = direction,
+                angle      = angle,
                 shadowWidth = (entry.shadowWidth > 0.0001f
                     ? entry.shadowWidth
                     : entry.height * placement.scale * shadowScale) * w,

@@ -1,0 +1,196 @@
+{
+    "id": 182,
+    "chapter": 4,
+    "name": "Eco mineral",
+    "max_shots": 19,
+    "min_shots_to_clear": 0,
+    "rainbow_chance": 0.033,
+    "available_colors": [
+        "red",
+        "blue",
+        "yellow"
+    ],
+    "star_thresholds": [
+        360,
+        580,
+        800
+    ],
+    "obstacles": [],
+    "objective": {
+        "type": "clear_all",
+        "creature_id": "",
+        "creature_position": []
+    },
+    "bubbles": [
+        {
+            "row": 0,
+            "col": 0,
+            "color": "blue"
+        },
+        {
+            "row": 0,
+            "col": 1,
+            "color": "blue"
+        },
+        {
+            "row": 0,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 0,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 0,
+            "col": 6,
+            "color": "blue"
+        },
+        {
+            "row": 0,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 0,
+            "col": 8,
+            "color": "yellow"
+        },
+        {
+            "row": 0,
+            "col": 9,
+            "color": "blue"
+        },
+        {
+            "row": 1,
+            "col": 0,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 1,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 2,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 3,
+            "color": "blue"
+        },
+        {
+            "row": 1,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 1,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 7,
+            "color": "red"
+        },
+        {
+            "row": 1,
+            "col": 8,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 0,
+            "color": "blue"
+        },
+        {
+            "row": 2,
+            "col": 1,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 2,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 3,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 5,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 2,
+            "col": 7,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 8,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 9,
+            "color": "yellow"
+        },
+        {
+            "row": 3,
+            "col": 2,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 4,
+            "color": "yellow"
+        },
+        {
+            "row": 3,
+            "col": 6,
+            "color": "yellow"
+        },
+        {
+            "row": 3,
+            "col": 7,
+            "color": "yellow"
+        }
+    ]
+}

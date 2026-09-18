@@ -7,6 +7,12 @@ public class GridController : MonoBehaviour
 {
     [SerializeField] GameObject bubblePrefab;
 
+    [Tooltip("Número que sale de cada burbuja al reventar. Opcional — sin esto se juega igual, solo no se ven los puntos.")]
+    [SerializeField] ScorePopup scorePopupPrefab;
+
+    [Tooltip("Cuánto por encima del cañón sale el número de las burbujas que caen. La burbuja sigue cayendo; el número se queda acá.")]
+    [SerializeField] float dropScoreHeight = 2f * HexGridMath.BubbleDiameter;
+
     [Header("Sprites por color (arrastrar el sub-sprite bubble_X_0 de cada PNG)")]
     [SerializeField] Sprite spriteRed;
     [SerializeField] Sprite spriteBlue;
@@ -32,8 +38,10 @@ public class GridController : MonoBehaviour
 
     [Header("Shake — combos grandes (referencia: Candy Crush)")]
     [SerializeField] int   shakeThreshold = 8;   // match.Count + drop.Count a partir del cual tiembla
-    [SerializeField] float shakeDuration  = 0.25f;
-    [SerializeField] float shakeMagnitude = 12f; // px, se amortigua a 0 durante shakeDuration
+    [SerializeField] float shakeDuration  = 0.25f; // cuánto tarda en apagarse desde el tope
+    [SerializeField] float shakeMagnitude = 12f;   // px del temblor con la energía al tope
+    [Tooltip("Cuántos pops seguidos hacen falta para llegar al temblor máximo.")]
+    [SerializeField] float shakeMaxEnergy = 4f;
 
     readonly Dictionary<Vector2Int, BubbleView> _cells = new();
 
@@ -48,7 +56,7 @@ public class GridController : MonoBehaviour
     // cadena, así que con 1.5s alcanza para el caso normal y sigue cortando cualquier cuelgue.
     const float WAIT_TIMEOUT = 1.5f;
     Vector2       _shakeOffset;
-    float         _shakeTimer;
+    float         _shakeEnergy;   // sube con cada pop, baja sola — ver ShakePulse
 
     // Cuánto se retiró el grid del cañón ahora mismo (0 = posición normal) — CannonController
     // lo resta de la posición del muzzle para que el disparo/mira sigan apuntando bien aunque
@@ -99,12 +107,14 @@ public class GridController : MonoBehaviour
         if (scrolling) _scrollOffsetY = Mathf.MoveTowards(_scrollOffsetY, _scrollTarget, scrollSpeed * Time.deltaTime);
         if (!pending) _scrollWait = 0f;
 
-        bool shaking = _shakeTimer > 0f;
+        // La energía baja sola. Mientras siguen llegando pops la reponen más rápido de lo que
+        // decae, así que el temblor se mantiene durante toda la cadena; cuando dejan de llegar,
+        // se apaga suave en vez de cortarse.
+        bool shaking = _shakeEnergy > 0f;
         if (shaking)
         {
-            _shakeTimer -= Time.deltaTime;
-            float damp = Mathf.Clamp01(_shakeTimer / shakeDuration); // se amortigua a 0 al final, no corta de golpe
-            _shakeOffset = _shakeTimer > 0f ? Random.insideUnitCircle * shakeMagnitude * damp : Vector2.zero;
+            _shakeEnergy = Mathf.Max(0f, _shakeEnergy - Time.deltaTime / Mathf.Max(0.01f, shakeDuration));
+            _shakeOffset = Random.insideUnitCircle * shakeMagnitude * (_shakeEnergy / shakeMaxEnergy);
         }
 
         // Se suma al offset de scroll, no lo reemplaza — así el shake no pelea con el
@@ -116,11 +126,20 @@ public class GridController : MonoBehaviour
     // Llamado por GameplayController después de resolver un match+drop — solo tiembla si el
     // combo fue lo suficientemente grande (shakeThreshold), como el efecto de Candy Crush en
     // combos grandes.
-    public void Shake(int chainSize)
+    // Un golpe de temblor, que se llama UNA VEZ POR BURBUJA a medida que explota.
+    //
+    // Antes era un solo evento al final del combo: los pops y la vibración iban de a uno, pero la
+    // pantalla daba una única sacudida ya terminada la cadena. Ahora cada burbuja aporta lo suyo
+    // y la energía se acumula, así que un combo grande sostiene el temblor mientras dura y se
+    // apaga solo al final — que es como se siente un derrumbe.
+    public void ShakePulse()
     {
-        if (chainSize < shakeThreshold) return;
-        _shakeTimer = shakeDuration;
+        _shakeEnergy = Mathf.Min(_shakeEnergy + 1f, shakeMaxEnergy);
     }
+
+    // Umbral: por debajo de este tamaño de cadena no se sacude nada. Lo decide quien llama, que
+    // es el que conoce el combo entero antes de empezar a reventarlo.
+    public bool ShakeWorthIt(int chainSize) => chainSize >= shakeThreshold;
 
     // Llamado una vez por CannonController.Start() con la posición Y del muzzle (sin scroll) —
     // es la referencia contra la que medimos qué tan cerca está la fila más baja del cañón.
@@ -203,16 +222,55 @@ public class GridController : MonoBehaviour
     {
         var pool = new List<BubbleColor>();
 
+        // Primero los HUECOS donde caer completa un match: un espacio libre que ya tiene dos o
+        // más burbujas del mismo color alrededor. Ahí un solo disparo de ese color explota.
+        //
+        // Esto es lo que convierte la cola en algo jugable. Contar burbujas del frente solo
+        // asegura que el color exista; lo que el jugador necesita es que exista un LUGAR donde
+        // ese color sirva. Con cinco o seis colores en pantalla, la diferencia entre una cosa y
+        // la otra son varios disparos seguidos sin nada que hacer.
+        foreach (var slot in EmptyNeighbors())
+        {
+            var around = new Dictionary<BubbleColor, int>();
+
+            foreach (var neighbor in HexGridMath.GetNeighbors(slot))
+            {
+                if (!TryGetBubble(neighbor, out var view) || view.ColorType == BubbleColor.Rainbow) continue;
+                around.TryGetValue(view.ColorType, out int count);
+                around[view.ColorType] = count + 1;
+            }
+
+            foreach (var pair in around)
+                if (pair.Value >= 2) for (int i = 0; i < MATCH_SLOT_WEIGHT; i++) pool.Add(pair.Key);
+        }
+
+        // Y después, con mucho menos peso, los colores del frente: mantienen variedad y evitan que
+        // la cola se vuelva un único color cuando hay un solo sitio de match.
         foreach (var pair in _cells)
         {
             var color = pair.Value.ColorType;
             if (color == BubbleColor.Rainbow || !IsReachable(pair.Key)) continue;
 
             pool.Add(color);
-            if (HasNeighborOfColor(pair.Key, color)) pool.Add(color);
         }
 
         return pool;
+    }
+
+    // Cuánto pesa un color que tiene dónde matchear, frente a uno que solo está en el frente.
+    const int MATCH_SLOT_WEIGHT = 6;
+
+    // Huecos pegados a alguna burbuja, que son los únicos a los que un disparo puede llegar.
+    IEnumerable<Vector2Int> EmptyNeighbors()
+    {
+        var seen = new HashSet<Vector2Int>();
+
+        foreach (var cell in _cells.Keys)
+            foreach (var neighbor in HexGridMath.GetNeighbors(cell))
+            {
+                if (IsOccupied(neighbor) || !HexGridMath.IsValidCell(neighbor)) continue;
+                if (seen.Add(neighbor)) yield return neighbor;
+            }
     }
 
     // Alcanzable = tiene un hueco al lado o por debajo. Los huecos de ARRIBA no cuentan: una
@@ -224,13 +282,6 @@ public class GridController : MonoBehaviour
             if (neighbor.y < cell.y || !HexGridMath.IsValidCell(neighbor)) continue;
             if (!IsOccupied(neighbor)) return true;
         }
-        return false;
-    }
-
-    bool HasNeighborOfColor(Vector2Int cell, BubbleColor color)
-    {
-        foreach (var neighbor in HexGridMath.GetNeighbors(cell))
-            if (TryGetBubble(neighbor, out var view) && view.ColorType.LinksWith(color)) return true;
         return false;
     }
 
@@ -252,6 +303,45 @@ public class GridController : MonoBehaviour
             var view  = PlaceBubble(cell, color);
             if (cell == creatureCell) view.SetCreatureMarker(true);
         }
+    }
+
+    // El número de puntos sobre una celda. Lo pide GameplayController, que es el único que sabe
+    // cuánto vale la burbuja: el valor depende de la racha del disparo, no de la burbuja.
+    //
+    // Se instancia acá y no en BubbleView porque la burbuja se destruye con su propia animación
+    // y se llevaría el número a mitad de camino; este vive suelto en el grid y se autodestruye.
+    public void SpawnScorePopup(Vector2Int cell, int points, float delay, float lifetime)
+    {
+        Spawn(HexGridMath.CellToLocalPos(cell), points, delay, lifetime);
+    }
+
+    // El número de una burbuja que CAE no sale en su celda sino abajo, por encima del cañón, y
+    // justo cuando la burbuja pasa por ahí. La burbuja sigue de largo y desaparece; el número
+    // se queda flotando donde se lee.
+    //
+    // El tiempo se calcula por burbuja, no es fijo: cada una arranca en una fila distinta, así
+    // que la de arriba tarda bastante más en llegar abajo que la de la última fila. Con un delay
+    // fijo, las de abajo mostraban el número mucho después de haber desaparecido.
+    public void SpawnDropScorePopup(Vector2Int cell, int points, float extraDelay)
+    {
+        var origin  = HexGridMath.CellToLocalPos(cell);
+        float targetY = _muzzleReferenceY + dropScoreHeight;
+
+        Spawn(new Vector2(origin.x, targetY), points,
+              extraDelay + BubbleView.DropDuration(origin.y - targetY), ScorePopup.DROP_LIFETIME);
+    }
+
+    // Para los puntos que no salen de una celda — el remate de los disparos sobrantes al ganar.
+    public void SpawnScorePopupAt(Vector2 localPos, int points, float delay, float lifetime) =>
+        Spawn(localPos, points, delay, lifetime);
+
+    void Spawn(Vector2 localPos, int points, float delay, float lifetime)
+    {
+        if (!scorePopupPrefab) return;
+
+        var popup = Instantiate(scorePopupPrefab, transform);
+        ((RectTransform)popup.transform).anchoredPosition = localPos;
+        popup.Play(points, delay, lifetime);
     }
 
     public BubbleView PlaceBubble(Vector2Int cell, BubbleColor color)

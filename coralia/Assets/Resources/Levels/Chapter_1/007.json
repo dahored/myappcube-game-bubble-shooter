@@ -2,8 +2,8 @@
     "id": 7,
     "chapter": 1,
     "name": "Reflejos de coral",
-    "max_shots": 22,
-    "min_shots_to_clear": 8,
+    "max_shots": 34,
+    "min_shots_to_clear": 13,
     "rainbow_chance": 0.0,
     "available_colors": [
         "red",
@@ -11,9 +11,9 @@
         "yellow"
     ],
     "star_thresholds": [
-        314000,
-        510000,
-        706000
+        630,
+        1030,
+        1430
     ],
     "obstacles": [],
     "objective": {
@@ -25,12 +25,12 @@
         {
             "row": 0,
             "col": 0,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 0,
             "col": 1,
-            "color": "yellow"
+            "color": "blue"
         },
         {
             "row": 0,
@@ -40,17 +40,17 @@
         {
             "row": 0,
             "col": 3,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 0,
             "col": 4,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 0,
             "col": 5,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 0,
@@ -60,12 +60,12 @@
         {
             "row": 0,
             "col": 7,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 0,
             "col": 8,
-            "color": "blue"
+            "color": "yellow"
         },
         {
             "row": 0,
@@ -74,6 +74,11 @@
         },
         {
             "row": 1,
+            "col": 0,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
             "col": 1,
             "color": "yellow"
         },
@@ -95,102 +100,127 @@
         {
             "row": 1,
             "col": 5,
-            "color": "blue"
+            "color": "yellow"
         },
         {
             "row": 1,
             "col": 6,
-            "color": "blue"
+            "color": "yellow"
         },
         {
             "row": 1,
+            "col": 7,
+            "color": "yellow"
+        },
+        {
+            "row": 1,
+            "col": 8,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 0,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 1,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
+            "col": 2,
+            "color": "yellow"
+        },
+        {
+            "row": 2,
             "col": 7,
             "color": "blue"
         },
         {
             "row": 2,
-            "col": 2,
-            "color": "red"
+            "col": 8,
+            "color": "blue"
         },
         {
             "row": 2,
-            "col": 3,
-            "color": "red"
-        },
-        {
-            "row": 2,
-            "col": 4,
-            "color": "red"
-        },
-        {
-            "row": 2,
-            "col": 5,
-            "color": "red"
-        },
-        {
-            "row": 2,
-            "col": 6,
-            "color": "red"
-        },
-        {
-            "row": 2,
-            "col": 7,
-            "color": "red"
-        },
-        {
-            "row": 3,
-            "col": 2,
+            "col": 9,
             "color": "blue"
         },
         {
             "row": 3,
-            "col": 3,
-            "color": "red"
+            "col": 0,
+            "color": "yellow"
         },
         {
             "row": 3,
-            "col": 4,
-            "color": "red"
+            "col": 1,
+            "color": "yellow"
         },
         {
             "row": 3,
-            "col": 5,
+            "col": 2,
             "color": "red"
         },
         {
             "row": 3,
             "col": 6,
+            "color": "yellow"
+        },
+        {
+            "row": 3,
+            "col": 7,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 8,
+            "color": "yellow"
+        },
+        {
+            "row": 4,
+            "col": 0,
+            "color": "yellow"
+        },
+        {
+            "row": 4,
+            "col": 1,
             "color": "red"
         },
         {
             "row": 4,
-            "col": 3,
+            "col": 2,
             "color": "red"
         },
         {
             "row": 4,
-            "col": 4,
-            "color": "red"
+            "col": 7,
+            "color": "yellow"
         },
         {
             "row": 4,
-            "col": 5,
-            "color": "red"
+            "col": 8,
+            "color": "yellow"
         },
         {
             "row": 4,
-            "col": 6,
+            "col": 9,
+            "color": "yellow"
+        },
+        {
+            "row": 5,
+            "col": 0,
             "color": "yellow"
         },
         {
             "row": 5,
             "col": 1,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 5,
             "col": 2,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 5,
@@ -210,52 +240,67 @@
         {
             "row": 5,
             "col": 6,
-            "color": "yellow"
+            "color": "red"
         },
         {
             "row": 5,
             "col": 7,
+            "color": "yellow"
+        },
+        {
+            "row": 5,
+            "col": 8,
+            "color": "yellow"
+        },
+        {
+            "row": 6,
+            "col": 0,
             "color": "yellow"
         },
         {
             "row": 6,
             "col": 1,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 6,
             "col": 2,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 6,
             "col": 3,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 6,
             "col": 4,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 6,
             "col": 5,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 6,
             "col": 6,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 6,
             "col": 7,
-            "color": "yellow"
+            "color": "blue"
         },
         {
             "row": 6,
             "col": 8,
-            "color": "yellow"
+            "color": "blue"
+        },
+        {
+            "row": 6,
+            "col": 9,
+            "color": "blue"
         },
         {
             "row": 7,
@@ -280,17 +325,17 @@
         {
             "row": 7,
             "col": 4,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 7,
             "col": 5,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 7,
             "col": 6,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 7,
@@ -300,7 +345,7 @@
         {
             "row": 7,
             "col": 8,
-            "color": "yellow"
+            "color": "red"
         }
     ]
 }

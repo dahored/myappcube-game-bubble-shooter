@@ -55,7 +55,10 @@ public class CannonController : MonoBehaviour
     BubbleColor  _current;
     BubbleColor  _next;
     ShotBubble   _flyingShot;
+    Vector2Int?  _predictedCell;   // dónde prometió la mira que iba a quedar este disparo
     bool         _inputEnabled = true;
+    bool         _pointerDown;     // el dedo está apoyado, aunque el guard haya cortado el apuntado
+    Vector2      _pointerPos;      // dónde, para retomar la mira sin esperar a que se mueva
     bool         _dragging;
     bool         _hintShown;
     float        _idleTimer;
@@ -104,6 +107,16 @@ public class CannonController : MonoBehaviour
         // _inputEnabled también congela el disparo ya en vuelo — si no, pausar a mitad de
         // un tiro lo dejaría animándose solo detrás del PausedPanel.
         if (!_inputEnabled) return;
+
+        // El dedo se apoyó mientras la burbuja anterior volaba: en cuanto aterriza, la mira
+        // retoma sola. Antes esto se resolvía en OnAimDrag, pero Unity solo manda drag cuando
+        // el dedo SE MUEVE — con el dedo quieto, apuntar quedaba trabado hasta moverlo.
+        if (!_dragging && _pointerDown && _flyingShot == null)
+        {
+            _dragging = true;
+            HideHint();
+            UpdateAim(_pointerPos);
+        }
 
         if (_flyingShot != null)
         {
@@ -155,6 +168,82 @@ public class CannonController : MonoBehaviour
     // el efecto de "llegada" (reportado por Diego). Solo actualiza el conteo interno para que
     // esa animación, un instante después, calcule bien si hay/no hay next.
     public void UpdateShotsRemainingSilently(int remaining) => _shotsRemaining = remaining;
+
+    // Los disparos que sobraron al ganar no se evaporan con el nivel: se gastan en pantalla.
+    // Es el MISMO ciclo que un disparo real — se apaga la burbuja de la recámara, sale la que
+    // estaba ahí, y la cola avanza con la animación del pulpo — solo que en vez de aterrizar en
+    // el grid revienta a mitad de camino, sin rebotar.
+    //
+    // Sube RECTO. La variedad no viene de inclinar el disparo sino de dónde revienta: quien
+    // llama le pasa un corrimiento lateral chico y acá la burbuja va del cañón a ese punto.
+    // Inclinar el tiro obligaba a pensar en grados, y un ángulo que en el papel parece mínimo
+    // manda la burbuja lejísimos cuando el recorrido es largo.
+    //
+    // Avisa por onBurst dónde reventó (espacio local del grid) para que quien llama ponga ahí el
+    // número de puntos: acá no sabemos cuánto vale, eso lo lleva GameplayController.
+    public IEnumerator PlayCelebrationShot(float lateralOffset, float minDistance, float maxDistance,
+                                           float flightTime, AudioClip popClip, System.Action<Vector2> onBurst)
+    {
+        if (!bubblePrefab || !gridContainer) yield break;
+
+        Vector2 start = MuzzleLocal;
+        Vector2 burst = new Vector2(start.x + lateralOffset,
+                                    start.y + Random.Range(minDistance, maxDistance));
+
+        // Igual que Fire(): se apaga el ícono de la recámara para que no se vea la bola quieta
+        // ahí Y la que vuela al mismo tiempo.
+        if (currentBubbleImage) currentBubbleImage.enabled = false;
+
+        var go   = Instantiate(bubblePrefab, gridContainer);
+        var view = go.GetComponent<BubbleView>();
+        var rt   = (RectTransform)go.transform;
+
+        view.Setup(Vector2Int.zero, _current, grid.SpriteFor(_current)); // Setup la pone en la celda 0,0
+        rt.anchoredPosition = start;                                     // y acá la mandamos al cañón
+
+        AudioManager.Instance?.PlaySfx(shootClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
+
+        // Por tiempo y no por velocidad: el remate entero tiene que durar lo mismo sobren tres
+        // disparos o treinta, así que quien llama reparte el presupuesto y acá solo se cumple.
+        for (float t = 0f; t < flightTime; t += Time.deltaTime)
+        {
+            rt.anchoredPosition = Vector2.Lerp(start, burst, t / flightTime);
+            yield return null;
+        }
+        rt.anchoredPosition = burst;
+
+        onBurst?.Invoke(burst);
+        view.PlayPopAnimation(0f, popClip); // se destruye sola al terminar
+
+        // La cola avanza como después de un disparo real, pero SIN la animación de recarga:
+        // AnimateNextIntoCurrent dura nextIntoCurrentDuration + octopusWaitHold (0.35s con los
+        // valores actuales) y esperarla acá hacía que el remate durara el triple de lo pedido,
+        // por más que se bajara el tiempo de vuelo. Con los disparos a menos de 200ms de
+        // distancia no llegaría a terminar ninguna igual.
+        _shotsRemaining = Mathf.Max(0, _shotsRemaining - 1);
+        _current = _next;
+        _next    = LevelColor();
+
+        RefreshPreview();
+        SetOctopusSprite(_shotsRemaining > 0 ? octopusThrowSprite : octopusIdleSprite);
+    }
+
+    // Para el remate: un color de los que el NIVEL tenía disponibles, no de los que quedan en el
+    // grid. Al ganar el grid está vacío, así que RollColor no tendría de dónde elegir.
+    BubbleColor LevelColor() =>
+        _availableColorsParsed.Count > 0
+            ? _availableColorsParsed[Random.Range(0, _availableColorsParsed.Count)]
+            : _current;
+
+    // Deja la recámara con colores del nivel antes de arrancar el remate: los que traía vienen
+    // del grid de la última jugada y pueden ser uno solo repetido.
+    public void PrepareCelebrationColors()
+    {
+        _current = LevelColor();
+        _next    = LevelColor();
+        RefreshPreview();
+    }
 
     public void SetInputEnabled(bool enabled)
     {
@@ -213,6 +302,11 @@ public class CannonController : MonoBehaviour
     // --- Llamado por AimInputRelay (drag sobre AimArea) ---
     public void OnAimBegin(Vector2 screenPos)
     {
+        // Se registra ANTES del guard: el dedo está apoyado igual aunque no se pueda apuntar
+        // todavía, y Update lo usa para retomar la mira en cuanto aterrice el disparo anterior.
+        _pointerDown = true;
+        _pointerPos  = screenPos;
+
         if (!_inputEnabled || _flyingShot != null) return;
         _dragging = true;
         HideHint();
@@ -221,6 +315,9 @@ public class CannonController : MonoBehaviour
 
     public void OnAimDrag(Vector2 screenPos)
     {
+        _pointerDown = true;
+        _pointerPos  = screenPos;
+
         // El dedo pudo apoyarse mientras la burbuja anterior todavía volaba. En ese momento
         // OnAimBegin se ignoró, y Unity no vuelve a emitir un "begin" con el dedo ya apoyado: sin
         // esto la mira no reaparece hasta levantar y volver a tocar, y peor, al soltar tampoco
@@ -236,6 +333,8 @@ public class CannonController : MonoBehaviour
 
     public void OnAimEnd(Vector2 screenPos)
     {
+        _pointerDown = false;
+
         if (!_dragging) return;
         _dragging = false;
         // No se oculta la línea acá — se deja visible mostrando el camino que ya está
@@ -313,6 +412,10 @@ public class CannonController : MonoBehaviour
         // la cola avanza.
         if (currentBubbleImage) currentBubbleImage.enabled = false;
 
+        // La celda que marcó la mira en este instante. Es la que va a usarse al aterrizar: el
+        // círculo transparente promete un lugar y el disparo lo cumple, sin recalcular nada.
+        _predictedCell = trajectoryLine.LandingCell;
+
         var go   = Instantiate(bubblePrefab, gridContainer);
         var shot = go.AddComponent<ShotBubble>();
         shot.Init(gridContainer, grid, MuzzleLocal, _aimDir, shotSpeed, _current, grid.SpriteFor(_current));
@@ -326,11 +429,25 @@ public class CannonController : MonoBehaviour
 
     void ResolveImpact(ShotBubble.ImpactInfo impact)
     {
-        var shotView  = _flyingShot.GetComponent<BubbleView>();
-        var reference = impact.HitCeiling
-            ? new Vector2Int(HexGridMath.EstimateNearestCell(impact.LocalPos).x, 0)
-            : impact.StruckCell;
-        var cell = grid.FindNearestEmptyCell(impact.LocalPos, reference);
+        var shotView = _flyingShot.GetComponent<BubbleView>();
+
+        // Primero la celda que prometió la mira. Solo se recalcula si no hay predicción o si esa
+        // celda se ocupó mientras la burbuja volaba — cosa que hoy no puede pasar, pero es la
+        // única situación en la que la promesa dejaría de ser cumplible.
+        Vector2Int cell;
+        if (_predictedCell.HasValue && !grid.IsOccupied(_predictedCell.Value))
+        {
+            cell = _predictedCell.Value;
+        }
+        else
+        {
+            var reference = impact.HitCeiling
+                ? new Vector2Int(HexGridMath.EstimateNearestCell(impact.LocalPos).x, 0)
+                : impact.StruckCell;
+            cell = grid.FindNearestEmptyCell(impact.LocalPos, reference);
+        }
+
+        _predictedCell = null;
 
         grid.RegisterExisting(shotView, cell);
         AudioManager.Instance?.PlaySfx(landClip);
@@ -346,12 +463,14 @@ public class CannonController : MonoBehaviour
         // del techo, no solo las que matchearon directo).
         OnBubbleLanded?.Invoke(cell);
 
-        // El "current" recién promovido pudo quedar huérfano por esa misma cascada (aunque
-        // su color no haya matcheado nada, puede haber caído igual). Se re-sortea antes de
-        // mostrarlo — mejor una burbuja distinta a una que no puede matchear con nada.
-        if (_current != BubbleColor.Rainbow && !grid.ColorsOnGrid().Contains(_current))
-            _current = RollColor();
-
+        // El "current" NO se re-sortea aunque la cascada haya borrado todas las burbujas de su
+        // color. El jugador ya lo vio como "next" durante todo el vuelo del disparo anterior: es
+        // una promesa, y cambiárselo justo al promoverlo se siente como si el juego le hubiera
+        // cambiado la burbuja en la mano — reportado como "disparo un color y sale otro".
+        //
+        // Si quedó sin uso, el swap está para eso, y el nuevo "next" ya se sortea contra el grid
+        // de después de la cascada, así que siempre sirve. Vale más no mentir sobre lo que se va a
+        // disparar que ahorrarle un disparo perdido de vez en cuando.
         _next = RollColor();
         StartCoroutine(AnimateNextIntoCurrent());
     }

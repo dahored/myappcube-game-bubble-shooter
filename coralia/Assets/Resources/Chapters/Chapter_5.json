@@ -1,0 +1,461 @@
+{
+  "chapter": 5,
+  "name": "Profundidades de Coral",
+  "decorations": [
+    {
+      "id": "group_3",
+      "start": true,
+      "middle": true,
+      "side": "left",
+      "offset": 0.6,
+      "scale": 0.8
+    },
+    {
+      "id": "group_3",
+      "start": true,
+      "middle": true,
+      "side": "right",
+      "offset": 0.6,
+      "scale": 0.8
+    },
+    {
+      "id": "rock_1",
+      "start": true,
+      "side": "left",
+      "offset": 1.5
+    },
+    {
+      "id": "rock_4",
+      "start": true,
+      "side": "right",
+      "offset": 1.6,
+      "flip": true
+    },
+    {
+      "id": "rock_2",
+      "node": 1,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "rock_2",
+      "node": 1,
+      "side": "right",
+      "offset": 1.8,
+      "flip": true
+    },
+    {
+      "id": "group_2",
+      "node": 2,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "group_1",
+      "node": 2,
+      "side": "right",
+      "offset": 1.8
+    },
+    {
+      "id": "plants_1",
+      "node": 2,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5
+    },
+    {
+      "id": "plants_2",
+      "node": 2,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "rock_4",
+      "node": 3,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "group_1",
+      "node": 3,
+      "side": "right",
+      "offset": 1.8,
+      "flip": true
+    },
+    {
+      "id": "plants_2",
+      "node": 3,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "plants_1",
+      "node": 3,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5
+    },
+    {
+      "id": "group_2",
+      "node": 4,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "rock_2",
+      "node": 4,
+      "side": "right",
+      "offset": 1.8
+    },
+    {
+      "id": "plants_2",
+      "node": 4,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "plants_1",
+      "node": 4,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5
+    },
+    {
+      "id": "rock_2",
+      "node": 5,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "group_2",
+      "node": 5,
+      "side": "right",
+      "offset": 1.8
+    },
+    {
+      "id": "plants_2",
+      "node": 5,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "plants_2",
+      "node": 5,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "rock_3",
+      "node": 6,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "group_3",
+      "node": 6,
+      "side": "right",
+      "offset": 1.8
+    },
+    {
+      "id": "plants_1",
+      "node": 6,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5
+    },
+    {
+      "id": "plants_2",
+      "node": 6,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "group_3",
+      "node": 7,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "group_3",
+      "node": 7,
+      "side": "right",
+      "offset": 1.8,
+      "flip": true
+    },
+    {
+      "id": "plants_2",
+      "node": 7,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5
+    },
+    {
+      "id": "plants_1",
+      "node": 7,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "rock_3",
+      "node": 8,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "rock_1",
+      "node": 8,
+      "side": "right",
+      "offset": 1.8
+    },
+    {
+      "id": "plants_2",
+      "node": 8,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "plants_1",
+      "node": 8,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "rock_2",
+      "node": 9,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "group_2",
+      "node": 9,
+      "side": "right",
+      "offset": 1.8
+    },
+    {
+      "id": "plants_2",
+      "node": 9,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "plants_2",
+      "node": 9,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5
+    },
+    {
+      "id": "group_4",
+      "node": 10,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "group_3",
+      "node": 10,
+      "side": "right",
+      "offset": 1.8
+    },
+    {
+      "id": "plants_1",
+      "node": 10,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "plants_1",
+      "node": 10,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "rock_3",
+      "node": 11,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "rock_3",
+      "node": 11,
+      "side": "right",
+      "offset": 1.8,
+      "flip": true
+    },
+    {
+      "id": "plants_1",
+      "node": 11,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "plants_2",
+      "node": 11,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "rock_2",
+      "node": 12,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "rock_3",
+      "node": 12,
+      "side": "right",
+      "offset": 1.8
+    },
+    {
+      "id": "plants_1",
+      "node": 12,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5
+    },
+    {
+      "id": "plants_1",
+      "node": 12,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5
+    },
+    {
+      "id": "rock_4",
+      "node": 13,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "group_3",
+      "node": 13,
+      "side": "right",
+      "offset": 1.8
+    },
+    {
+      "id": "plants_2",
+      "node": 13,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5
+    },
+    {
+      "id": "plants_1",
+      "node": 13,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "rock_1",
+      "node": 14,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "rock_3",
+      "node": 14,
+      "side": "right",
+      "offset": 1.8
+    },
+    {
+      "id": "plants_1",
+      "node": 14,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5
+    },
+    {
+      "id": "plants_1",
+      "node": 14,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5
+    },
+    {
+      "id": "rock_1",
+      "node": 15,
+      "side": "left",
+      "offset": 1.8
+    },
+    {
+      "id": "group_3",
+      "node": 15,
+      "side": "right",
+      "offset": 1.8,
+      "flip": true
+    },
+    {
+      "id": "plants_2",
+      "node": 15,
+      "middle": true,
+      "side": "left",
+      "offset": 1.5,
+      "flip": true
+    },
+    {
+      "id": "plants_2",
+      "node": 15,
+      "middle": true,
+      "side": "right",
+      "offset": 1.5
+    },
+    {
+      "id": "group_2",
+      "end": true,
+      "middle": true,
+      "side": "left",
+      "offset": 0.6,
+      "scale": 0.8
+    },
+    {
+      "id": "group_4",
+      "end": true,
+      "middle": true,
+      "side": "right",
+      "offset": 0.6,
+      "scale": 0.8
+    },
+    {
+      "id": "rock_4",
+      "end": true,
+      "side": "left",
+      "offset": 1.5
+    },
+    {
+      "id": "rock_3",
+      "end": true,
+      "side": "right",
+      "offset": 1.6,
+      "flip": true
+    }
+  ]
+}

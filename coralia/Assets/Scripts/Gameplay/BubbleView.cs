@@ -34,6 +34,15 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     const float DROP_MAX_DURATION = 1f;    // tope de seguridad
     const float DROP_FADE_START   = 0.5f;  // a partir de acá empieza a desvanecerse
 
+    // Cuánto tarda una burbuja en caer 'distance' px. Es gravedad pura desde reposo, así que
+    // sale de la fórmula sin simular nada — lo usa GridController para saber CUÁNDO mostrar el
+    // número de puntos: recién cuando la burbuja llegó abajo y desapareció.
+    //
+    // Con el mismo tope que la animación: pasado DROP_MAX_DURATION la burbuja ya se destruyó,
+    // y un número que salga después de eso no acompaña a nada.
+    public static float DropDuration(float distance) =>
+        Mathf.Min(DROP_MAX_DURATION, Mathf.Sqrt(2f * Mathf.Max(0f, distance) / DROP_GRAVITY));
+
     const int   POP_PARTICLE_COUNT    = 8;
     const float POP_PARTICLE_SIZE     = 22f;  // px — bastante más chico que la burbuja (92px)
     const float POP_PARTICLE_SPEED    = 260f; // px/s
@@ -107,7 +116,8 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     // vez para todo el lote. Todas arrancan a la vez (sin delay escalonado, la caída en sí
     // ya no es instantánea), así que varias sonando juntas es el efecto esperado de "se
     // desprendió una cadena grande", no un bug.
-    public void PlayDropAnimation(AudioClip dropClip = null) => StartCoroutine(DropAndDestroy(dropClip));
+    public void PlayDropAnimation(AudioClip dropClip = null, float delay = 0f) =>
+        StartCoroutine(DropAndDestroy(dropClip, delay));
 
     IEnumerator PopAndDestroy(float delay, AudioClip popClip)
     {
@@ -167,11 +177,17 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
 
     // Gravedad simulada (acelera en vez de moverse a velocidad constante) + un giro
     // aleatorio por burbuja, para que la caída en cadena no se vea toda igual/rígida.
-    IEnumerator DropAndDestroy(AudioClip dropClip)
+    IEnumerator DropAndDestroy(AudioClip dropClip, float delay)
     {
-        BeginAnimation();
+        BeginAnimation();   // cuenta desde ya: el grid no debe moverse mientras esta espera su turno
+
+        if (delay > 0f) yield return new WaitForSeconds(delay);
 
         AudioManager.Instance?.PlayPop(dropClip);
+
+        // Un toque al desprenderse, igual que el pop. Sin esto un derrumbe de quince burbujas se
+        // ve pero no se siente.
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
 
         var     rt       = (RectTransform)transform;
         Vector2 pos      = rt.anchoredPosition;
