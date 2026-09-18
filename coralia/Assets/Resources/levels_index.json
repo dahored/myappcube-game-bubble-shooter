@@ -1079,6 +1079,186 @@
       "chapter": 3,
       "name": "La Sombra Profunda",
       "path": "Levels/Chapter_3/180"
+    },
+    {
+      "id": 181,
+      "chapter": 4,
+      "name": "Grieta de cuarzo",
+      "path": "Levels/Chapter_4/181"
+    },
+    {
+      "id": 182,
+      "chapter": 4,
+      "name": "Eco mineral",
+      "path": "Levels/Chapter_4/182"
+    },
+    {
+      "id": 183,
+      "chapter": 4,
+      "name": "Luz partida",
+      "path": "Levels/Chapter_4/183"
+    },
+    {
+      "id": 184,
+      "chapter": 4,
+      "name": "Vetas violetas",
+      "path": "Levels/Chapter_4/184"
+    },
+    {
+      "id": 185,
+      "chapter": 4,
+      "name": "Sala de espejos",
+      "path": "Levels/Chapter_4/185"
+    },
+    {
+      "id": 186,
+      "chapter": 4,
+      "name": "Estalactitas",
+      "path": "Levels/Chapter_4/186"
+    },
+    {
+      "id": 187,
+      "chapter": 4,
+      "name": "Brillo helado",
+      "path": "Levels/Chapter_4/187"
+    },
+    {
+      "id": 188,
+      "chapter": 4,
+      "name": "Cristal quebrado",
+      "path": "Levels/Chapter_4/188"
+    },
+    {
+      "id": 189,
+      "chapter": 4,
+      "name": "Cámara azul",
+      "path": "Levels/Chapter_4/189"
+    },
+    {
+      "id": 190,
+      "chapter": 4,
+      "name": "Prisma hundido",
+      "path": "Levels/Chapter_4/190"
+    },
+    {
+      "id": 191,
+      "chapter": 4,
+      "name": "Aguja de amatista",
+      "path": "Levels/Chapter_4/191"
+    },
+    {
+      "id": 192,
+      "chapter": 4,
+      "name": "Reflejo doble",
+      "path": "Levels/Chapter_4/192"
+    },
+    {
+      "id": 193,
+      "chapter": 4,
+      "name": "Filo de geoda",
+      "path": "Levels/Chapter_4/193"
+    },
+    {
+      "id": 194,
+      "chapter": 4,
+      "name": "Bóveda translúcida",
+      "path": "Levels/Chapter_4/194"
+    },
+    {
+      "id": 195,
+      "chapter": 4,
+      "name": "El corazón de cristal",
+      "path": "Levels/Chapter_4/195"
+    },
+    {
+      "id": 196,
+      "chapter": 5,
+      "name": "Coral durmiente",
+      "path": "Levels/Chapter_5/196"
+    },
+    {
+      "id": 197,
+      "chapter": 5,
+      "name": "Abanico rojo",
+      "path": "Levels/Chapter_5/197"
+    },
+    {
+      "id": 198,
+      "chapter": 5,
+      "name": "Cornisa profunda",
+      "path": "Levels/Chapter_5/198"
+    },
+    {
+      "id": 199,
+      "chapter": 5,
+      "name": "Jardín ciego",
+      "path": "Levels/Chapter_5/199"
+    },
+    {
+      "id": 200,
+      "chapter": 5,
+      "name": "Corriente tibia",
+      "path": "Levels/Chapter_5/200"
+    },
+    {
+      "id": 201,
+      "chapter": 5,
+      "name": "Ramas naranjas",
+      "path": "Levels/Chapter_5/201"
+    },
+    {
+      "id": 202,
+      "chapter": 5,
+      "name": "Pozo de arena",
+      "path": "Levels/Chapter_5/202"
+    },
+    {
+      "id": 203,
+      "chapter": 5,
+      "name": "Laberinto blando",
+      "path": "Levels/Chapter_5/203"
+    },
+    {
+      "id": 204,
+      "chapter": 5,
+      "name": "Cresta viva",
+      "path": "Levels/Chapter_5/204"
+    },
+    {
+      "id": 205,
+      "chapter": 5,
+      "name": "Sombra del arrecife",
+      "path": "Levels/Chapter_5/205"
+    },
+    {
+      "id": 206,
+      "chapter": 5,
+      "name": "Polipero denso",
+      "path": "Levels/Chapter_5/206"
+    },
+    {
+      "id": 207,
+      "chapter": 5,
+      "name": "Canal estrecho",
+      "path": "Levels/Chapter_5/207"
+    },
+    {
+      "id": 208,
+      "chapter": 5,
+      "name": "Terraza coralina",
+      "path": "Levels/Chapter_5/208"
+    },
+    {
+      "id": 209,
+      "chapter": 5,
+      "name": "Bancal profundo",
+      "path": "Levels/Chapter_5/209"
+    },
+    {
+      "id": 210,
+      "chapter": 5,
+      "name": "El arrecife mayor",
+      "path": "Levels/Chapter_5/210"
     }
   ]
 }
