@@ -64,6 +64,7 @@ public class CannonController : MonoBehaviour
     float        _idleTimer;
     Coroutine    _hintSwayRoutine;
     Vector2      _aimDir = Vector2.up;
+    bool         _muzzleMeasured;
     Vector2      _muzzleLocalBase; // posición de muzzlePoint convertida al espacio local de gridContainer,
                                     // SIN scroll — calculada acá en vez de a mano, así no importa el anchor/dispositivo
 
@@ -147,7 +148,21 @@ public class CannonController : MonoBehaviour
     // GridIntroPreview antes del primer frame dibujado.
     void PublishMuzzleReference()
     {
-        _muzzleLocalBase = WorldToGridLocal(muzzlePoint.position);
+        // La MEDICIÓN va una sola vez. WorldToGridLocal convierte al espacio del gridContainer, y
+        // la línea de abajo mueve ese mismo contenedor: volver a medir después daría un valor ya
+        // contaminado por ese movimiento, y MuzzleLocal terminaría restando el retiro dos veces.
+        //
+        // Se mide mientras el contenedor está todavía en su posición base, que es seguro: nada lo
+        // desplaza hasta que alguien pasa por acá (sin referencia del cañón, RecomputeScroll no
+        // tiene contra qué medir y deja el retiro en cero).
+        if (!_muzzleMeasured)
+        {
+            _muzzleMeasured  = true;
+            _muzzleLocalBase = WorldToGridLocal(muzzlePoint.position);
+        }
+
+        // Publicar, en cambio, se repite sin problema: es el mismo número, y vuelve a asentar el
+        // retiro por si la primera vez el grid todavía no tenía burbujas.
         if (grid != null) grid.SetMuzzleReferenceY(_muzzleLocalBase.y); // deja el grid ya colocado, sin animar
     }
 

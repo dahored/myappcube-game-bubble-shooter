@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,8 +10,20 @@ using UnityEngine.InputSystem;
 // haber visto con qué se va a encontrar.
 //
 // Esto baja la vista hasta el techo del tablero, se detiene un momento y vuelve. No toca la cámara
-// ni la posición de juego: mueve el contenedor del grid con un offset propio de GridController que
-// siempre termina en cero, así que al terminar todo queda exactamente donde quedaba antes.
+// ni la posición de juego: es un offset propio que siempre termina en cero, así que al terminar
+// todo queda exactamente donde quedaba antes.
+//
+// Se mueve el tablero Y TODO LO QUE LO ACOMPAÑA — el cañón, sus gráficos, la línea de trayectoria,
+// las rocas de los costados. O sea, un barrido de cámara y no un tablero deslizándose.
+//
+// Que se muevan juntos no es solo estético: la posición del cañón se guarda UNA vez, medida en el
+// espacio del contenedor del grid (CannonController._muzzleLocalBase). Si el tablero se moviera
+// solo, esa medida quedaría desfasada todo el barrido y cualquier cosa que dibuje desde el cañón
+// —la mira, el aviso de "mantené para apuntar"— saldría a cientos de píxeles de donde va. Moviendo
+// los dos, la distancia entre ellos no cambia y no hay nada que compensar.
+//
+// Se mueven los HIJOS del SafeArea y no el SafeArea mismo, porque de ese lo manda SafeAreaPanel:
+// le pone los offsets en cero al arrancar y otra vez un frame después, justo encima del barrido.
 //
 // Ninguna de las dos cantidades que usa es un número a mano:
 //
@@ -45,6 +58,12 @@ public class GridIntroPreview : MonoBehaviour
 
     bool _running;
     bool _skipped;
+
+    // Los hermanos del grid que acompañan el barrido, con la posición en la que estaban al
+    // empezar. Se toman al arrancar el barrido y no en Awake: para entonces el SafeAreaPanel y
+    // cualquier otro acomodo de arranque ya terminaron.
+    readonly List<RectTransform> _movers    = new();
+    readonly List<Vector2>       _moverBase = new();
 
     // El grid es el único de la escena, así que no vale la pena obligar a arrastrarlo: se busca
     // solo y solo se avisa si de verdad no está.
@@ -83,6 +102,8 @@ public class GridIntroPreview : MonoBehaviour
         _running = true;
         _skipped = false;
 
+        CollectMovers();
+
         yield return Slide(0f, -travel, travelDuration, travelEase, abortOnSkip: true);
 
         for (float t = 0f; t < holdDuration && !_skipped; t += Time.deltaTime) yield return null;
@@ -90,24 +111,60 @@ public class GridIntroPreview : MonoBehaviour
         // La vuelta nunca se aborta: es la que devuelve el tablero a su sitio. Si el jugador saltó,
         // sale desde donde haya quedado la ida y en menos tiempo.
         yield return _skipped
-            ? Slide(grid.IntroOffsetY, 0f, skipDuration,   returnEase, abortOnSkip: false)
+            ? Slide(grid.IntroOffsetY, 0f, skipDuration,   returnEase, abortOnSkip: false) // donde quedó la ida
             : Slide(-travel,           0f, returnDuration, returnEase, abortOnSkip: false);
 
-        grid.IntroOffsetY = 0f; // exacto, sin arrastre de redondeo del último frame
+        SetOffset(0f); // exacto, sin arrastre de redondeo del último frame
+        _movers.Clear();
+        _moverBase.Clear();
         _running = false;
+    }
+
+    // Todo lo que cuelga del mismo padre que el grid, menos dos cosas: el grid, que se mueve por su
+    // cuenta (GridController compone ese offset con el retiro y el temblor, y escribir su posición
+    // desde afuera se los pisaría), y la zona de input, que tiene que seguir cubriendo la pantalla
+    // entera para que el toque que salta el barrido llegue igual.
+    //
+    // Sale de la jerarquía y no de una lista en el Inspector para que una decoración nueva entre
+    // al barrido sola, sin que haya que acordarse de agregarla.
+    void CollectMovers()
+    {
+        _movers.Clear();
+        _moverBase.Clear();
+
+        var gridRect = (RectTransform)grid.transform;
+        if (gridRect.parent is not RectTransform parent) return;
+
+        foreach (Transform t in parent)
+        {
+            // 'as' y no un cast: un hijo que no sea de UI reventaría el foreach entero.
+            if (t is not RectTransform child || child == gridRect) continue;
+            if (child.GetComponentInChildren<AimInputRelay>(true) != null) continue;
+
+            _movers.Add(child);
+            _moverBase.Add(child.anchoredPosition);
+        }
+    }
+
+    void SetOffset(float y)
+    {
+        grid.IntroOffsetY = y;
+
+        for (int i = 0; i < _movers.Count; i++)
+            if (_movers[i]) _movers[i].anchoredPosition = _moverBase[i] + Vector2.up * y;
     }
 
     IEnumerator Slide(float from, float to, float duration, AnimationCurve ease, bool abortOnSkip)
     {
-        if (duration <= 0f) { grid.IntroOffsetY = to; yield break; }
+        if (duration <= 0f) { SetOffset(to); yield break; }
 
         for (float t = 0f; t < duration; t += Time.deltaTime)
         {
             if (abortOnSkip && _skipped) yield break;
-            grid.IntroOffsetY = Mathf.LerpUnclamped(from, to, ease.Evaluate(t / duration));
+            SetOffset(Mathf.LerpUnclamped(from, to, ease.Evaluate(t / duration)));
             yield return null;
         }
 
-        grid.IntroOffsetY = to;
+        SetOffset(to);
     }
 }
