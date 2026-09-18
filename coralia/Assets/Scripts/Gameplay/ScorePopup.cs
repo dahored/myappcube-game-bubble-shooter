@@ -22,17 +22,26 @@ public class ScorePopup : MonoBehaviour
     // si el número se fuera al ritmo del pop no daría tiempo a leer cuánto sumó.
     public const float CELEBRATION_LIFETIME = 1.4f;
 
-    const float RISE_DISTANCE = 70f;
+    // Público porque GridController lo necesita para repartir los números de una caída en
+    // carriles: la separación entre dos de ellos depende de a qué velocidad suben.
+    public const float RISE_DISTANCE = 70f;
     const float POP_DURATION  = 0.16f;  // el golpe de escala inicial
     const float POP_OVERSHOOT = 1.25f;
     const float FADE_START    = 0.45f;  // fracción de la vida a partir de la cual se apaga
 
     RectTransform _rt;
+    AudioClip     _clip;
 
     // delay: el mismo escalonado que el pop de la burbuja, para que el número salga junto con
     // su explosión y no antes. lifetime: POP_LIFETIME o DROP_LIFETIME según de dónde venga.
-    public void Play(int points, float delay, float lifetime)
+    //
+    // clip: opcional, el sonido del bonus. Suena cuando el número APARECE, no al instanciarlo —
+    // entre las dos cosas puede haber casi un segundo de espera (ver Rise). Quien llama decide si
+    // este número lleva sonido o no: en un derrumbe grande no todos lo llevan, o serían veinte
+    // disparos de audio en medio segundo (ver GridController.SpawnDropScorePopup).
+    public void Play(int points, float delay, float lifetime, AudioClip clip = null)
     {
+        _clip = clip;
         _rt = (RectTransform)transform;
 
         if (!label) label = GetComponentInChildren<TMP_Text>(true);
@@ -58,6 +67,8 @@ public class ScorePopup : MonoBehaviour
         // un cuarto de segundo antes de moverse delata el truco.
         transform.localScale = Vector3.zero;
         if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        if (_clip) AudioManager.Instance?.PlaySfx(_clip);
 
         Vector2 origin  = _rt.anchoredPosition;
         Color   baseCol = label.color;

@@ -87,10 +87,9 @@ public class CannonController : MonoBehaviour
     // cualquier Start() — así la posición mundial de muzzlePoint ya es la definitiva.
     void Start()
     {
-        _muzzleLocalBase = WorldToGridLocal(muzzlePoint.position);
+        PublishMuzzleReference();
         if (grid != null)
         {
-            grid.SetMuzzleReferenceY(_muzzleLocalBase.y); // deja el grid ya colocado, sin animar
             grid.OnBubbleTapped += HandleBubbleTapped;
 
             // Drag que empieza justo encima de una burbuja — mismo destino que AimInputRelay
@@ -135,8 +134,27 @@ public class CannonController : MonoBehaviour
         }
     }
 
+    // Le pasa al grid la altura del muzzle, que es contra lo que aquel mide cuánto tiene que
+    // retirarse para no quedar encima del cañón. Idempotente a propósito: se llama desde Start()
+    // y también desde Init().
+    //
+    // Las dos veces hacen falta. Start() cubre cualquier escena donde el cañón exista sin nivel
+    // armado; Init() cubre el orden de arranque, que es el que importa: entre dos Start() Unity no
+    // garantiza cuál va primero, así que si el del cañón corriera antes que el de
+    // GameplayController, el grid todavía no tendría burbujas y el retiro daría cero. Init() lo
+    // llama GameplayController justo después de poblar el grid, o sea en un orden conocido — y
+    // recién ahí la posición de juego es un número final, que es lo que necesita leer
+    // GridIntroPreview antes del primer frame dibujado.
+    void PublishMuzzleReference()
+    {
+        _muzzleLocalBase = WorldToGridLocal(muzzlePoint.position);
+        if (grid != null) grid.SetMuzzleReferenceY(_muzzleLocalBase.y); // deja el grid ya colocado, sin animar
+    }
+
     public void Init(List<string> availableColors, int shotsRemaining)
     {
+        PublishMuzzleReference();
+
         _availableColors       = availableColors;
         _availableColorsParsed = new List<BubbleColor>();
         foreach (var c in availableColors) _availableColorsParsed.Add(BubbleColorExtensions.Parse(c));
@@ -248,7 +266,13 @@ public class CannonController : MonoBehaviour
     public void SetInputEnabled(bool enabled)
     {
         _inputEnabled = enabled;
-        if (!enabled) HideHint(); // que no siga animando detrás de PausedPanel/paneles de fin de nivel
+        if (!enabled) { HideHint(); return; } // que no siga animando detrás de PausedPanel/paneles de fin de nivel
+
+        // El aviso obligatorio del primer disparo se apagó al deshabilitar el input (la pausa, o
+        // la vista previa del grid). Al volver tiene que estar otra vez: mientras nunca se disparó
+        // en todo el juego es la única indicación de cómo se juega, y dejarlo al timer de
+        // inactividad lo esconde varios segundos justo en el nivel 1.
+        if (!SaveManager.HasFiredFirstShot && !_hintShown) ShowHint();
     }
 
     void ShowHint()

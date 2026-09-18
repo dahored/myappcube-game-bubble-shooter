@@ -17,6 +17,7 @@ public class GameplayController : MonoBehaviour
     [SerializeField] OutOfLivesPanel   outOfLivesPanel; // guard de entrada — ver Start() (issue #52)
     [SerializeField] TMP_Text          shotsLabel;
     [SerializeField] ClaimPanel        claimPanel; // confirmación al comprar más disparos en NoMoreMovesPanel
+    [SerializeField] GridIntroPreview  gridIntro;  // barrido de lectura del tablero al empezar (opcional)
 
     [Header("Sin disparos")]
     [Tooltip("Si está desactivado, al quedarse sin disparos se salta la oferta de monedas y se muestra LosePanel directo.")]
@@ -186,6 +187,28 @@ public class GameplayController : MonoBehaviour
         if (pausedPanel      != null) pausedPanel.OnResumePressed += OnResumePressed;
 
         RefreshShotsLabel();
+
+        StartCoroutine(PlayIntroPreview());
+    }
+
+    // Barrido de lectura del tablero antes del primer disparo, solo cuando el nivel es tan largo
+    // que sus primeras filas nacen fuera de cuadro (issue #74).
+    //
+    // Mientras dura no se puede apuntar, disparar ni pausar: la vista está en movimiento, y un
+    // disparo lanzado ahí aterrizaría en un sitio que el jugador no eligió. El botón de pausa se
+    // apaga en vez de dejarse andando porque cualquier toque salta el barrido — sin esto, el toque
+    // que abre la pausa dispararía las dos cosas a la vez y el orden entre ellas no está definido.
+    IEnumerator PlayIntroPreview()
+    {
+        if (gridIntro == null || !gridIntro.WillPlay) yield break;
+
+        cannon.SetInputEnabled(false);
+        if (openPausedButton) openPausedButton.interactable = false;
+
+        yield return gridIntro.Play();
+
+        if (openPausedButton) openPausedButton.interactable = true;
+        cannon.SetInputEnabled(true);
     }
 
     // Referencias core (grid/cannon): sin ellas no hay nivel que jugar, se aborta Start().
@@ -210,6 +233,7 @@ public class GameplayController : MonoBehaviour
         if (totalLivesText   == null) Debug.LogWarning("[GameplayController] Falta asignar 'Total Lives Text' en el Inspector — el HUD no va a mostrar las vidas actuales.");
         if (levelNumberText  == null) Debug.LogWarning("[GameplayController] Falta asignar 'Level Number Text' en el Inspector — el HUD no va a mostrar el número de nivel.");
         if (claimPanel       == null) Debug.LogWarning("[GameplayController] Falta asignar 'Claim Panel' en el Inspector — comprar disparos extra no va a mostrar confirmación.");
+        if (gridIntro        == null) Debug.LogWarning("[GameplayController] Falta asignar 'Grid Intro' en el Inspector — los niveles largos van a empezar sin el barrido de vista previa del tablero.");
 
         return ok;
     }
