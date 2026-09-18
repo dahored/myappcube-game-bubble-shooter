@@ -5667,7 +5667,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -6636,7 +6636,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -8270,6 +8270,7 @@ MonoBehaviour:
   outOfLivesPanel: {fileID: 1633055011896174810}
   shotsLabel: {fileID: 1053177626}
   claimPanel: {fileID: 197573704}
+  gridIntro: {fileID: 1795665166}
   enableNoMoreShotsOffer: 1
   pausedPanel: {fileID: 1363746971}
   openPausedButton: {fileID: 2132985218}
@@ -8279,7 +8280,8 @@ MonoBehaviour:
   victoryShotMinDistance: 350
   victoryShotMaxDistance: 900
   victoryShotSpread: 120
-  victoryTotalDuration: 1.2
+  victoryMaxShots: 10
+  victoryShotDuration: 0.12
   popClip: {fileID: 8300000, guid: a3ff1106d6ce7426eb2237d5eb16c975, type: 3}
   dropClip: {fileID: 8300000, guid: 623dd2417b6e64d6f95b775bd8b1224e, type: 3}
 --- !u!4 &820312950
@@ -9936,7 +9938,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -17716,6 +17718,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1795665164}
   - component: {fileID: 1795665165}
+  - component: {fileID: 1795665166}
   m_Layer: 0
   m_Name: GridContainer
   m_TagString: Untagged
@@ -17759,6 +17762,9 @@ MonoBehaviour:
   bubblePrefab: {fileID: 1803173971057917598, guid: 81be4534ab1eb471893f63c40a9ebc39, type: 3}
   scorePopupPrefab: {fileID: 3952318455349186000, guid: 651af47658c6146e5868191c77d2bb0d, type: 3}
   dropScoreHeight: 360
+  dropScoreLaneStep: 46
+  dropScoreClip: {fileID: 8300000, guid: f6974ed8dcf664b1a9ab07bf6578342d, type: 3}
+  dropScoreSoundInterval: 0.12
   spriteRed: {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
   spriteBlue: {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
   spriteYellow: {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
@@ -17781,6 +17787,72 @@ MonoBehaviour:
   shakeDuration: 0.25
   shakeMagnitude: 12
   shakeMaxEnergy: 4
+--- !u!114 &1795665166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1795665163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21c605d2f415e46dab0d9973eee266ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridIntroPreview
+  grid: {fileID: 1795665165}
+  minHiddenRows: 1
+  travelDuration: 0.5
+  holdDuration: 0.35
+  returnDuration: 0.65
+  travelEase:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  returnEase:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  skipDuration: 0.12
 --- !u!1001 &1818290198
 PrefabInstance:
   m_ObjectHideFlags: 0
