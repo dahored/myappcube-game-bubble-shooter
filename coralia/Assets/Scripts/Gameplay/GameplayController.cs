@@ -191,16 +191,23 @@ public class GameplayController : MonoBehaviour
         StartCoroutine(PlayIntroPreview());
     }
 
-    // Barrido de lectura del tablero antes del primer disparo, solo cuando el nivel es tan largo
-    // que sus primeras filas nacen fuera de cuadro (issue #74).
+    // Vista previa del tablero antes del primer disparo, solo cuando el nivel es tan largo que sus
+    // primeras filas nacen fuera de cuadro (issue #74). El nivel abre con la vista abajo, espera y
+    // sube.
+    //
+    // Begin() corre acá dentro y no en la corrutina por una razón de tiempos: StartCoroutine
+    // ejecuta el cuerpo hasta el primer yield de forma síncrona, o sea todavía dentro de Start(),
+    // antes del primer frame dibujado. Si la vista se colocara después, el nivel aparecería un
+    // instante en su posición de juego y recién ahí saltaría hacia abajo.
     //
     // Mientras dura no se puede apuntar, disparar ni pausar: la vista está en movimiento, y un
     // disparo lanzado ahí aterrizaría en un sitio que el jugador no eligió. El botón de pausa se
-    // apaga en vez de dejarse andando porque cualquier toque salta el barrido — sin esto, el toque
-    // que abre la pausa dispararía las dos cosas a la vez y el orden entre ellas no está definido.
+    // apaga en vez de dejarse andando porque cualquier toque adelanta la subida — sin esto, el
+    // toque que abre la pausa dispararía las dos cosas a la vez y el orden entre ellas no está
+    // definido.
     IEnumerator PlayIntroPreview()
     {
-        if (gridIntro == null || !gridIntro.WillPlay) yield break;
+        if (gridIntro == null || !gridIntro.Begin()) yield break;
 
         cannon.SetInputEnabled(false);
         if (openPausedButton) openPausedButton.interactable = false;
