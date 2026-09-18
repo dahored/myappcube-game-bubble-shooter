@@ -38,8 +38,11 @@ public class GameplayController : MonoBehaviour
     [SerializeField] float victoryShotMaxDistance = 900f;
     [Tooltip("Cuánto se corre al azar hacia los lados el punto donde revienta cada disparo, en píxeles. Todos suben rectos; esto solo evita que exploten en la misma columna.")]
     [SerializeField] float victoryShotSpread      = 120f;
-    [Tooltip("Cuánto dura TODO el remate, sobren 3 disparos o 30. Cuantos más sobren, más rápido va cada uno.")]
-    [SerializeField] float victoryTotalDuration   = 1.2f;
+    [Tooltip("Cuántas burbujas salen como mucho. Si sobran más disparos, esas burbujas reparten el bonus de todas.")]
+    [SerializeField] int   victoryMaxShots        = 10;
+
+    [Tooltip("Cuánto dura cada disparo del remate.")]
+    [SerializeField] float victoryShotDuration    = 0.12f;
 
     [SerializeField] AudioClip popClip;
     [SerializeField] AudioClip dropClip;
@@ -529,24 +532,31 @@ public class GameplayController : MonoBehaviour
         cannon.SetInputEnabled(false);
         cannon.PrepareCelebrationColors();
 
-        // El presupuesto se reparte entre los disparos que haya: así el remate dura lo mismo
-        // siempre, en vez de tres segundos cuando sobran muchos y medio cuando sobran dos.
-        // Sin pausa entre uno y otro: el vuelo de cada disparo ocupa su turno entero y el
-        // siguiente arranca en cuanto este revienta.
-        float flight = victoryTotalDuration / _shotsRemaining;
+        // Se disparan como mucho victoryMaxShots burbujas, aunque sobren cuarenta. Las que salen
+        // reparten el bonus COMPLETO entre ellas, así que con veinte sobrantes cada burbuja vale
+        // por cuatro y el número final es el mismo.
+        //
+        // Así el remate dura siempre lo mismo sin tener que repartir un presupuesto: cada disparo
+        // conserva su duración y se ve, en vez de acelerarse hasta el parpadeo cuando sobran
+        // muchos.
+        int   shots  = Mathf.Min(_shotsRemaining, Mathf.Max(1, victoryMaxShots));
+        float flight = Mathf.Max(0.02f, victoryShotDuration);
 
-        for (int i = 1; i <= _shotsRemaining; i++)
+        for (int i = 1; i <= shots; i++)
         {
-            // El bonus ya topado, repartido parejo entre los disparos. Se calcula sobre el total
-            // y no sumando de a poco para que el último número caiga exacto en _victoryBonus, sin
-            // arrastrar el error del redondeo.
-            int bonus = Mathf.RoundToInt(_victoryBonus * i / (float)_shotsRemaining);
+            // El bonus ya topado, repartido parejo entre las burbujas que salen. Se calcula sobre
+            // el total y no sumando de a poco para que el último número caiga exacto en
+            // _victoryBonus, sin arrastrar el error del redondeo.
+            int bonus = Mathf.RoundToInt(_victoryBonus * i / (float)shots);
 
             // Capturado en una local: el callback corre dentro de la corrutina, cuando el bucle
             // ya podría haber avanzado.
             int shown = bonus;
 
-            if (shotsLabel) shotsLabel.text = (_shotsRemaining - i).ToString();
+            // El contador baja hasta 0 en el mismo número de pasos: con veinte sobrantes y cinco
+            // burbujas va 16, 12, 8, 4, 0 en vez de quedarse en 15.
+            if (shotsLabel)
+                shotsLabel.text = (_shotsRemaining - Mathf.RoundToInt(_shotsRemaining * i / (float)shots)).ToString();
 
             yield return cannon.PlayCelebrationShot(Random.Range(-victoryShotSpread, victoryShotSpread),
                 victoryShotMinDistance,

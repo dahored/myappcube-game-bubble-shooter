@@ -43,6 +43,11 @@ public class ScorePopup : MonoBehaviour
             return;
         }
 
+        // Un TMP_Text viene con Raycast Target activado, y estos flotan por encima del AimArea:
+        // durante un combo quince números seguidos se comían el puntero y apuntar quedaba
+        // bloqueado hasta que se apagaban. No son interactivos, así que nunca deben recibirlo.
+        label.raycastTarget = false;
+
         label.text = points.ToString();
         StartCoroutine(Rise(delay, lifetime));
     }

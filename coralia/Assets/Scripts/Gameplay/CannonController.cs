@@ -57,6 +57,8 @@ public class CannonController : MonoBehaviour
     ShotBubble   _flyingShot;
     Vector2Int?  _predictedCell;   // dónde prometió la mira que iba a quedar este disparo
     bool         _inputEnabled = true;
+    bool         _pointerDown;     // el dedo está apoyado, aunque el guard haya cortado el apuntado
+    Vector2      _pointerPos;      // dónde, para retomar la mira sin esperar a que se mueva
     bool         _dragging;
     bool         _hintShown;
     float        _idleTimer;
@@ -105,6 +107,16 @@ public class CannonController : MonoBehaviour
         // _inputEnabled también congela el disparo ya en vuelo — si no, pausar a mitad de
         // un tiro lo dejaría animándose solo detrás del PausedPanel.
         if (!_inputEnabled) return;
+
+        // El dedo se apoyó mientras la burbuja anterior volaba: en cuanto aterriza, la mira
+        // retoma sola. Antes esto se resolvía en OnAimDrag, pero Unity solo manda drag cuando
+        // el dedo SE MUEVE — con el dedo quieto, apuntar quedaba trabado hasta moverlo.
+        if (!_dragging && _pointerDown && _flyingShot == null)
+        {
+            _dragging = true;
+            HideHint();
+            UpdateAim(_pointerPos);
+        }
 
         if (_flyingShot != null)
         {
@@ -290,6 +302,11 @@ public class CannonController : MonoBehaviour
     // --- Llamado por AimInputRelay (drag sobre AimArea) ---
     public void OnAimBegin(Vector2 screenPos)
     {
+        // Se registra ANTES del guard: el dedo está apoyado igual aunque no se pueda apuntar
+        // todavía, y Update lo usa para retomar la mira en cuanto aterrice el disparo anterior.
+        _pointerDown = true;
+        _pointerPos  = screenPos;
+
         if (!_inputEnabled || _flyingShot != null) return;
         _dragging = true;
         HideHint();
@@ -298,6 +315,9 @@ public class CannonController : MonoBehaviour
 
     public void OnAimDrag(Vector2 screenPos)
     {
+        _pointerDown = true;
+        _pointerPos  = screenPos;
+
         // El dedo pudo apoyarse mientras la burbuja anterior todavía volaba. En ese momento
         // OnAimBegin se ignoró, y Unity no vuelve a emitir un "begin" con el dedo ya apoyado: sin
         // esto la mira no reaparece hasta levantar y volver a tocar, y peor, al soltar tampoco
@@ -313,6 +333,8 @@ public class CannonController : MonoBehaviour
 
     public void OnAimEnd(Vector2 screenPos)
     {
+        _pointerDown = false;
+
         if (!_dragging) return;
         _dragging = false;
         // No se oculta la línea acá — se deja visible mostrando el camino que ya está
