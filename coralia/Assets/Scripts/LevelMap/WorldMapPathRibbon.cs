@@ -10,6 +10,12 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
 {
+    [Tooltip("Cuánto camino sobra ANTES del primer nivel, medido en niveles. Le da aire a la punta en vez de que nazca pegada al nodo 1.")]
+    [SerializeField] float leadIn = 1.2f;
+
+    [Tooltip("Lo mismo después del último nivel.")]
+    [SerializeField] float leadOut = 1.2f;
+
     [Tooltip("Ancho de la cinta, en unidades de mundo.")]
     [SerializeField] float width = 1.6f;
 
@@ -39,8 +45,10 @@ public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
         _definition = WorldMapDefinition.For(this);
         if (_definition == null) return;
 
-        int levels = _definition.Levels;
-        int steps  = Mathf.Max(1, (levels - 1) * Mathf.Max(1, stepsPerLevel));
+        int   levels = _definition.Levels;
+        float first  = -leadIn;
+        float last   = (levels - 1) + leadOut;
+        int   steps  = Mathf.Max(1, Mathf.RoundToInt((last - first) * Mathf.Max(1, stepsPerLevel)));
 
         var vertices = new List<Vector3>();
         var uvs      = new List<Vector2>();
@@ -48,7 +56,7 @@ public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
 
         for (int i = 0; i <= steps; i++)
         {
-            float f = i / (float)stepsPerLevel;
+            float f = first + i / (float)Mathf.Max(1, stepsPerLevel);
             WorldMapPath.SampleFrame(f, layout, out var point, out var forward);
 
             Vector3 right = Vector3.Cross(Vector3.up, forward).normalized * (width * 0.5f);
@@ -66,8 +74,8 @@ public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
             indices.Add(a + 1); indices.Add(a + 2); indices.Add(a + 3);
         }
 
-        AppendCap(vertices, uvs, indices, 0f,                       true);
-        AppendCap(vertices, uvs, indices, steps / (float)stepsPerLevel, false);
+        AppendCap(vertices, uvs, indices, first, true);
+        AppendCap(vertices, uvs, indices, last,  false);
 
         if (_mesh == null)
         {

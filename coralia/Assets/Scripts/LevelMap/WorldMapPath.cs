@@ -56,11 +56,25 @@ public static class WorldMapPath
         if (forward.sqrMagnitude < 0.5f) forward = Vector3.forward;
     }
 
-    // Un punto corrido a un costado del camino, perpendicular al avance. Positivo va a la
-    // derecha mirando hacia adelante.
-    public static Vector3 SampleOffset(float f, Layout layout, float offset)
+    // Un punto corrido a un costado del camino. Positivo va a la derecha.
+    //
+    // perpendicular = true sigue la normal del camino, así que en un tramo diagonal la pieza se
+    // corre TAMBIÉN hacia adelante o hacia atrás. Es lo correcto para bordear el camino como un
+    // árbol bordea una carretera, pero desalinea la pieza del nodo con el que comparte índice.
+    //
+    // perpendicular = false aparta solo en X, manteniendo la misma profundidad. La pieza queda a
+    // la misma altura de pantalla que su nodo, a costa de acercarse al camino en las diagonales.
+    public static Vector3 SampleOffset(float f, Layout layout, float offset, bool perpendicular = true)
     {
-        SampleFrame(f, layout, out var point, out var forward);
+        Vector3 point = Sample(f, layout);
+
+        if (!perpendicular)
+        {
+            point.x += offset;
+            return point;
+        }
+
+        SampleFrame(f, layout, out point, out var forward);
 
         // El costado sale de cruzar con el eje vertical y no de rotar 90° en X, así el offset
         // sigue siendo horizontal por más que el camino se incline.
