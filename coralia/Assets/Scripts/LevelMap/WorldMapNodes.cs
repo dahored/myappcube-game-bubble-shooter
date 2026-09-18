@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -26,6 +27,9 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Alto del nodo en unidades de mundo. El prefab viene medido en píxeles de UI, así que se reescala al instanciarlo.")]
     [SerializeField] float nodeSize = 2.2f;
 
+    // Lo lee WorldMapPlayerCard para calcular a qué distancia del nodo va la tarjeta.
+    public float NodeSize => nodeSize;
+
     [Tooltip("Cuánto se levantan del suelo. Tiene que ser MAYOR que el Height de la cinta, o el camino se dibuja encima y les tapa la mitad de abajo.")]
     [SerializeField] float height = 0.06f;
 
@@ -43,12 +47,18 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Slots de más en el pool. Amortiguan el frame en que la ventana crece por un salto de scroll.")]
     [SerializeField] int spare = 4;
 
+    [Tooltip("Cuánto se adelanta el nodo respecto de las decoraciones que están a su misma profundidad. En 0 pueden taparlo las piezas del costado.")]
+    [SerializeField] int sortingBias = 2;
+
     public event System.Action<int> OnNodeClicked;
 
     WorldMapDefinition _definition;
     Transform[]        _pool;        // lo que se mueve
     LevelNodeView[]    _views;       // lo que se configura: puede estar en un hijo del prefab
     CurvedMapNodeEdgeMaterials[] _edges;   // el canto de moneda, que cambia de material según el estado
+    Canvas[]           _canvases;   // para ordenarlos contra las decoraciones, que son sprites
+    Vector3[]          _flat;        // dónde iría cada nodo si el mundo fuera plano
+    Camera             _camera;
     NodeState[]        _states;      // para no abrir un nivel bloqueado desde el hit test
     int[]              _ids;         // el id real del nivel de cada slot
     int[]              _slotLevel;   // qué índice de nivel tiene cada slot, -1 si está libre
@@ -60,8 +70,39 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
     // hijo del prefab. Un frame más tarde es perfectamente válido.
     void Start()
     {
+        // Se LEE la marca, no se consume: quien la consume es WorldMapPlayerCard, que orquesta
+        // toda la llegada. Acá solo hace falta saber qué nodo no debe mostrar sus estrellas
+        // todavía, y hay que saberlo antes de ligar ninguno.
+        _pendingReveal = SaveManager.JustAdvancedFromLevelId;
+
         Build();
         if (scroll) scroll.OnTap += OnTap;
+    }
+
+    // El nivel que acaba de completarse y todavía no reveló sus estrellas. Mientras esté puesto,
+    // su nodo se liga invisible: si se dibujara una sola vez ya con las estrellas, el reveal no
+    // tendría nada que revelar.
+    int _pendingReveal;
+
+    public IEnumerator Reveal(int levelId)
+    {
+        _pendingReveal = 0;
+
+        var view = ViewOf(levelId);
+        if (view == null) yield break;
+
+        yield return view.PlayCompletionTransition(SaveManager.GetLevelStars(levelId),
+                                                   SaveManager.IsLevelGold(levelId));
+    }
+
+    LevelNodeView ViewOf(int levelId)
+    {
+        if (_pool == null) return null;
+
+        for (int slot = 0; slot < _pool.Length; slot++)
+            if (_slotLevel[slot] >= 0 && _ids[slot] == levelId) return _views[slot];
+
+        return null;
     }
 
     void OnDestroy()
@@ -70,8 +111,8 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
     }
 
     // Qué nodo se tocó, resuelto en pantalla: se proyecta cada nodo visible y gana el más cercano
-    // al dedo dentro de su propio radio. Se proyecta la posición CURVADA, no la del transform,
-    // porque el shader dibuja los nodos en otro lado del que dice su Transform.
+    // al dedo dentro de su propio radio. Se proyecta el Transform tal cual, que ya trae la curva
+    // aplicada — a diferencia del suelo o las decoraciones, que se doblan recién en el shader.
     void OnTap(Vector2 screenPosition)
     {
         var camera = Camera.main;
@@ -84,7 +125,7 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
         {
             if (_slotLevel[slot] < 0 || _states[slot] == NodeState.Locked) continue;
 
-            Vector3 world = WorldMapCurve.Curve(_pool[slot].position, camera);
+            Vector3 world = _pool[slot].position;
             Vector3 point = camera.WorldToScreenPoint(world);
             if (point.z <= 0f) continue; // detrás de la cámara
 
@@ -130,6 +171,8 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
         _pool      = new Transform[Mathf.Max(1, size)];
         _views     = new LevelNodeView[_pool.Length];
         _edges     = new CurvedMapNodeEdgeMaterials[_pool.Length];
+        _canvases  = new Canvas[_pool.Length];
+        _flat      = new Vector3[_pool.Length];
         _states    = new NodeState[_pool.Length];
         _ids       = new int[_pool.Length];
         _slotLevel = new int[_pool.Length];
@@ -148,6 +191,7 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
             if (canvas && canvas.renderMode == RenderMode.WorldSpace && canvas.worldCamera == null)
                 canvas.worldCamera = Camera.main;
 
+            _canvases[i] = canvas;
             _pool[i]  = instance.transform;
             _views[i] = instance.GetComponentInChildren<LevelNodeView>(true);
             _edges[i] = instance.GetComponentInChildren<CurvedMapNodeEdgeMaterials>(true);
@@ -174,6 +218,8 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
         _edges  = null;
         _states = null;
         _ids    = null;
+        _canvases = null;
+        _flat   = null;
         _pool = null;
     }
 
@@ -185,23 +231,87 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
             Build();
         }
 
-        if (_pool != null) UpdateWindow();
+        if (_pool == null) return;
+
+        UpdateWindow();
+        ApplyCurve();
     }
+
+    // El shader dobla los vértices al dibujar, pero un nodo es un Canvas con texto: nada de eso
+    // pasa por nuestro shader. Así que a los nodos los dobla C#, moviéndolos enteros.
+    //
+    // Cada frame y no una sola vez al colocarlos porque la caída depende de la distancia a la
+    // cámara, y la cámara no se mueve: se mueve el mundo. Un nodo quieto cambia de altura solo
+    // con que el jugador arrastre.
+    void ApplyCurve()
+    {
+        if (Eye == null) return;
+
+        for (int slot = 0; slot < _pool.Length; slot++)
+            if (_slotLevel[slot] >= 0)
+                Place(slot);
+    }
+
+    // Dónde y cómo queda un nodo una vez aplicada la curva.
+    //
+    // La inclinación NO es fija: el nodo se apoya sobre el suelo, y el suelo baja cada vez más
+    // rápido cuanto más lejos está. Con un ángulo constante, los de arriba de la pantalla se ven
+    // girados respecto de la pendiente en la que deberían estar acostados.
+    //
+    // Solo se inclina en X. Girarlo también en Y para que siga la curva del camino haría que el
+    // número quedara torcido en cada ese, y el número es lo que hay que leer.
+    void Place(int slot)
+    {
+        Vector3 world  = transform.TransformPoint(_flat[slot]);
+        Vector3 curved = WorldMapCurve.Curve(world, Eye);
+
+        _pool[slot].localPosition = transform.InverseTransformPoint(curved);
+        _pool[slot].localRotation = Quaternion.Euler(tilt + WorldMapCurve.Pitch(world, Eye), 0f, 0f);
+    }
+
+    // Camera.main recorre la escena buscando por tag, así que no puede llamarse una vez por nodo
+    // y por frame.
+    Camera Eye => _camera != null ? _camera : _camera = Camera.main;
 
     void UpdateWindow()
     {
         float spacing = Mathf.Max(0.01f, _definition.Layout.spacing);
         float offset  = scroll ? scroll.Offset : 0f;
 
-        // El nivel i está en z = i * spacing dentro del mundo, y el mundo está corrido -offset.
-        // Así que lo que la cámara tiene delante va de (offset - behind) a (offset + ahead).
-        int first = Mathf.Max(0, Mathf.FloorToInt((offset - behind) / spacing));
-        int last  = Mathf.Min(_definition.Levels - 1, Mathf.CeilToInt((offset + ahead) / spacing));
+        // Lo que la cámara tiene delante, en unidades de mundo, pasado a índice de mundo.
+        //
+        // De ahí a qué NIVELES son hay que preguntarle a la definición, no dividir: entre
+        // capítulo y capítulo hay niveles de aire, así que el índice de mundo corre más rápido
+        // que el de nivel. Dividiendo, el desfase se acumula capítulo a capítulo y a la altura
+        // del quinto la ventana pedía nodos que ya habían quedado muy atrás — por eso el camino
+        // seguía y los nodos desaparecían.
+        float from = (offset - behind) / spacing;
+        float to   = (offset + ahead)  / spacing;
+
+        if (!_definition.LevelsBetween(from, to, out int first, out int last))
+        {
+            // Sobre el hueco entre dos islas no hay ningún nivel que mostrar. 1 y 0 es un rango
+            // vacío cualquiera; sirve de marca para no repetir el barrido en cada frame.
+            if (_first == 1 && _last == 0) return;
+
+            ReleaseOutside(1, 0);
+            _first = 1; _last = 0;
+            return;
+        }
 
         if (first == _first && last == _last) return;
 
         // Primero se sueltan los que salieron: si se ligaran los nuevos antes, un slot reusado
         // se apagaría justo después de haberlo puesto.
+        ReleaseOutside(first, last);
+
+        for (int i = first; i <= last; i++) Bind(i);
+
+        _first = first; _last = last;
+    }
+
+    void ReleaseOutside(int first, int last)
+    {
         for (int slot = 0; slot < _pool.Length; slot++)
         {
             int held = _slotLevel[slot];
@@ -210,10 +320,6 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
             _slotLevel[slot] = -1;
             _pool[slot].gameObject.SetActive(false);
         }
-
-        for (int i = first; i <= last; i++) Bind(i);
-
-        _first = first; _last = last;
     }
 
     // Mismo flujo que LevelMapController.OnLevelSelected(): sin vidas no se entra, y si hay un
@@ -257,13 +363,19 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
         if (index >= entries.Count) return;
 
         var node = _pool[slot];
-        Vector3 position = WorldMapPath.Sample(index, _definition.Layout);
+        // Al índice DE MUNDO, no al del array: entre capítulo y capítulo hay una separación y
+        // sin esto el nodo 61 caería pegado al 60 en vez de al principio de la isla siguiente.
+        Vector3 position = WorldMapPath.Sample(_definition.WorldIndex(index), _definition.Layout);
         position.y += height;
-        node.localPosition = position;
 
-        // Solo se inclina en X. Girarlo también en Y para que siga la curva del camino haría
-        // que el número quedara torcido en cada ese, y el número es lo que hay que leer.
-        node.localRotation = Quaternion.Euler(tilt, 0f, 0f);
+        _flat[slot] = position;
+        Place(slot);
+
+        // El nodo y las decoraciones son transparentes y se cruzan a lo ancho del camino, así que
+        // el orden no puede salir de la distancia a la cámara: se calcula con la misma escala que
+        // las piezas del costado, más un empujón para que el nodo gane a las de su profundidad.
+        if (_canvases[slot])
+            _canvases[slot].sortingOrder = _definition.SortingOrder(position.z) + sortingBias;
 
         // Mismo criterio que LevelMapController.GetState(): no se puede reusar directo porque
         // allá es un método privado de un MonoBehaviour de otra escena.
@@ -279,6 +391,11 @@ public class WorldMapNodes : MonoBehaviour, IWorldMapRebuildable
         // sobre un objeto apagado.
         node.gameObject.SetActive(true);
         if (_views[slot]) _views[slot].Setup(id, state, SaveManager.GetLevelStars(id));
+
+        // Se esconde al ligarlo y no después: el nodo puede entrar en pantalla varios frames antes
+        // de que arranque la animación, y un solo frame con las estrellas puestas ya arruina el
+        // efecto.
+        if (_pendingReveal != 0 && id == _pendingReveal && _views[slot]) _views[slot].HideForReveal();
 
         // El canto de moneda va aparte: LevelNodeView se comparte con el mapa plano y no sabe
         // nada de cilindros, así que el material dorado lo aplica este otro componente.

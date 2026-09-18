@@ -73,18 +73,24 @@ public class WorldMapTrail : MonoBehaviour, IWorldMapRebuildable
         BuildProfile();
 
         var layout = _definition.Layout;
-        int levels = _definition.Levels;
 
         var vertices = new List<Vector3>();
         var uvs      = new List<Vector2>();
         var colors   = new List<Color>();
         var indices  = new List<int>();
 
-        // Un tramo por hueco entre nodos. Cada uno arranca y termina por separado: si fuera una
-        // cinta continua con agujeros, los bordes de cada corte compartirían vértices con el
-        // tramo siguiente y los triángulos cruzarían el nodo.
-        for (int i = 0; i < levels - 1; i++)
-            AppendSegment(vertices, uvs, colors, indices, i + nodeGap, i + 1 - nodeGap, layout);
+        // Un tramo por hueco entre nodos, y solo DENTRO de cada capítulo: entre una isla y la
+        // siguiente no hay banda que las una.
+        //
+        // Cada tramo arranca y termina por separado. Si fuera una cinta continua con agujeros,
+        // los bordes de cada corte compartirían vértices con el tramo siguiente y los triángulos
+        // cruzarían por encima del nodo.
+        foreach (var span in _definition.VisibleSpans())
+            for (int i = 0; i < span.count - 1; i++)
+            {
+                float from = span.start + i;
+                AppendSegment(vertices, uvs, colors, indices, from + nodeGap, from + 1 - nodeGap, layout);
+            }
 
         if (_mesh == null)
         {
@@ -106,10 +112,11 @@ public class WorldMapTrail : MonoBehaviour, IWorldMapRebuildable
         // Mismo motivo que el suelo y el camino: los bounds salen de los vértices planos, pero el
         // shader los hunde al dibujar. Sin agrandarlos, la banda desaparece al mirar lejos.
         var bounds = _mesh.bounds;
-        bounds.Expand(new Vector3(0f, _definition.Length, 0f));
+        bounds.Expand(new Vector3(0f, _definition.Length * layout.spacing, 0f));
         _mesh.bounds = bounds;
 
-        GetComponent<MeshFilter>().sharedMesh = _mesh;
+        GetComponent<MeshFilter>().sharedMesh   = _mesh;
+        GetComponent<MeshRenderer>().sortingOrder = WorldMapDefinition.ORDER_TRAIL;
     }
 
     // Perfil de losa: plano arriba y un cuarto de círculo en cada canto. Los puntos se reparten

@@ -20,7 +20,10 @@ float _CurveSide;    // cuánto caen los costados respecto del centro
 float _CurveStart;   // hasta acá el terreno queda plano; la curva arranca después
 float _CurveCenterX; // el eje sobre el que NO hay caída lateral
 
-float3 CurveWorldPos(float3 positionWS)
+// 'amount' es por material y casi siempre 1. Existe para los nodos: ellos se doblan moviendo su
+// Transform en C# (llevan un Canvas y texto, que no pasan por este shader), así que su canto de
+// moneda tiene que quedarse quieto o la curva se aplicaría dos veces.
+float3 CurveWorldPos(float3 positionWS, float amount)
 {
     // Distancia hacia adelante desde donde empieza la curva. El tramo cercano se deja plano
     // porque es donde está el nodo actual: si se doblara ahí, el nodo bajo el dedo se movería
@@ -31,7 +34,7 @@ float3 CurveWorldPos(float3 positionWS)
     // horizonte se doble cada vez más rápido hacia el fondo.
     float side = positionWS.x - _CurveCenterX;
 
-    positionWS.y -= _CurveDepth * depth * depth + _CurveSide * side * side;
+    positionWS.y -= (_CurveDepth * depth * depth + _CurveSide * side * side) * amount;
     return positionWS;
 }
 

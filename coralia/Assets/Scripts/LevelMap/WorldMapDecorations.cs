@@ -15,6 +15,9 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
 {
     [SerializeField] DecorationCatalog catalog;
 
+    [Tooltip("El material curvo que se le pone a cada sprite. Sin esto las decoraciones se quedan rectas mientras el resto del mapa se dobla. Uno solo sirve para todas: cada sprite le pasa su propia textura.")]
+    [SerializeField] Material spriteMaterial;
+
     [Tooltip("Multiplica el tamaño de TODAS las decoraciones. Para ajustar el conjunto sin tocar el catálogo ni los JSON.")]
     [SerializeField] float sizeMultiplier = 1f;
 
@@ -23,9 +26,6 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
 
     [Tooltip("Apartar del camino siguiendo su perpendicular. Apagado aparta solo en X, y así cada pieza queda a la misma profundidad que el nodo de su índice.")]
     [SerializeField] bool perpendicularOffset = true;
-
-    [Tooltip("Cuántos escalones de orden de dibujado por unidad de mundo. Más alto separa mejor piezas cercanas, pero el orden tiene tope (±32767) y un mundo largo lo puede pasar.")]
-    [SerializeField] float orderPerUnit = 4f;
 
     [Tooltip("Cuánto se inclinan hacia atrás, girando sobre su base. 0 = paradas de frente.")]
     [Range(0f, 80f)]
@@ -44,7 +44,12 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
     readonly Dictionary<string, float> _sourceHeight = new();
 
     readonly List<Transform> _planted = new();
-    readonly List<float>     _plantedZ = new();
+
+    // Dónde iría cada pieza si el mundo fuera plano. Es la posición de referencia: la de verdad
+    // se recalcula por frame aplicándole la curva.
+    readonly List<Vector3>   _plantedFlat = new();
+
+    Camera _camera;
 
     bool _needsRebuild = true;
 
@@ -68,41 +73,19 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
 
         // Un capítulo por vez: los `at` de cada archivo arrancan en 0, así que hay que correrlos
         // según dónde empieza ese capítulo dentro del mundo.
-        foreach (var (chapter, firstLevel, count) in Chapters())
+        foreach (var span in _definition.VisibleSpans())
         {
-            var data = LoadChapter(chapter);
+            var data = LoadChapter(span.number);
             if (data?.decorations == null) continue;
 
             foreach (var placement in data.decorations)
-                Plant(placement, firstLevel, count, rng);
+                Plant(placement, span.start, span.count, rng);
         }
     }
 
     // Qué capítulos hay y en qué nivel arranca cada uno, sacado del índice: así agregar niveles a
     // un capítulo corre el siguiente solo, sin tener que tocar ningún número acá.
-    IEnumerable<(int chapter, int firstLevel, int count)> Chapters()
-    {
-        var entries = LevelLoader.Entries;
-
-        // Se corta en _definition.Levels y no en entries.Count: con 'Levels Override' puesto el
-        // mundo tiene menos niveles de los que hay en disco, y sin esto el 'end' de un capítulo
-        // se calcularía con su longitud real y caería fuera del mapa que se está probando.
-        int total = Mathf.Min(entries.Count, _definition.Levels);
-        if (total == 0) yield break;
-
-        int start = 0;
-
-        for (int i = 1; i <= total; i++)
-        {
-            bool last = i == total;
-            if (!last && entries[i].chapter == entries[start].chapter) continue;
-
-            yield return (entries[start].chapter, start, i - start);
-            start = i;
-        }
-    }
-
-    void Plant(DecorationPlacement placement, int firstLevel, int levelsInChapter, System.Random rng)
+    void Plant(DecorationPlacement placement, float chapterStart, int levelsInChapter, System.Random rng)
     {
         var entry = catalog.Find(placement.id);
         if (entry == null)
@@ -114,7 +97,7 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         var instance = Build(entry, placement);
         if (instance == null) return;
 
-        float at     = firstLevel + placement.IndexIn(levelsInChapter);
+        float at     = chapterStart + placement.IndexIn(levelsInChapter);
         float offset = placement.side == "right" ? placement.offset : -placement.offset;
 
         Vector3 ground = WorldMapPath.SampleOffset(at, _definition.Layout, offset, perpendicularOffset);
@@ -139,19 +122,26 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         tr.localPosition = ground;
         tr.localRotation = Quaternion.Euler(tilt, 0f, 0f);
 
-        // Orden de dibujado por profundidad: lo que está más cerca de la cámara se pinta encima.
-        // Sin esto Unity ordena los transparentes por distancia al CENTRO de sus bounds, y una
-        // roca alta y lejana puede ganarle a un coral bajo y cercano.
+        // El orden lo decide el mundo, para que nodos y decoraciones compartan la misma escala.
         //
         // Se SUMA al orden que traiga cada renderer en vez de pisarlo: dentro de un grupo, las
         // plantas y las rocas ya vienen ordenadas entre sí desde el prefab, y pisarlas aplanaría
         // esa composición.
-        int order = Mathf.Clamp(Mathf.RoundToInt(-ground.z * orderPerUnit), -20000, 20000);
+        int order = _definition.SortingOrder(ground.z);
         foreach (var renderer in instance.GetComponentsInChildren<Renderer>(true))
+        {
             renderer.sortingOrder += order;
 
+            // Un único material para todas las piezas: SpriteRenderer le pasa la textura de su
+            // sprite por _MainTex, así que el material no necesita saber cuál es. Sin esto los
+            // sprites usan el material por defecto de Unity, que no conoce la curva y los deja
+            // rectos mientras el suelo se hunde.
+            if (spriteMaterial && renderer is SpriteRenderer)
+                renderer.sharedMaterial = spriteMaterial;
+        }
+
         _planted.Add(tr);
-        _plantedZ.Add(ground.z);
+        _plantedFlat.Add(ground);
     }
 
     // Alto de la pieza tal como viene del prefab. En un grupo es el de TODA la composición: si se
@@ -211,7 +201,7 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         }
 
         _planted.Clear();
-        _plantedZ.Clear();
+        _plantedFlat.Clear();
     }
 
     // Apaga lo que queda lejos. Es lo único que corre por frame: comparar una Z contra un número
@@ -225,22 +215,38 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
             Build();
         }
 
-        var camera = Camera.main;
-        if (camera == null || _planted.Count == 0) return;
+        if (_camera == null) _camera = Camera.main;
+        if (_camera == null || _planted.Count == 0) return;
 
-        float cameraZ = camera.transform.position.z - transform.position.z;
+        float cameraZ = _camera.transform.position.z - transform.position.z;
 
         for (int i = 0; i < _planted.Count; i++)
         {
             if (!_planted[i]) continue;
 
-            float distance = _plantedZ[i] - cameraZ;
+            float distance = _plantedFlat[i].z - cameraZ;
             bool  visible  = distance > -cullRange * 0.25f && distance < cullRange;
 
             if (_planted[i].gameObject.activeSelf != visible)
                 _planted[i].gameObject.SetActive(visible);
+
+            if (visible)
+                _planted[i].localPosition = Curved(_plantedFlat[i]);
         }
     }
+
+    // La curva se la aplica C# a la pieza entera, no el shader, aunque el material sepa hacerlo.
+    //
+    // El motivo es el descarte por cuadro de Unity: decide si dibujar un objeto mirando sus
+    // límites SIN curvar, y el shader recién los mueve al dibujar. Pasado el horizonte, la pieza
+    // plana queda por encima del borde superior y Unity la descarta, mientras que su versión
+    // hundida sí estaría en pantalla. Por eso desaparecían justo al llegar al horizonte.
+    //
+    // Moviendo el Transform, los límites acompañan y el descarte vuelve a ser correcto. Y no se
+    // pierde nada visualmente: un sprite tiene cuatro vértices casi a la misma profundidad, así
+    // que la curva nunca lo dobló — solo lo bajaba.
+    Vector3 Curved(Vector3 local) =>
+        transform.InverseTransformPoint(WorldMapCurve.Curve(transform.TransformPoint(local), _camera));
 
     static ChapterData LoadChapter(int chapter)
     {

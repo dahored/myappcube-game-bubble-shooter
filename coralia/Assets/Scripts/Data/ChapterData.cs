@@ -7,8 +7,8 @@ using UnityEngine;
 // TODO lo que haya en Resources/Levels y lo parsean como LevelData, así que un archivo de capítulo
 // ahí adentro aparecería como un nivel fantasma con id 0.
 //
-// Un capítulo describe el MUNDO: qué decoraciones tiene a los costados del camino y, más adelante,
-// texturas de suelo, fondo y música. Los niveles siguen siendo archivos aparte.
+// Un capítulo describe el MUNDO: qué suelo tiene su isla, qué decoraciones hay a los costados del
+// camino y, más adelante, fondo y música. Los niveles siguen siendo archivos aparte.
 [Serializable]
 public class ChapterData
 {
@@ -19,6 +19,13 @@ public class ChapterData
 
     public string NameKey     => $"chapter.{chapter}.name";
     public string DisplayName => LocaleManager.Get(NameKey, name);
+
+    // Qué suelo usa la isla de este capítulo. Es un id de la lista de materiales de
+    // WorldMapGround, no una ruta: el JSON no puede referenciar assets de Unity.
+    //
+    // Vacío o ausente = el suelo por defecto, así que agregarlo en un capítulo no obliga a
+    // agregarlo en todos.
+    public string ground;
 
     public DecorationPlacement[] decorations;
 }

@@ -45,37 +45,99 @@ public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
         _definition = WorldMapDefinition.For(this);
         if (_definition == null) return;
 
-        int   levels = _definition.Levels;
-        float first  = -leadIn;
-        float last   = (levels - 1) + leadOut;
-        int   steps  = Mathf.Max(1, Mathf.RoundToInt((last - first) * Mathf.Max(1, stepsPerLevel)));
-
         var vertices = new List<Vector3>();
         var uvs      = new List<Vector2>();
         var indices  = new List<int>();
 
+        // Un camino por capítulo: cada isla tiene el suyo y entre una y otra no hay nada.
+        foreach (var span in _definition.VisibleSpans())
+            AppendPath(vertices, uvs, indices, span.start - leadIn, span.End + leadOut);
+
+        Finish(vertices, uvs, indices);
+    }
+
+    // La cinta entera, puntas incluidas: una sucesión de filas de dos vértices que se van
+    // cosiendo entre sí. Las puntas no son un abanico aparte, son filas más angostas.
+    //
+    // Antes la punta era medio disco con un vértice en el centro, y con la curvatura encendida
+    // eso abría una rendija: el borde de la cinta es UN segmento recto entre sus dos esquinas,
+    // mientras que el borde del abanico pasa por el vértice del centro. La caída lateral es
+    // cuadrática, así que el centro no cae lo mismo que el promedio de las esquinas y los dos
+    // bordes dejaban de coincidir. Se veía el suelo entre medio.
+    void AppendPath(List<Vector3> vertices, List<Vector2> uvs, List<int> indices, float first, float last)
+    {
+        int start = vertices.Count;
+        int rows  = 0;
+
+        // Punta de entrada: de la cúspide hacia la cinta.
+        for (int i = endSegments; i >= 1; i--)
+            AppendCapRow(vertices, uvs, indices, start, ref rows, first, -1f, i);
+
+        int steps = Mathf.Max(1, Mathf.RoundToInt((last - first) * Mathf.Max(1, stepsPerLevel)));
         for (int i = 0; i <= steps; i++)
         {
-            float f = first + i / (float)Mathf.Max(1, stepsPerLevel);
+            // Interpolado y no sumando 1/stepsPerLevel: así la última fila cae EXACTAMENTE en
+            // 'last' aunque el tramo no dé un número redondo de cortes.
+            float f = Mathf.Lerp(first, last, i / (float)steps);
             WorldMapPath.SampleFrame(f, layout, out var point, out var forward);
 
-            Vector3 right = Vector3.Cross(Vector3.up, forward).normalized * (width * 0.5f);
-            point.y += height;
-
-            float along = f / Mathf.Max(0.01f, tiling);
-
-            vertices.Add(point - right); uvs.Add(new Vector2(0f, along));
-            vertices.Add(point + right); uvs.Add(new Vector2(1f, along));
-
-            if (i == 0) continue;
-
-            int a = (i - 1) * 2;
-            indices.Add(a);     indices.Add(a + 2); indices.Add(a + 1);
-            indices.Add(a + 1); indices.Add(a + 2); indices.Add(a + 3);
+            AppendRow(vertices, uvs, indices, start, ref rows,
+                      point, Vector3.Cross(Vector3.up, forward).normalized,
+                      width * 0.5f, f / Mathf.Max(0.01f, tiling));
         }
 
-        AppendCap(vertices, uvs, indices, first, true);
-        AppendCap(vertices, uvs, indices, last,  false);
+        for (int i = 1; i <= endSegments; i++)
+            AppendCapRow(vertices, uvs, indices, start, ref rows, last, 1f, i);
+    }
+
+    // Una fila de la punta redondeada: se aleja del extremo siguiendo un cuarto de círculo y al
+    // mismo tiempo se angosta, así que el conjunto dibuja el medio disco de siempre — pero cosido
+    // a la cinta y con la misma densidad de vértices, que es lo que le permite seguir la curva.
+    void AppendCapRow(List<Vector3> vertices, List<Vector2> uvs, List<int> indices,
+                      int start, ref int rows, float f, float direction, int step)
+    {
+        if (endSegments <= 0) return;
+
+        WorldMapPath.SampleFrame(f, layout, out var center, out var forward);
+
+        float angle  = Mathf.PI * 0.5f * step / endSegments;
+        float radius = width * 0.5f;
+        float reach  = radius * Mathf.Sin(angle) * direction;
+
+        // Cuánto avanza la V por unidad de mundo: la punta se sale del recorrido, así que su
+        // coordenada no puede salir del índice de nivel como la del cuerpo.
+        float perUnit = 1f / Mathf.Max(0.01f, tiling * layout.spacing);
+
+        AppendRow(vertices, uvs, indices, start, ref rows,
+                  center + forward * reach,
+                  Vector3.Cross(Vector3.up, forward).normalized,
+                  radius * Mathf.Cos(angle),
+                  f / Mathf.Max(0.01f, tiling) + reach * perUnit);
+    }
+
+    void AppendRow(List<Vector3> vertices, List<Vector2> uvs, List<int> indices,
+                   int start, ref int rows, Vector3 point, Vector3 right, float halfWidth, float along)
+    {
+        point.y += height;
+
+        // La U se saca del ancho REAL de la fila, no de 0 a 1: en las puntas la fila es más
+        // angosta, y estirar la textura de borde a borde ahí haría que el dibujo se apretara
+        // justo donde más se mira.
+        float u = halfWidth / Mathf.Max(0.01f, width);
+
+        vertices.Add(point - right * halfWidth); uvs.Add(new Vector2(0.5f - u, along));
+        vertices.Add(point + right * halfWidth); uvs.Add(new Vector2(0.5f + u, along));
+
+        rows++;
+        if (rows < 2) return;
+
+        int a = start + (rows - 2) * 2;
+        indices.Add(a);     indices.Add(a + 2); indices.Add(a + 1);
+        indices.Add(a + 1); indices.Add(a + 2); indices.Add(a + 3);
+    }
+
+    void Finish(List<Vector3> vertices, List<Vector2> uvs, List<int> indices)
+    {
 
         if (_mesh == null)
         {
@@ -94,60 +156,10 @@ public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
         _mesh.RecalculateBounds();
 
         var bounds = _mesh.bounds;
-        bounds.Expand(new Vector3(0f, _definition.Length, 0f));
+        bounds.Expand(new Vector3(0f, _definition.Length * layout.spacing, 0f));
         _mesh.bounds = bounds;
 
-        GetComponent<MeshFilter>().sharedMesh = _mesh;
-    }
-
-    // Una punta redondeada es medio disco pegado al extremo: un vértice en el centro y un
-    // abanico de triángulos hasta el borde. Sin esto la cinta termina en un corte recto, que se
-    // lee como un camino partido en vez de uno que empieza.
-    //
-    // El semicírculo va hacia AFUERA del recorrido — hacia atrás en el arranque y hacia adelante
-    // en el final — así la tapa sobresale en vez de comerse el último tramo.
-    void AppendCap(List<Vector3> vertices, List<Vector2> uvs, List<int> indices, float f, bool start)
-    {
-        if (endSegments <= 0) return;
-
-        WorldMapPath.SampleFrame(f, layout, out var center, out var forward);
-        center.y += height;
-
-        Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
-        Vector3 out_  = start ? -forward : forward;
-        float   radius = width * 0.5f;
-
-        // Las UV de la tapa se sacan proyectando cada vértice sobre los mismos ejes que la cinta,
-        // no repartiendo el abanico de 0 a 1. Si se reparten, la textura sale en rayos desde el
-        // centro y la punta se ve como un abanico pintado en vez de la continuación del camino.
-        float along   = f / Mathf.Max(0.01f, tiling);
-        float perUnit = 1f / Mathf.Max(0.01f, tiling * layout.spacing); // cuánto avanza la V por unidad de mundo
-
-        int centerIndex = vertices.Count;
-        vertices.Add(center);
-        uvs.Add(new Vector2(0.5f, along));
-
-        for (int i = 0; i <= endSegments; i++)
-        {
-            float angle = Mathf.PI * i / endSegments;
-
-            // Arranca en un borde de la cinta, pasa por la punta y termina en el otro borde.
-            Vector3 dir    = right * Mathf.Cos(angle) + out_ * Mathf.Sin(angle);
-            Vector3 offset = dir * radius;
-
-            vertices.Add(center + offset);
-            uvs.Add(new Vector2(
-                0.5f + Vector3.Dot(offset, right)   / width,
-                along + Vector3.Dot(offset, forward) * perUnit));
-
-            if (i == 0) continue;
-
-            int edge = centerIndex + i;
-
-            // El orden se invierte entre las dos puntas: el abanico gira al revés en cada una y
-            // con un solo orden, una de las dos quedaría mirando hacia abajo y no se vería.
-            if (start) { indices.Add(centerIndex); indices.Add(edge);        indices.Add(edge + 1); }
-            else       { indices.Add(centerIndex); indices.Add(edge + 1);    indices.Add(edge); }
-        }
+        GetComponent<MeshFilter>().sharedMesh   = _mesh;
+        GetComponent<MeshRenderer>().sortingOrder = WorldMapDefinition.ORDER_PATH;
     }
 }

@@ -1,6 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-// El suelo del mapa: un plano en XZ generado por código, subdividido.
+// El suelo del mapa: una isla por capítulo, cada una un plano en XZ generado por código.
 //
 // Subdividido porque la curvatura mueve VÉRTICES. Un quad de cuatro esquinas no se dobla: se
 // inclina. Para que el terreno se hunda parejo hacia el horizonte hace falta que tenga vértices
@@ -8,15 +9,33 @@ using UnityEngine;
 //
 // Generado por código y no como asset para poder cambiar largo y densidad desde el Inspector sin
 // reexportar nada — la densidad es el primer número que hay que buscar a ojo en el dispositivo.
+//
+// Cada isla es un GameObject aparte y no submallas de una sola: así el material sale del capítulo
+// y no de una posición en una lista. La ventana de capítulos visibles ROTA al scrollear, y con
+// submallas el orden de los materiales tendría que rotar con ella sin equivocarse nunca.
 [ExecuteAlways]
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
 {
+    [System.Serializable]
+    public class GroundMaterial
+    {
+        [Tooltip("Cómo se lo nombra en el JSON del capítulo, en el campo 'ground'.")]
+        public string   id;
+        public Material material;
+    }
+
     [Tooltip("Cuánto sobra de suelo a cada lado del zigzag.")]
     [SerializeField] float sideMargin = 10f;
 
-    [Tooltip("Cuánto sobra de suelo antes del primer nivel y después del último.")]
+    [Tooltip("Cuánto sobra de suelo en las puntas INTERIORES de cada isla, las que dan al capítulo vecino. Es lo que decide la separación entre capítulos, junto con 'Chapter Gap'.")]
     [SerializeField] float endMargin = 12f;
+
+    [Tooltip("Cuánto sobra antes del primer capítulo del mundo. Va aparte del margen interior porque ahí no hay isla vecina que separar, solo agua de más.")]
+    [SerializeField] float outerStartMargin = 2f;
+
+    [Tooltip("Cuánto sobra después del último capítulo. Separado del de arriba porque no cumplen la misma función: este decide cuánto camino se alcanza a ver al final, y el otro solo cuánta agua queda debajo del primer nodo.")]
+    [SerializeField] float outerEndMargin = 2f;
 
     [Tooltip("Cuántos cortes por unidad de mundo. Más alto es más suave y más caro.")]
     [SerializeField] float density = 0.5f;
@@ -24,78 +43,222 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Cada cuántas unidades de mundo se repite la textura.")]
     [SerializeField] float tiling = 8f;
 
+    [Header("Suelo por capítulo")]
+    [Tooltip("Qué material le toca a cada 'ground' de los Chapter_N.json. Un capítulo sin 'ground' —o con uno que no esté acá— usa el material de este mismo objeto.")]
+    [SerializeField] GroundMaterial[] materials;
+
+    const string ISLAND_PREFIX = "Island ";
+
     WorldMapDefinition _definition;
-    Mesh _mesh;
 
-    void OnEnable()  => Rebuild();
-    void OnValidate() => Rebuild();
+    // Las islas vivas, en el mismo orden que VisibleSpans(). Se reciclan entre reconstrucciones:
+    // al cruzar de capítulo cambia CUÁL se dibuja, no cuántas, así que crear y destruir objetos
+    // en cada cruce sería basura para nada.
+    readonly List<MeshFilter> _islands = new();
 
-    public void Rebuild()
+    bool _needsRebuild = true;
+
+    // Los extremos del terreno en unidades de mundo, con el margen de cada punta ya incluido.
+    // Los lee el scroll para saber hasta dónde dejar arrastrar, así que salen de TODOS los
+    // capítulos y no solo de los que están construidos ahora mismo.
+    public float WorldStart
+    {
+        get
+        {
+            var map = _definition != null ? _definition : WorldMapDefinition.For(this);
+            if (map == null) return 0f;
+
+            var spans = map.Spans();
+            return spans.Count == 0 ? 0f : (spans[0].start - outerStartMargin) * map.Layout.spacing;
+        }
+    }
+
+    public float WorldEnd
+    {
+        get
+        {
+            var map = _definition != null ? _definition : WorldMapDefinition.For(this);
+            if (map == null) return 0f;
+
+            var spans = map.Spans();
+            return spans.Count == 0 ? 0f : (spans[^1].End + outerEndMargin) * map.Layout.spacing;
+        }
+    }
+
+    void OnEnable()   => _needsRebuild = true;
+    void OnValidate() => _needsRebuild = true;
+
+    // Igual que las decoraciones: nunca dentro de OnValidate. Ahí Unity ignora DestroyImmediate y
+    // se queja si se activan objetos, y ahora esto crea GameObjects, no solo una malla.
+    public void Rebuild() => _needsRebuild = true;
+
+    void LateUpdate()
+    {
+        if (!_needsRebuild) return;
+
+        _needsRebuild = false;
+        Build();
+    }
+
+    void Build()
     {
         _definition = WorldMapDefinition.For(this);
         if (_definition == null) return;
 
-        // El tamaño sale del recorrido, no de dos números escritos a mano: al cambiar el zigzag
-        // o la separación entre niveles el suelo acompaña solo, sin quedar corto ni sobrar.
-        float width  = _definition.Layout.zigzag * 2f + sideMargin * 2f;
-        float length = _definition.Length + endMargin * 2f;
+        Adopt();
 
-        int cols = Mathf.Max(1, Mathf.RoundToInt(width  * density));
-        int rows = Mathf.Max(1, Mathf.RoundToInt(length * density));
+        // La geometría vive en las islas; este objeto queda solo como contenedor y como fuente
+        // del material por defecto.
+        GetComponent<MeshFilter>().sharedMesh = null;
 
-        var vertices = new Vector3[(cols + 1) * (rows + 1)];
-        var uvs      = new Vector2[vertices.Length];
-        var indices  = new int[cols * rows * 6];
+        // El ancho sale del recorrido: al cambiar el zigzag el suelo acompaña solo, sin quedar
+        // corto ni sobrar.
+        float width = _definition.Layout.zigzag * 2f + sideMargin * 2f;
 
-        for (int z = 0, v = 0; z <= rows; z++)
-        for (int x = 0; x <= cols; x++, v++)
+        var all     = _definition.Spans();
+        int firstNumber = all.Count > 0 ? all[0].number  : int.MinValue;
+        int lastNumber  = all.Count > 0 ? all[^1].number : int.MaxValue;
+
+        var spans = _definition.VisibleSpans();
+
+        for (int i = 0; i < spans.Count; i++)
+            BuildIsland(Island(i), spans[i], width,
+                        spans[i].number == firstNumber, spans[i].number == lastNumber);
+
+        // Las que sobran se apagan en vez de destruirse: la ventana vuelve a crecer al scrollear
+        // hacia el otro lado.
+        for (int i = spans.Count; i < _islands.Count; i++)
+            if (_islands[i]) _islands[i].gameObject.SetActive(false);
+    }
+
+    // Los objetos DontSave sobreviven a una recompilación de scripts, pero la lista no: sin esto,
+    // cada recompilación en el editor construiría islas nuevas encima de las que ya estaban.
+    void Adopt()
+    {
+        if (_islands.Count > 0) return;
+
+        foreach (Transform child in transform)
+            if (child.name.StartsWith(ISLAND_PREFIX) && child.TryGetComponent<MeshFilter>(out var filter))
+                _islands.Add(filter);
+    }
+
+    MeshFilter Island(int index)
+    {
+        while (_islands.Count <= index) _islands.Add(null);
+
+        if (_islands[index] == null)
         {
-            float px = (x / (float)cols - 0.5f) * width;
+            var go = new GameObject(ISLAND_PREFIX + index, typeof(MeshFilter), typeof(MeshRenderer));
 
-            // Arranca antes del primer nivel: el camino tiene que nacer con suelo por detrás,
-            // no en el borde mismo del mundo.
-            float pz =  z / (float)rows * length - endMargin;
+            // DontSave porque se regenera sola en cada OnEnable: sin esto, cada guardado de la
+            // escena dejaría las islas de ese momento adentro del .unity y al abrirla aparecerían
+            // duplicadas junto a las recién construidas.
+            go.hideFlags = HideFlags.DontSave;
+            go.transform.SetParent(transform, false);
 
-            vertices[v] = new Vector3(px, 0f, pz);
-            uvs[v]      = new Vector2(px / tiling, pz / tiling);
+            _islands[index] = go.GetComponent<MeshFilter>();
         }
 
-        for (int z = 0, i = 0; z < rows; z++)
-        for (int x = 0; x < cols; x++)
-        {
-            int a = z * (cols + 1) + x;
-            int b = a + cols + 1;
+        _islands[index].gameObject.SetActive(true);
+        return _islands[index];
+    }
 
-            indices[i++] = a;     indices[i++] = b;     indices[i++] = a + 1;
-            indices[i++] = a + 1; indices[i++] = b;     indices[i++] = b + 1;
+    void BuildIsland(MeshFilter filter, WorldMapDefinition.Span span, float width,
+                     bool worldStart, bool worldEnd)
+    {
+        filter.gameObject.name = $"{ISLAND_PREFIX}{span.number}";
+
+        var vertices = new List<Vector3>();
+        var uvs      = new List<Vector2>();
+        var indices  = new List<int>();
+
+        AppendIsland(vertices, uvs, indices, span, width, worldStart, worldEnd);
+
+        var mesh = filter.sharedMesh;
+        if (mesh == null)
+        {
+            mesh = new Mesh { name = "WorldMapGround", hideFlags = HideFlags.DontSave };
+            filter.sharedMesh = mesh;
         }
 
-        if (_mesh == null)
-        {
-            _mesh = new Mesh { name = "WorldMapGround" };
-            _mesh.hideFlags = HideFlags.DontSave; // generado: no tiene por qué ensuciar la escena
-        }
+        mesh.Clear();
 
-        _mesh.Clear();
-
-        // Un plano largo pasa de 65k vértices enseguida con densidad alta; sin esto Unity lo
+        // Un capítulo largo pasa de 65k vértices enseguida con densidad alta; sin esto Unity lo
         // corta en silencio y el suelo aparece a la mitad.
-        _mesh.indexFormat = vertices.Length > 65000
+        mesh.indexFormat = vertices.Count > 65000
             ? UnityEngine.Rendering.IndexFormat.UInt32
             : UnityEngine.Rendering.IndexFormat.UInt16;
 
-        _mesh.vertices  = vertices;
-        _mesh.uv        = uvs;
-        _mesh.triangles = indices;
-        _mesh.RecalculateBounds();
+        mesh.SetVertices(vertices);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(indices, 0);
+        mesh.RecalculateBounds();
 
         // Los bounds los calcula Unity sobre los vértices PLANOS, pero el shader los hunde en Y
         // al dibujar. Sin agrandarlos, el suelo desaparece al mirar hacia el horizonte porque
         // Unity cree que quedó fuera de cuadro.
-        var bounds = _mesh.bounds;
-        bounds.Expand(new Vector3(0f, length, 0f));
-        _mesh.bounds = bounds;
+        var bounds = mesh.bounds;
+        bounds.Expand(new Vector3(0f, _definition.Length * _definition.Layout.spacing, 0f));
+        mesh.bounds = bounds;
 
-        GetComponent<MeshFilter>().sharedMesh = _mesh;
+        var renderer = filter.GetComponent<MeshRenderer>();
+        renderer.sharedMaterial = MaterialFor(span.number);
+        renderer.sortingOrder   = WorldMapDefinition.ORDER_GROUND;
+    }
+
+    // El material sale del JSON del capítulo. Sin 'ground' —o con uno que no esté en la lista—
+    // cae al de este objeto, que es el que ya está puesto hoy: agregar el campo a un capítulo no
+    // obliga a agregárselo a todos.
+    Material MaterialFor(int chapter)
+    {
+        var fallback = GetComponent<MeshRenderer>().sharedMaterial;
+
+        var json = Resources.Load<TextAsset>($"Chapters/Chapter_{chapter}");
+        string id = json ? JsonUtility.FromJson<ChapterData>(json.text)?.ground : null;
+        if (string.IsNullOrEmpty(id) || materials == null) return fallback;
+
+        foreach (var option in materials)
+            if (option != null && option.id == id)
+                return option.material != null ? option.material : fallback;
+
+        Debug.LogWarning($"[WorldMapGround] El capítulo {chapter} pide el suelo '{id}' y no está " +
+                         "en la lista de materiales — va con el de siempre.", this);
+        return fallback;
+    }
+
+    void AppendIsland(List<Vector3> vertices, List<Vector2> uvs, List<int> indices,
+                      WorldMapDefinition.Span span, float width, bool worldStart, bool worldEnd)
+    {
+        float spacing = _definition.Layout.spacing;
+        float from    = (span.start - (worldStart ? outerStartMargin : endMargin)) * spacing;
+        float to      = (span.End   + (worldEnd   ? outerEndMargin   : endMargin)) * spacing;
+        float length  = to - from;
+
+        int cols = Mathf.Max(1, Mathf.RoundToInt(width  * density));
+        int rows = Mathf.Max(1, Mathf.RoundToInt(length * density));
+        int start = vertices.Count;
+
+        for (int z = 0; z <= rows; z++)
+        for (int x = 0; x <= cols; x++)
+        {
+            float px = (x / (float)cols - 0.5f) * width;
+            float pz = from + z / (float)rows * length;
+
+            vertices.Add(new Vector3(px, 0f, pz));
+
+            // La textura se mide en MUNDO y no de 0 a 1 por isla: si no, un capítulo corto y uno
+            // largo mostrarían la misma textura estirada distinto.
+            uvs.Add(new Vector2(px / tiling, pz / tiling));
+        }
+
+        for (int z = 0; z < rows; z++)
+        for (int x = 0; x < cols; x++)
+        {
+            int a = start + z * (cols + 1) + x;
+            int b = a + cols + 1;
+
+            indices.Add(a);     indices.Add(b); indices.Add(a + 1);
+            indices.Add(a + 1); indices.Add(b); indices.Add(b + 1);
+        }
     }
 }
