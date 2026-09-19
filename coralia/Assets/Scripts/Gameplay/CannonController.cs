@@ -25,6 +25,11 @@ public class CannonController : MonoBehaviour
     [Header("Swap manual (tap en Current)")]
     [SerializeField] float swapPopDuration = 0.15f;
     [SerializeField] float swapPopScale    = 0.25f; // qué tan grande llega el pico del pop (1 + esto)
+    [Tooltip("Cuánto tardan las dos burbujas en cruzarse de lugar.")]
+    [SerializeField] float swapTravelDuration = 0.22f;
+    [Tooltip("Cuánto se arquea cada una al cruzar, en píxeles. Sin arco las dos pasan por la misma recta y se tapan entre sí justo en el medio del recorrido.")]
+    [SerializeField] float swapArc = 34f;
+    [SerializeField] AnimationCurve swapCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
     [Header("Animación: 'next' rueda hacia 'current' (almeja) tras cada disparo")]
     [SerializeField] Image           travelingBubbleImage;   // clon temporal — Image aparte, inactivo por defecto, mismo tamaño que Current/Next
@@ -72,6 +77,8 @@ public class CannonController : MonoBehaviour
     bool         _dragging;
     bool         _hintShown;
     bool         _currentHiddenForReveal;
+    Coroutine    _swapRoutine;
+    RectTransform _swapCloneOut, _swapCloneIn; // las dos burbujas viajeras del intercambio
     float        _idleTimer;
     Coroutine    _hintSwayRoutine;
     Vector2      _aimDir = Vector2.up;
@@ -502,6 +509,8 @@ public class CannonController : MonoBehaviour
 
     void Fire()
     {
+        CancelSwap(); // antes de tocar currentBubbleImage: CancelSwap la deja visible de nuevo
+
         // Oculta el ícono estático del cañón mientras dura el vuelo — si no, se ve la bola
         // "quieta" en el ícono Y la instancia nueva volando al mismo tiempo, como si fueran
         // dos bolas (una copia). Vuelve a mostrarse en RefreshPreview() cuando aterriza y
@@ -641,20 +650,120 @@ public class CannonController : MonoBehaviour
         // _inputEnabled por lo mismo que el resto: mientras el nivel está abriendo, en pausa o ya
         // terminado no hay turno del jugador, y el swap es una jugada como cualquier otra.
         if (!_inputEnabled || _flyingShot != null) return; // GDD 1.3: swap es gratis pero no durante el vuelo
+        if (_swapRoutine != null) return;                  // ya hay un intercambio cruzando
+
+        // Sin "next" no hay con qué intercambiar. Antes esto no se miraba: en el último disparo,
+        // donde la next ni siquiera se muestra, tocar la current igual cambiaba su color por el de
+        // una burbuja invisible.
+        if (_shotsRemaining < 2) return;
+
+        // El intercambio lógico es inmediato aunque la animación tarde: si el jugador dispara a
+        // mitad del cruce, sale el color que pidió y no el viejo.
         (_current, _next) = (_next, _current);
+
+        _swapRoutine = StartCoroutine(SwapFeedback());
+    }
+
+    // Las dos burbujas se cruzan de lugar, cada una arqueada hacia un lado. Antes los sprites se
+    // intercambiaban de golpe y solo quedaba el pop: se veía que algo había pasado, pero no QUÉ.
+    IEnumerator SwapFeedback()
+    {
+        AudioManager.Instance?.PlaySfx(swapClip); // no hace nada si está vacío
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
+
+        var currentRect = (RectTransform)currentBubbleImage.transform;
+        var nextRect    = (RectTransform)nextBubbleImage.transform;
+
+        Vector2 here  = currentRect.anchoredPosition;
+        Vector2 there = nextRect.anchoredPosition;
+        Vector2 sizeHere  = currentRect.sizeDelta;
+        Vector2 sizeThere = nextRect.sizeDelta;
+
+        // Los colores YA están intercambiados, así que la que sale de la recámara lleva el que
+        // pasó a ser "next", y viceversa.
+        _swapCloneOut = SpawnSwapClone(grid.SpriteFor(_next), here, sizeHere);
+        _swapCloneIn  = SpawnSwapClone(grid.SpriteFor(_current), there, sizeThere);
+
+        if (_swapCloneOut != null && _swapCloneIn != null)
+        {
+            currentBubbleImage.enabled = false;
+            nextBubbleImage.enabled    = false;
+
+            // Perpendicular al recorrido y no "hacia arriba": las dos ranuras están en diagonal,
+            // así que un arco vertical fijo se vería torcido respecto del camino.
+            Vector2 bow = Vector2.Perpendicular(there - here).normalized * swapArc;
+
+            for (float t = 0f; t < swapTravelDuration; t += Time.deltaTime)
+            {
+                float p     = swapCurve.Evaluate(Mathf.Clamp01(t / swapTravelDuration));
+                float curve = Mathf.Sin(p * Mathf.PI); // 0 -> 1 -> 0: el arco abre y vuelve a cerrar
+
+                _swapCloneOut.anchoredPosition = Vector2.Lerp(here, there, p) + bow * curve;
+                _swapCloneIn.anchoredPosition  = Vector2.Lerp(there, here, p) - bow * curve;
+
+                // Las ranuras no miden lo mismo (la current es más grande), así que el tamaño
+                // viaja con la burbuja. Sin esto, cada una daría un salto de escala al llegar.
+                _swapCloneOut.sizeDelta = Vector2.Lerp(sizeHere, sizeThere, p);
+                _swapCloneIn.sizeDelta  = Vector2.Lerp(sizeThere, sizeHere, p);
+
+                yield return null;
+            }
+
+            DestroySwapClones();
+        }
+
+        RefreshPreview(); // recién acá aparecen los sprites ya intercambiados en sus ranuras
+        yield return SwapPop();
+
+        _swapRoutine = null;
+    }
+
+    // Clon a partir del mismo Image que ya se usa para el viaje post-disparo, así hereda su
+    // material, su orden de dibujo y su sitio en la jerarquía sin duplicar nada en la escena.
+    RectTransform SpawnSwapClone(Sprite sprite, Vector2 at, Vector2 size)
+    {
+        if (travelingBubbleImage == null) return null;
+
+        var clone = Instantiate(travelingBubbleImage, travelingBubbleImage.transform.parent);
+        clone.name          = "SwapBubble";
+        clone.sprite        = sprite;
+        clone.raycastTarget = false;
+        clone.gameObject.SetActive(true);
+
+        var rect = (RectTransform)clone.transform;
+        rect.anchoredPosition = at;
+        rect.sizeDelta        = size;
+        return rect;
+    }
+
+    void DestroySwapClones()
+    {
+        if (_swapCloneOut) Destroy(_swapCloneOut.gameObject);
+        if (_swapCloneIn)  Destroy(_swapCloneIn.gameObject);
+        _swapCloneOut = _swapCloneIn = null;
+    }
+
+    // Disparar a mitad de un cruce lo corta en seco: el color lógico ya era el correcto desde el
+    // primer frame, así que lo único que queda es limpiar las viajeras y dejar las ranuras como
+    // corresponde antes de que Fire() siga con lo suyo.
+    void CancelSwap()
+    {
+        if (_swapRoutine == null) return;
+
+        StopCoroutine(_swapRoutine);
+        _swapRoutine = null;
+        DestroySwapClones();
         RefreshPreview();
-        StartCoroutine(SwapPopFeedback());
     }
 
     // El swap en sí es instantáneo (RefreshPreview ya cambió los sprites arriba) — esto es
     // solo el "aviso" de que pasó algo: un pop rápido y simétrico en las dos burbujas, más
     // sonido/háptico, mismo criterio que el resto de eventos del cañón (pedido de Diego: sin
     // esto el cambio pasaba desapercibido).
-    IEnumerator SwapPopFeedback()
+    // El remate: las dos rebotan al llegar a su nueva ranura. El sonido y el háptico ya sonaron
+    // al arrancar el cruce, que es cuando el jugador tocó.
+    IEnumerator SwapPop()
     {
-        AudioManager.Instance?.PlaySfx(swapClip); // no hace nada si está vacío
-        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
-
         Vector3 baseCurrent = currentBubbleImage.transform.localScale;
         Vector3 baseNext    = nextBubbleImage.transform.localScale;
 
