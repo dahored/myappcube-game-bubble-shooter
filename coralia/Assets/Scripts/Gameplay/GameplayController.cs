@@ -17,7 +17,10 @@ public class GameplayController : MonoBehaviour
     [SerializeField] OutOfLivesPanel   outOfLivesPanel; // guard de entrada — ver Start() (issue #52)
     [SerializeField] TMP_Text          shotsLabel;
     [SerializeField] ClaimPanel        claimPanel; // confirmación al comprar más disparos en NoMoreMovesPanel
-    [SerializeField] GridIntroPreview  gridIntro;  // barrido de lectura del tablero al empezar (opcional)
+    [SerializeField] GridIntroPreview  gridIntro;  // vista previa del tablero al empezar (opcional)
+
+    [Tooltip("Respiro entre que la transición destapa la pantalla y que empieza la entrada al nivel. Sin esto la animación arranca en el mismo frame en que se termina de ver el telón, y se lee como si ya hubiera empezado.")]
+    [SerializeField] float openBeat = 0.25f;
 
     [Header("Sin disparos")]
     [Tooltip("Si está desactivado, al quedarse sin disparos se salta la oferta de monedas y se muestra LosePanel directo.")]
@@ -215,11 +218,38 @@ public class GameplayController : MonoBehaviour
         cannon.SetInputEnabled(false);
         if (openPausedButton) openPausedButton.interactable = false;
 
+        yield return WaitForCurtain();
+
         if (preview) yield return gridIntro.Play();
         yield return cannon.RevealCurrent();
 
         if (openPausedButton) openPausedButton.interactable = true;
         cannon.SetInputEnabled(true);
+    }
+
+    // La escena se activa a mitad de la animación de burbujas de la transición, así que Start()
+    // corre con la pantalla todavía tapada y no se destapa hasta unos 0,3 s después. Animar ahí es
+    // animar para nadie: se oye el sonido y no se ve nada (reportado por Diego al entrar a un
+    // nivel corto, donde la aparición de la burbuja es lo único que hay que ver y dura 0,45 s).
+    //
+    // Esperar no descoloca nada: la vista y la recámara ya quedaron puestas de forma síncrona en
+    // Start, así que el telón se levanta sobre el nivel ya compuesto y recién entonces se mueve.
+    //
+    // El tope es por si la transición queda colgada. Vale más ver la animación tarde que un nivel
+    // que no arranca nunca.
+    IEnumerator WaitForCurtain()
+    {
+        const float TIMEOUT = 5f;
+
+        for (float t = 0f; SceneTransition.Covering && t < TIMEOUT; )
+        {
+            // El primer frame después de cargar una escena puede traer un deltaTime enorme; el
+            // tope por frame evita que el timeout se consuma de una.
+            t += Mathf.Min(Time.unscaledDeltaTime, 0.05f);
+            yield return null;
+        }
+
+        if (openBeat > 0f) yield return new WaitForSecondsRealtime(openBeat);
     }
 
     // Referencias core (grid/cannon): sin ellas no hay nivel que jugar, se aborta Start().
