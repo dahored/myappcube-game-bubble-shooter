@@ -280,6 +280,22 @@ public class CannonController : MonoBehaviour
         SetOctopusSprite(_shotsRemaining > 0 ? octopusThrowSprite : octopusIdleSprite);
     }
 
+    // Cierra el remate: la recámara y el pulpo quedan sin nada.
+    //
+    // Hace falta porque el remate topa cuántas burbujas salen (victoryMaxShots) mientras el
+    // contador baja de a una por burbuja. Con más sobrantes que ese tope el contador no llega a
+    // cero solo, y la concha se quedaba con una burbuja y el pulpo con otra, los dos esperando un
+    // disparo que ya no va a pasar.
+    //
+    // El pulpo queda en la pose relajada y no en la de reposo: reposo significa "listo para la
+    // próxima", y acá no hay próxima.
+    public void EndCelebration()
+    {
+        _shotsRemaining = 0;
+        RefreshPreview();
+        SetOctopusSprite(octopusWaitSprite);
+    }
+
     // Para el remate: un color de los que el NIVEL tenía disponibles, no de los que quedan en el
     // grid. Al ganar el grid está vacío, así que RollColor no tendría de dónde elegir.
     BubbleColor LevelColor() =>

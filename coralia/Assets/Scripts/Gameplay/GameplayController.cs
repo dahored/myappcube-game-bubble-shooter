@@ -633,6 +633,10 @@ public class GameplayController : MonoBehaviour
             if (progressScore != null)
                 progressScore.SetScore(LiveScore + bonus, _level.star_thresholds);
         }
+
+        // El tope de burbujas no tiene por qué coincidir con los disparos que sobraban, así que
+        // el vaciado se pide explícito en vez de confiar en que el contador haya llegado a cero.
+        cannon.EndCelebration();
     }
 
     // Cierra la barra con el puntaje final, bonus incluido, y espera a que termine de llenarse.
