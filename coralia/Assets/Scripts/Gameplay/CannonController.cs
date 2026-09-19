@@ -241,16 +241,49 @@ public class CannonController : MonoBehaviour
         Vector2 burst = new Vector2(start.x + lateralOffset,
                                     start.y + Random.Range(minDistance, maxDistance));
 
-        // Igual que Fire(): se apaga el ícono de la recámara para que no se vea la bola quieta
-        // ahí Y la que vuela al mismo tiempo.
+        BubbleColor fired = _current;
+
+        // La cola avanza ANTES de animar, no después.
+        //
+        // Antes se avanzaba al final y la recarga se saltaba por completo: esperar
+        // AnimateNextIntoCurrent después de cada explosión (nextIntoCurrentDuration +
+        // octopusWaitHold, 0,35 s) triplicaba el remate. Pero el problema era el orden, no el
+        // tiempo. Sabiendo ya cuál es la siguiente, el pulpo puede pasarla MIENTRAS la disparada
+        // sube: las dos animaciones ocupan el mismo hueco y la recarga no cuesta nada extra.
+        _shotsRemaining = Mathf.Max(0, _shotsRemaining - 1);
+        _current = _next;
+        _next    = LevelColor();
+
+        // Las dos ranuras quedan vacías durante el vuelo: la concha porque su burbuja salió
+        // disparada, y el pulpo porque la suya está justo yendo hacia la concha.
         if (currentBubbleImage) currentBubbleImage.enabled = false;
+        if (nextBubbleImage)    nextBubbleImage.enabled    = false;
 
         var go   = Instantiate(bubblePrefab, gridContainer);
         var view = go.GetComponent<BubbleView>();
         var rt   = (RectTransform)go.transform;
 
-        view.Setup(Vector2Int.zero, _current, grid.SpriteFor(_current)); // Setup la pone en la celda 0,0
-        rt.anchoredPosition = start;                                     // y acá la mandamos al cañón
+        view.Setup(Vector2Int.zero, fired, grid.SpriteFor(fired)); // Setup la pone en la celda 0,0
+        rt.anchoredPosition = start;                               // y acá la mandamos al cañón
+
+        // La recarga en paralelo: la burbuja que el pulpo entrega viaja hasta la concha con el
+        // mismo presupuesto de tiempo que el disparo. Sin esto el pulpo se quedaba quieto con la
+        // cola avanzando de golpe, como si las bolas salieran solas del cañón.
+        RectTransform handoff  = null;
+        Vector2       handFrom = default, handTo = default, sizeFrom = default, sizeTo = default;
+
+        if (_shotsRemaining > 0 && currentBubbleImage && nextBubbleImage)
+        {
+            var currentRect = (RectTransform)currentBubbleImage.transform;
+            var nextRect    = (RectTransform)nextBubbleImage.transform;
+
+            handFrom = nextRect.anchoredPosition; handTo = currentRect.anchoredPosition;
+            sizeFrom = nextRect.sizeDelta;        sizeTo = currentRect.sizeDelta;
+
+            handoff = SpawnTravelClone(grid.SpriteFor(_current), handFrom, sizeFrom);
+            SetOctopusSprite(octopusThrowSprite);
+        }
+        else SetOctopusSprite(octopusWaitSprite); // era la última: ya no queda nada que pasar
 
         AudioManager.Instance?.PlaySfx(shootClip);
         if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
@@ -259,7 +292,16 @@ public class CannonController : MonoBehaviour
         // disparos o treinta, así que quien llama reparte el presupuesto y acá solo se cumple.
         for (float t = 0f; t < flightTime; t += Time.deltaTime)
         {
-            rt.anchoredPosition = Vector2.Lerp(start, burst, t / flightTime);
+            float p = t / flightTime;
+            rt.anchoredPosition = Vector2.Lerp(start, burst, p);
+
+            if (handoff)
+            {
+                float eased = nextIntoCurrentCurve.Evaluate(Mathf.Clamp01(p));
+                handoff.anchoredPosition = Vector2.Lerp(handFrom, handTo, eased);
+                handoff.sizeDelta        = Vector2.Lerp(sizeFrom, sizeTo, eased); // las ranuras no miden igual
+            }
+
             yield return null;
         }
         rt.anchoredPosition = burst;
@@ -267,17 +309,8 @@ public class CannonController : MonoBehaviour
         onBurst?.Invoke(burst);
         view.PlayPopAnimation(0f, popClip); // se destruye sola al terminar
 
-        // La cola avanza como después de un disparo real, pero SIN la animación de recarga:
-        // AnimateNextIntoCurrent dura nextIntoCurrentDuration + octopusWaitHold (0.35s con los
-        // valores actuales) y esperarla acá hacía que el remate durara el triple de lo pedido,
-        // por más que se bajara el tiempo de vuelo. Con los disparos a menos de 200ms de
-        // distancia no llegaría a terminar ninguna igual.
-        _shotsRemaining = Mathf.Max(0, _shotsRemaining - 1);
-        _current = _next;
-        _next    = LevelColor();
-
-        RefreshPreview();
-        SetOctopusSprite(_shotsRemaining > 0 ? octopusThrowSprite : octopusIdleSprite);
+        if (handoff) Destroy(handoff.gameObject);
+        RefreshPreview(); // la viajera llegó: la concha se llena y el pulpo recibe la siguiente
     }
 
     // Cierra el remate: la recámara y el pulpo quedan sin nada.
@@ -697,8 +730,8 @@ public class CannonController : MonoBehaviour
 
         // Los colores YA están intercambiados, así que la que sale de la recámara lleva el que
         // pasó a ser "next", y viceversa.
-        _swapCloneOut = SpawnSwapClone(grid.SpriteFor(_next), here, sizeHere);
-        _swapCloneIn  = SpawnSwapClone(grid.SpriteFor(_current), there, sizeThere);
+        _swapCloneOut = SpawnTravelClone(grid.SpriteFor(_next), here, sizeHere);
+        _swapCloneIn  = SpawnTravelClone(grid.SpriteFor(_current), there, sizeThere);
 
         if (_swapCloneOut != null && _swapCloneIn != null)
         {
@@ -767,12 +800,12 @@ public class CannonController : MonoBehaviour
 
     // Clon a partir del mismo Image que ya se usa para el viaje post-disparo, así hereda su
     // material, su orden de dibujo y su sitio en la jerarquía sin duplicar nada en la escena.
-    RectTransform SpawnSwapClone(Sprite sprite, Vector2 at, Vector2 size)
+    RectTransform SpawnTravelClone(Sprite sprite, Vector2 at, Vector2 size)
     {
         if (travelingBubbleImage == null) return null;
 
         var clone = Instantiate(travelingBubbleImage, travelingBubbleImage.transform.parent);
-        clone.name          = "SwapBubble";
+        clone.name          = "TravelBubble";
         clone.sprite        = sprite;
         clone.raycastTarget = false;
         clone.gameObject.SetActive(true);
