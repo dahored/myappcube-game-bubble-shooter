@@ -3989,7 +3989,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 721710914}
+    m_TransformParent: {fileID: 1705409093}
     m_Modifications:
     - target: {fileID: 388108966050600896, guid: f19647a39d8b2471a822cae2ce17a66f, type: 3}
       propertyPath: m_Name
@@ -4005,7 +4005,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6984190684254736778, guid: f19647a39d8b2471a822cae2ce17a66f, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 6984190684254736778, guid: f19647a39d8b2471a822cae2ce17a66f, type: 3}
       propertyPath: m_AnchorMax.y
@@ -4013,7 +4013,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6984190684254736778, guid: f19647a39d8b2471a822cae2ce17a66f, type: 3}
       propertyPath: m_AnchorMin.x
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 6984190684254736778, guid: f19647a39d8b2471a822cae2ce17a66f, type: 3}
       propertyPath: m_AnchorMin.y
@@ -4057,7 +4057,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6984190684254736778, guid: f19647a39d8b2471a822cae2ce17a66f, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 105
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6984190684254736778, guid: f19647a39d8b2471a822cae2ce17a66f, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -4082,6 +4082,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 388108966050600896, guid: f19647a39d8b2471a822cae2ce17a66f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 335520368}
+    - targetCorrespondingSourceObject: {fileID: 388108966050600896, guid: f19647a39d8b2471a822cae2ce17a66f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 335520369}
   m_SourcePrefab: {fileID: 100100000, guid: f19647a39d8b2471a822cae2ce17a66f, type: 3}
 --- !u!224 &335520365 stripped
 RectTransform:
@@ -4110,6 +4113,25 @@ MonoBehaviour:
   m_LayoutPriority: 1
   m_MaxWidth: -1
   m_MaxHeight: -1
+--- !u!114 &335520369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 178790052}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cba8e2db8f2cd490b88ef890004b1fd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GelatineAnimation_v2
+  duration: 3
+  startDelay: 0
+  squashAmountX: 0.03
+  squashAmountY: 0.03
+  enableSway: 0
+  swayAngle: 6
+  swayDuration: 4
 --- !u!1 &345720132
 GameObject:
   m_ObjectHideFlags: 0
@@ -7008,7 +7030,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 335520365}
+  - {fileID: 1705409093}
   - {fileID: 1322139487}
   - {fileID: 46502994}
   - {fileID: 1492460292}
@@ -8271,6 +8293,7 @@ MonoBehaviour:
   shotsLabel: {fileID: 1053177626}
   claimPanel: {fileID: 197573704}
   gridIntro: {fileID: 1795665166}
+  openBeat: 0.25
   enableNoMoreShotsOffer: 1
   pausedPanel: {fileID: 1363746971}
   openPausedButton: {fileID: 2132985218}
@@ -17023,6 +17046,42 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DragToAimRelay
   cannon: {fileID: 1737611372}
+--- !u!1 &1705409092
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1705409093}
+  m_Layer: 0
+  m_Name: PlayerCardWrapper
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1705409093
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1705409092}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 335520365}
+  m_Father: {fileID: 721710914}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0.5}
+  m_AnchorMax: {x: 0, y: 0.5}
+  m_AnchoredPosition: {x: 104.50427, y: 0}
+  m_SizeDelta: {x: 150, y: 150}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1717395564
 GameObject:
   m_ObjectHideFlags: 0
@@ -17210,9 +17269,35 @@ MonoBehaviour:
   shotSpeed: 2500
   shootClip: {fileID: 8300000, guid: 0ab96e0db12e541d58b48936b9963f75, type: 3}
   landClip: {fileID: 8300000, guid: 2e175ca372d4549bc82222194d3dc259, type: 3}
-  swapClip: {fileID: 0}
+  swapClip: {fileID: 8300000, guid: 88bd3828a2e72404eaca713131e756c2, type: 3}
   swapPopDuration: 0.15
   swapPopScale: 0.25
+  swapTravelDuration: 0.22
+  swapArc: 34
+  swapCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   travelingBubbleImage: {fileID: 1223465683}
   nextIntoCurrentDuration: 0.2
   nextIntoCurrentCurve:
@@ -17243,6 +17328,22 @@ MonoBehaviour:
   octopusThrowSprite: {fileID: 1012097644}
   octopusWaitSprite: {fileID: 1085766234}
   octopusWaitHold: 0.15
+  revealClip: {fileID: 8300000, guid: 8642f302b66864fd690fcfe240c8db65, type: 3}
+  revealDuration: 0.45
+  revealPopScale: 1.3
+  revealSparkle:
+    glowColor: {r: 1, g: 0.93, b: 0.72, a: 0.85}
+    glowSize: 300
+    glowFrom: 0.35
+    glowTo: 1.6
+    glowDuration: 0.5
+    moteCount: 10
+    moteColor: {r: 1, g: 1, b: 1, a: 0.95}
+    moteSize: 64
+    spawnRadius: 34
+    travel: 95
+    moteDuration: 0.55
+    stagger: 0.22
   shootHint: {fileID: 1330918401}
   idleHintDelay: 10
   hintSwayAngle: 15
@@ -17763,8 +17864,8 @@ MonoBehaviour:
   scorePopupPrefab: {fileID: 3952318455349186000, guid: 651af47658c6146e5868191c77d2bb0d, type: 3}
   dropScoreHeight: 360
   dropScoreLaneStep: 46
-  dropScoreClip: {fileID: 8300000, guid: f6974ed8dcf664b1a9ab07bf6578342d, type: 3}
-  dropScoreSoundInterval: 0.12
+  dropScoreClip: {fileID: 8300000, guid: fd662fda0d68a49f88d8f66c449729da, type: 3}
+  dropScoreSoundInterval: 0.05
   spriteRed: {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
   spriteBlue: {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
   spriteYellow: {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
@@ -17801,34 +17902,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GridIntroPreview
   grid: {fileID: 1795665165}
   minHiddenRows: 1
-  travelDuration: 0.5
-  holdDuration: 0.35
-  returnDuration: 0.65
-  travelEase:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  returnEase:
+  holdAtTop: 1.5
+  riseDuration: 1.2
+  riseEase:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
