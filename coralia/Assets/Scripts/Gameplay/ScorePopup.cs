@@ -1,4 +1,5 @@
 using System.Collections;
+using Solo.MOST_IN_ONE;
 using TMPro;
 using UnityEngine;
 
@@ -31,17 +32,20 @@ public class ScorePopup : MonoBehaviour
 
     RectTransform _rt;
     AudioClip     _clip;
+    bool          _haptic;
 
     // delay: el mismo escalonado que el pop de la burbuja, para que el número salga junto con
     // su explosión y no antes. lifetime: POP_LIFETIME o DROP_LIFETIME según de dónde venga.
     //
-    // clip: opcional, el sonido del bonus. Suena cuando el número APARECE, no al instanciarlo —
-    // entre las dos cosas puede haber casi un segundo de espera (ver Rise). Quien llama decide si
-    // este número lleva sonido o no: en un derrumbe grande no todos lo llevan, o serían veinte
-    // disparos de audio en medio segundo (ver GridController.SpawnDropScorePopup).
-    public void Play(int points, float delay, float lifetime, AudioClip clip = null)
+    // clip y haptic: opcionales, el sonido y el toque del bonus. Los dos salen cuando el número
+    // APARECE, no al instanciarlo — entre las dos cosas puede haber casi un segundo de espera (ver
+    // Rise). Quien llama decide cuáles los llevan: en un derrumbe grande no todos, o serían veinte
+    // disparos de audio y veinte vibraciones en medio segundo (ver
+    // GridController.SpawnDropScorePopup).
+    public void Play(int points, float delay, float lifetime, AudioClip clip = null, bool haptic = false)
     {
-        _clip = clip;
+        _clip   = clip;
+        _haptic = haptic;
         _rt = (RectTransform)transform;
 
         if (!label) label = GetComponentInChildren<TMP_Text>(true);
@@ -69,6 +73,11 @@ public class ScorePopup : MonoBehaviour
         if (delay > 0f) yield return new WaitForSeconds(delay);
 
         if (_clip) AudioManager.Instance?.PlaySfx(_clip);
+
+        // El toque va junto al sonido y no por su cuenta: que las dos señales lleguen en el mismo
+        // instante es lo que hace que el bonus se sienta sólido en vez de dos avisos sueltos.
+        if (_haptic && SaveManager.Vibration)
+            MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
 
         Vector2 origin  = _rt.anchoredPosition;
         Color   baseCol = label.color;

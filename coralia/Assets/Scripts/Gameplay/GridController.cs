@@ -19,7 +19,7 @@ public class GridController : MonoBehaviour
     [Tooltip("Sonido del bonus de una burbuja que cae, al aparecer su número. Opcional — vacío juega igual, solo sin sonido.")]
     [SerializeField] AudioClip dropScoreClip;
 
-    [Tooltip("Cada cuánto puede sonar ese bonus como mucho. En un derrumbe de veinte burbujas los números salen cada 0,04 s: sin este espaciado serían veinte disparos de audio en medio segundo. Los que caen entremedio salen igual, mudos.")]
+    [Tooltip("Cada cuánto puede sonar y vibrar ese bonus como mucho. En un derrumbe de veinte burbujas los números salen cada 0,04 s: sin este espaciado serían veinte disparos de audio y veinte toques en medio segundo. Los que caen entremedio salen igual, mudos y sin vibración.")]
     [SerializeField] float dropScoreSoundInterval = 0.12f;
 
     [Header("Sprites por color (arrastrar el sub-sprite bubble_X_0 de cada PNG)")]
@@ -369,20 +369,25 @@ public class GridController : MonoBehaviour
         float targetY = _muzzleReferenceY + dropScoreHeight;
         float delay   = extraDelay + BubbleView.DropDuration(origin.y - targetY);
 
+        bool cue = DropCueAt(Time.time + delay);
+
         Spawn(new Vector2(origin.x, FreeDropLaneY(origin.x, targetY, delay)), points,
-              delay, ScorePopup.DROP_LIFETIME, DropSoundFor(Time.time + delay));
+              delay, ScorePopup.DROP_LIFETIME, cue ? dropScoreClip : null, cue);
     }
 
-    // Si a este número le toca sonido o no. Se decide con el instante en que va a APARECER, que
-    // ya se conoce acá: así el espaciado queda repartido de verdad a lo largo del derrumbe, en vez
-    // de depender de quién llegue primero a un cronómetro mientras la cadena corre.
-    AudioClip DropSoundFor(float when)
+    // Si a este número le toca aviso —sonido y vibración— o si sale callado. Se decide con el
+    // instante en que va a APARECER, que ya se conoce acá: así el espaciado queda repartido de
+    // verdad a lo largo del derrumbe, en vez de depender de quién llegue primero a un cronómetro
+    // mientras la cadena corre.
+    //
+    // Las dos señales van juntas a propósito. Separadas, una caída grande dejaría el oído y el
+    // tacto contando cosas distintas.
+    bool DropCueAt(float when)
     {
-        if (dropScoreClip == null) return null;
-        if (when - _lastDropSoundAt < dropScoreSoundInterval) return null;
+        if (when - _lastDropSoundAt < dropScoreSoundInterval) return false;
 
         _lastDropSoundAt = when;
-        return dropScoreClip;
+        return true;
     }
 
     // Todos los números de caída aterrizan a la MISMA altura y su única separación es la columna
@@ -444,13 +449,14 @@ public class GridController : MonoBehaviour
     public void SpawnScorePopupAt(Vector2 localPos, int points, float delay, float lifetime) =>
         Spawn(localPos, points, delay, lifetime);
 
-    void Spawn(Vector2 localPos, int points, float delay, float lifetime, AudioClip clip = null)
+    void Spawn(Vector2 localPos, int points, float delay, float lifetime,
+               AudioClip clip = null, bool haptic = false)
     {
         if (!scorePopupPrefab) return;
 
         var popup = Instantiate(scorePopupPrefab, transform);
         ((RectTransform)popup.transform).anchoredPosition = localPos;
-        popup.Play(points, delay, lifetime, clip);
+        popup.Play(points, delay, lifetime, clip, haptic);
     }
 
     public BubbleView PlaceBubble(Vector2Int cell, BubbleColor color)

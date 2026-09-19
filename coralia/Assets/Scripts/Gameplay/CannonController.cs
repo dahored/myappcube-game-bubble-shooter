@@ -286,7 +286,12 @@ public class CannonController : MonoBehaviour
         else SetOctopusSprite(octopusWaitSprite); // era la última: ya no queda nada que pasar
 
         AudioManager.Instance?.PlaySfx(shootClip);
-        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
+
+        // MediumImpact y no LightImpact como el resto: en el remate cada burbuja lanzada trae
+        // además el toque de su propio pop al reventar, así que con la misma intensidad los veinte
+        // avisos de un remate de diez disparos se mezclan en un zumbido. Con el lanzamiento más
+        // fuerte que la explosión, la tanda se siente como una ráfaga de golpes.
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.MediumImpact);
 
         // Por tiempo y no por velocidad: el remate entero tiene que durar lo mismo sobren tres
         // disparos o treinta, así que quien llama reparte el presupuesto y acá solo se cumple.
