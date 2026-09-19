@@ -188,31 +188,35 @@ public class GameplayController : MonoBehaviour
 
         RefreshShotsLabel();
 
-        StartCoroutine(PlayIntroPreview());
+        StartCoroutine(OpenLevel());
     }
 
-    // Vista previa del tablero antes del primer disparo, solo cuando el nivel es tan largo que sus
-    // primeras filas nacen fuera de cuadro (issue #74). El nivel abre con la vista abajo, espera y
-    // sube.
+    // La entrada al nivel, antes del primer disparo (issue #74). Dos cosas encadenadas:
     //
-    // Begin() corre acá dentro y no en la corrutina por una razón de tiempos: StartCoroutine
-    // ejecuta el cuerpo hasta el primer yield de forma síncrona, o sea todavía dentro de Start(),
-    // antes del primer frame dibujado. Si la vista se colocara después, el nivel aparecería un
-    // instante en su posición de juego y recién ahí saltaría hacia abajo.
+    //   1. Si el tablero es tan largo que sus primeras filas nacen fuera de cuadro, el nivel abre
+    //      con la vista puesta abajo, espera y sube. En un tablero que entra entero esto no pasa.
+    //   2. La concha abre vacía y la primera burbuja aparece con destello y sonido, ya con el
+    //      tablero en su sitio.
     //
-    // Mientras dura no se puede apuntar, disparar ni pausar: la vista está en movimiento, y un
-    // disparo lanzado ahí aterrizaría en un sitio que el jugador no eligió. El botón de pausa se
-    // apaga en vez de dejarse andando porque cualquier toque adelanta la subida — sin esto, el
-    // toque que abre la pausa dispararía las dos cosas a la vez y el orden entre ellas no está
-    // definido.
-    IEnumerator PlayIntroPreview()
+    // Todo el primer bloque corre de forma SÍNCRONA, todavía dentro de Start(): StartCoroutine
+    // ejecuta el cuerpo hasta el primer yield sin esperar al frame siguiente. Eso importa porque
+    // es lo que hace que el primer frame dibujado ya salga con la vista abajo y la recámara vacía;
+    // si se colocaran después, se vería un instante el nivel armado y recién ahí el salto.
+    //
+    // Mientras dura no se puede apuntar, disparar ni pausar: la vista está en movimiento y todavía
+    // no hay burbuja que disparar. El botón de pausa se apaga en vez de dejarse andando porque
+    // cualquier toque adelanta la subida — sin esto, el toque que abre la pausa dispararía las dos
+    // cosas a la vez y el orden entre ellas no está definido.
+    IEnumerator OpenLevel()
     {
-        if (gridIntro == null || !gridIntro.Begin()) yield break;
+        bool preview = gridIntro != null && gridIntro.Begin();
 
+        cannon.HideCurrentForReveal();
         cannon.SetInputEnabled(false);
         if (openPausedButton) openPausedButton.interactable = false;
 
-        yield return gridIntro.Play();
+        if (preview) yield return gridIntro.Play();
+        yield return cannon.RevealCurrent();
 
         if (openPausedButton) openPausedButton.interactable = true;
         cannon.SetInputEnabled(true);

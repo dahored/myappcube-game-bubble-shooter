@@ -39,6 +39,19 @@ public class CannonController : MonoBehaviour
     [SerializeField] GameObject octopusWaitSprite;  // OctopusSprite3 — espera breve justo después de entregar, antes de volver a reposo
     [SerializeField] float      octopusWaitHold = 0.15f; // cuánto se ve el Sprite3 — único tiempo nuevo, todo lo demás reusa nextIntoCurrentDuration
 
+    [Header("Aparición de la primera burbuja del nivel")]
+    [Tooltip("El estallido que sale detrás de la burbuja al aparecer. Opcional: sin esto hace el pop igual, solo que sin destello. En el proyecto ya está 'flashes' (Sprites/UI/Decorative).")]
+    [SerializeField] Sprite    revealFlashSprite;
+    [Tooltip("Tamaño del destello en píxeles. La burbuja mide 92, así que bastante más grande que ella.")]
+    [SerializeField] float     revealFlashSize = 320f;
+    [Tooltip("Cuánto gira el destello mientras se apaga. Un poco de giro lo hace ver vivo; mucho lo convierte en una rueda.")]
+    [SerializeField] float     revealFlashSpin = 25f;
+    [Tooltip("Sonido de la aparición. Opcional.")]
+    [SerializeField] AudioClip revealClip;
+    [SerializeField] float     revealDuration = 0.45f;
+    [Tooltip("Qué tan grande llega el pico del pop de la burbuja antes de asentarse en su tamaño.")]
+    [SerializeField] float     revealPopScale = 1.3f;
+
     [Header("Mano fantasma — cómo disparar (issue #7)")]
     [SerializeField] ShootHintView shootHint;     // opcional — dejar vacío hasta tener el prefab
     [SerializeField] float         idleHintDelay      = 6f;   // segundos sin interactuar antes de mostrarla de nuevo
@@ -61,6 +74,7 @@ public class CannonController : MonoBehaviour
     Vector2      _pointerPos;      // dónde, para retomar la mira sin esperar a que se mueva
     bool         _dragging;
     bool         _hintShown;
+    bool         _currentHiddenForReveal;
     float        _idleTimer;
     Coroutine    _hintSwayRoutine;
     Vector2      _aimDir = Vector2.up;
@@ -276,6 +290,53 @@ public class CannonController : MonoBehaviour
         _current = LevelColor();
         _next    = LevelColor();
         RefreshPreview();
+    }
+
+    // Deja la recámara vacía: el nivel abre con la concha sin burbuja, y esta aparece recién
+    // cuando se libera el disparo.
+    //
+    // Se llama desde el Start de GameplayController, después de Init() —que es quien enciende la
+    // burbuja al armar la cola— y antes del primer frame dibujado.
+    public void HideCurrentForReveal()
+    {
+        if (currentBubbleImage == null) return;
+
+        _currentHiddenForReveal    = true;
+        currentBubbleImage.enabled = false;
+    }
+
+    // La aparición: destello, sonido y pop. No hace nada si nadie escondió la burbuja antes, así
+    // que llamarla de más es inofensivo.
+    public IEnumerator RevealCurrent()
+    {
+        if (!_currentHiddenForReveal || currentBubbleImage == null) yield break;
+        _currentHiddenForReveal = false;
+
+        var     rect      = (RectTransform)currentBubbleImage.transform;
+        Vector3 baseScale = rect.localScale;
+
+        RevealFlash.Spawn(rect, revealFlashSprite, revealFlashSize,
+                          revealDuration, 0.35f, 1f, revealFlashSpin);
+        AudioManager.Instance?.PlaySfx(revealClip); // no hace nada si está vacío
+
+        currentBubbleImage.enabled = true;
+
+        // Dos tramos: sube de golpe pasándose del tamaño y después se asienta. Es el mismo gesto
+        // del swap (swapPopScale), pero arrancando de cero porque acá la burbuja no estaba.
+        const float RISE = 0.45f; // qué fracción del total se va en llegar al pico
+
+        for (float t = 0f; t < revealDuration; t += Time.deltaTime)
+        {
+            float p     = t / revealDuration;
+            float scale = p < RISE
+                ? Mathf.Lerp(0f, revealPopScale, p / RISE)
+                : Mathf.Lerp(revealPopScale, 1f, (p - RISE) / (1f - RISE));
+
+            rect.localScale = baseScale * scale;
+            yield return null;
+        }
+
+        rect.localScale = baseScale;
     }
 
     public void SetInputEnabled(bool enabled)
@@ -581,7 +642,9 @@ public class CannonController : MonoBehaviour
 
     void SwapCurrentAndNext()
     {
-        if (_flyingShot != null) return; // GDD 1.3: swap es gratis pero no durante el vuelo
+        // _inputEnabled por lo mismo que el resto: mientras el nivel está abriendo, en pausa o ya
+        // terminado no hay turno del jugador, y el swap es una jugada como cualquier otra.
+        if (!_inputEnabled || _flyingShot != null) return; // GDD 1.3: swap es gratis pero no durante el vuelo
         (_current, _next) = (_next, _current);
         RefreshPreview();
         StartCoroutine(SwapPopFeedback());
