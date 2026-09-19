@@ -40,17 +40,14 @@ public class CannonController : MonoBehaviour
     [SerializeField] float      octopusWaitHold = 0.15f; // cuánto se ve el Sprite3 — único tiempo nuevo, todo lo demás reusa nextIntoCurrentDuration
 
     [Header("Aparición de la primera burbuja del nivel")]
-    [Tooltip("El estallido que sale detrás de la burbuja al aparecer. Opcional: sin esto hace el pop igual, solo que sin destello. En el proyecto ya está 'flashes' (Sprites/UI/Decorative).")]
-    [SerializeField] Sprite    revealFlashSprite;
-    [Tooltip("Tamaño del destello en píxeles. La burbuja mide 92, así que bastante más grande que ella.")]
-    [SerializeField] float     revealFlashSize = 320f;
-    [Tooltip("Cuánto gira el destello mientras se apaga. Un poco de giro lo hace ver vivo; mucho lo convierte en una rueda.")]
-    [SerializeField] float     revealFlashSpin = 25f;
     [Tooltip("Sonido de la aparición. Opcional.")]
     [SerializeField] AudioClip revealClip;
+    [Tooltip("Cuánto dura el pop de la burbuja. El brillo tiene sus propios tiempos acá abajo.")]
     [SerializeField] float     revealDuration = 0.45f;
     [Tooltip("Qué tan grande llega el pico del pop de la burbuja antes de asentarse en su tamaño.")]
     [SerializeField] float     revealPopScale = 1.3f;
+    [Tooltip("El resplandor y las chispas. Las texturas se dibujan por código, no hay que asignar ningún sprite.")]
+    [SerializeField] Sparkle.Settings revealSparkle = new();
 
     [Header("Mano fantasma — cómo disparar (issue #7)")]
     [SerializeField] ShootHintView shootHint;     // opcional — dejar vacío hasta tener el prefab
@@ -315,8 +312,7 @@ public class CannonController : MonoBehaviour
         var     rect      = (RectTransform)currentBubbleImage.transform;
         Vector3 baseScale = rect.localScale;
 
-        RevealFlash.Spawn(rect, revealFlashSprite, revealFlashSize,
-                          revealDuration, 0.35f, 1f, revealFlashSpin);
+        Sparkle.Burst(rect, revealSparkle);
         AudioManager.Instance?.PlaySfx(revealClip); // no hace nada si está vacío
 
         currentBubbleImage.enabled = true;
