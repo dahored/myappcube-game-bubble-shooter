@@ -686,8 +686,17 @@ public class CannonController : MonoBehaviour
 
         if (_swapCloneOut != null && _swapCloneIn != null)
         {
-            currentBubbleImage.enabled = false;
-            nextBubbleImage.enabled    = false;
+            SetSlotsVisible(false);
+
+            // El pulpo sostiene la "next" con los tentáculos, así que la burbuja se le va de las
+            // manos y le llega otra: quedarse congelado se ve inerte.
+            //
+            // Va el Sprite3 (el relajado) y NO el del lanzamiento: ese tiene el tentáculo
+            // extendido y la boca abierta, o sea un gesto de ENTREGA. En un swap no llega nada
+            // nuevo, el jugador reordena lo que ya tenía. Usarlo acá contaría algo que no pasó y
+            // de paso quemaría el gesto: si sirve para entregar y para intercambiar, deja de
+            // significar "llegó la siguiente".
+            SetOctopusSprite(octopusWaitSprite);
 
             // Perpendicular al recorrido y no "hacia arriba": las dos ranuras están en diagonal,
             // así que un arco vertical fijo se vería torcido respecto del camino.
@@ -710,12 +719,34 @@ public class CannonController : MonoBehaviour
             }
 
             DestroySwapClones();
+            SetOctopusSprite(octopusIdleSprite);
         }
 
+        SetSlotsVisible(true);
         RefreshPreview(); // recién acá aparecen los sprites ya intercambiados en sus ranuras
         yield return SwapPop();
 
         _swapRoutine = null;
+    }
+
+    // Durante el cruce las ranuras se ocultan por ALFA y no apagando el Image.
+    //
+    // Un Graphic apagado deja de recibir raycasts: con eso, el segundo toque de un doble tap
+    // atravesaba la burbuja, caía en el AimArea que está detrás y salía un disparo (reportado por
+    // Diego). Con alfa en cero el botón sigue estando donde el dedo lo espera.
+    void SetSlotsVisible(bool visible)
+    {
+        SetAlpha(currentBubbleImage, visible ? 1f : 0f);
+        SetAlpha(nextBubbleImage,    visible ? 1f : 0f);
+    }
+
+    static void SetAlpha(Image image, float alpha)
+    {
+        if (image == null) return;
+
+        var color = image.color;
+        color.a     = alpha;
+        image.color = color;
     }
 
     // Clon a partir del mismo Image que ya se usa para el viaje post-disparo, así hereda su
@@ -753,6 +784,8 @@ public class CannonController : MonoBehaviour
         StopCoroutine(_swapRoutine);
         _swapRoutine = null;
         DestroySwapClones();
+        SetSlotsVisible(true);
+        SetOctopusSprite(octopusIdleSprite);
         RefreshPreview();
     }
 
