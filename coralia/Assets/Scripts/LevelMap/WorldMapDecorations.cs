@@ -27,13 +27,9 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Apartar del camino siguiendo su perpendicular. Apagado aparta solo en X, y así cada pieza queda a la misma profundidad que el nodo de su índice.")]
     [SerializeField] bool perpendicularOffset = true;
 
-    [Tooltip("Cuánto se inclinan hacia atrás, girando sobre su base. 0 = paradas de frente.")]
+    [Tooltip("Cuánto se inclinan hacia atrás. Girar no las despega del suelo: lo que la inclinación levanta se compensa solo, así que se puede subir sin que queden flotando.")]
     [Range(0f, 80f)]
     [SerializeField] float tilt = 12f;
-
-    [Tooltip("Cuánto acompañan la pendiente del suelo curvado, además del 'tilt' fijo. En 1 quedan siempre apoyadas; en 0 se comportan como antes y hacia el horizonte se ven flotando. Bajarlo solo tiene sentido si una pieza muy alta se ve demasiado recostada allá al fondo.")]
-    [Range(0f, 1f)]
-    [SerializeField] float slopeFollow = 1f;
 
     [Tooltip("Hasta qué distancia de la cámara se dibujan. Más allá se apagan.")]
     [SerializeField] float cullRange = 90f;
@@ -52,6 +48,10 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
     // Dónde iría cada pieza si el mundo fuera plano. Es la posición de referencia: la de verdad
     // se recalcula por frame aplicándole la curva.
     readonly List<Vector3>   _plantedFlat = new();
+
+    // Cuánto sobresale cada pieza por DEBAJO de su pivote, ya escalado. Es lo que la inclinación
+    // levanta del suelo, y hay que saberlo por pieza porque depende de su tamaño — ver Place().
+    readonly List<float>     _belowPivot  = new();
 
     Camera _camera;
 
@@ -124,7 +124,6 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         // que el transform ES el punto de apoyo: se coloca en el suelo y la inclinación gira
         // sobre él sola, sin compensar nada.
         tr.localPosition = ground;
-        tr.localRotation = Quaternion.Euler(tilt, 0f, 0f);
 
         // El orden lo decide el mundo, para que nodos y decoraciones compartan la misma escala.
         //
@@ -144,6 +143,12 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
                 renderer.sharedMaterial = spriteMaterial;
         }
 
+        // Se mide ANTES de inclinarla: con la rotación puesta, los bounds ya vendrían girados y
+        // el número saldría del arco en vez del sprite.
+        _belowPivot.Add(BelowPivot(instance));
+
+        tr.localRotation = Quaternion.Euler(tilt, 0f, 0f);
+
         _planted.Add(tr);
         _plantedFlat.Add(ground);
     }
@@ -151,6 +156,20 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
     // Alto de la pieza tal como viene del prefab. En un grupo es el de TODA la composición: si se
     // midiera solo el primer sprite, el 'height' del catálogo pasaría a significar "el alto de una
     // de las plantas" en vez de "el alto del conjunto".
+    // Cuánto queda por debajo del pivote, en unidades de mundo y con la escala ya aplicada. No se
+    // puede cachear por id como el alto: dos copias de la misma pieza pueden tener escalas
+    // distintas (el 'scale' del JSON y la variación al azar).
+    static float BelowPivot(GameObject instance)
+    {
+        var renderers = instance.GetComponentsInChildren<Renderer>(true);
+        if (renderers.Length == 0) return 0f;
+
+        var bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+
+        return Mathf.Max(0f, instance.transform.position.y - bounds.min.y);
+    }
+
     float SourceHeight(string id, GameObject instance)
     {
         if (_sourceHeight.TryGetValue(id, out var cached)) return cached;
@@ -205,6 +224,7 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         }
 
         _planted.Clear();
+        _belowPivot.Clear();
         _plantedFlat.Clear();
     }
 
@@ -238,22 +258,22 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         }
     }
 
-    // Posición Y inclinación, las dos por frame.
-    //
-    // La inclinación hace falta por lo mismo que en los nodos: el suelo curvado se va pinchando
-    // cada vez más hacia el horizonte, y una pieza que conserve su ángulo fijo deja de estar
-    // apoyada. Lo que se despega es su base pintada —el trozo de sprite que queda por debajo del
-    // pivote—, que sigue cayendo a plomo mientras el suelo se escapa: de lejos se ven flotando.
-    //
-    // Subir 'sink' no lo arregla porque el desfase CRECE con la distancia. El valor que las
-    // apoyaría en el horizonte las entierra de cerca, y el que las deja completas de cerca las
-    // deja flotando allá.
     void Place(int i)
     {
-        Vector3 world = transform.TransformPoint(_plantedFlat[i]);
+        Vector3 curved = WorldMapCurve.Curve(transform.TransformPoint(_plantedFlat[i]), _camera);
 
-        _planted[i].localPosition = transform.InverseTransformPoint(WorldMapCurve.Curve(world, _camera));
-        _planted[i].localRotation = Quaternion.Euler(tilt + WorldMapCurve.Pitch(world, _camera) * slopeFollow, 0f, 0f);
+        // La inclinación gira la pieza sobre su PIVOTE, y el pivote no es el borde de abajo: hay
+        // un trozo de sprite por debajo (la base pintada de la roca). Al girar, ese trozo describe
+        // un arco y sube: a 35° levanta un 17% de su largo, a 60° un 50%. La pieza queda apoyada
+        // en el pivote pero su base dibujada flota.
+        //
+        // De cerca no se ve porque se mira el suelo desde arriba y unos centímetros de altura
+        // quedan tapados por la propia pieza. Hacia el horizonte el suelo se ve casi de canto, y
+        // esos mismos centímetros se convierten en un hueco bien visible — que es lo que parecía
+        // un problema de 'sink' pero no lo era: el sink es constante y el hueco aparece solo lejos.
+        curved.y -= _belowPivot[i] * (1f - Mathf.Cos(tilt * Mathf.Deg2Rad));
+
+        _planted[i].localPosition = transform.InverseTransformPoint(curved);
     }
 
     // La curva se la aplica C# a la pieza entera, no el shader, aunque el material sepa hacerlo.
