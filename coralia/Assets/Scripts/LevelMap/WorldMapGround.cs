@@ -31,10 +31,10 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Cuánto sobra de suelo en las puntas INTERIORES de cada isla, las que dan al capítulo vecino. Es lo que decide la separación entre capítulos, junto con 'Chapter Gap'.")]
     [SerializeField] float endMargin = 12f;
 
-    [Tooltip("Cuánto sobra antes del primer capítulo del mundo. Va aparte del margen interior porque ahí no hay isla vecina que separar, solo agua de más.")]
+    [Tooltip("Cuánto sobra antes de lo primero que se ve del mundo. Va aparte del margen interior porque ahí no hay isla vecina que separar, solo agua de más.")]
     [SerializeField] float outerStartMargin = 2f;
 
-    [Tooltip("Cuánto sobra después del último capítulo. Separado del de arriba porque no cumplen la misma función: este decide cuánto camino se alcanza a ver al final, y el otro solo cuánta agua queda debajo del primer nodo.")]
+    [Tooltip("Cuánto sobra después de lo último que se ve del mundo. Separado del de arriba porque no cumplen la misma función: este decide cuánto se alcanza a ver al final, y el otro solo cuánta agua queda antes del primer nodo.")]
     [SerializeField] float outerEndMargin = 2f;
 
     [Tooltip("Cuántos cortes por unidad de mundo. Más alto es más suave y más caro.")]
@@ -56,6 +56,10 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     // en cada cruce sería basura para nada.
     readonly List<MeshFilter> _islands = new();
 
+    // Leer y parsear el JSON de un capítulo por cada consulta sería caro: WorldStart y WorldEnd
+    // los pide el scroll para calcular sus topes, o sea varias veces por frame.
+    readonly Dictionary<int, (float min, float max)> _decorationRange = new();
+
     bool _needsRebuild = true;
 
     // Los extremos del terreno en unidades de mundo, con el margen de cada punta ya incluido.
@@ -69,7 +73,7 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
             if (map == null) return 0f;
 
             var spans = map.Spans();
-            return spans.Count == 0 ? 0f : (spans[0].start - outerStartMargin) * map.Layout.spacing;
+            return spans.Count == 0 ? 0f : (ContentStart(spans[0]) - outerStartMargin) * map.Layout.spacing;
         }
     }
 
@@ -81,8 +85,50 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
             if (map == null) return 0f;
 
             var spans = map.Spans();
-            return spans.Count == 0 ? 0f : (spans[^1].End + outerEndMargin) * map.Layout.spacing;
+            return spans.Count == 0 ? 0f : (ContentEnd(spans[^1]) + outerEndMargin) * map.Layout.spacing;
         }
+    }
+
+    // Hasta dónde llega lo que de verdad se VE de un capítulo, en índice de mundo: el primer y el
+    // último nodo, o las decoraciones que se salgan más allá de ellos.
+    //
+    // Los márgenes exteriores se miden contra esto y no contra los nodos, porque el marco de
+    // cierre se coloca DESPUÉS del último nodo (ver ChapterData.IndexIn: 'end' cae medio nodo o un
+    // nodo más allá). Midiendo desde el nodo, el margen tenía que cubrir el cierre Y el agua que
+    // se quiere ver detrás, así que para que el último nodo siguiera siendo alcanzable había que
+    // subirlo hasta dejar varios nodos de agua vacía después del cierre — que es exactamente lo
+    // que se veía suelto al final del mundo.
+    //
+    // Así el margen significa lo que uno espera: cuánto sobra DESPUÉS de la última pieza. Y un
+    // capítulo nuevo con otro cierre se acomoda solo.
+    float ContentStart(WorldMapDefinition.Span span) => span.start + DecorationRange(span).min;
+    float ContentEnd(WorldMapDefinition.Span span)   => span.start + DecorationRange(span).max;
+
+    // Lo que ocupan las decoraciones del capítulo, en índice DENTRO del capítulo. Arranca en el
+    // rango de los nodos (0 .. último) y se ensancha con lo que sobresalga: un capítulo sin
+    // decoraciones queda exactamente igual que antes.
+    (float min, float max) DecorationRange(WorldMapDefinition.Span span)
+    {
+        if (_decorationRange.TryGetValue(span.number, out var cached)) return cached;
+
+        float last  = Mathf.Max(0, span.count - 1);
+        var   range = (min: 0f, max: last);
+
+        var json = Resources.Load<TextAsset>($"Chapters/Chapter_{span.number}");
+        var data = json ? JsonUtility.FromJson<ChapterData>(json.text) : null;
+
+        if (data?.decorations != null)
+            foreach (var placement in data.decorations)
+            {
+                if (placement == null) continue;
+
+                float at = placement.IndexIn(span.count);
+                if (at < range.min) range.min = at;
+                if (at > range.max) range.max = at;
+            }
+
+        _decorationRange[span.number] = range;
+        return range;
     }
 
     void OnEnable()   => _needsRebuild = true;
@@ -105,6 +151,7 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         _definition = WorldMapDefinition.For(this);
         if (_definition == null) return;
 
+        _decorationRange.Clear(); // por si se editó un Chapter_N.json con el editor abierto
         Adopt();
 
         // La geometría vive en las islas; este objeto queda solo como contenedor y como fuente
@@ -230,8 +277,8 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
                       WorldMapDefinition.Span span, float width, bool worldStart, bool worldEnd)
     {
         float spacing = _definition.Layout.spacing;
-        float from    = (span.start - (worldStart ? outerStartMargin : endMargin)) * spacing;
-        float to      = (span.End   + (worldEnd   ? outerEndMargin   : endMargin)) * spacing;
+        float from    = (worldStart ? ContentStart(span) - outerStartMargin : span.start - endMargin) * spacing;
+        float to      = (worldEnd   ? ContentEnd(span)   + outerEndMargin   : span.End   + endMargin) * spacing;
         float length  = to - from;
 
         int cols = Mathf.Max(1, Mathf.RoundToInt(width  * density));
