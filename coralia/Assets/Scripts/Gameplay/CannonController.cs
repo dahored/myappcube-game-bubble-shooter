@@ -94,6 +94,7 @@ public class CannonController : MonoBehaviour
     void Awake()
     {
         currentBubbleButton.onClick.AddListener(SwapCurrentAndNext);
+        HookNextBubbleButton();
 
         // Oculto desde el arranque — solo debe verse durante la animación post-disparo. Si en
         // el Editor queda activo por error (ej. se dejó así para poder ubicarlo/ajustarlo),
@@ -182,6 +183,30 @@ public class CannonController : MonoBehaviour
         // Publicar, en cambio, se repite sin problema: es el mismo número, y vuelve a asentar el
         // retiro por si la primera vez el grid todavía no tenía burbujas.
         if (grid != null) grid.SetMuzzleReferenceY(_muzzleLocalBase.y); // deja el grid ya colocado, sin animar
+    }
+
+    // Tocar la burbuja del pulpo también intercambia. Es el mismo gesto que en la recámara, y es
+    // el natural: quien quiere la de atrás la toca a ELLA, no a la que ya tiene en la mano.
+    //
+    // El Button se agrega por código si no está. La NextBubble es solo una Image sin nada más que
+    // configurar, así que obligar a crearlo a mano en la escena sería justo el paso que se olvida
+    // y deja media función muerta sin ningún error que lo delate.
+    void HookNextBubbleButton()
+    {
+        if (nextBubbleImage == null) return;
+
+        var button = nextBubbleImage.GetComponent<Button>();
+        if (button == null)
+        {
+            button = nextBubbleImage.gameObject.AddComponent<Button>();
+            button.targetGraphic = nextBubbleImage;
+
+            // Sin tinte al tocar: el aviso del swap son el cruce y el pop, y un oscurecido
+            // encima pelearía con ellos justo cuando la burbuja está por salir volando.
+            button.transition = Selectable.Transition.None;
+        }
+
+        button.onClick.AddListener(SwapCurrentAndNext);
     }
 
     public void Init(List<string> availableColors, int shotsRemaining)
