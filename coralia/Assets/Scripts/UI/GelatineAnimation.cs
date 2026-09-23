@@ -32,7 +32,12 @@ public class GelatineAnimation : MonoBehaviour
     float   _t;
     float   _swayT;
 
-    void Awake()
+    void Awake() => Initialize();
+
+    // Aparte de Awake porque este componente viaja en prefabs que instancian herramientas de
+    // editor: con 'Reload Scene' desactivado, un objeto creado en modo edición entra a Play sin
+    // que su Awake haya corrido, y Update se encontraba los keyframes en null.
+    void Initialize()
     {
         _baseScale = transform.localScale;
         if (randomDelay) startDelay = Random.Range(0.5f, 2.5f);
@@ -54,6 +59,8 @@ public class GelatineAnimation : MonoBehaviour
 
     void Update()
     {
+        if (_keyframes == null) Initialize();
+
         _t = (_t + Time.deltaTime / duration) % 1f;
         var (x, y) = Evaluate(_t);
         transform.localScale = new Vector3(_baseScale.x * x, _baseScale.y * y, _baseScale.z);

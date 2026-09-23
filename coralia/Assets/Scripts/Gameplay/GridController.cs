@@ -7,6 +7,21 @@ public class GridController : MonoBehaviour
 {
     [SerializeField] GameObject bubblePrefab;
 
+    [Tooltip("Número que sale de cada burbuja al reventar. Opcional — sin esto se juega igual, solo no se ven los puntos.")]
+    [SerializeField] ScorePopup scorePopupPrefab;
+
+    [Tooltip("Cuánto por encima del cañón sale el número de las burbujas que caen. La burbuja sigue cayendo; el número se queda acá.")]
+    [SerializeField] float dropScoreHeight = 2f * HexGridMath.BubbleDiameter;
+
+    [Tooltip("Separación mínima entre dos números de caída que comparten columna. El que llega después se corre hacia arriba de a este paso hasta quedar libre.")]
+    [SerializeField] float dropScoreLaneStep = HexGridMath.BubbleRadius;
+
+    [Tooltip("Sonido del bonus de una burbuja que cae, al aparecer su número. Opcional — vacío juega igual, solo sin sonido.")]
+    [SerializeField] AudioClip dropScoreClip;
+
+    [Tooltip("Cada cuánto puede sonar y vibrar ese bonus como mucho. En un derrumbe de veinte burbujas los números salen cada 0,04 s: sin este espaciado serían veinte disparos de audio y veinte toques en medio segundo. Los que caen entremedio salen igual, mudos y sin vibración.")]
+    [SerializeField] float dropScoreSoundInterval = 0.12f;
+
     [Header("Sprites por color (arrastrar el sub-sprite bubble_X_0 de cada PNG)")]
     [SerializeField] Sprite spriteRed;
     [SerializeField] Sprite spriteBlue;
@@ -32,10 +47,16 @@ public class GridController : MonoBehaviour
 
     [Header("Shake — combos grandes (referencia: Candy Crush)")]
     [SerializeField] int   shakeThreshold = 8;   // match.Count + drop.Count a partir del cual tiembla
-    [SerializeField] float shakeDuration  = 0.25f;
-    [SerializeField] float shakeMagnitude = 12f; // px, se amortigua a 0 durante shakeDuration
+    [SerializeField] float shakeDuration  = 0.25f; // cuánto tarda en apagarse desde el tope
+    [SerializeField] float shakeMagnitude = 12f;   // px del temblor con la energía al tope
+    [Tooltip("Cuántos pops seguidos hacen falta para llegar al temblor máximo.")]
+    [SerializeField] float shakeMaxEnergy = 4f;
 
     readonly Dictionary<Vector2Int, BubbleView> _cells = new();
+
+    // Los números de caída que están en pantalla o por salir, para no apilarlos — ver FreeDropLaneY.
+    readonly List<(float x, float lane, float when)> _dropLanes = new();
+    float _lastDropSoundAt = float.NegativeInfinity;
 
     RectTransform _rt;
     Vector2       _baseAnchoredPos;
@@ -48,12 +69,41 @@ public class GridController : MonoBehaviour
     // cadena, así que con 1.5s alcanza para el caso normal y sigue cortando cualquier cuelgue.
     const float WAIT_TIMEOUT = 1.5f;
     Vector2       _shakeOffset;
-    float         _shakeTimer;
+    float         _shakeEnergy;   // sube con cada pop, baja sola — ver ShakePulse
+    float         _introOffsetY;  // solo la vista previa de entrada — ver IntroOffsetY
 
     // Cuánto se retiró el grid del cañón ahora mismo (0 = posición normal) — CannonController
     // lo resta de la posición del muzzle para que el disparo/mira sigan apuntando bien aunque
     // el grid entero se haya movido.
     public float ScrollOffsetY => _scrollOffsetY;
+
+    // Desplazamiento temporal de la vista previa de entrada (GridIntroPreview). Va aparte del
+    // retiro y no se suma a ScrollOffsetY a propósito: aquel es la posición de JUEGO, y el cañón
+    // la resta para saber dónde apunta. Este vale mientras no se puede disparar y siempre termina
+    // en cero, así que nadie más tiene que enterarse de que existe.
+    public float IntroOffsetY
+    {
+        get => _introOffsetY;
+        set { _introOffsetY = value; ApplyOffsets(); }
+    }
+
+    // Cuánto del tablero queda fuera de cuadro por ARRIBA en la posición de juego.
+    //
+    // Sale del retiro, que es lo único que sube el tablero, menos el aire que ya había entre el
+    // borde de la pantalla y la primera fila: el contenedor está anclado arriba con el pivote en
+    // su borde superior, así que su anchoredPosition.y negativa ES esa distancia. Mientras el
+    // retiro no se come ese colchón no hay nada tapado, por más que el grid se haya movido.
+    //
+    // No mide la pantalla ni depende del dispositivo: son dos valores que el propio contenedor ya
+    // tiene. Un nivel más largo o un teléfono más alto lo cambian solos.
+    public float HiddenAbove => Mathf.Max(0f, _scrollOffsetY - Mathf.Max(0f, -_baseAnchoredPos.y));
+
+    // Un único lugar que escribe la posición del contenedor. Los tres desplazamientos se suman en
+    // vez de pisarse: el retiro, el temblor y la vista previa pueden coincidir en el mismo frame.
+    void ApplyOffsets()
+    {
+        if (_rt) _rt.anchoredPosition = _baseAnchoredPos + Vector2.up * (_scrollOffsetY + _introOffsetY) + _shakeOffset;
+    }
 
     public int CellCount => _cells.Count;
 
@@ -99,28 +149,38 @@ public class GridController : MonoBehaviour
         if (scrolling) _scrollOffsetY = Mathf.MoveTowards(_scrollOffsetY, _scrollTarget, scrollSpeed * Time.deltaTime);
         if (!pending) _scrollWait = 0f;
 
-        bool shaking = _shakeTimer > 0f;
+        // La energía baja sola. Mientras siguen llegando pops la reponen más rápido de lo que
+        // decae, así que el temblor se mantiene durante toda la cadena; cuando dejan de llegar,
+        // se apaga suave en vez de cortarse.
+        bool shaking = _shakeEnergy > 0f;
         if (shaking)
         {
-            _shakeTimer -= Time.deltaTime;
-            float damp = Mathf.Clamp01(_shakeTimer / shakeDuration); // se amortigua a 0 al final, no corta de golpe
-            _shakeOffset = _shakeTimer > 0f ? Random.insideUnitCircle * shakeMagnitude * damp : Vector2.zero;
+            _shakeEnergy = Mathf.Max(0f, _shakeEnergy - Time.deltaTime / Mathf.Max(0.01f, shakeDuration));
+            _shakeOffset = Random.insideUnitCircle * shakeMagnitude * (_shakeEnergy / shakeMaxEnergy);
         }
 
         // Se suma al offset de scroll, no lo reemplaza — así el shake no pelea con el
         // retiro del grid si ambos coinciden en el mismo momento.
-        if (scrolling || shaking)
-            _rt.anchoredPosition = _baseAnchoredPos + Vector2.up * _scrollOffsetY + _shakeOffset;
+        if (scrolling || shaking) ApplyOffsets();
     }
 
     // Llamado por GameplayController después de resolver un match+drop — solo tiembla si el
     // combo fue lo suficientemente grande (shakeThreshold), como el efecto de Candy Crush en
     // combos grandes.
-    public void Shake(int chainSize)
+    // Un golpe de temblor, que se llama UNA VEZ POR BURBUJA a medida que explota.
+    //
+    // Antes era un solo evento al final del combo: los pops y la vibración iban de a uno, pero la
+    // pantalla daba una única sacudida ya terminada la cadena. Ahora cada burbuja aporta lo suyo
+    // y la energía se acumula, así que un combo grande sostiene el temblor mientras dura y se
+    // apaga solo al final — que es como se siente un derrumbe.
+    public void ShakePulse()
     {
-        if (chainSize < shakeThreshold) return;
-        _shakeTimer = shakeDuration;
+        _shakeEnergy = Mathf.Min(_shakeEnergy + 1f, shakeMaxEnergy);
     }
+
+    // Umbral: por debajo de este tamaño de cadena no se sacude nada. Lo decide quien llama, que
+    // es el que conoce el combo entero antes de empezar a reventarlo.
+    public bool ShakeWorthIt(int chainSize) => chainSize >= shakeThreshold;
 
     // Llamado una vez por CannonController.Start() con la posición Y del muzzle (sin scroll) —
     // es la referencia contra la que medimos qué tan cerca está la fila más baja del cañón.
@@ -175,7 +235,7 @@ public class GridController : MonoBehaviour
 
         _scrollOffsetY = _scrollTarget;
         _scrollWait    = 0f;
-        if (_rt) _rt.anchoredPosition = _baseAnchoredPos + Vector2.up * _scrollOffsetY;
+        ApplyOffsets();
     }
 
     // Colores que todavía están en el grid — usado por CannonController para no ofrecer
@@ -203,16 +263,55 @@ public class GridController : MonoBehaviour
     {
         var pool = new List<BubbleColor>();
 
+        // Primero los HUECOS donde caer completa un match: un espacio libre que ya tiene dos o
+        // más burbujas del mismo color alrededor. Ahí un solo disparo de ese color explota.
+        //
+        // Esto es lo que convierte la cola en algo jugable. Contar burbujas del frente solo
+        // asegura que el color exista; lo que el jugador necesita es que exista un LUGAR donde
+        // ese color sirva. Con cinco o seis colores en pantalla, la diferencia entre una cosa y
+        // la otra son varios disparos seguidos sin nada que hacer.
+        foreach (var slot in EmptyNeighbors())
+        {
+            var around = new Dictionary<BubbleColor, int>();
+
+            foreach (var neighbor in HexGridMath.GetNeighbors(slot))
+            {
+                if (!TryGetBubble(neighbor, out var view) || view.ColorType == BubbleColor.Rainbow) continue;
+                around.TryGetValue(view.ColorType, out int count);
+                around[view.ColorType] = count + 1;
+            }
+
+            foreach (var pair in around)
+                if (pair.Value >= 2) for (int i = 0; i < MATCH_SLOT_WEIGHT; i++) pool.Add(pair.Key);
+        }
+
+        // Y después, con mucho menos peso, los colores del frente: mantienen variedad y evitan que
+        // la cola se vuelva un único color cuando hay un solo sitio de match.
         foreach (var pair in _cells)
         {
             var color = pair.Value.ColorType;
             if (color == BubbleColor.Rainbow || !IsReachable(pair.Key)) continue;
 
             pool.Add(color);
-            if (HasNeighborOfColor(pair.Key, color)) pool.Add(color);
         }
 
         return pool;
+    }
+
+    // Cuánto pesa un color que tiene dónde matchear, frente a uno que solo está en el frente.
+    const int MATCH_SLOT_WEIGHT = 6;
+
+    // Huecos pegados a alguna burbuja, que son los únicos a los que un disparo puede llegar.
+    IEnumerable<Vector2Int> EmptyNeighbors()
+    {
+        var seen = new HashSet<Vector2Int>();
+
+        foreach (var cell in _cells.Keys)
+            foreach (var neighbor in HexGridMath.GetNeighbors(cell))
+            {
+                if (IsOccupied(neighbor) || !HexGridMath.IsValidCell(neighbor)) continue;
+                if (seen.Add(neighbor)) yield return neighbor;
+            }
     }
 
     // Alcanzable = tiene un hueco al lado o por debajo. Los huecos de ARRIBA no cuentan: una
@@ -224,13 +323,6 @@ public class GridController : MonoBehaviour
             if (neighbor.y < cell.y || !HexGridMath.IsValidCell(neighbor)) continue;
             if (!IsOccupied(neighbor)) return true;
         }
-        return false;
-    }
-
-    bool HasNeighborOfColor(Vector2Int cell, BubbleColor color)
-    {
-        foreach (var neighbor in HexGridMath.GetNeighbors(cell))
-            if (TryGetBubble(neighbor, out var view) && view.ColorType.LinksWith(color)) return true;
         return false;
     }
 
@@ -252,6 +344,119 @@ public class GridController : MonoBehaviour
             var view  = PlaceBubble(cell, color);
             if (cell == creatureCell) view.SetCreatureMarker(true);
         }
+    }
+
+    // El número de puntos sobre una celda. Lo pide GameplayController, que es el único que sabe
+    // cuánto vale la burbuja: el valor depende de la racha del disparo, no de la burbuja.
+    //
+    // Se instancia acá y no en BubbleView porque la burbuja se destruye con su propia animación
+    // y se llevaría el número a mitad de camino; este vive suelto en el grid y se autodestruye.
+    public void SpawnScorePopup(Vector2Int cell, int points, float delay, float lifetime)
+    {
+        Spawn(HexGridMath.CellToLocalPos(cell), points, delay, lifetime);
+    }
+
+    // El número de una burbuja que CAE no sale en su celda sino abajo, por encima del cañón, y
+    // justo cuando la burbuja pasa por ahí. La burbuja sigue de largo y desaparece; el número
+    // se queda flotando donde se lee.
+    //
+    // El tiempo se calcula por burbuja, no es fijo: cada una arranca en una fila distinta, así
+    // que la de arriba tarda bastante más en llegar abajo que la de la última fila. Con un delay
+    // fijo, las de abajo mostraban el número mucho después de haber desaparecido.
+    public void SpawnDropScorePopup(Vector2Int cell, int points, float extraDelay)
+    {
+        var origin  = HexGridMath.CellToLocalPos(cell);
+        float targetY = _muzzleReferenceY + dropScoreHeight;
+        float delay   = extraDelay + BubbleView.DropDuration(origin.y - targetY);
+
+        bool cue = DropCueAt(Time.time + delay);
+
+        Spawn(new Vector2(origin.x, FreeDropLaneY(origin.x, targetY, delay)), points,
+              delay, ScorePopup.DROP_LIFETIME, cue ? dropScoreClip : null, cue);
+    }
+
+    // Si a este número le toca aviso —sonido y vibración— o si sale callado. Se decide con el
+    // instante en que va a APARECER, que ya se conoce acá: así el espaciado queda repartido de
+    // verdad a lo largo del derrumbe, en vez de depender de quién llegue primero a un cronómetro
+    // mientras la cadena corre.
+    //
+    // Las dos señales van juntas a propósito. Separadas, una caída grande dejaría el oído y el
+    // tacto contando cosas distintas.
+    bool DropCueAt(float when)
+    {
+        if (when - _lastDropSoundAt < dropScoreSoundInterval) return false;
+
+        _lastDropSoundAt = when;
+        return true;
+    }
+
+    // Todos los números de caída aterrizan a la MISMA altura y su única separación es la columna
+    // de la burbuja. Hay 19 columnas posibles, así que en un derrumbe de quince o veinte burbujas
+    // varias comparten columna y sus números quedan exactamente uno encima de otro: ilegibles.
+    //
+    // Esto le busca a cada uno un carril libre, corriéndolo hacia arriba de a un paso.
+    //
+    // El cálculo es exacto y no un tanteo, porque todos suben a la misma velocidad: la distancia
+    // vertical entre dos números NO cambia con el tiempo, y vale
+    //
+    //     (yA - rate * tA) - (yB - rate * tB)
+    //
+    // donde t es el instante en que cada uno aparece. Ese valor —el "carril"— es lo que hay que
+    // separar. Así, dos números de la misma columna que salen con suficiente diferencia de tiempo
+    // ya vienen separados solos y no hace falta correr ninguno: el de abajo nunca alcanza al de
+    // arriba porque suben parejos.
+    float FreeDropLaneY(float x, float baseY, float delay)
+    {
+        float rate = ScorePopup.RISE_DISTANCE / ScorePopup.DROP_LIFETIME;
+        float when = Time.time + delay;            // cuándo aparece, en tiempo absoluto
+        float lane = baseY - rate * when;
+
+        PruneDropLanes();
+
+        // Dos columnas vecinas están a medio diámetro: eso ya alcanza, lo que se pisa es la misma
+        // columna exacta. El margen va apenas por debajo para no contar vecinas como choque.
+        const float MIN_X    = HexGridMath.BubbleRadius * 0.9f;
+        const int   MAX_LANES = 8; // tope de seguridad: sin esto un caso raro subiría sin fin
+
+        for (int i = 0; i < MAX_LANES; i++)
+        {
+            bool free = true;
+
+            foreach (var used in _dropLanes)
+            {
+                if (Mathf.Abs(used.x - x) >= MIN_X) continue;                             // otra columna
+                if (Mathf.Abs(used.when - when) >= ScorePopup.DROP_LIFETIME) continue;    // no coinciden en pantalla
+                if (Mathf.Abs(used.lane - lane) < dropScoreLaneStep) { free = false; break; }
+            }
+
+            if (free) break;
+            lane += dropScoreLaneStep;
+        }
+
+        _dropLanes.Add((x, lane, when));
+        return lane + rate * when;
+    }
+
+    // Los carriles que ya se apagaron dejan de estorbar. Sin esto la lista crecería toda la
+    // partida y cada caída nueva se compararía contra números que no están hace rato.
+    void PruneDropLanes()
+    {
+        for (int i = _dropLanes.Count - 1; i >= 0; i--)
+            if (_dropLanes[i].when + ScorePopup.DROP_LIFETIME < Time.time) _dropLanes.RemoveAt(i);
+    }
+
+    // Para los puntos que no salen de una celda — el remate de los disparos sobrantes al ganar.
+    public void SpawnScorePopupAt(Vector2 localPos, int points, float delay, float lifetime) =>
+        Spawn(localPos, points, delay, lifetime);
+
+    void Spawn(Vector2 localPos, int points, float delay, float lifetime,
+               AudioClip clip = null, bool haptic = false)
+    {
+        if (!scorePopupPrefab) return;
+
+        var popup = Instantiate(scorePopupPrefab, transform);
+        ((RectTransform)popup.transform).anchoredPosition = localPos;
+        popup.Play(points, delay, lifetime, clip, haptic);
     }
 
     public BubbleView PlaceBubble(Vector2Int cell, BubbleColor color)

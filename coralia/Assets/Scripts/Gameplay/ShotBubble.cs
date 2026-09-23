@@ -35,12 +35,38 @@ public class ShotBubble : MonoBehaviour
         _rt.anchoredPosition = startLocalPos;
     }
 
+    // El avance de un frame se parte en tramos cortos y se busca colisión en cada uno.
+    //
+    // Moviendo de una sola vez, la comprobación solo ocurre donde termina el salto: con un frame
+    // algo más lento de lo normal ese salto supera los 92px de una burbuja, y la burbuja disparada
+    // ATRAVIESA el grid sin detectar nada hasta chocar el techo. Es intermitente y depende del
+    // rendimiento, así que aparece justo en los niveles grandes, que son los que más tardan.
+    //
+    // Medio radio por tramo deja cuatro comprobaciones por burbuja recorrida, que es de sobra.
+    const float MAX_STEP = HexGridMath.BubbleRadius * 0.5f;
+
     public ImpactInfo? Tick(float dt)
     {
-        Vector2 pos = _rt.anchoredPosition + Velocity * dt;
-        HexGridMath.ReflectIfNeeded(ref pos, ref Velocity);
-        _rt.anchoredPosition = pos;
+        float remaining = Velocity.magnitude * dt;
 
+        while (remaining > 0f)
+        {
+            float step = Mathf.Min(remaining, MAX_STEP);
+            remaining -= step;
+
+            Vector2 pos = _rt.anchoredPosition + Velocity.normalized * step;
+            HexGridMath.ReflectIfNeeded(ref pos, ref Velocity);
+            _rt.anchoredPosition = pos;
+
+            var impact = ImpactAt(pos);
+            if (impact.HasValue) return impact;
+        }
+
+        return null;
+    }
+
+    ImpactInfo? ImpactAt(Vector2 pos)
+    {
         // El techo está en y=0 (fila 0 vive en y=-BubbleRadius); "toca techo" cuando el
         // borde superior de la burbuja (pos.y + radio) llega a esa línea.
         if (pos.y >= -HexGridMath.BubbleRadius)
@@ -55,6 +81,7 @@ public class ShotBubble : MonoBehaviour
                 return new ImpactInfo { HitCeiling = false, LocalPos = pos, StruckCell = candidate };
             }
         }
+
         return null;
     }
 
