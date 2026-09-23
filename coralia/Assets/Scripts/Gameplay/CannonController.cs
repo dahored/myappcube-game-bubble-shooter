@@ -195,6 +195,12 @@ public class CannonController : MonoBehaviour
     {
         if (nextBubbleImage == null) return;
 
+        // Un Button cuyo targetGraphic no recibe raycasts no se puede tocar NUNCA, y no avisa: el
+        // botón queda ahí, bien conectado, y simplemente no pasa nada. La NextBubble venía con el
+        // Raycast Target apagado de la limpieza de decoraciones, así que se enciende acá en vez de
+        // depender de una casilla de la escena que se puede volver a apagar sin que se note.
+        nextBubbleImage.raycastTarget = true;
+
         var button = nextBubbleImage.GetComponent<Button>();
         if (button == null)
         {
