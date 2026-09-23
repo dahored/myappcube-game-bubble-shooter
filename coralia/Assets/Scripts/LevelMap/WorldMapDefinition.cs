@@ -158,6 +158,7 @@ public class WorldMapDefinition : MonoBehaviour
     // la misma y no hace falta calcular nada.
     //
     // Entre ellos sí hay orden: tierra, camino y encima la banda.
+    public const int ORDER_BACKDROP = -(ORDER_LIMIT + 4);
     public const int ORDER_GROUND = -(ORDER_LIMIT + 3);
     public const int ORDER_PATH   = -(ORDER_LIMIT + 2);
     public const int ORDER_TRAIL  = -(ORDER_LIMIT + 1);
