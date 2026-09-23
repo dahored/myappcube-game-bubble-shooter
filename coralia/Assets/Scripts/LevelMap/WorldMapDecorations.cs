@@ -21,8 +21,11 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Multiplica el tamaño de TODAS las decoraciones. Para ajustar el conjunto sin tocar el catálogo ni los JSON.")]
     [SerializeField] float sizeMultiplier = 1f;
 
-    [Tooltip("Cuánto se hunden en el suelo, para que la base no corte recta contra él.")]
+    [Tooltip("Cuánto se hunden en el suelo de CERCA, donde el terreno se mira desde arriba. En negativo las levanta. Acá suele hacer falta poco —o negativo—: el suelo es opaco y escribe profundidad, así que la parte inclinada hacia atrás se mete detrás de él y Unity la corta.")]
     [SerializeField] float sink = 0.05f;
+
+    [Tooltip("Lo mismo, pero donde el suelo ya se ve de canto. Ahí el corte no ocurre (no hay suelo delante) y en cambio cualquier altura de más se lee como un hueco, así que casi siempre quiere ser MAYOR que el de cerca. Se pasa de uno al otro solo, según lo inclinado que esté el terreno.")]
+    [SerializeField] float sinkAtHorizon = 0.2f;
 
     [Tooltip("Apartar del camino siguiendo su perpendicular. Apagado aparta solo en X, y así cada pieza queda a la misma profundidad que el nodo de su índice.")]
     [SerializeField] bool perpendicularOffset = true;
@@ -104,8 +107,9 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         float at     = chapterStart + placement.IndexIn(levelsInChapter);
         float offset = placement.side == "right" ? placement.offset : -placement.offset;
 
+        // El hundido NO se aplica acá: depende de lo inclinado que se vea el suelo bajo la pieza,
+        // o sea de dónde esté la cámara. Se resuelve por frame en Place().
         Vector3 ground = WorldMapPath.SampleOffset(at, _definition.Layout, offset, perpendicularOffset);
-        ground.y -= sink;
 
         var tr = instance.transform;
         tr.SetParent(transform, false);
@@ -156,6 +160,23 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
     // Alto de la pieza tal como viene del prefab. En un grupo es el de TODA la composición: si se
     // midiera solo el primer sprite, el 'height' del catálogo pasaría a significar "el alto de una
     // de las plantas" en vez de "el alto del conjunto".
+    // De 0 a 1 según lo de canto que se vea el suelo bajo un punto: 0 en el tramo plano de
+    // adelante, 1 en lo más lejos que llega a dibujarse una decoración.
+    //
+    // Se normaliza contra la pendiente que hay EN EL BORDE DEL ALCANCE y no contra 90 grados
+    // porque el terreno nunca llega a verse del todo de canto dentro de lo que se dibuja: con la
+    // curvatura y el alcance actuales se queda en unos 63. Dividiendo por 90, el campo del
+    // horizonte nunca se alcanzaría y habría que pedir de más para conseguir lo que uno quiere.
+    // Así vale exactamente lo que dice.
+    float EdgeOn(Vector3 positionWS)
+    {
+        float here = WorldMapCurve.Pitch(positionWS, _camera);
+        float max  = WorldMapCurve.Pitch(
+            new Vector3(0f, 0f, _camera.transform.position.z + cullRange), _camera);
+
+        return max > 1f ? Mathf.Clamp01(here / max) : 0f;
+    }
+
     // Cuánto queda por debajo del pivote, en unidades de mundo y con la escala ya aplicada. No se
     // puede cachear por id como el alto: dos copias de la misma pieza pueden tener escalas
     // distintas (el 'scale' del JSON y la variación al azar).
@@ -260,7 +281,8 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
 
     void Place(int i)
     {
-        Vector3 curved = WorldMapCurve.Curve(transform.TransformPoint(_plantedFlat[i]), _camera);
+        Vector3 world  = transform.TransformPoint(_plantedFlat[i]);
+        Vector3 curved = WorldMapCurve.Curve(world, _camera);
 
         // La inclinación gira la pieza sobre su PIVOTE, y el pivote no es el borde de abajo: hay
         // un trozo de sprite por debajo (la base pintada de la roca). Al girar, ese trozo describe
@@ -272,6 +294,21 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         // esos mismos centímetros se convierten en un hueco bien visible — que es lo que parecía
         // un problema de 'sink' pero no lo era: el sink es constante y el hueco aparece solo lejos.
         curved.y -= _belowPivot[i] * (1f - Mathf.Cos(tilt * Mathf.Deg2Rad));
+
+        // Y el hundido, que no puede ser uno solo para todo el mapa porque el problema cambia de
+        // signo con la distancia:
+        //
+        //   De cerca  el suelo se mira desde arriba y es opaco: la parte de la pieza inclinada
+        //             hacia atrás queda DETRÁS de la superficie y Unity la corta. Hay que
+        //             levantarla (hundido chico, o negativo).
+        //   De lejos  el suelo se ve de canto y ya no hay nada delante que corte; lo que se nota
+        //             es al revés, cualquier altura de más se lee como un hueco bajo la pieza.
+        //
+        // Se interpola con la PENDIENTE del suelo y no con la distancia: la pendiente ya es la
+        // medida de "qué tan de canto se ve el terreno acá", que es justo lo que decide cuál de
+        // los dos problemas manda. Y no hay que calibrar ninguna distancia a mano: si cambia la
+        // curvatura o el encuadre, la transición se corre sola.
+        curved.y -= Mathf.Lerp(sink, sinkAtHorizon, EdgeOn(world));
 
         _planted[i].localPosition = transform.InverseTransformPoint(curved);
     }
