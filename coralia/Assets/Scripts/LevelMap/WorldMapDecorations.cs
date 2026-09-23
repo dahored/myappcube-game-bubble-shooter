@@ -31,6 +31,10 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
     [Range(0f, 80f)]
     [SerializeField] float tilt = 12f;
 
+    [Tooltip("Cuánto acompañan la pendiente del suelo curvado, además del 'tilt' fijo. En 1 quedan siempre apoyadas; en 0 se comportan como antes y hacia el horizonte se ven flotando. Bajarlo solo tiene sentido si una pieza muy alta se ve demasiado recostada allá al fondo.")]
+    [Range(0f, 1f)]
+    [SerializeField] float slopeFollow = 1f;
+
     [Tooltip("Hasta qué distancia de la cámara se dibujan. Más allá se apagan.")]
     [SerializeField] float cullRange = 90f;
 
@@ -230,9 +234,26 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
             if (_planted[i].gameObject.activeSelf != visible)
                 _planted[i].gameObject.SetActive(visible);
 
-            if (visible)
-                _planted[i].localPosition = Curved(_plantedFlat[i]);
+            if (visible) Place(i);
         }
+    }
+
+    // Posición Y inclinación, las dos por frame.
+    //
+    // La inclinación hace falta por lo mismo que en los nodos: el suelo curvado se va pinchando
+    // cada vez más hacia el horizonte, y una pieza que conserve su ángulo fijo deja de estar
+    // apoyada. Lo que se despega es su base pintada —el trozo de sprite que queda por debajo del
+    // pivote—, que sigue cayendo a plomo mientras el suelo se escapa: de lejos se ven flotando.
+    //
+    // Subir 'sink' no lo arregla porque el desfase CRECE con la distancia. El valor que las
+    // apoyaría en el horizonte las entierra de cerca, y el que las deja completas de cerca las
+    // deja flotando allá.
+    void Place(int i)
+    {
+        Vector3 world = transform.TransformPoint(_plantedFlat[i]);
+
+        _planted[i].localPosition = transform.InverseTransformPoint(WorldMapCurve.Curve(world, _camera));
+        _planted[i].localRotation = Quaternion.Euler(tilt + WorldMapCurve.Pitch(world, _camera) * slopeFollow, 0f, 0f);
     }
 
     // La curva se la aplica C# a la pieza entera, no el shader, aunque el material sepa hacerlo.
@@ -244,9 +265,7 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
     //
     // Moviendo el Transform, los límites acompañan y el descarte vuelve a ser correcto. Y no se
     // pierde nada visualmente: un sprite tiene cuatro vértices casi a la misma profundidad, así
-    // que la curva nunca lo dobló — solo lo bajaba.
-    Vector3 Curved(Vector3 local) =>
-        transform.InverseTransformPoint(WorldMapCurve.Curve(transform.TransformPoint(local), _camera));
+    // que la curva nunca lo dobló — solo lo bajaba. Ver Place().
 
     static ChapterData LoadChapter(int chapter)
     {
