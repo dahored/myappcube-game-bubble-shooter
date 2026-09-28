@@ -246,6 +246,10 @@ public class WorldMapScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
     // así el pin y la tarjeta del jugador no pueden discrepar.
     public float OffsetFor(float worldZ) => worldZ - centerBias;
 
+    // Qué punto del mundo está centrado ahora mismo. Es la inversa de OffsetFor: quien quiera
+    // saber "dónde estoy" no tiene por qué conocer el ajuste de centrado.
+    public float CenteredWorldZ => Offset + centerBias;
+
     public void CenterOn(float worldZ) => MoveTo(OffsetFor(worldZ));
 
     void Move(float delta)
