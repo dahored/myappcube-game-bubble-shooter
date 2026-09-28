@@ -73,6 +73,17 @@ public class BubbleStream : MonoBehaviour
 
     void OnEnable()  => _nextIn = Random.Range(interval.x, interval.y);
 
+    // Este emisor suele vivir en un rectángulo grande y vacío que marca la zona por donde suben
+    // las burbujas. Una Image sin sprite igual RECIBE raycasts, así que si queda activada se come
+    // el arrastre del mapa en toda esa zona — sin error, sin nada raro en pantalla, simplemente el
+    // mapa deja de responder ahí. Ya pasó con las rocas de los costados y con el aviso de apuntar.
+    void Awake()
+    {
+        var image = GetComponent<Image>();
+        if (image != null && image.sprite == null && image.raycastTarget)
+            Debug.LogWarning($"[BubbleStream] '{name}' tiene una Image sin sprite con Raycast Target activado: va a bloquear el arrastre en toda su área. Desmarcalo.", this);
+    }
+
     void Update()
     {
         _nextIn -= Time.deltaTime;
