@@ -32,7 +32,7 @@ public class BubbleStream : MonoBehaviour
     [Range(0f, 0.8f)]
     [SerializeField] float radiusVariation = 0.35f;
 
-    [Tooltip("Cuánto se reparte el punto de salida alrededor del origen, en píxeles.")]
+    [Tooltip("Cuánto se reparte el punto de salida alrededor del borde inferior del rectángulo, en píxeles.")]
     [SerializeField] Vector2 spread = new(40f, 25f);
 
     [Tooltip("Cuánto se bambolea de lado mientras sube, en píxeles.")]
@@ -170,7 +170,11 @@ public class BubbleStream : MonoBehaviour
         var rect = (RectTransform)go.transform;
 
         rect.SetParent(transform, false);
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+
+        // Nacen en el borde de ABAJO del rectángulo, no en su centro: así la caja se lee como
+        // "las burbujas suben desde acá", que es para lo que uno la dibuja. Anclándolas al centro,
+        // media caja quedaba por debajo del punto de salida sin servir para nada.
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
         rect.pivot     = new Vector2(0.5f, 0.5f);
 
         var image = go.GetComponent<Image>();
