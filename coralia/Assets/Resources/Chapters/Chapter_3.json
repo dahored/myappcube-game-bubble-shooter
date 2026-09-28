@@ -1,6 +1,6 @@
 {
   "chapter": 3,
-  "name": "Profundidades",
+  "name": "Las Ruinas Dormidas",
   "decorations": [
     { "id": "group_2", "start": true, "middle": true, "side": "left", "offset": 0.6, "scale": 0.8 },
     { "id": "group_3", "start": true, "middle": true, "side": "right", "offset": 0.6, "scale": 0.8 },

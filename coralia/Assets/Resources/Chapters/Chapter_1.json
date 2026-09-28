@@ -1,6 +1,6 @@
 {
   "chapter": 1,
-  "name": "Coralia",
+  "name": "Bahía de Coralia",
   "decorations": [
     { "id": "group_1", "start": true, "middle":true, "side": "left", "offset": 0.6, "scale": 0.8 },
     { "id": "group_4", "start": true, "middle":true, "side": "right", "offset": 0.6, "scale": 0.8 },
