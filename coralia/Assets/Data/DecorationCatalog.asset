@@ -31,12 +31,6 @@ MonoBehaviour:
     height: 2.5
     sizeVariation: 0
     shadowWidth: 3
-  - id: group_4
-    sprite: {fileID: 0}
-    prefab: {fileID: 7395940145196178280, guid: 05006a90f8df34fbe891dd0d32a3bc9c, type: 3}
-    height: 2.5
-    sizeVariation: 0
-    shadowWidth: 3
   - id: rock_1
     sprite: {fileID: 21300000, guid: 7abe2f9497a744b15a82e8a89d016874, type: 3}
     prefab: {fileID: 0}
@@ -70,6 +64,18 @@ MonoBehaviour:
   - id: rock_3
     sprite: {fileID: 21300000, guid: a3b3dee6dc66643848bd363b1993750b, type: 3}
     prefab: {fileID: 0}
+    height: 2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: group_4
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: 05006a90f8df34fbe891dd0d32a3bc9c, type: 3}
+    height: 2.5
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: group_5
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: 6180c40ff5fb8465c805c07b62507c68, type: 3}
     height: 2
     sizeVariation: 0
     shadowWidth: 3
