@@ -45,7 +45,8 @@ public class BubbleStream : MonoBehaviour
     [Tooltip("Cuánto tarda cada una en hacer todo el recorrido.")]
     [SerializeField] Vector2 duration = new(3.5f, 6f);
 
-    [SerializeField] Vector2 size = new(14f, 38f);
+    [Tooltip("Diámetro en píxeles, sorteado dentro del rango. Referencia: la burbuja de gameplay mide 92 y las de la transición entre escenas, entre 200 y 350.")]
+    [SerializeField] Vector2 size = new(40f, 110f);
 
     [Tooltip("Tope de burbujas a la vez. Es una red de seguridad: con intervalos cortos y recorridos largos se acumulan más de las que uno cree.")]
     [SerializeField] int maxAlive = 14;
