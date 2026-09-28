@@ -89,10 +89,14 @@ public class DecorationPlacement
                 ? (node - 1) - (middle ? 0.5f : 0f)
                 : -1f - (middle ? 0.5f : 0f) + at;                // un nodo (y medio) antes del primero
 
-        return node > 0
-            ? (node - 1) - (middle ? 0.5f : 0f)
-            : at;
+        return node > 0 ? IndexAtNode(node) : at;
     }
+
+    // El índice que le tocaría a esta pieza si estuviera en OTRO nodo, ignorando el suyo.
+    //
+    // Lo usa la repetición del patrón: cuando un capítulo tiene más niveles que definiciones, las
+    // piezas del nodo 1 se vuelven a colocar en el 61, las del 2 en el 62, y así.
+    public float IndexAtNode(int atNode) => (atNode - 1) - (middle ? 0.5f : 0f);
 
     // "left" o "right".
     public string side = "left";

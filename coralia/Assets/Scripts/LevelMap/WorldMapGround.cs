@@ -122,6 +122,13 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
             {
                 if (placement == null) continue;
 
+                // Solo el marco y las posiciones crudas pueden salirse del rango de los nodos. Las
+                // piezas del cuerpo se reparten sobre los nodos que EXISTEN (ver
+                // WorldMapDecorations.PlantChapter), así que su 'node' no dice dónde van a caer:
+                // mirarlo estiraría el suelo para cubrir piezas que no se plantan, que es lo que
+                // pasaba en un capítulo con menos niveles creados que definiciones.
+                if (placement.node > 0 && !placement.start && !placement.end) continue;
+
                 float at = placement.IndexIn(span.count);
                 if (at < range.min) range.min = at;
                 if (at > range.max) range.max = at;

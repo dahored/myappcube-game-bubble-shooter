@@ -76,23 +76,84 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         Clear();
         _sourceHeight.Clear();
 
-        var rng = new System.Random(seed);
-
-        // Un capítulo por vez: los `at` de cada archivo arrancan en 0, así que hay que correrlos
-        // según dónde empieza ese capítulo dentro del mundo.
+        // Un capítulo por vez: los índices de cada archivo arrancan en 0, así que hay que
+        // correrlos según dónde empieza ese capítulo dentro del mundo.
         foreach (var span in _definition.VisibleSpans())
         {
             var data = LoadChapter(span.number);
             if (data?.decorations == null) continue;
 
-            foreach (var placement in data.decorations)
-                Plant(placement, span.start, span.count, rng);
+            // La semilla se deriva del número de capítulo y no es una sola para todo el mundo.
+            // Con una sola, el tamaño al azar de cada pieza dependía de CUÁNTOS capítulos hubiera
+            // construidos antes que el suyo — o sea que al scrollear y cambiar la ventana de
+            // capítulos visibles, las mismas rocas cambiaban de tamaño a la vista del jugador.
+            var rng = new System.Random(seed + span.number);
+
+            PlantChapter(data, span, rng);
+        }
+    }
+
+    // El marco de un capítulo va siempre; su cuerpo se recorre por los nodos que EXISTEN.
+    //
+    // Antes se plantaba lo que dijera el archivo, tal cual. Eso fallaba por los dos lados: con
+    // menos niveles creados que definiciones, las piezas de los nodos que faltan quedaban
+    // flotando más allá del final del mundo; con más niveles que definiciones, los nodos de más
+    // salían pelados.
+    //
+    // Ahora el archivo describe un PATRÓN y el mundo lo aplica a los nodos que hay. Si el patrón
+    // se acaba, vuelve a empezar: el nodo 61 repite lo del 1, el 62 lo del 2. Un capítulo al que
+    // se le agregan niveles se viste solo, y uno al que todavía le faltan no ensucia el final.
+    void PlantChapter(ChapterData data, WorldMapDefinition.Span span, System.Random rng)
+    {
+        // El marco se coloca respecto del PRIMER y el ÚLTIMO nivel real (ver
+        // ChapterData.IndexIn), así que se acomoda solo a cuántos haya.
+        foreach (var placement in data.decorations)
+            if (placement != null && (placement.start || placement.end))
+                Plant(placement, span.start + placement.IndexIn(span.count), rng);
+
+        // Las piezas del cuerpo, agrupadas por el nodo que declaran.
+        var byNode = new Dictionary<int, List<DecorationPlacement>>();
+        int pattern = 0;
+
+        foreach (var placement in data.decorations)
+        {
+            if (placement == null || placement.start || placement.end) continue;
+
+            // Sin 'node' es una posición cruda en índices, no un nodo: se coloca donde dice y no
+            // entra en la repetición, que no sabría a qué nodo corresponde.
+            if (placement.node <= 0)
+            {
+                Plant(placement, span.start + placement.IndexIn(span.count), rng);
+                continue;
+            }
+
+            if (!byNode.TryGetValue(placement.node, out var list))
+                byNode[placement.node] = list = new List<DecorationPlacement>();
+
+            list.Add(placement);
+            if (placement.node > pattern) pattern = placement.node;
+        }
+
+        if (pattern == 0) return;
+
+        for (int node = 1; node <= span.count; node++)
+        {
+            // El nodo del patrón que le toca. Se cuenta contra el nodo MÁS ALTO definido y no
+            // contra cuántos hay definidos: así un hueco en el archivo se mantiene como hueco al
+            // repetirse, en vez de correr el ritmo de todo lo que viene después.
+            int source = ((node - 1) % pattern) + 1;
+            if (!byNode.TryGetValue(source, out var list)) continue;
+
+            foreach (var placement in list)
+                Plant(placement, span.start + placement.IndexAtNode(node), rng);
         }
     }
 
     // Qué capítulos hay y en qué nivel arranca cada uno, sacado del índice: así agregar niveles a
     // un capítulo corre el siguiente solo, sin tener que tocar ningún número acá.
-    void Plant(DecorationPlacement placement, float chapterStart, int levelsInChapter, System.Random rng)
+    // 'at' ya viene resuelto en índice de MUNDO: quien llama es el que sabe si la pieza va en su
+    // nodo, en uno repetido o en el marco.
+    void Plant(DecorationPlacement placement, float at, System.Random rng)
     {
         var entry = catalog.Find(placement.id);
         if (entry == null)
@@ -104,7 +165,6 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         var instance = Build(entry, placement);
         if (instance == null) return;
 
-        float at     = chapterStart + placement.IndexIn(levelsInChapter);
         float offset = placement.side == "right" ? placement.offset : -placement.offset;
 
         // El hundido NO se aplica acá: depende de lo inclinado que se vea el suelo bajo la pieza,
