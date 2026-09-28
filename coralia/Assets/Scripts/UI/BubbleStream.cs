@@ -25,12 +25,15 @@ public class BubbleStream : MonoBehaviour
     [SerializeField] bool curveRight = true;
 
     [Header("Recorrido")]
-    [Tooltip("Radio del cuarto de círculo, en píxeles. Es también cuánto sube y cuánto se corre de lado: la burbuja termina a esa distancia en las dos direcciones.")]
-    [SerializeField] float radius = 320f;
+    [Tooltip("Cuánto sube, en píxeles, desde el borde inferior del rectángulo.")]
+    [SerializeField] float rise = 900f;
 
-    [Tooltip("Cuánto varía ese radio entre una burbuja y otra, en fracción. Sin esto todas siguen exactamente la misma línea y se ve el truco.")]
+    [Tooltip("Cuánto se corre de lado en todo el trayecto. Va aparte de la altura: una burbuja tiene que poder subir mucho y desviarse poco, que es lo que pasa de verdad.")]
+    [SerializeField] float drift = 260f;
+
+    [Tooltip("Cuánto varían esas dos distancias entre una burbuja y otra, en fracción. Sin esto todas siguen exactamente la misma línea y se ve el truco.")]
     [Range(0f, 0.8f)]
-    [SerializeField] float radiusVariation = 0.35f;
+    [SerializeField] float variation = 0.35f;
 
     [Tooltip("Cuánto se reparte el punto de salida alrededor del borde inferior del rectángulo, en píxeles.")]
     [SerializeField] Vector2 spread = new(40f, 25f);
@@ -61,7 +64,7 @@ public class BubbleStream : MonoBehaviour
         public RectTransform rect;
         public Image         image;
         public Vector2       origin;
-        public float         radius;
+        public float         scale;   // su variación propia, aplicada a subida y desvío
         public float         duration;
         public float         time;
         public float         phase;   // para que el bamboleo no vaya sincronizado entre todas
@@ -118,19 +121,32 @@ public class BubbleStream : MonoBehaviour
     {
         float p = bubble.time / bubble.duration;
 
-        // El cuarto de círculo. El centro del arco queda al lado del punto de salida, así que a
-        // 180 grados la burbuja está justo ahí y a 90 ya subió y se corrió lo mismo hacia el lado.
-        // Sale hacia arriba y termina yéndose de costado, que es el gesto de una corriente.
+        // Un cuarto de ELIPSE, no de círculo: a 180 grados la burbuja está en el punto de salida y
+        // a 90 ya subió todo 'rise' y se corrió todo 'drift'. Sale hacia arriba y termina yéndose
+        // de costado, que es el gesto de una corriente.
+        //
+        // Elipse y no círculo porque con un solo radio la altura y el desvío quedan atados: para
+        // que una burbuja llegue arriba del todo tendría que irse el mismo tanto hacia el costado,
+        // o sea fuera de la pantalla.
         float angle = Mathf.Lerp(180f, 90f, p) * Mathf.Deg2Rad;
-        float side   = curveRight ? 1f : -1f;
+        float side  = curveRight ? 1f : -1f;
 
-        Vector2 offset = new(side * bubble.radius * (1f + Mathf.Cos(angle)),
-                                    bubble.radius * Mathf.Sin(angle));
+        float width  = drift * bubble.scale;
+        float height = rise  * bubble.scale;
+
+        Vector2 offset = new(side * width * (1f + Mathf.Cos(angle)),
+                                    height * Mathf.Sin(angle));
 
         // El bamboleo va perpendicular al recorrido, no en X fija: sobre el tramo final, donde la
         // burbuja ya viaja de lado, un vaivén horizontal se confundiría con el propio avance.
-        offset += new Vector2(Mathf.Sin(angle), side * Mathf.Cos(angle))
-                  * (Mathf.Sin(p * Mathf.PI * 3f + bubble.phase) * wobble);
+        //
+        // La perpendicular sale de la tangente real de la elipse. Con la del círculo alcanzaba
+        // mientras los dos ejes medían igual; en cuanto se separan, deja de ser perpendicular
+        // justo donde el recorrido es más plano.
+        Vector2 tangent = new(side * width * Mathf.Sin(angle), -height * Mathf.Cos(angle));
+        if (tangent.sqrMagnitude > 0.0001f)
+            offset += new Vector2(tangent.y, -tangent.x).normalized
+                      * (Mathf.Sin(p * Mathf.PI * 3f + bubble.phase) * wobble);
 
         bubble.rect.anchoredPosition = bubble.origin + offset;
 
@@ -153,7 +169,7 @@ public class BubbleStream : MonoBehaviour
         bubble.rect.sizeDelta = Vector2.one * side;
         bubble.origin         = new Vector2(Random.Range(-spread.x, spread.x),
                                             Random.Range(-spread.y, spread.y));
-        bubble.radius   = radius * (1f + Random.Range(-radiusVariation, radiusVariation));
+        bubble.scale    = 1f + Random.Range(-variation, variation);
         bubble.duration = Mathf.Max(0.1f, Random.Range(duration.x, duration.y));
         bubble.time     = 0f;
         bubble.phase    = Random.Range(0f, Mathf.PI * 2f);
