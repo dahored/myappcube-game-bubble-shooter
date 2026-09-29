@@ -18,6 +18,9 @@ public class FloatAnimation : MonoBehaviour
     [SerializeField] float phaseOffset = 0f;   // desfase para que no floten todas igual
     [SerializeField] float startDelay  = 0f;   // espera antes de empezar
 
+    [Tooltip("Sortea el desfase en vez de usar el de arriba. Es lo que hace que varias copias de la misma criatura no suban y bajen a la vez, sin tener que darle un número distinto a cada una a mano.")]
+    [SerializeField] bool randomPhase;
+
     [Tooltip("Cuánto vale la amplitud cuando la criatura NO es de UI. Las unidades de mundo son mucho más grandes que los píxeles: sin esto, una amplitud pensada para el lienzo mandaría al bicho fuera de pantalla.")]
     [SerializeField] float worldScale = 0.01f;
 
@@ -40,6 +43,11 @@ public class FloatAnimation : MonoBehaviour
         _origin    = _rect ? _rect.anchoredPosition : transform.localPosition;
         _startTime = Time.time;
         _active    = true;
+
+        // El desfase va en ciclos, así que de 0 a 1 cubre la onda entera. Se sortea acá y no como
+        // una espera: retrasando el arranque, la criatura se queda quieta un rato y se nota; con
+        // el desfase, empieza a moverse ya pero en otro punto de la subida.
+        if (randomPhase) phaseOffset = Random.value;
     }
 
     void Update()
@@ -51,6 +59,7 @@ public class FloatAnimation : MonoBehaviour
         // Arranca desde cero en vez de saltar a media onda: sin la rampa, la criatura da un tirón
         // en su primer frame visible.
         float ramp = Mathf.Clamp01(elapsed / 0.4f);
+
         float y    = Mathf.Sin((elapsed * frequency + phaseOffset) * Mathf.PI * 2f)
                      * amplitude * ramp * (_rect ? 1f : worldScale);
 
