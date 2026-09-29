@@ -76,6 +76,30 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Range(1, 8)]
     [SerializeField] int edgeDetail = 3;
 
+    [Header("Roca de la fosa")]
+    [Tooltip("Cuánto se diferencian entre sí las caras de la pared. Dos caras de roca vecinas nunca reflejan igual, y esa variación de franja a franja es lo que la hace leer como piedra partida en vez de como tela lisa. En 0 la pared sale de un solo tono.")]
+    [Range(0f, 1f)]
+    [SerializeField] float facetShade = 0.2f;
+
+    [Tooltip("Cuántas caras de roca caben a lo ancho. Más alto las hace estrechas tipo columnas; más bajo, placas grandes.")]
+    [Range(0.5f, 12f)]
+    [SerializeField] float facetScale = 4f;
+
+    [Tooltip("Cuánto oscurece la grieta entre dos caras. Es la línea que corre pared abajo donde una cara se junta con la de al lado, y es la que más vende la roca: sin ella las franjas de tono se ven como manchas sueltas y no como piezas separadas.")]
+    [Range(0f, 1f)]
+    [SerializeField] float crackShade = 0.5f;
+
+    [Tooltip("Qué parte de la cara ocupa la grieta. Fina se lee como una hendidura; ancha, como si la pared estuviera sucia. No puede salir más fina que una columna de la malla: si la quieres muy fina, sube 'Edge Detail'.")]
+    [Range(0.05f, 0.8f)]
+    [SerializeField] float crackWidth = 0.12f;
+
+    [Tooltip("Cuánto oscurece la sombra justo debajo del filo, la que proyecta el suelo que sobresale. Sin esa línea la isla se ve pegada a la pared, como calcada encima, en vez de apoyada sobre ella.")]
+    [Range(0f, 1f)]
+    [SerializeField] float lipShadow = 0.35f;
+
+    [Tooltip("Hasta qué hondura llega esa sombra del filo, en unidades de mundo. Corta: es el reborde que sobresale, no la profundidad de la fosa.")]
+    [SerializeField] float lipDepth = 0.6f;
+
     [Tooltip("Cuánto se sombrean las paredes de la fosa según hacia dónde miran. El shader del mundo es unlit, así que sin esto una pared vertical y el fondo plano salen del MISMO color y la fosa se lee como una mancha oscura en vez de un pozo. Esto le pinta la luz encima, por vértice.")]
     [Range(0f, 1f)]
     [SerializeField] float chasmRelief = 0.75f;
@@ -365,7 +389,10 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
             // y se apaga; la de enfrente, que sube hacia la cámara, se ilumina. Ese contraste
             // entre las dos caras es lo que hace ver un pozo — el degradado de profundidad solo,
             // sin él, es una mancha.
-            float lit = Relief(x, z, profile, edgeFrom, edgeTo, rows);
+            float lit = Relief(x, z, profile, edgeFrom, edgeTo, rows)
+                      * FacetTint(px, from)
+                      * CrackTint(px, from)
+                      * LipTint(profile[z]);
 
             colors.Add(new Color(tint.r * lit, tint.g * lit, tint.b * lit, tint.a));
         }
@@ -513,6 +540,43 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     // del filo—, así que los dos bordes ondulan idéntico y encajan sin hueco ni solape por más
     // que se cambie la amplitud.
     //
+    int Facets => Mathf.Max(1, edgeFacets);
+
+    // Dónde cae ese punto dentro del reparto de caras, medido EN CARAS: la parte entera dice qué
+    // cara es y el resto, a qué distancia está de la junta. Con eso salen las dos cosas sin
+    // tener que comparar con las columnas de al lado, que es lo que ataba el grosor de la grieta
+    // a lo fina que estuviera la malla.
+    float FacetAt(float px, float seed)
+    {
+        float f = Noise(px * facetScale * 0.08f, seed * 0.37f + 5.1f);
+
+        // El ruido se amontona en el medio y las caras salían todas del mismo tono. Estirarlo
+        // reparte los extremos y hace que se distingan unas de otras.
+        return Mathf.Clamp01((f - 0.5f) * 1.7f + 0.5f) * Facets;
+    }
+
+    float FacetTint(float px, float seed) =>
+        facetShade <= 0f ? 1f
+                         : 1f - facetShade * (1f - Mathf.Round(FacetAt(px, seed)) / Facets);
+
+    // La grieta va exactamente en la junta, que es donde el reparto está a medio camino entre
+    // una cara y la siguiente.
+    float CrackTint(float px, float seed)
+    {
+        if (crackShade <= 0f) return 1f;
+
+        float q    = FacetAt(px, seed);
+        float edge = Mathf.Abs(q - Mathf.Round(q)) * 2f;   // 0 en medio de la cara, 1 en la junta
+
+        return 1f - crackShade * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1f - crackWidth, 1f, edge));
+    }
+
+    // La sombra del reborde. Solo los primeros centímetros de pared, que es lo que tapa el suelo
+    // que sobresale por encima.
+    float LipTint(float y) =>
+        lipShadow <= 0f ? 1f
+                        : 1f - lipShadow * (1f - Mathf.Clamp01(-y / Mathf.Max(0.01f, lipDepth)));
+
     // La luz falsa que se hornea en el color de los vértices: desde arriba y algo inclinada hacia
     // la cámara. Dividida por su propia componente vertical, una superficie llana da exactamente
     // 1, o sea que el fondo de la fosa sale del mismo tono que la isla y solo cambian las paredes.
