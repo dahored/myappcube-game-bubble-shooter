@@ -12,6 +12,19 @@ using UnityEngine;
 [ExecuteAlways]
 public class WorldMapDefinition : MonoBehaviour
 {
+    // La música del lobby, que es la misma en Home y en el mapa.
+    //
+    // La arrancaba LevelMapController, el controlador del mapa VIEJO, y esta escena no lo tiene:
+    // al pasar al mapa plano se quedó sin música y no lo avisaba nadie. Va acá porque este es el
+    // único componente que representa al mapa entero y existe una sola vez por escena.
+    //
+    // Con guarda de Play: el componente es [ExecuteAlways] para poder construir el mundo en el
+    // editor, y sin esto la música arrancaría al abrir la escena.
+    void Start()
+    {
+        if (Application.isPlaying) AudioManager.Instance?.PlayLobbyMusic();
+    }
+
     [SerializeField] WorldMapPath.Layout layout = WorldMapPath.Layout.Default;
 
     [Tooltip("Cuántos niveles de aire quedan entre un capítulo y el siguiente.")]

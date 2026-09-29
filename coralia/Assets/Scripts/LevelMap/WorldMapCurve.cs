@@ -56,6 +56,44 @@ public class WorldMapCurve : MonoBehaviour
     //
     // Solo la caída hacia el fondo. La lateral también inclina, pero con el zigzag y los desvíos
     // que maneja este mapa no llega a un par de grados.
+    // Dónde cae el horizonte en la pantalla, de 0 (abajo) a 1 (arriba).
+    //
+    // No sale de una fórmula porque no la tiene: el suelo se hunde al cuadrado, así que su altura
+    // en pantalla sube, llega a un máximo y vuelve a bajar. Ese máximo ES el horizonte, y se
+    // encuentra recorriendo hacia adelante hasta que deja de subir.
+    //
+    // Por eso tampoco vale una búsqueda binaria, que asumiría que la altura crece siempre y
+    // convergería en la rama equivocada.
+    public static float Horizon(Camera camera)
+    {
+        if (camera == null) return 1f;
+
+        float step = SCAN_RANGE / SCAN_SAMPLES;
+
+        // Arranca en menos infinito y no en cero: la cámara mira hacia abajo, así que el suelo
+        // justo delante de ella cae POR DEBAJO del cuadro y sus primeros puntos dan valores
+        // negativos. Partiendo de cero, la comparación los tomaría por un descenso y el barrido
+        // cortaría en la primera vuelta, antes de haber visto nada.
+        float best = float.NegativeInfinity;
+
+        for (int i = 1; i <= SCAN_SAMPLES; i++)
+        {
+            Vector3 point = Curve(new Vector3(0f, 0f, camera.transform.position.z + i * step), camera);
+            Vector3 view  = camera.WorldToViewportPoint(point);
+
+            if (view.z <= 0f) continue;      // detrás de la cámara
+            if (view.y >= 1f) return 1f;     // el suelo tapa la pantalla entera: no hay horizonte a la vista
+            if (view.y <= best) break;       // ya está bajando: el máximo era el paso anterior
+
+            best = view.y;
+        }
+
+        return Mathf.Clamp01(best);
+    }
+
+    const float SCAN_RANGE   = 600f;
+    const int   SCAN_SAMPLES = 120;
+
     public static float Pitch(Vector3 positionWS, Camera camera)
     {
         if (camera == null) return 0f;

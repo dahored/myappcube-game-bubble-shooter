@@ -119,6 +119,11 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         {
             if (placement == null || placement.start || placement.end) continue;
 
+            // El interruptor solo alcanza al CUERPO del capítulo, no al marco. Las piezas de
+            // entrada y cierre también usan 'middle' —ahí significa medio nodo más afuera, no
+            // entre dos nodos— y apagarlas dejaría el capítulo sin sus topes.
+            if (placement.middle && !data.middle_nodes) continue;
+
             // Sin 'node' es una posición cruda en índices, no un nodo: se coloca donde dice y no
             // entra en la repetición, que no sabría a qué nodo corresponde.
             if (placement.node <= 0)
@@ -195,6 +200,20 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         // plantas y las rocas ya vienen ordenadas entre sí desde el prefab, y pisarlas aplanaría
         // esa composición.
         int order = _definition.SortingOrder(ground.z);
+
+        // Un Canvas en World Space no es un Renderer, así que no entra en el bucle de abajo y se
+        // quedaría con su orden tal cual: el adorno aparecería siempre por delante o por detrás
+        // de todo el mapa, sin relación con lo lejos que esté.
+        //
+        // Hace falta para reusar los animales, que son prefabs de UI con Animator: sus clips
+        // animan Image.sprite y no se pueden pasar a SpriteRenderer sin rehacerlos. Metidos en un
+        // Canvas propio dentro de la pieza, funcionan tal cual y se ordenan como el resto.
+        foreach (var canvas in instance.GetComponentsInChildren<Canvas>(true))
+        {
+            canvas.overrideSorting = true;
+            canvas.sortingOrder   += order;
+        }
+
         foreach (var renderer in instance.GetComponentsInChildren<Renderer>(true))
         {
             renderer.sortingOrder += order;

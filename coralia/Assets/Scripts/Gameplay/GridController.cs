@@ -366,7 +366,14 @@ public class GridController : MonoBehaviour
     public void SpawnDropScorePopup(Vector2Int cell, int points, float extraDelay)
     {
         var origin  = HexGridMath.CellToLocalPos(cell);
-        float targetY = _muzzleReferenceY + dropScoreHeight;
+
+        // Se le resta el retiro, igual que hace CannonController con MuzzleLocal.
+        //
+        // _muzzleReferenceY se midió con el contenedor en su sitio, pero el número vive DENTRO de
+        // ese contenedor y el retiro lo sube entero. Sin restarlo, el número salía tan arriba como
+        // se hubiera retirado el grid: nada en un tablero corto, y medio cañón de más en uno largo
+        // ya avanzado.
+        float targetY = _muzzleReferenceY - _scrollOffsetY + dropScoreHeight;
         float delay   = extraDelay + BubbleView.DropDuration(origin.y - targetY);
 
         bool cue = DropCueAt(Time.time + delay);
