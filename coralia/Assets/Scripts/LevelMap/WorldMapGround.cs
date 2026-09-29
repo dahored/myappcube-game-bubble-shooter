@@ -244,12 +244,14 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         int   cols   = Mathf.Max(1, Mathf.RoundToInt(width  * density));
         int   rows   = Mathf.Max(4, Mathf.RoundToInt(length * density * 2f)); // el doble: la caída necesita más cortes que un plano
 
+        // El perfil se calcula una vez por fila, antes de generar los vértices: hace falta la
+        // fila anterior para ir sumando la distancia recorrida SOBRE la superficie.
+        var profile = new float[rows + 1];   // altura de cada fila
+        var walked  = new float[rows + 1];   // cuánto se ha recorrido por la pendiente hasta ahí
+
         for (int z = 0; z <= rows; z++)
-        for (int x = 0; x <= cols; x++)
         {
-            float t  = z / (float)rows;
-            float px = (x / (float)cols - 0.5f) * width;
-            float pz = from + t * length;
+            float t = z / (float)rows;
 
             // Seno elevado: en 1 es un valle suave y a más exponente las paredes se enderezan y
             // el fondo se aplana, que es lo que lo convierte en grieta.
@@ -257,16 +259,33 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
             // El Max no sobra: Sin(PI) no da cero exacto sino -8,7e-8 por redondeo, y elevar un
             // negativo a una fracción da NaN. Un solo vértice con NaN envenena los bounds de la
             // malla entera y Unity la descarta por "demasiado grande o lejos del origen".
-            float dip = Mathf.Pow(Mathf.Max(0f, Mathf.Sin(t * Mathf.PI)), 1f / chasmSteepness);
+            profile[z] = -chasmDepth * Mathf.Pow(Mathf.Max(0f, Mathf.Sin(t * Mathf.PI)), 1f / chasmSteepness);
 
-            vertices.Add(new Vector3(px, -chasmDepth * dip, pz));
-            uvs.Add(new Vector2(px / tiling, pz / tiling));
+            if (z == 0) continue;
+
+            float dz = length / rows;
+            float dy = profile[z] - profile[z - 1];
+            walked[z] = walked[z - 1] + Mathf.Sqrt(dz * dz + dy * dy);
+        }
+
+        for (int z = 0; z <= rows; z++)
+        for (int x = 0; x <= cols; x++)
+        {
+            float px = (x / (float)cols - 0.5f) * width;
+            float pz = from + z / (float)rows * length;
+
+            vertices.Add(new Vector3(px, profile[z], pz));
+
+            // La textura se mide por lo que se RECORRE sobre la pendiente, no por lo que se avanza
+            // en Z. Una pared casi vertical baja mucho y avanza poco, así que midiendo en Z le
+            // tocaba un trozo minúsculo de textura estirado sobre una superficie grande.
+            uvs.Add(new Vector2(px / tiling, (from + walked[z]) / tiling));
 
             // La sombra va POR VÉRTICE y según la profundidad de ese punto: en el borde queda en
             // blanco —o sea, igual que la isla vecina— y se va al color del fondo a medida que
             // baja. Con un material oscuro plano habría un parche con un corte duro justo donde
             // empieza la bajada, y eso se lee como una mancha, no como un pozo.
-            colors.Add(Color.Lerp(Color.white, chasmShade, dip));
+            colors.Add(Color.Lerp(Color.white, chasmShade, chasmDepth > 0f ? -profile[z] / chasmDepth : 0f));
         }
 
         for (int z = 0; z < rows; z++)
