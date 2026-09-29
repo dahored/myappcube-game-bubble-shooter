@@ -64,6 +64,18 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Range(0.5f, 8f)]
     [SerializeField] float edgeWaveScale = 2.5f;
 
+    [Tooltip("En cuántos escalones se parte el filo. En 0 el borde es una curva continua, que se lee como duna. Con escalones el filo avanza a saltos y queda partido en bloques con caras planas, como roca.")]
+    [Range(0, 8)]
+    [SerializeField] int edgeFacets = 4;
+
+    [Tooltip("Cuántas veces más cortes a lo ancho que los que pide 'Density'. El detalle del filo no puede ser más fino que sus columnas: con pocas, cualquier forma que se le pida sale redondeada a la fuerza.")]
+    [Range(1, 8)]
+    [SerializeField] int edgeDetail = 3;
+
+    [Tooltip("Cuánto se sombrean las paredes de la fosa según hacia dónde miran. El shader del mundo es unlit, así que sin esto una pared vertical y el fondo plano salen del MISMO color y la fosa se lee como una mancha oscura en vez de un pozo. Esto le pinta la luz encima, por vértice.")]
+    [Range(0f, 1f)]
+    [SerializeField] float chasmRelief = 0.75f;
+
     [Header("Suelo por capítulo")]
     [Tooltip("Qué material le toca a cada 'ground' de los Chapter_N.json. Un capítulo sin 'ground' —o con uno que no esté acá— usa el material de este mismo objeto.")]
     [SerializeField] GroundMaterial[] materials;
@@ -266,8 +278,11 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         var indices  = new List<int>();
 
         float length = to - from;
-        int   cols   = Mathf.Max(1, Mathf.RoundToInt(width  * density));
-        int   rows   = Mathf.Max(4, Mathf.RoundToInt(length * density * 2f)); // el doble: la caída necesita más cortes que un plano
+        int   cols   = Columns(width);
+
+        // La caída pide cortes aunque la fosa sea angosta: lo que hay que describir no es el
+        // largo sino la bajada, así que la profundidad cuenta igual que el largo.
+        int   rows   = Mathf.Max(8, Mathf.RoundToInt((length + chasmDepth) * density * 2f));
 
         // El perfil se calcula una vez por fila, antes de generar los vértices: hace falta la
         // fila anterior para ir sumando la distancia recorrida SOBRE la superficie.
@@ -328,7 +343,15 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
             // blanco —o sea, igual que la isla vecina— y se va al color del fondo a medida que
             // baja. Con un material oscuro plano habría un parche con un corte duro justo donde
             // empieza la bajada, y eso se lee como una mancha, no como un pozo.
-            colors.Add(Color.Lerp(Color.white, chasmShade, chasmDepth > 0f ? -profile[z] / chasmDepth : 0f));
+            var tint = Color.Lerp(Color.white, chasmShade, chasmDepth > 0f ? -profile[z] / chasmDepth : 0f);
+
+            // Y encima la luz, también por vértice. La pared que baja alejándose queda de espaldas
+            // y se apaga; la de enfrente, que sube hacia la cámara, se ilumina. Ese contraste
+            // entre las dos caras es lo que hace ver un pozo — el degradado de profundidad solo,
+            // sin él, es una mancha.
+            float lit = Relief(x, z, profile, edgeFrom, edgeTo, rows);
+
+            colors.Add(new Color(tint.r * lit, tint.g * lit, tint.b * lit, tint.a));
         }
 
         for (int z = 0; z < rows; z++)
@@ -474,15 +497,81 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     // del filo—, así que los dos bordes ondulan idéntico y encajan sin hueco ni solape por más
     // que se cambie la amplitud.
     //
-    // Dos senos de frecuencias que no son múltiplo una de otra: con uno solo el filo queda con un
-    // ritmo regular que se lee como decorativo, y sumando dos el patrón tarda mucho en repetirse.
+    // La luz falsa que se hornea en el color de los vértices: desde arriba y algo inclinada hacia
+    // la cámara. Dividida por su propia componente vertical, una superficie llana da exactamente
+    // 1, o sea que el fondo de la fosa sale del mismo tono que la isla y solo cambian las paredes.
+    static readonly Vector3 LIGHT = new(0f, 0.6f, -0.8f);
+
+    // La pared de enfrente puede pasarse de 1 y quedar MÁS clara que el suelo llano. Es a
+    // propósito: es la cara que mira a la cámara y recibe la luz de lleno, y ese brillo contra
+    // la pared de acá, que está a oscuras, es lo que separa las dos caras del pozo.
+    const float MAX_LIT = 1.35f;
+
+    float Relief(int x, int z, float[] profile, float[] edgeFrom, float[] edgeTo, int rows)
+    {
+        if (chasmRelief <= 0f) return 1f;
+
+        int   a  = Mathf.Max(0,    z - 1);
+        int   b  = Mathf.Min(rows, z + 1);
+        float dy = profile[b] - profile[a];
+        float dz = (edgeTo[x] - edgeFrom[x]) / rows * (b - a);
+
+        // La normal de una pendiente y = f(z) es (0, 1, -f'), y f' es dy/dz. Sin dividir queda
+        // (0, dz, -dy), que apunta igual; normalizar se encarga del resto.
+        var n = new Vector3(0f, dz, -dy).normalized;
+
+        float lit = Mathf.Clamp(Vector3.Dot(n, LIGHT) / LIGHT.y, 0f, MAX_LIT);
+
+        return Mathf.Lerp(1f, lit, chasmRelief);
+    }
+
+    // Ruido de valor en vez de senos: sumar dos senos sigue teniendo un ritmo, y un ritmo se ve
+    // como adorno. El ruido no repite, así que cada entrante sale de un tamaño distinto.
+    //
+    // Y encima escalones: una curva continua, por irregular que sea, se lee como arena movida.
+    // La roca se reconoce por las CARAS PLANAS y los saltos entre una y otra, y eso es lo que
+    // hace redondear la amplitud a unos pocos valores.
     float EdgeOffset(float px, float seed)
     {
         if (edgeWave <= 0f) return 0f;
 
-        float a = px * edgeWaveScale * 0.35f + seed * 0.7f;
-        return (Mathf.Sin(a) * 0.65f + Mathf.Sin(a * 2.7f + 1.3f) * 0.35f) * edgeWave;
+        float s = seed * 0.613f;
+        float x = px * edgeWaveScale * 0.35f;
+
+        // Tres octavas: la primera pone los entrantes grandes y las otras le muerden el borde.
+        float n = (Noise(x,          s)
+                + (Noise(x * 2.17f,  s + 31.7f) - 0.5f) * 0.5f
+                + (Noise(x * 4.63f,  s + 71.3f) - 0.5f) * 0.25f) - 0.5f;
+
+        n /= 0.875f;   // las tres octavas juntas no llegan a ±0,5; esto devuelve el rango entero
+
+        if (edgeFacets > 0) n = Mathf.Round(n * edgeFacets) / edgeFacets;
+
+        return n * 2f * edgeWave;
     }
+
+    // Ruido de valor de una dimensión, entre 0 y 1. Determinista: el mismo px da el mismo valor
+    // siempre, que es lo que permite que la isla y la fosa de enfrente calculen su filo por
+    // separado y encajen igual.
+    static float Noise(float x, float seed)
+    {
+        float i = Mathf.Floor(x);
+        float f = x - i;
+
+        f = f * f * (3f - 2f * f);   // suaviza el paso de un entero al siguiente
+
+        return Mathf.Lerp(Hash(i, seed), Hash(i + 1f, seed), f);
+    }
+
+    static float Hash(float i, float seed)
+    {
+        float v = Mathf.Sin(i * 12.9898f + seed * 78.233f) * 43758.5453f;
+        return v - Mathf.Floor(v);
+    }
+
+    // Las columnas las comparten la isla y la fosa: si no cayeran en los mismos px, sus filos se
+    // calcularían en sitios distintos y quedaría un hueco entre una cosa y la otra.
+    int Columns(float width) => Mathf.Max(1, Mathf.RoundToInt(width * density * edgeDetail));
 
     void AppendIsland(List<Vector3> vertices, List<Vector2> uvs, List<int> indices,
                       WorldMapDefinition.Span span, float width, bool worldStart, bool worldEnd)
@@ -492,7 +581,7 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         float to      = (worldEnd   ? ContentEnd(span)   + outerEndMargin   : PathEnd(span)   + endMargin) * spacing;
         float length  = to - from;
 
-        int cols = Mathf.Max(1, Mathf.RoundToInt(width  * density));
+        int cols = Columns(width);
         int rows = Mathf.Max(1, Mathf.RoundToInt(length * density));
         int start = vertices.Count;
 
