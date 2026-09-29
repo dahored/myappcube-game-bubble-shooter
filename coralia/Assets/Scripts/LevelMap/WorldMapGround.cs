@@ -43,11 +43,23 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Cada cuántas unidades de mundo se repite la textura.")]
     [SerializeField] float tiling = 8f;
 
+    [Header("Fosa entre capítulos")]
+    [Tooltip("Cuánto se hunde el suelo entre un capítulo y el siguiente. En 0 no se genera fosa y las islas quedan como antes.")]
+    [SerializeField] float chasmDepth = 0f;
+
+    [Tooltip("Qué tan abrupta es la caída. En 1 baja y sube parejo; más alto deja las paredes verticales y un fondo plano, que se lee más como una grieta que como un valle.")]
+    [Range(1f, 6f)]
+    [SerializeField] float chasmSteepness = 2.5f;
+
+    [Tooltip("Material del fondo de la fosa. Vacío usa el mismo del suelo — conviene uno más oscuro, porque lo que vende la profundidad es que abajo llegue menos luz.")]
+    [SerializeField] Material chasmMaterial;
+
     [Header("Suelo por capítulo")]
     [Tooltip("Qué material le toca a cada 'ground' de los Chapter_N.json. Un capítulo sin 'ground' —o con uno que no esté acá— usa el material de este mismo objeto.")]
     [SerializeField] GroundMaterial[] materials;
 
     const string ISLAND_PREFIX = "Island ";
+    const string CHASM_PREFIX  = "Chasm ";
 
     WorldMapDefinition _definition;
 
@@ -55,6 +67,7 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     // al cruzar de capítulo cambia CUÁL se dibuja, no cuántas, así que crear y destruir objetos
     // en cada cruce sería basura para nada.
     readonly List<MeshFilter> _islands = new();
+    readonly List<MeshFilter> _chasms  = new();
 
     // Leer y parsear el JSON de un capítulo por cada consulta sería caro: WorldStart y WorldEnd
     // los pide el scroll para calcular sus topes, o sea varias veces por frame.
@@ -183,38 +196,136 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         // hacia el otro lado.
         for (int i = spans.Count; i < _islands.Count; i++)
             if (_islands[i]) _islands[i].gameObject.SetActive(false);
+
+        BuildChasms(spans, width);
+    }
+
+    // La fosa que separa un capítulo del siguiente.
+    //
+    // Es geometría y no un hueco a secas porque un hueco no se lee como profundidad: por debajo
+    // del suelo está el telón del horizonte, agua clara con rayos de sol, y eso dice "lejos", no
+    // "hondo". Bajando el terreno de verdad, la caída se ve.
+    //
+    // Los bordes de la fosa arrancan y terminan en y=0, o sea a la misma altura que las islas
+    // vecinas, así que no hay costura entre una cosa y la otra por más que se cambie la
+    // profundidad.
+    void BuildChasms(List<WorldMapDefinition.Span> spans, float width)
+    {
+        int built = 0;
+
+        if (chasmDepth > 0f)
+            for (int i = 0; i + 1 < spans.Count; i++)
+            {
+                float spacing = _definition.Layout.spacing;
+                float from    = (spans[i].End       + endMargin) * spacing;
+                float to      = (spans[i + 1].start - endMargin) * spacing;
+
+                // Con el margen interior grande, las islas se solapan y no hay sitio donde cavar.
+                if (to - from < 0.01f) continue;
+
+                BuildChasm(Chasm(built++), from, to, width);
+            }
+
+        for (int i = built; i < _chasms.Count; i++)
+            if (_chasms[i]) _chasms[i].gameObject.SetActive(false);
+    }
+
+    void BuildChasm(MeshFilter filter, float from, float to, float width)
+    {
+        var vertices = new List<Vector3>();
+        var uvs      = new List<Vector2>();
+        var indices  = new List<int>();
+
+        float length = to - from;
+        int   cols   = Mathf.Max(1, Mathf.RoundToInt(width  * density));
+        int   rows   = Mathf.Max(4, Mathf.RoundToInt(length * density * 2f)); // el doble: la caída necesita más cortes que un plano
+
+        for (int z = 0; z <= rows; z++)
+        for (int x = 0; x <= cols; x++)
+        {
+            float t  = z / (float)rows;
+            float px = (x / (float)cols - 0.5f) * width;
+            float pz = from + t * length;
+
+            // Seno elevado: en 1 es un valle suave y a más exponente las paredes se enderezan y
+            // el fondo se aplana, que es lo que lo convierte en grieta.
+            float dip = Mathf.Pow(Mathf.Sin(t * Mathf.PI), 1f / chasmSteepness);
+
+            vertices.Add(new Vector3(px, -chasmDepth * dip, pz));
+            uvs.Add(new Vector2(px / tiling, pz / tiling));
+        }
+
+        for (int z = 0; z < rows; z++)
+        for (int x = 0; x < cols; x++)
+        {
+            int a = z * (cols + 1) + x;
+            int b = a + cols + 1;
+
+            indices.Add(a);     indices.Add(b); indices.Add(a + 1);
+            indices.Add(a + 1); indices.Add(b); indices.Add(b + 1);
+        }
+
+        var mesh = filter.sharedMesh;
+        if (mesh == null)
+        {
+            mesh = new Mesh { name = "WorldMapChasm", hideFlags = HideFlags.DontSave };
+            filter.sharedMesh = mesh;
+        }
+
+        mesh.Clear();
+        mesh.SetVertices(vertices);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(indices, 0);
+        mesh.RecalculateBounds();
+
+        // Igual que las islas: el shader hunde los vértices al dibujar y Unity descarta por los
+        // bounds SIN curvar, así que hay que agrandarlos o la fosa desaparece mirando al horizonte.
+        var bounds = mesh.bounds;
+        bounds.Expand(new Vector3(0f, _definition.Length * _definition.Layout.spacing, 0f));
+        mesh.bounds = bounds;
+
+        var renderer = filter.GetComponent<MeshRenderer>();
+        renderer.sharedMaterial = chasmMaterial != null ? chasmMaterial : GetComponent<MeshRenderer>().sharedMaterial;
+        renderer.sortingOrder   = WorldMapDefinition.ORDER_GROUND;
     }
 
     // Los objetos DontSave sobreviven a una recompilación de scripts, pero la lista no: sin esto,
     // cada recompilación en el editor construiría islas nuevas encima de las que ya estaban.
     void Adopt()
     {
-        if (_islands.Count > 0) return;
+        if (_islands.Count > 0 || _chasms.Count > 0) return;
 
         foreach (Transform child in transform)
-            if (child.name.StartsWith(ISLAND_PREFIX) && child.TryGetComponent<MeshFilter>(out var filter))
-                _islands.Add(filter);
+        {
+            if (!child.TryGetComponent<MeshFilter>(out var filter)) continue;
+
+            if (child.name.StartsWith(ISLAND_PREFIX)) _islands.Add(filter);
+            else if (child.name.StartsWith(CHASM_PREFIX)) _chasms.Add(filter);
+        }
     }
 
-    MeshFilter Island(int index)
-    {
-        while (_islands.Count <= index) _islands.Add(null);
+    MeshFilter Chasm(int index) => Child(_chasms, CHASM_PREFIX, index);
+    MeshFilter Island(int index)  => Child(_islands, ISLAND_PREFIX, index);
 
-        if (_islands[index] == null)
+    MeshFilter Child(List<MeshFilter> pool, string prefix, int index)
+    {
+        while (pool.Count <= index) pool.Add(null);
+
+        if (pool[index] == null)
         {
-            var go = new GameObject(ISLAND_PREFIX + index, typeof(MeshFilter), typeof(MeshRenderer));
+            var go = new GameObject(prefix + index, typeof(MeshFilter), typeof(MeshRenderer));
 
             // DontSave porque se regenera sola en cada OnEnable: sin esto, cada guardado de la
-            // escena dejaría las islas de ese momento adentro del .unity y al abrirla aparecerían
+            // escena dejaría las piezas de ese momento adentro del .unity y al abrirla aparecerían
             // duplicadas junto a las recién construidas.
             go.hideFlags = HideFlags.DontSave;
             go.transform.SetParent(transform, false);
 
-            _islands[index] = go.GetComponent<MeshFilter>();
+            pool[index] = go.GetComponent<MeshFilter>();
         }
 
-        _islands[index].gameObject.SetActive(true);
-        return _islands[index];
+        pool[index].gameObject.SetActive(true);
+        return pool[index];
     }
 
     void BuildIsland(MeshFilter filter, WorldMapDefinition.Span span, float width,
