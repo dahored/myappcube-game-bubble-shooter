@@ -31,6 +31,10 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Cuánto sobra de suelo DESPUÉS de donde termina el camino, en las puntas interiores de cada isla. Se mide contra el camino y no contra el último nodo, así que alargar el camino agranda la isla sola en vez de salirse de ella.")]
     [SerializeField] float endMargin = 12f;
 
+    // Lo lee la definición: forma parte del tamaño de la isla y por eso entra en dónde se coloca
+    // el capítulo siguiente.
+    public float EndMargin => endMargin;
+
     [Tooltip("Cuánto sobra antes de lo primero que se ve del mundo. Va aparte del margen interior porque ahí no hay isla vecina que separar, solo agua de más.")]
     [SerializeField] float outerStartMargin = 2f;
 
@@ -191,8 +195,17 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         return range;
     }
 
-    void OnEnable()   => _needsRebuild = true;
-    void OnValidate() => _needsRebuild = true;
+    void OnEnable() => _needsRebuild = true;
+
+    // 'End Margin' decide hasta dónde llega la isla, y con eso dónde empieza el capítulo
+    // siguiente: no alcanza con rehacer el suelo, hay que recolocar el mundo entero.
+    void OnValidate()
+    {
+        _needsRebuild = true;
+
+        var definition = WorldMapDefinition.For(this);
+        if (definition != null) definition.RebuildWorld();
+    }
 
     // Igual que las decoraciones: nunca dentro de OnValidate. Ahí Unity ignora DestroyImmediate y
     // se queja si se activan objetos, y ahora esto crea GameObjects, no solo una malla.
@@ -253,8 +266,6 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     {
         int built = 0;
 
-        _warnedThisPass = false;
-
         if (chasmDepth > 0f)
             for (int i = 0; i + 1 < spans.Count; i++)
             {
@@ -262,22 +273,10 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
                 float from    = (PathEnd(spans[i])       + endMargin) * spacing;
                 float to      = (PathStart(spans[i + 1]) - endMargin) * spacing;
 
-                // Con el margen interior grande, las islas se solapan y no hay sitio donde cavar.
-                //
-                // Callarse acá deja el mapa como si la fosa nunca se hubiera pedido: sin hueco,
-                // sin error y sin ninguna pista de qué número lo impide. Como el margen se mide
-                // contra la punta del camino, alargar el camino también consume la separación,
-                // y eso no se adivina mirando el Inspector.
-                if (to - from < 0.01f)
-                {
-                    float over = (from - to) / spacing;
-
-                    Warn($"La fosa entre el capítulo {spans[i].number} y el {spans[i + 1].number} " +
-                         $"no cabe: las islas se solapan {over:0.##} niveles. Sube 'Chapter Gap' a " +
-                         $"{_definition.ChapterGap + over + 0.5f:0.##} en WorldMapDefinition, o baja " +
-                         "'End Margin' acá o 'Lead In'/'Lead Out' en WorldMapPathRibbon.");
-                    continue;
-                }
+                // El ancho sale de 'Island Gap' y de nada más: los márgenes de las islas ya
+                // están descontados al colocar los capítulos. En 0 no hay fosa, y es una
+                // decisión, no un fallo.
+                if (to - from < 0.01f) continue;
 
                 BuildChasm(Chasm(built++), from, to, width);
             }
@@ -285,24 +284,6 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         for (int i = built; i < _chasms.Count; i++)
             if (_chasms[i]) _chasms[i].gameObject.SetActive(false);
 
-        // Al quedar arreglado se olvida el aviso, para que vuelva a salir si se rompe otra vez
-        // con los mismos números.
-        if (!_warnedThisPass) _lastWarning = null;
-    }
-
-    // El mapa se reconstruye a cada cambio del Inspector, así que el mismo aviso saldría decenas
-    // de veces seguidas y enterraría la consola. Solo se imprime cuando cambia.
-    string _lastWarning;
-    bool   _warnedThisPass;
-
-    void Warn(string message)
-    {
-        _warnedThisPass = true;
-
-        if (message == _lastWarning) return;
-
-        _lastWarning = message;
-        Debug.LogWarning(message, this);
     }
 
     void BuildChasm(MeshFilter filter, float from, float to, float width)
