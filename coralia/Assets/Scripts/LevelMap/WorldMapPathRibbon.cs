@@ -69,16 +69,33 @@ public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
         int start = vertices.Count;
         int rows  = 0;
 
+        // El cuerpo se recorta lo que mide la punta, así que el camino termina EXACTAMENTE en
+        // 'first' y 'last' con su punta incluida.
+        //
+        // La punta se aleja del cuerpo hasta un radio de ancho —con el ancho actual, casi medio
+        // nodo— y antes eso quedaba fuera de la cuenta: 'leadOut' decía una cosa y el camino
+        // llegaba más lejos. Quien mide contra el camino (el margen interior del suelo, por
+        // ejemplo) tenía que adivinar ese sobrante, y al achicar el margen el camino se salía
+        // de la isla.
+        float cap = (width * 0.5f) / Mathf.Max(0.01f, layout.spacing);
+
+        // Con un tramo tan corto que las dos puntas se tocarían, se reparte lo que haya: más vale
+        // una punta pequeña que una cinta dada vuelta.
+        if (last - first < cap * 2f) cap = Mathf.Max(0f, (last - first) * 0.5f);
+
+        float body = first + cap;
+        float tip  = last  - cap;
+
         // Punta de entrada: de la cúspide hacia la cinta.
         for (int i = endSegments; i >= 1; i--)
-            AppendCapRow(vertices, uvs, indices, start, ref rows, first, -1f, i);
+            AppendCapRow(vertices, uvs, indices, start, ref rows, body, -1f, i);
 
-        int steps = Mathf.Max(1, Mathf.RoundToInt((last - first) * Mathf.Max(1, stepsPerLevel)));
+        int steps = Mathf.Max(1, Mathf.RoundToInt((tip - body) * Mathf.Max(1, stepsPerLevel)));
         for (int i = 0; i <= steps; i++)
         {
             // Interpolado y no sumando 1/stepsPerLevel: así la última fila cae EXACTAMENTE en
             // 'last' aunque el tramo no dé un número redondo de cortes.
-            float f = Mathf.Lerp(first, last, i / (float)steps);
+            float f = Mathf.Lerp(body, tip, i / (float)steps);
             WorldMapPath.SampleFrame(f, layout, out var point, out var forward);
 
             AppendRow(vertices, uvs, indices, start, ref rows,
@@ -87,7 +104,7 @@ public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
         }
 
         for (int i = 1; i <= endSegments; i++)
-            AppendCapRow(vertices, uvs, indices, start, ref rows, last, 1f, i);
+            AppendCapRow(vertices, uvs, indices, start, ref rows, tip, 1f, i);
     }
 
     // Una fila de la punta redondeada: se aleja del extremo siguiendo un cuarto de círculo y al

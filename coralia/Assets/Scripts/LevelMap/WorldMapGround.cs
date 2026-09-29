@@ -249,7 +249,11 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
 
             // Seno elevado: en 1 es un valle suave y a más exponente las paredes se enderezan y
             // el fondo se aplana, que es lo que lo convierte en grieta.
-            float dip = Mathf.Pow(Mathf.Sin(t * Mathf.PI), 1f / chasmSteepness);
+            //
+            // El Max no sobra: Sin(PI) no da cero exacto sino -8,7e-8 por redondeo, y elevar un
+            // negativo a una fracción da NaN. Un solo vértice con NaN envenena los bounds de la
+            // malla entera y Unity la descarta por "demasiado grande o lejos del origen".
+            float dip = Mathf.Pow(Mathf.Max(0f, Mathf.Sin(t * Mathf.PI)), 1f / chasmSteepness);
 
             vertices.Add(new Vector3(px, -chasmDepth * dip, pz));
             uvs.Add(new Vector2(px / tiling, pz / tiling));
