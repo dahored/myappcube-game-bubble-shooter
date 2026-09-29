@@ -43,8 +43,19 @@ public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
 
     WorldMapPath.Layout layout => _definition.Layout;
 
+    WorldMapGround _ground;
+
     void OnEnable()   => Rebuild();
     void OnValidate() => Rebuild();
+
+    // El suelo mide su margen contra la punta del camino, pero Unity solo avisa al componente
+    // cuyo campo se tocó: sin esto, subir Lead Out alarga el camino y la isla se queda igual
+    // hasta que alguien toque algún número del suelo.
+    void NotifyGround()
+    {
+        if (_ground == null) _ground = FindAnyObjectByType<WorldMapGround>();
+        if (_ground != null) _ground.Rebuild();
+    }
 
     public void Rebuild()
     {
@@ -58,6 +69,8 @@ public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
         // Un camino por capítulo: cada isla tiene el suyo y entre una y otra no hay nada.
         foreach (var span in _definition.VisibleSpans())
             AppendPath(vertices, uvs, indices, span.start - leadIn, span.End + leadOut);
+
+        NotifyGround();
 
         Finish(vertices, uvs, indices);
     }
