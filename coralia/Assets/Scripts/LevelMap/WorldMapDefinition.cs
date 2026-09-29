@@ -57,6 +57,9 @@ public class WorldMapDefinition : MonoBehaviour
 
     public WorldMapPath.Layout Layout => layout;
 
+    // Lo lee el suelo para poder decir a cuánto habría que subirlo cuando la fosa no cabe.
+    public float ChapterGap => chapterGap;
+
     // Del índice real, salvo que se pise a mano para probar. Así la escena no depende de que
     // alguien mantenga un número sincronizado con la cantidad de archivos de nivel.
     public int Levels => levelsOverride > 0
