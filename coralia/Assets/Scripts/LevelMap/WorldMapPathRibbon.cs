@@ -16,6 +16,12 @@ public class WorldMapPathRibbon : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Lo mismo después del último nivel.")]
     [SerializeField] float leadOut = 1.2f;
 
+    // Los lee WorldMapGround para saber dónde termina el camino y dejar suelo a partir de ahí.
+    // Sin esto, su margen se mediría desde el último nodo y alargar el camino lo sacaría de la
+    // isla.
+    public float LeadIn  => leadIn;
+    public float LeadOut => leadOut;
+
     [Tooltip("Ancho de la cinta, en unidades de mundo.")]
     [SerializeField] float width = 1.6f;
 

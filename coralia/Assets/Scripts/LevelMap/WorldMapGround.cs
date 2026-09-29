@@ -28,7 +28,7 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Cuánto sobra de suelo a cada lado del zigzag.")]
     [SerializeField] float sideMargin = 10f;
 
-    [Tooltip("Cuánto sobra de suelo en las puntas INTERIORES de cada isla, las que dan al capítulo vecino. Es lo que decide la separación entre capítulos, junto con 'Chapter Gap'.")]
+    [Tooltip("Cuánto sobra de suelo DESPUÉS de donde termina el camino, en las puntas interiores de cada isla. Se mide contra el camino y no contra el último nodo, así que alargar el camino agranda la isla sola en vez de salirse de ella.")]
     [SerializeField] float endMargin = 12f;
 
     [Tooltip("Cuánto sobra antes de lo primero que se ve del mundo. Va aparte del margen interior porque ahí no hay isla vecina que separar, solo agua de más.")]
@@ -71,7 +71,22 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     const string ISLAND_PREFIX = "Island ";
     const string CHASM_PREFIX  = "Chasm ";
 
-    WorldMapDefinition _definition;
+    WorldMapDefinition  _definition;
+    WorldMapPathRibbon  _path;
+
+    // Hasta dónde llega el camino de ese capítulo, en índice de mundo. Sin cinta en la escena se
+    // cae al propio nodo, que es lo que había antes de que el margen mirara el camino.
+    float PathStart(WorldMapDefinition.Span span)
+    {
+        if (_path == null) _path = FindAnyObjectByType<WorldMapPathRibbon>();
+        return span.start - (_path != null ? _path.LeadIn : 0f);
+    }
+
+    float PathEnd(WorldMapDefinition.Span span)
+    {
+        if (_path == null) _path = FindAnyObjectByType<WorldMapPathRibbon>();
+        return span.End + (_path != null ? _path.LeadOut : 0f);
+    }
 
     // Las islas vivas, en el mismo orden que VisibleSpans(). Se reciclan entre reconstrucciones:
     // al cruzar de capítulo cambia CUÁL se dibuja, no cuántas, así que crear y destruir objetos
@@ -124,8 +139,11 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     //
     // Así el margen significa lo que uno espera: cuánto sobra DESPUÉS de la última pieza. Y un
     // capítulo nuevo con otro cierre se acomoda solo.
-    float ContentStart(WorldMapDefinition.Span span) => span.start + DecorationRange(span).min;
-    float ContentEnd(WorldMapDefinition.Span span)   => span.start + DecorationRange(span).max;
+    float ContentStart(WorldMapDefinition.Span span) =>
+        Mathf.Min(span.start + DecorationRange(span).min, PathStart(span));
+
+    float ContentEnd(WorldMapDefinition.Span span) =>
+        Mathf.Max(span.start + DecorationRange(span).max, PathEnd(span));
 
     // Lo que ocupan las decoraciones del capítulo, en índice DENTRO del capítulo. Arranca en el
     // rango de los nodos (0 .. último) y se ensancha con lo que sobresalga: un capítulo sin
@@ -227,8 +245,8 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
             for (int i = 0; i + 1 < spans.Count; i++)
             {
                 float spacing = _definition.Layout.spacing;
-                float from    = (spans[i].End       + endMargin) * spacing;
-                float to      = (spans[i + 1].start - endMargin) * spacing;
+                float from    = (PathEnd(spans[i])       + endMargin) * spacing;
+                float to      = (PathStart(spans[i + 1]) - endMargin) * spacing;
 
                 // Con el margen interior grande, las islas se solapan y no hay sitio donde cavar.
                 if (to - from < 0.01f) continue;
@@ -470,8 +488,8 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
                       WorldMapDefinition.Span span, float width, bool worldStart, bool worldEnd)
     {
         float spacing = _definition.Layout.spacing;
-        float from    = (worldStart ? ContentStart(span) - outerStartMargin : span.start - endMargin) * spacing;
-        float to      = (worldEnd   ? ContentEnd(span)   + outerEndMargin   : span.End   + endMargin) * spacing;
+        float from    = (worldStart ? ContentStart(span) - outerStartMargin : PathStart(span) - endMargin) * spacing;
+        float to      = (worldEnd   ? ContentEnd(span)   + outerEndMargin   : PathEnd(span)   + endMargin) * spacing;
         float length  = to - from;
 
         int cols = Mathf.Max(1, Mathf.RoundToInt(width  * density));
