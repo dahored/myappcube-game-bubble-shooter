@@ -46,13 +46,13 @@ MonoBehaviour:
   - id: plants_2
     sprite: {fileID: 0}
     prefab: {fileID: 7395940145196178280, guid: f6f88c3f78bd94395b2e822f7a9b6404, type: 3}
-    height: 1.2
+    height: 1
     sizeVariation: 0
     shadowWidth: 3
   - id: plants_1
     sprite: {fileID: 0}
     prefab: {fileID: 7395940145196178280, guid: 34401a93649d444adb4504c0d3584b98, type: 3}
-    height: 1.2
+    height: 1
     sizeVariation: 0
     shadowWidth: 3
   - id: rock_4
@@ -73,9 +73,45 @@ MonoBehaviour:
     height: 2.5
     sizeVariation: 0
     shadowWidth: 3
+  - id: group_7
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: 3482d380f31304a39809d6c7e5e2f85a, type: 3}
+    height: 2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: group_6
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: 3d2117f4e2dd748d181f5759915419db, type: 3}
+    height: 2
+    sizeVariation: 0
+    shadowWidth: 3
   - id: group_5
     sprite: {fileID: 0}
     prefab: {fileID: 7395940145196178280, guid: 6180c40ff5fb8465c805c07b62507c68, type: 3}
+    height: 2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: group_8
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: bd70e086cbd724fa7b67e4b044c84976, type: 3}
+    height: 2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: group_9
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: 2ef81c541500a459d90a00616c908e9c, type: 3}
+    height: 2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: group_10
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: da3094b41cb714b9cbe65095833a524f, type: 3}
+    height: 2
+    sizeVariation: 0
+    shadowWidth: 3
+  - id: group_11
+    sprite: {fileID: 0}
+    prefab: {fileID: 7395940145196178280, guid: 86dfee5b2c71349a68041b7543fcb62d, type: 3}
     height: 2
     sizeVariation: 0
     shadowWidth: 3
