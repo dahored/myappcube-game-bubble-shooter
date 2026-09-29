@@ -253,11 +253,6 @@
     { "id": "group_1", "end": true, "middle":true, "side": "left", "offset": 0.6, "scale": 0.8 },
     { "id": "group_4", "end": true, "middle":true, "side": "right", "offset": 0.6, "scale": 0.8 },
     { "id": "rock_2", "end": true, "side": "left", "offset": 1.5 },
-    { "id": "rock_1", "end": true, "side": "right", "offset": 1.6, "flip": true },
-    { "id": "rock_2", "end": true, "at": 1.5, "side": "left", "offset": 3.5, "scale": 1.4 },
-    { "id": "rock_4", "end": true, "at": 1.5, "side": "left", "offset": 1.8, "scale": 1.4, "flip": true },
-    { "id": "rock_1", "end": true, "at": 1.5, "side": "left", "offset": 0.0, "scale": 1.4 },
-    { "id": "rock_3", "end": true, "at": 1.5, "side": "right", "offset": 1.8, "scale": 1.4 },
-    { "id": "rock_2", "end": true, "at": 1.5, "side": "right", "offset": 3.5, "scale": 1.4, "flip": true }
+    { "id": "rock_1", "end": true, "side": "right", "offset": 1.6, "flip": true }
   ]
 }
