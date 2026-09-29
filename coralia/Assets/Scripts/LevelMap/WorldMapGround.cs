@@ -51,7 +51,10 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Range(1f, 6f)]
     [SerializeField] float chasmSteepness = 2.5f;
 
-    [Tooltip("Material del fondo de la fosa. Vacío usa el mismo del suelo — conviene uno más oscuro, porque lo que vende la profundidad es que abajo llegue menos luz.")]
+    [Tooltip("El color del FONDO de la fosa. Se mezcla con el del borde según lo hondo que esté cada punto, así que la oscuridad entra de forma gradual y no hay ningún corte donde empieza la bajada. Un azul frío y oscuro se lee como agua profunda; un gris pardo, como roca.")]
+    [SerializeField] Color chasmShade = new(0.28f, 0.34f, 0.46f, 1f);
+
+    [Tooltip("Material del fondo de la fosa. Vacío usa el mismo del suelo, que suele bastar: lo que vende la profundidad es la sombra de arriba, no la textura. Ponlo solo si quieres roca en vez de arena.")]
     [SerializeField] Material chasmMaterial;
 
     [Header("Suelo por capítulo")]
@@ -234,6 +237,7 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     {
         var vertices = new List<Vector3>();
         var uvs      = new List<Vector2>();
+        var colors   = new List<Color>();
         var indices  = new List<int>();
 
         float length = to - from;
@@ -257,6 +261,12 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
 
             vertices.Add(new Vector3(px, -chasmDepth * dip, pz));
             uvs.Add(new Vector2(px / tiling, pz / tiling));
+
+            // La sombra va POR VÉRTICE y según la profundidad de ese punto: en el borde queda en
+            // blanco —o sea, igual que la isla vecina— y se va al color del fondo a medida que
+            // baja. Con un material oscuro plano habría un parche con un corte duro justo donde
+            // empieza la bajada, y eso se lee como una mancha, no como un pozo.
+            colors.Add(Color.Lerp(Color.white, chasmShade, dip));
         }
 
         for (int z = 0; z < rows; z++)
@@ -279,6 +289,7 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         mesh.Clear();
         mesh.SetVertices(vertices);
         mesh.SetUVs(0, uvs);
+        mesh.SetColors(colors);
         mesh.SetTriangles(indices, 0);
         mesh.RecalculateBounds();
 
