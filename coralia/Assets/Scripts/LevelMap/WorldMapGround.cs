@@ -57,6 +57,13 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Material del fondo de la fosa. Vacío usa el mismo del suelo, que suele bastar: lo que vende la profundidad es la sombra de arriba, no la textura. Ponlo solo si quieres roca en vez de arena.")]
     [SerializeField] Material chasmMaterial;
 
+    [Tooltip("Cuánto se ondula el filo entre la isla y la fosa, en unidades de mundo. En 0 el corte es una recta atravesando el mapa, que se lee como cortado a cuchillo en vez de como roca.")]
+    [SerializeField] float edgeWave = 0.8f;
+
+    [Tooltip("Cuántas ondulaciones caben a lo ancho. Pocas dan entrantes grandes tipo acantilado; muchas, un filo dentado.")]
+    [Range(0.5f, 8f)]
+    [SerializeField] float edgeWaveScale = 2.5f;
+
     [Header("Suelo por capítulo")]
     [Tooltip("Qué material le toca a cada 'ground' de los Chapter_N.json. Un capítulo sin 'ground' —o con uno que no esté acá— usa el material de este mismo objeto.")]
     [SerializeField] GroundMaterial[] materials;
@@ -247,7 +254,6 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         // El perfil se calcula una vez por fila, antes de generar los vértices: hace falta la
         // fila anterior para ir sumando la distancia recorrida SOBRE la superficie.
         var profile = new float[rows + 1];   // altura de cada fila
-        var walked  = new float[rows + 1];   // cuánto se ha recorrido por la pendiente hasta ahí
 
         for (int z = 0; z <= rows; z++)
         {
@@ -260,26 +266,45 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
             // negativo a una fracción da NaN. Un solo vértice con NaN envenena los bounds de la
             // malla entera y Unity la descarta por "demasiado grande o lejos del origen".
             profile[z] = -chasmDepth * Mathf.Pow(Mathf.Max(0f, Mathf.Sin(t * Mathf.PI)), 1f / chasmSteepness);
+        }
 
-            if (z == 0) continue;
+        // Los filos ondulan, así que cada columna cruza la fosa en un tramo de largo distinto y
+        // recorre su pendiente en distinta medida. Por eso el avance de la textura se acumula
+        // POR COLUMNA, en una pasada aparte: los vértices se generan por filas y ahí ya no se
+        // tiene a mano el de la columna anterior.
+        var edgeFrom = new float[cols + 1];
+        var edgeTo   = new float[cols + 1];
+        var walked   = new float[cols + 1][];
 
-            float dz = length / rows;
-            float dy = profile[z] - profile[z - 1];
-            walked[z] = walked[z - 1] + Mathf.Sqrt(dz * dz + dy * dy);
+        for (int x = 0; x <= cols; x++)
+        {
+            float px = (x / (float)cols - 0.5f) * width;
+
+            edgeFrom[x] = from + EdgeOffset(px, from);
+            edgeTo[x]   = to   + EdgeOffset(px, to);
+            walked[x]   = new float[rows + 1];
+
+            float dz = (edgeTo[x] - edgeFrom[x]) / rows;
+
+            for (int z = 1; z <= rows; z++)
+            {
+                float dy = profile[z] - profile[z - 1];
+                walked[x][z] = walked[x][z - 1] + Mathf.Sqrt(dz * dz + dy * dy);
+            }
         }
 
         for (int z = 0; z <= rows; z++)
         for (int x = 0; x <= cols; x++)
         {
             float px = (x / (float)cols - 0.5f) * width;
-            float pz = from + z / (float)rows * length;
+            float pz = Mathf.Lerp(edgeFrom[x], edgeTo[x], z / (float)rows);
 
             vertices.Add(new Vector3(px, profile[z], pz));
 
             // La textura se mide por lo que se RECORRE sobre la pendiente, no por lo que se avanza
             // en Z. Una pared casi vertical baja mucho y avanza poco, así que midiendo en Z le
             // tocaba un trozo minúsculo de textura estirado sobre una superficie grande.
-            uvs.Add(new Vector2(px / tiling, (from + walked[z]) / tiling));
+            uvs.Add(new Vector2(px / tiling, (edgeFrom[x] + walked[x][z]) / tiling));
 
             // La sombra va POR VÉRTICE y según la profundidad de ese punto: en el borde queda en
             // blanco —o sea, igual que la isla vecina— y se va al color del fondo a medida que
@@ -425,6 +450,22 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         return fallback;
     }
 
+    // Cuánto se adelanta o se atrasa el filo en esa columna.
+    //
+    // La misma función la usan la isla y la fosa que tiene enfrente, con la misma semilla —la Z
+    // del filo—, así que los dos bordes ondulan idéntico y encajan sin hueco ni solape por más
+    // que se cambie la amplitud.
+    //
+    // Dos senos de frecuencias que no son múltiplo una de otra: con uno solo el filo queda con un
+    // ritmo regular que se lee como decorativo, y sumando dos el patrón tarda mucho en repetirse.
+    float EdgeOffset(float px, float seed)
+    {
+        if (edgeWave <= 0f) return 0f;
+
+        float a = px * edgeWaveScale * 0.35f + seed * 0.7f;
+        return (Mathf.Sin(a) * 0.65f + Mathf.Sin(a * 2.7f + 1.3f) * 0.35f) * edgeWave;
+    }
+
     void AppendIsland(List<Vector3> vertices, List<Vector2> uvs, List<int> indices,
                       WorldMapDefinition.Span span, float width, bool worldStart, bool worldEnd)
     {
@@ -441,7 +482,13 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         for (int x = 0; x <= cols; x++)
         {
             float px = (x / (float)cols - 0.5f) * width;
-            float pz = from + z / (float)rows * length;
+
+            // Solo ondulan los filos INTERIORES, los que dan a una fosa. Los extremos del mundo se
+            // dejan rectos: ahí no hay nada enfrente con lo que encajar y la ondulación solo se
+            // vería como un borde mal cortado.
+            float a  = worldStart ? from : from + EdgeOffset(px, from);
+            float b  = worldEnd   ? to   : to   + EdgeOffset(px, to);
+            float pz = Mathf.Lerp(a, b, z / (float)rows);
 
             vertices.Add(new Vector3(px, 0f, pz));
 
