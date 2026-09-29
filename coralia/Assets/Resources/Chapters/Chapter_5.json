@@ -1,6 +1,7 @@
 {
   "chapter": 5,
   "name": "La Aldea Encendida",
+  "middle_nodes": true,
   "decorations": [
     {
       "id": "group_3",

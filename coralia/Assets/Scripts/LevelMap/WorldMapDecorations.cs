@@ -119,6 +119,11 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         {
             if (placement == null || placement.start || placement.end) continue;
 
+            // El interruptor solo alcanza al CUERPO del capítulo, no al marco. Las piezas de
+            // entrada y cierre también usan 'middle' —ahí significa medio nodo más afuera, no
+            // entre dos nodos— y apagarlas dejaría el capítulo sin sus topes.
+            if (placement.middle && !data.middle_nodes) continue;
+
             // Sin 'node' es una posición cruda en índices, no un nodo: se coloca donde dice y no
             // entra en la repetición, que no sabría a qué nodo corresponde.
             if (placement.node <= 0)

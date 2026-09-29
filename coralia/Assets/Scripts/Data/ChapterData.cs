@@ -27,6 +27,14 @@ public class ChapterData
     // agregarlo en todos.
     public string ground;
 
+    // Si se plantan las decoraciones que van ENTRE nodo y nodo (las que llevan 'middle'). Sin
+    // este campo en el archivo queda en false y no se plantan: es la forma de tener un capítulo
+    // con los costados despejados sin borrarle las piezas, solo apagándolas.
+    //
+    // Va en snake_case como el resto de campos de JSON: JsonUtility hace corresponder los nombres
+    // tal cual, sin traducir entre convenciones.
+    public bool middle_nodes;
+
     public DecorationPlacement[] decorations;
 }
 

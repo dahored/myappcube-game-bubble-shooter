@@ -1,6 +1,7 @@
 {
   "chapter": 2,
   "name": "Bahía de los Naufragios",
+  "middle_nodes": true,
   "decorations": [
     { "id": "group_2", "start": true, "middle": true, "side": "left", "offset": 0.6, "scale": 0.8 },
     { "id": "group_4", "start": true, "middle": true, "side": "right", "offset": 0.6, "scale": 0.8 },

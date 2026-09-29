@@ -1,6 +1,7 @@
 {
   "chapter": 4,
   "name": "Cueva de Cristales",
+  "middle_nodes": true,
   "decorations": [
     {
       "id": "group_2",
