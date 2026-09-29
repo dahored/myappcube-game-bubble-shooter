@@ -11,6 +11,8 @@ public class StartGamePanel : UIPanel
     [SerializeField] TMP_Text levelBannerText;
     [Tooltip("Nombre del nivel. Opcional — si se deja vacío, el panel funciona igual sin mostrarlo.")]
     [SerializeField] TMP_Text levelTitleText;
+    [Tooltip("Mejor puntaje del nivel. Opcional — si se deja vacío el panel funciona igual; se oculta solo mientras el nivel no se haya ganado nunca.")]
+    [SerializeField] TMP_Text bestScoreText;
     [SerializeField] TMP_Text objectiveText;
     [SerializeField] Button   playButton;
     [SerializeField] Button   closeButton;
@@ -39,6 +41,16 @@ public class StartGamePanel : UIPanel
         // DisplayName y no level.name: el JSON guarda el original en español y la traducción sale
         // de translations.csv (clave level.N.name), con el español de respaldo.
         if (levelTitleText) levelTitleText.text = level.DisplayName;
+
+        // Solo con algo que mostrar: antes de ganarlo la primera vez no hay récord, y un
+        // "Mejor: 0" en la pantalla previa lee como si el nivel valiera cero.
+        if (bestScoreText)
+        {
+            int best = SaveManager.GetLevelBestScore(level.id);
+            bestScoreText.gameObject.SetActive(best > 0);
+            if (best > 0)
+                bestScoreText.text = LocaleManager.Get("ui.level_select.best").Replace("{score}", best.ToString("N0"));
+        }
 
         bool isRescue = level.objective != null && level.objective.type == "rescue";
 

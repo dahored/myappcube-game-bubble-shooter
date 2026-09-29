@@ -133,7 +133,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
     // Lo que se recicla son los objetos, no estos datos.
     float[] _restAngle;     // ángulo de reposo de cada nivel
     float[] _scrollAngle;   // cuánto hay que girar para centrarlo
-    List<LevelData> _levels;
+    IReadOnlyList<LevelIndexEntry> _levels;   // el índice, no los niveles completos
 
     // El grupo de nodos que se recicla. El slot de un nivel es su índice módulo el tamaño del
     // grupo: como la ventana visible siempre es un tramo contiguo más corto que el grupo, dos
@@ -190,7 +190,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
         if (!cam) { Debug.LogWarning("[WorldSphereNodePositioner] No hay cámara (ni 'World Camera' asignada ni Camera.main)."); ReleaseHold(); yield break; }
         _cam = cam;
 
-        var levels = LoadAllLevels();
+        var levels = LevelLoader.Entries;
         int count  = levels.Count > 0 ? levels.Count : nodeCount;
         if (levels.Count == 0)
             Debug.LogWarning($"[WorldSphereNodePositioner] No se encontró ningún nivel en Resources/Levels — usando {nodeCount} nodos placeholder.");
@@ -302,9 +302,7 @@ public class WorldSphereNodePositioner : MonoBehaviour
         if (currentIndex < 0) currentIndex = count - 1;
         _currentIndex = currentIndex;
 
-        int justCompletedIndex = _justAdvancedFrom > 0 && levels.Count > 0
-            ? levels.FindIndex(lvl => lvl.id == _justAdvancedFrom)
-            : -1;
+        int justCompletedIndex = _justAdvancedFrom > 0 ? IndexOfLevel(levels, _justAdvancedFrom) : -1;
 
         float currentAngle = Mathf.Clamp(_scrollAngle[currentIndex], 0f, AngleMax);
         CurrentNodeAngle   = currentAngle;
@@ -383,10 +381,32 @@ public class WorldSphereNodePositioner : MonoBehaviour
             _pool[slot].gameObject.SetActive(false);
         }
 
+        // El ancla se mueve con la ventana, y hay que fijarla ANTES de vincular: los nodos
+        // calculan su orden contra ella.
+        float anchor = _restAngle[first];
+        bool  moved  = !Mathf.Approximately(anchor, DrawOrderAnchor);
+        DrawOrderAnchor = anchor;
+
         for (int i = first; i <= last; i++) Bind(i);
+
+        // Bind se saltea los nodos que ya estaban puestos, así que si el ancla se movió esos
+        // conservan el orden calculado con la anterior. Son treinta como mucho: se reasignan.
+        if (moved) RefreshDrawOrders(first, last);
 
         WindowFirst = first;
         WindowLast  = last;
+    }
+
+    void RefreshDrawOrders(int first, int last)
+    {
+        for (int i = first; i <= last; i++)
+        {
+            var node = _pool[SlotOf(i)];
+            if (!node) continue;
+
+            var canvas = node.GetComponent<Canvas>();
+            if (canvas) canvas.sortingOrder = DrawOrderAt(_restAngle[i]) + NODE_ORDER_BIAS;
+        }
     }
 
     void Bind(int levelIndex)
@@ -458,17 +478,19 @@ public class WorldSphereNodePositioner : MonoBehaviour
     const int   ORDER_LAYERS     = 16;
     const float ORDER_RESOLUTION = 1f;
 
-    public static int DrawOrderAt(float restAngle)
-    {
-        int order = -Mathf.RoundToInt(restAngle * ORDER_RESOLUTION) * ORDER_LAYERS;
+    // Ángulo desde el que se cuenta el orden: el del primer nodo de la ventana visible.
+    //
+    // Sin esto el orden se medía desde el origen del mundo y crecía con cada nivel, hasta pasarse
+    // del rango de sortingOrder (±32767) alrededor del nivel 250 — de ahí en adelante todo
+    // compartía capa y se tapaba al azar. Contando desde la ventana, el rango que hace falta es
+    // el de los treinta nodos que se ven a la vez, y el mundo puede tener los niveles que sea.
+    //
+    // Lo que importa es el orden RELATIVO entre lo que está en pantalla al mismo tiempo, y eso no
+    // cambia al mover el ancla: se le resta lo mismo a todos.
+    public static float DrawOrderAnchor { get; private set; }
 
-        if (order >= -ORDER_RANGE) return order;
-
-        Debug.LogWarning($"[WorldSphereNodePositioner] El orden de dibujo ({order}) se pasó del " +
-                         "rango de sortingOrder: hay que bajar ORDER_LAYERS o el mapa va a " +
-                         "mostrar nodos y decoraciones superpuestos al final.");
-        return -ORDER_RANGE;
-    }
+    public static int DrawOrderAt(float restAngle) =>
+        -Mathf.RoundToInt((restAngle - DrawOrderAnchor) * ORDER_RESOLUTION) * ORDER_LAYERS;
 
     // El nodo se dibuja en la mitad alta de su paso angular, por delante de las decoraciones que
     // caen en el MISMO paso — nada más. Entre pasos distintos manda la profundidad: una
@@ -480,6 +502,13 @@ public class WorldSphereNodePositioner : MonoBehaviour
     const int NODE_ORDER_BIAS = ORDER_LAYERS / 2;
 
     // Ángulo de reposo de un nivel. Lo usa el camino para anclar su textura al capítulo.
+    static int IndexOfLevel(IReadOnlyList<LevelIndexEntry> levels, int id)
+    {
+        for (int i = 0; i < levels.Count; i++)
+            if (levels[i].id == id) return i;
+        return -1;
+    }
+
     public float RestAngleAt(int levelIndex)
     {
         if (_restAngle == null || _restAngle.Length == 0) return 0f;
@@ -701,22 +730,6 @@ public class WorldSphereNodePositioner : MonoBehaviour
         Debug.LogWarning("[WorldSphereNodePositioner] Falta asignar 'Start Game Panel' en el Inspector — se navega directo a Gameplay.");
         PlayerPrefs.SetInt("selected_level", levelId);
         SceneLoader.GoTo(SceneLoader.GAMEPLAY);
-    }
-
-    // Mismo patrón que LevelMapController.LoadAllLevels(): carga todos los JSON de niveles
-    // (Resources/Levels/Chapter_N/*.json vía LevelData) y descarta los de prueba (ids >= 900,
-    // ej. 999_test_rescue.json). Ordenados por capítulo y después por id, que es el orden en el
-    // que se recorren en el mapa.
-    List<LevelData> LoadAllLevels()
-    {
-        var result = new List<LevelData>();
-        foreach (var json in Resources.LoadAll<TextAsset>("Levels"))
-        {
-            var lvl = JsonUtility.FromJson<LevelData>(json.text);
-            if (lvl != null && lvl.id < 900) result.Add(lvl);
-        }
-        result.Sort((a, b) => a.chapter != b.chapter ? a.chapter.CompareTo(b.chapter) : a.id.CompareTo(b.id));
-        return result;
     }
 
     // Mismo criterio que LevelMapController.GetState() — no se puede reusar directo porque allá

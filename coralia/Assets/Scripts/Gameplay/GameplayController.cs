@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,6 +17,10 @@ public class GameplayController : MonoBehaviour
     [SerializeField] OutOfLivesPanel   outOfLivesPanel; // guard de entrada — ver Start() (issue #52)
     [SerializeField] TMP_Text          shotsLabel;
     [SerializeField] ClaimPanel        claimPanel; // confirmación al comprar más disparos en NoMoreMovesPanel
+    [SerializeField] GridIntroPreview  gridIntro;  // vista previa del tablero al empezar (opcional)
+
+    [Tooltip("Respiro entre que la transición destapa la pantalla y que empieza la entrada al nivel. Sin esto la animación arranca en el mismo frame en que se termina de ver el telón, y se lee como si ya hubiera empezado.")]
+    [SerializeField] float openBeat = 0.25f;
 
     [Header("Sin disparos")]
     [Tooltip("Si está desactivado, al quedarse sin disparos se salta la oferta de monedas y se muestra LosePanel directo.")]
@@ -31,6 +36,18 @@ public class GameplayController : MonoBehaviour
     [SerializeField] TMP_Text          levelNumberText; // "LV {id}" del nivel actual (GameDataWrapper/LevelNumberLabel)
 
     [Header("SFX (opcional — dejar vacío hasta tener los clips)")]
+    [Header("Remate de victoria — los disparos que sobran se gastan en pantalla")]
+    [Tooltip("Rango de distancia que recorre cada disparo automático antes de reventar. Varía entre los dos para que no revienten todos en el mismo punto.")]
+    [SerializeField] float victoryShotMinDistance = 350f;
+    [SerializeField] float victoryShotMaxDistance = 900f;
+    [Tooltip("Cuánto se corre al azar hacia los lados el punto donde revienta cada disparo, en píxeles. Todos suben rectos; esto solo evita que exploten en la misma columna.")]
+    [SerializeField] float victoryShotSpread      = 120f;
+    [Tooltip("Cuántas burbujas salen como mucho. Si sobran más disparos, esas burbujas reparten el bonus de todas.")]
+    [SerializeField] int   victoryMaxShots        = 10;
+
+    [Tooltip("Cuánto dura cada disparo del remate.")]
+    [SerializeField] float victoryShotDuration    = 0.12f;
+
     [SerializeField] AudioClip popClip;
     [SerializeField] AudioClip dropClip;
 
@@ -38,32 +55,27 @@ public class GameplayController : MonoBehaviour
     const float WIN_PANEL_PAUSE      = 0.35f; // respiro tras llenarse la barra, para que se vea la última estrella
     const float PROGRESS_BAR_TIMEOUT = 3f;    // tope de espera de esa barra, para no colgar el fin de nivel
     const float POP_CHAIN_DELAY      = 0.08f; // segundos entre el pop de cada burbuja del match, en cadena
-    const float POP_CHAIN_DELAY_MAX  = 0.4f;   // tope — para que un match gigante no tarde una eternidad en terminar
+    const float DROP_CHAIN_DELAY     = 0.05f; // ídem para las que caen — algo más rápido, son más
+    const float CHAIN_TOTAL_MAX      = 0.7f;  // cuánto puede durar la cadena entera, por larga que sea
 
-    // GDD §4.2 / docs/04_Plan_Fase1_Coralia.md — fórmula de score, escalada x1000 (pedido de
-    // Diego: el score final de un nivel debe sentirse "alto", en el orden de cientos de miles,
-    // no de cientos) — mantiene las mismas proporciones relativas entre pop/drop/disparo
-    // sobrante que el GDD original, solo con más ceros. Si esto cambia, hay que reescalar
-    // también star_thresholds en TODOS los niveles (Resources/Levels/Chapter_N/*.json) y
-    // actualizar la nota equivalente en .claude/skills/level-designer/SKILL.md.
-    const int SCORE_PER_POP            = 10_000;
-    const int SCORE_PER_DROP           = 15_000;
-    const int SCORE_PER_REMAINING_SHOT = 10_000;
+    // Separación entre un elemento de la cadena y el siguiente. Con pocas burbujas usa el paso
+    // natural; con muchas lo comprime para que la cadena entre en CHAIN_TOTAL_MAX.
+    //
+    // La clave es que NINGUNA comparte instante con otra: un combo de veinte explota veinte veces
+    // seguidas, muy rápido, en vez de cinco veces y un golpe.
+    static float ChainStep(int count, float naturalStep) =>
+        count > 1 ? Mathf.Min(naturalStep, CHAIN_TOTAL_MAX / (count - 1)) : 0f;
 
-    // El GDD menciona "combos largos suben score multiplicador" pero sin definir el valor
-    // (queda anotado como pendiente) — estos dos valores son una propuesta propia, fáciles
-    // de retocar si el balance no se siente bien:
-    // - Cadena: bonus por el TAMAÑO del match+drop de un mismo disparo, por cada burbuja
-    //   que pasa del mínimo de 3 (un match de 3 no da bonus, uno de 8 sí).
-    // - Combo: bonus por RACHA de disparos consecutivos que matchean sin fallar ninguno.
-    const int CHAIN_BONUS_PER_EXTRA_BUBBLE = 1_000;
-    const int COMBO_BONUS_PER_STREAK       = 2_000;
+    // La fórmula vive en ScoreRules, compartida con LevelDifficultyEstimator. Si cambia, hay
+    // que recalcular star_thresholds en TODOS los niveles: Coralia -> Recalcular umbrales de
+    // estrellas.
 
     LevelData  _level;
     int        _shotsRemaining;
     int        _bubblesPopped;
     int        _bubblesDropped;
-    int        _comboBonus;   // acumulado durante todo el nivel
+    int        _popScore;     // acumulado disparo a disparo: cada burbuja valió según la racha de SU momento
+    int        _victoryBonus;  // el bonus ya topado — lo reparte el remate de disparos
     int        _comboStreak;  // racha actual de disparos consecutivos con match
     Vector2Int _creatureCell = new(-1, -1);
     bool       _creatureFreed;
@@ -71,6 +83,11 @@ public class GameplayController : MonoBehaviour
     bool       _isFirstAttempt; // nunca se había intentado este nivel antes de esta partida (issue #49)
     int        _noMoreShotsUsedCount; // cuántas veces ya se pagó la oferta en esta partida — sube el costo
     bool       _endingPending;        // hay un cierre de nivel esperando a que terminen las animaciones
+    bool       _isEditorTest;         // se entró desde el editor de niveles: nada de esta partida se guarda
+
+    // La pone el editor de niveles justo antes de entrar a Play. No es una constante de SaveManager
+    // porque no es progreso: es una marca de un solo uso entre el editor y esta escena.
+    public const string EDITOR_TEST_KEY = "level_editor_test";
 
     void Start()
     {
@@ -121,10 +138,23 @@ public class GameplayController : MonoBehaviour
             return;
         }
 
+        // Probar un nivel desde el editor no puede tocar la partida. Ganar el 60 para ver cómo
+        // quedó dejaba desbloqueados los 60 niveles de golpe, y no hay forma de volver atrás.
+        //
+        // La marca se consume acá: vale para esta partida y para ninguna más. Si el jugador vuelve
+        // al mapa y entra a un nivel normalmente, ya no está.
+        _isEditorTest = PlayerPrefs.GetInt(EDITOR_TEST_KEY, 0) == 1;
+        if (_isEditorTest)
+        {
+            PlayerPrefs.DeleteKey(EDITOR_TEST_KEY);
+            PlayerPrefs.Save();
+            Debug.Log($"[GameplayController] Nivel {levelId} en modo prueba: no se guarda progreso.");
+        }
+
         // Leer ANTES de marcar — si nunca se intentó este nivel, esta partida es el intento
         // #1 (condición para el nodo dorado, ver SaveManager.RecordLevelWin en EndLevel()).
         _isFirstAttempt = !SaveManager.HasAttemptedLevel(levelId);
-        SaveManager.MarkLevelAttempted(levelId);
+        if (!_isEditorTest) SaveManager.MarkLevelAttempted(levelId);
 
         if (_level.objective != null && _level.objective.type == "rescue" && _level.objective.creature_position?.Count == 2)
         {
@@ -160,6 +190,66 @@ public class GameplayController : MonoBehaviour
         if (pausedPanel      != null) pausedPanel.OnResumePressed += OnResumePressed;
 
         RefreshShotsLabel();
+
+        StartCoroutine(OpenLevel());
+    }
+
+    // La entrada al nivel, antes del primer disparo (issue #74). Dos cosas encadenadas:
+    //
+    //   1. Si el tablero es tan largo que sus primeras filas nacen fuera de cuadro, el nivel abre
+    //      con la vista puesta abajo, espera y sube. En un tablero que entra entero esto no pasa.
+    //   2. La concha abre vacía y la primera burbuja aparece con destello y sonido, ya con el
+    //      tablero en su sitio.
+    //
+    // Todo el primer bloque corre de forma SÍNCRONA, todavía dentro de Start(): StartCoroutine
+    // ejecuta el cuerpo hasta el primer yield sin esperar al frame siguiente. Eso importa porque
+    // es lo que hace que el primer frame dibujado ya salga con la vista abajo y la recámara vacía;
+    // si se colocaran después, se vería un instante el nivel armado y recién ahí el salto.
+    //
+    // Mientras dura no se puede apuntar, disparar ni pausar: la vista está en movimiento y todavía
+    // no hay burbuja que disparar. El botón de pausa se apaga en vez de dejarse andando porque
+    // cualquier toque adelanta la subida — sin esto, el toque que abre la pausa dispararía las dos
+    // cosas a la vez y el orden entre ellas no está definido.
+    IEnumerator OpenLevel()
+    {
+        bool preview = gridIntro != null && gridIntro.Begin();
+
+        cannon.HideCurrentForReveal();
+        cannon.SetInputEnabled(false);
+        if (openPausedButton) openPausedButton.interactable = false;
+
+        yield return WaitForCurtain();
+
+        if (preview) yield return gridIntro.Play();
+        yield return cannon.RevealCurrent();
+
+        if (openPausedButton) openPausedButton.interactable = true;
+        cannon.SetInputEnabled(true);
+    }
+
+    // La escena se activa a mitad de la animación de burbujas de la transición, así que Start()
+    // corre con la pantalla todavía tapada y no se destapa hasta unos 0,3 s después. Animar ahí es
+    // animar para nadie: se oye el sonido y no se ve nada (reportado por Diego al entrar a un
+    // nivel corto, donde la aparición de la burbuja es lo único que hay que ver y dura 0,45 s).
+    //
+    // Esperar no descoloca nada: la vista y la recámara ya quedaron puestas de forma síncrona en
+    // Start, así que el telón se levanta sobre el nivel ya compuesto y recién entonces se mueve.
+    //
+    // El tope es por si la transición queda colgada. Vale más ver la animación tarde que un nivel
+    // que no arranca nunca.
+    IEnumerator WaitForCurtain()
+    {
+        const float TIMEOUT = 5f;
+
+        for (float t = 0f; SceneTransition.Covering && t < TIMEOUT; )
+        {
+            // El primer frame después de cargar una escena puede traer un deltaTime enorme; el
+            // tope por frame evita que el timeout se consuma de una.
+            t += Mathf.Min(Time.unscaledDeltaTime, 0.05f);
+            yield return null;
+        }
+
+        if (openBeat > 0f) yield return new WaitForSecondsRealtime(openBeat);
     }
 
     // Referencias core (grid/cannon): sin ellas no hay nivel que jugar, se aborta Start().
@@ -184,6 +274,7 @@ public class GameplayController : MonoBehaviour
         if (totalLivesText   == null) Debug.LogWarning("[GameplayController] Falta asignar 'Total Lives Text' en el Inspector — el HUD no va a mostrar las vidas actuales.");
         if (levelNumberText  == null) Debug.LogWarning("[GameplayController] Falta asignar 'Level Number Text' en el Inspector — el HUD no va a mostrar el número de nivel.");
         if (claimPanel       == null) Debug.LogWarning("[GameplayController] Falta asignar 'Claim Panel' en el Inspector — comprar disparos extra no va a mostrar confirmación.");
+        if (gridIntro        == null) Debug.LogWarning("[GameplayController] Falta asignar 'Grid Intro' en el Inspector — los niveles largos van a empezar sin el barrido de vista previa del tablero.");
 
         return ok;
     }
@@ -265,7 +356,7 @@ public class GameplayController : MonoBehaviour
     // enableNoMoreShotsOffer está apagado, directo al quedarse sin disparos.
     void ShowRealLoss()
     {
-        SaveManager.LoseLife();
+        if (!_isEditorTest) SaveManager.LoseLife(); // probar un nivel no cuesta vidas
         if (losePanel != null) losePanel.Open();
         else Debug.LogWarning("[GameplayController] LosePanel no está asignado.");
     }
@@ -317,39 +408,81 @@ public class GameplayController : MonoBehaviour
         // una, y alcanza con escalonar el pop según ese orden para que explote en cadena
         // en vez de todas juntas. El estado lógico del grid (RemoveBubble) sigue siendo
         // instantáneo — solo la animación visual del pop se demora.
+        // El intervalo se COMPRIME en los combos grandes en vez de toparse. Antes era
+        // Min(i * paso, tope): pasadas las cinco o seis primeras, todas quedaban con el mismo
+        // retraso y reventaban a la vez — junto con su vibración, que se sentía como un golpe
+        // único en lugar de una cadena.
+        float popStep = ChainStep(matched.Count, POP_CHAIN_DELAY);
+
+        // Lo que vale CADA burbuja de este disparo: sube con la racha. Se calcula una vez acá
+        // porque es igual para todas las del match — lo que cambia entre disparos, no dentro.
+        int popValue = ScoreRules.PopValue(_comboStreak);
+
         for (int i = 0; i < matched.Count; i++)
         {
             var cell = matched[i];
             if (grid.TryGetBubble(cell, out var view))
-                view.PlayPopAnimation(Mathf.Min(i * POP_CHAIN_DELAY, POP_CHAIN_DELAY_MAX), popClip);
+                view.PlayPopAnimation(i * popStep, popClip);
+            grid.SpawnScorePopup(cell, popValue, i * popStep, ScorePopup.POP_LIFETIME);
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
         _bubblesPopped += matched.Count;
 
-        var floating = grid.FindUnreachableFromCeiling();
-        foreach (var cell in floating)
+        // Las que caen, de abajo hacia arriba y también escalonadas: es un desmoronamiento, y
+        // soltarlas todas en el mismo frame lo convertía en un bloque que baja de una pieza.
+        var floating  = grid.FindUnreachableFromCeiling();
+        var collapsing = floating.OrderByDescending(cell => cell.y).ToList();
+        float dropStep = ChainStep(collapsing.Count, DROP_CHAIN_DELAY);
+
+        for (int i = 0; i < collapsing.Count; i++)
         {
-            if (grid.TryGetBubble(cell, out var view)) view.PlayDropAnimation(dropClip);
+            var cell = collapsing[i];
+            if (grid.TryGetBubble(cell, out var view)) view.PlayDropAnimation(dropClip, i * dropStep);
+            // Las que caen valen fijo, sin racha: el número distinto es justamente lo que hace
+            // ver que se ganaron de otra forma. GridController lo pone a la altura del cañón,
+            // cuando la burbuja terminó de caer.
+            grid.SpawnDropScorePopup(cell, ScoreRules.POINTS_PER_DROP, i * dropStep);
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
         _bubblesDropped += floating.Count;
 
-        // Cadena: bonus por cuánto pasó este disparo del mínimo de 3 (match + todo lo que
-        // cayó con él). Combo: bonus FIJO por disparo mientras la racha siga viva (no
-        // multiplicado por el largo de la racha) — la versión anterior multiplicaba por
-        // _comboStreak en cada disparo, lo que acumulaba en forma cuadrática con rachas
-        // largas y hacía que el score total se disparara muy por encima del millón sin
-        // querer (reportado por Diego). Así el combo suma parejo, disparo a disparo.
-        int chainSize  = matched.Count + floating.Count;
-        int chainBonus = Mathf.Max(0, chainSize - 3) * CHAIN_BONUS_PER_EXTRA_BUBBLE;
-        int comboBonus = _comboStreak >= 2 ? COMBO_BONUS_PER_STREAK : 0;
-        _comboBonus += chainBonus + comboBonus;
+        // Se acumula acá y no se calcula al final multiplicando el total de burbujas: para
+        // entonces la racha de cada disparo ya no se sabe. Y usa el MISMO popValue que se
+        // mostró en pantalla, así lo que sumó el marcador es exactamente lo que se vio.
+        _popScore += matched.Count * popValue;
 
-        grid.Shake(chainSize); // no hace nada si no llega al umbral — ver GridController.shakeThreshold
+        int chainSize = matched.Count + floating.Count;
+
+        // Un golpe de temblor por burbuja, al ritmo de sus pops. Antes era una sola sacudida
+        // disparada acá, o sea cuando las burbujas todavía no habían empezado a explotar.
+        if (grid.ShakeWorthIt(chainSize))
+            StartCoroutine(ShakeAlongChain(matched.Count, popStep, collapsing.Count, dropStep));
 
         return removed;
+    }
+
+    // Acompaña la cadena con un golpe de temblor por burbuja, con los mismos tiempos que se le
+    // pasaron a las animaciones. Los pops primero y las caídas después, porque así es como
+    // ocurren en pantalla.
+    //
+    // La energía del temblor se acumula y decae sola (GridController.ShakePulse), así que esto no
+    // produce sacudidas sueltas: mientras los pops llegan más rápido de lo que la energía baja, la
+    // pantalla tiembla de forma sostenida y se apaga cuando termina la cadena.
+    IEnumerator ShakeAlongChain(int popCount, float popStep, int dropCount, float dropStep)
+    {
+        for (int i = 0; i < popCount; i++)
+        {
+            grid.ShakePulse();
+            if (popStep > 0f) yield return new WaitForSeconds(popStep);
+        }
+
+        for (int i = 0; i < dropCount; i++)
+        {
+            grid.ShakePulse();
+            if (dropStep > 0f) yield return new WaitForSeconds(dropStep);
+        }
     }
 
     void CheckWinLose()
@@ -393,7 +526,7 @@ public class GameplayController : MonoBehaviour
 
         // Reactivado — Diego ya está probando la progresión real entre niveles. Este mismo
         // "avance real" es la condición para la animación de retorno al mapa (issue #55).
-        if (won && _level.id >= SaveManager.MaxUnlockedLevel)
+        if (won && !_isEditorTest && _level.id >= SaveManager.MaxUnlockedLevel)
         {
             SaveManager.MaxUnlockedLevel = _level.id + 1;
             SaveManager.JustAdvancedFromLevelId = _level.id;
@@ -402,12 +535,37 @@ public class GameplayController : MonoBehaviour
         if (won)
         {
             if (winPanel == null) { Debug.LogWarning("[GameplayController] WinPanel no está asignado."); return; }
-            int score  = LiveScore + _shotsRemaining * SCORE_PER_REMAINING_SHOT;
+            // El bonus no se cobra entero: solo lo que quepa sin saltarse un escalón de estrella
+            // que no se ganó jugando (ver ScoreRules.AllowedBonus).
+            _victoryBonus = ScoreRules.AllowedBonus(LiveScore,
+                                                    ScoreRules.RemainingShotsScore(_shotsRemaining),
+                                                    _level.star_thresholds);
+            int score  = LiveScore + _victoryBonus;
+
+            // Con el total, bonus incluido: los disparos que sobran también cuentan para las
+            // estrellas. El umbral ya los tiene en cuenta (LevelDifficultyEstimator.RealisticScore
+            // los suma contra los disparos realistas), así que no regalan estrellas — dan el
+            // margen que cubre los disparos fallados.
             int stars  = CalculateStars(score);
-            SaveManager.RecordLevelWin(_level.id, stars, _isFirstAttempt);
+
+            // Leído ANTES de guardar: después de RecordLevelScore el récord ya es este puntaje.
+            // La primera victoria también cuenta como récord (previousBest == 0): no hay partida
+            // anterior contra la cual perder, así que cualquier puntaje es el mejor hasta ahora.
+            int  previousBest = SaveManager.GetLevelBestScore(_level.id);
+            bool newRecord    = score > previousBest;
+
+            // El panel igual se muestra con sus estrellas y su puntaje: probar un nivel sirve
+            // justamente para ver cómo queda eso. Lo que no pasa es que quede registrado.
+            if (!_isEditorTest)
+            {
+                SaveManager.RecordLevelWin(_level.id, stars, _isFirstAttempt);
+                SaveManager.RecordLevelScore(_level.id, score);
+            }
+
             var awards = CalculateAwards(firstCompletion);
 
-            StartCoroutine(ShowWinAfterProgressBar(score, () => winPanel.Show(_level.id, score, stars, awards)));
+            StartCoroutine(PlayVictorySequence(score,
+                () => winPanel.Show(_level.id, score, stars, awards, newRecord)));
         }
         else if (enableNoMoreShotsOffer)
         {
@@ -420,13 +578,72 @@ public class GameplayController : MonoBehaviour
         }
     }
 
-    // Durante la partida la barra muestra LiveScore, que NO incluye el bonus por disparos
-    // sobrantes — ese solo existe al ganar. Así que al terminar puede quedarle medio recorrido
-    // por delante y hasta dos estrellas sin encender.
+    IEnumerator PlayVictorySequence(int finalScore, System.Action show)
+    {
+        yield return SpendRemainingShots();
+        yield return ShowWinAfterProgressBar(finalScore, show);
+    }
+
+    // Los disparos que sobran no desaparecen con el nivel: se disparan solos, uno por uno, y
+    // cada uno revienta mostrando el bonus ACUMULADO (1000, 2000, 3000…). El número que crece
+    // es lo que hace ver que suman; uno que repitiera "1000" cinco veces no diría nada.
     //
-    // Si el panel se abriera en el mismo frame, ese remate pasaría entero detrás del modal y el
-    // jugador se enteraría de sus tres estrellas recién al ver el resultado, sin haberlas visto
-    // ganarse. Acá la barra termina su recorrido con el puntaje final, y el panel espera.
+    // No toca _shotsRemaining: el puntaje final ya se calculó con él y restarlo acá lo cambiaría
+    // a mitad de la animación. El contador del HUD baja aparte, solo para la vista.
+    IEnumerator SpendRemainingShots()
+    {
+        if (cannon == null || grid == null || _shotsRemaining <= 0) yield break;
+
+        cannon.SetInputEnabled(false);
+        cannon.PrepareCelebrationColors();
+
+        // Se disparan como mucho victoryMaxShots burbujas, aunque sobren cuarenta. Las que salen
+        // reparten el bonus COMPLETO entre ellas, así que con veinte sobrantes cada burbuja vale
+        // por cuatro y el número final es el mismo.
+        //
+        // Así el remate dura siempre lo mismo sin tener que repartir un presupuesto: cada disparo
+        // conserva su duración y se ve, en vez de acelerarse hasta el parpadeo cuando sobran
+        // muchos.
+        int   shots  = Mathf.Min(_shotsRemaining, Mathf.Max(1, victoryMaxShots));
+        float flight = Mathf.Max(0.02f, victoryShotDuration);
+
+        for (int i = 1; i <= shots; i++)
+        {
+            // El bonus ya topado, repartido parejo entre las burbujas que salen. Se calcula sobre
+            // el total y no sumando de a poco para que el último número caiga exacto en
+            // _victoryBonus, sin arrastrar el error del redondeo.
+            int bonus = Mathf.RoundToInt(_victoryBonus * i / (float)shots);
+
+            // Capturado en una local: el callback corre dentro de la corrutina, cuando el bucle
+            // ya podría haber avanzado.
+            int shown = bonus;
+
+            // El contador baja hasta 0 en el mismo número de pasos: con veinte sobrantes y cinco
+            // burbujas va 16, 12, 8, 4, 0 en vez de quedarse en 15.
+            if (shotsLabel)
+                shotsLabel.text = (_shotsRemaining - Mathf.RoundToInt(_shotsRemaining * i / (float)shots)).ToString();
+
+            yield return cannon.PlayCelebrationShot(Random.Range(-victoryShotSpread, victoryShotSpread),
+                victoryShotMinDistance,
+                victoryShotMaxDistance, flight, popClip,
+                burst => grid.SpawnScorePopupAt(burst, shown, 0f, ScorePopup.CELEBRATION_LIFETIME));
+
+            // La barra sube con cada disparo: el bonus cuenta para las estrellas, así que este
+            // es el momento en que una tercera estrella que faltaba se puede encender.
+            if (progressScore != null)
+                progressScore.SetScore(LiveScore + bonus, _level.star_thresholds);
+        }
+
+        // El tope de burbujas no tiene por qué coincidir con los disparos que sobraban, así que
+        // el vaciado se pide explícito en vez de confiar en que el contador haya llegado a cero.
+        cannon.EndCelebration();
+    }
+
+    // Cierra la barra con el puntaje final, bonus incluido, y espera a que termine de llenarse.
+    //
+    // Si el panel se abriera en el mismo frame, ese último tramo pasaría entero detrás del modal
+    // y el jugador se enteraría de su tercera estrella al ver el resultado, sin haberla visto
+    // ganarse.
     IEnumerator ShowWinAfterProgressBar(int finalScore, System.Action show)
     {
         if (progressScore != null)
@@ -456,7 +673,7 @@ public class GameplayController : MonoBehaviour
     // (depende de cuántos disparos quedaron), así que mostrarlo en vivo en ProgressScoreView
     // haría que la barra subiera/bajara de forma rara mientras se juega. El salto final se ve
     // en el contador animado de WinPanel, no acá.
-    int LiveScore => _bubblesPopped * SCORE_PER_POP + _bubblesDropped * SCORE_PER_DROP + _comboBonus;
+    int LiveScore => _popScore + ScoreRules.DropScore(_bubblesDropped);
 
     // GDD §4.2 — estrellas según star_thresholds del nivel (calibrados a mano por playtesting,
     // no por fórmula). 0 a 3 estrellas.

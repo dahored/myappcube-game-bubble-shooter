@@ -33,6 +33,18 @@ public class SceneTransition : MonoBehaviour
 
     public static bool Enabled = false;
 
+    // Si el telón está tapando la pantalla ahora mismo.
+    //
+    // La escena nueva se activa a mitad de la animación de burbujas, o sea que su Start() corre
+    // con la pantalla todavía cubierta y no se destapa hasta 0,3 s después. Cualquier animación de
+    // entrada que arranque ahí se reproduce para nadie: se oye el sonido y no se ve nada
+    // (reportado por Diego al entrar a un nivel).
+    //
+    // Quien tenga una, la espera con esto. Es lo contrario de SceneReady, que retrasa el destape
+    // porque la escena todavía se está armando; acá la escena ya está lista y lo que se espera es
+    // el telón.
+    public static bool Covering { get; private set; }
+
     public static void SetBubbleSprites(Sprite[] sprites) => _bubbleSprites = sprites;
     public static void SetBubbleSound(AudioClip clip)    => _bubbleSound  = clip;
 
@@ -236,6 +248,11 @@ public class SceneTransition : MonoBehaviour
 
     IEnumerator Fade(float from, float to, float duration)
     {
+        // Se marca al EMPEZAR a tapar y se levanta al TERMINAR de destapar, así el estado cubre
+        // también el rato entre un fundido y el otro. Un único lugar para las tres entradas
+        // (Transition, FadeAndCallback y FadeIn).
+        if (to > 0f) Covering = true;
+
         float t = 0f;
         Color c = _overlay.color;
         while (t < duration)
@@ -248,5 +265,6 @@ public class SceneTransition : MonoBehaviour
         c.a = to;
         _overlay.color = c;
         _overlay.raycastTarget = to > 0f;
+        Covering = to > 0f;
     }
 }

@@ -480,7 +480,16 @@ public class LevelEditorWindow : EditorWindow
         EditorGUILayout.LabelField("Jugando normal", $"{realistic} disparos");
         EditorGUILayout.LabelField("Burbujas", $"{_report.bubbles} en {_report.clusters} grupos" +
                                                (_report.lone > 0 ? $" ({_report.lone} sueltas)" : ""));
-        EditorGUILayout.LabelField("Puntaje óptimo", $"~{LevelDifficultyEstimator.OptimalScore(_report, level.max_shots):n0}");
+        EditorGUILayout.LabelField("Puntaje óptimo", $"~{LevelDifficultyEstimator.RealisticScore(_report):n0}");
+        EditorGUILayout.LabelField("Peor disparo", $"se lleva el {_report.collapse:P0} del nivel");
+
+        // El aviso que faltaba: un nivel puede tener los disparos bien calculados y aun así
+        // terminarse en tres jugadas porque el techo se corta de un match.
+        if (_report.collapse > 0.30f)
+            EditorGUILayout.HelpBox(
+                $"Un solo disparo se lleva el {_report.collapse:P0} del nivel. Suele ser el techo: " +
+                "si la fila de arriba tiene varias burbujas seguidas del mismo color, al reventarlas " +
+                "cae todo lo que colgaba de ellas.", MessageType.Warning);
 
         var actual   = LevelDifficultyEstimator.Rate(realistic, level.max_shots);
         var expected = LevelDifficultyEstimator.Expected(PositionInChapter(level));
@@ -526,7 +535,7 @@ public class LevelEditorWindow : EditorWindow
 
     void DrawStarSuggestion(LevelData level)
     {
-        var stars = LevelDifficultyEstimator.SuggestStars(_report, level.max_shots);
+        var stars = LevelDifficultyEstimator.SuggestStars(_report);
 
         bool same = level.star_thresholds != null && level.star_thresholds.Count >= 3 &&
                     level.star_thresholds[0] == stars[0] &&
@@ -806,6 +815,9 @@ public class LevelEditorWindow : EditorWindow
         File.WriteAllText(entry.path, JsonUtility.ToJson(entry.data, true));
         AssetDatabase.ImportAsset(entry.path);
 
+        // El índice guarda id, capítulo y nombre: los tres se pueden haber editado recién.
+        LevelIndexBuilder.RebuildSilently();
+
         _dirty = false;
         Debug.Log($"[Editor de niveles] Guardado {entry.path}");
     }
@@ -831,6 +843,11 @@ public class LevelEditorWindow : EditorWindow
 
         File.WriteAllText(path, JsonUtility.ToJson(copy, true));
         AssetDatabase.ImportAsset(path);
+
+        // Un nivel que no está en el índice no aparece en el mapa. Se regenera acá para que no
+        // dependa de acordarse de hacerlo.
+        LevelIndexBuilder.RebuildSilently();
+
         Reload();
 
         var created = _levels.FirstOrDefault(e => e.path == path);
@@ -853,6 +870,10 @@ public class LevelEditorWindow : EditorWindow
 
         // Misma clave que usa LevelMapController al entrar a un nivel.
         PlayerPrefs.SetInt(SELECTED_LEVEL, _current.data.id);
+
+        // Y la marca de prueba: GameplayController la consume al cargar y no guarda nada de esta
+        // partida. Sin esto, ganar el nivel 60 para ver cómo quedó dejaba desbloqueados los 60.
+        PlayerPrefs.SetInt(GameplayController.EDITOR_TEST_KEY, 1);
         PlayerPrefs.Save();
 
         EditorSceneManager.OpenScene(GAMEPLAY_SCENE);

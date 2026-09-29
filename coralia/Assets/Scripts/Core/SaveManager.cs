@@ -102,6 +102,23 @@ public static class SaveManager
         PlayerPrefs.Save();
     }
 
+    // Mejor puntaje histórico del nivel. 0 = nunca se ganó, y por eso el panel de victoria
+    // distingue "primera vez" de "nuevo récord": sin un récord anterior no hay nada que superar.
+    public static int GetLevelBestScore(int levelId) => PlayerPrefs.GetInt($"level_{levelId}_best_score", 0);
+
+    // Guarda el puntaje si supera al anterior. Devuelve si lo superó, pero OJO: solo sirve como
+    // respuesta la primera vez que se llama por partida — en la segunda el récord ya es este
+    // score y devolvería false. Quien necesite decidir "¿es récord?" que lea GetLevelBestScore
+    // ANTES, como hace GameplayController.
+    public static bool RecordLevelScore(int levelId, int score)
+    {
+        if (score <= GetLevelBestScore(levelId)) return false;
+
+        PlayerPrefs.SetInt($"level_{levelId}_best_score", score);
+        PlayerPrefs.Save();
+        return true;
+    }
+
     // Llamar solo al GANAR un nivel. isFirstAttempt debe venir de HasAttemptedLevel() leído
     // ANTES de MarkLevelAttempted() en este mismo intento.
     public static void RecordLevelWin(int levelId, int stars, bool isFirstAttempt)

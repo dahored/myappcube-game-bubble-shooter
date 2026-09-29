@@ -31,7 +31,12 @@ public class GelatineAnimation_v2 : MonoBehaviour
     float   _t;
     float   _swayT;
 
-    void Awake()
+    void Awake() => Initialize();
+
+    // Aparte de Awake porque este componente viaja en prefabs que instancian herramientas de
+    // editor: con 'Reload Scene' desactivado, un objeto creado en modo edición entra a Play sin
+    // que su Awake haya corrido, y Update se encontraba los keyframes en null.
+    void Initialize()
     {
         _buttonPop = GetComponent<ButtonPop>();
         _popInView = GetComponent<PopInView>();
@@ -54,6 +59,8 @@ public class GelatineAnimation_v2 : MonoBehaviour
 
     void Update()
     {
+        if (_keyframes == null) Initialize();
+
         // ButtonPop (click) o PopInView (aparición) ya están animando este mismo transform —
         // nos hacemos a un lado sin avanzar el reloj, así al retomar el wobble sigue justo
         // donde se había quedado, sin salto ni desincronización.

@@ -2,17 +2,17 @@
     "id": 2,
     "chapter": 1,
     "name": "Aguas tranquilas",
-    "max_shots": 12,
-    "min_shots_to_clear": 5,
+    "max_shots": 18,
+    "min_shots_to_clear": 7,
     "rainbow_chance": 0.0,
     "available_colors": [
         "red",
         "blue"
     ],
     "star_thresholds": [
-        252000,
-        410000,
-        567000
+        610,
+        1000,
+        1380
     ],
     "obstacles": [],
     "objective": {
@@ -29,7 +29,7 @@
         {
             "row": 0,
             "col": 1,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 0,
@@ -64,7 +64,7 @@
         {
             "row": 0,
             "col": 8,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 0,
@@ -79,7 +79,7 @@
         {
             "row": 1,
             "col": 1,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 1,
@@ -94,7 +94,7 @@
         {
             "row": 1,
             "col": 4,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 1,
@@ -109,7 +109,7 @@
         {
             "row": 1,
             "col": 7,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 1,
@@ -118,33 +118,18 @@
         },
         {
             "row": 2,
+            "col": 0,
+            "color": "blue"
+        },
+        {
+            "row": 2,
             "col": 1,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 2,
             "col": 2,
             "color": "red"
-        },
-        {
-            "row": 2,
-            "col": 3,
-            "color": "blue"
-        },
-        {
-            "row": 2,
-            "col": 4,
-            "color": "blue"
-        },
-        {
-            "row": 2,
-            "col": 5,
-            "color": "blue"
-        },
-        {
-            "row": 2,
-            "col": 6,
-            "color": "blue"
         },
         {
             "row": 2,
@@ -154,7 +139,17 @@
         {
             "row": 2,
             "col": 8,
-            "color": "red"
+            "color": "blue"
+        },
+        {
+            "row": 2,
+            "col": 9,
+            "color": "blue"
+        },
+        {
+            "row": 3,
+            "col": 0,
+            "color": "blue"
         },
         {
             "row": 3,
@@ -168,21 +163,6 @@
         },
         {
             "row": 3,
-            "col": 3,
-            "color": "blue"
-        },
-        {
-            "row": 3,
-            "col": 4,
-            "color": "blue"
-        },
-        {
-            "row": 3,
-            "col": 5,
-            "color": "blue"
-        },
-        {
-            "row": 3,
             "col": 6,
             "color": "red"
         },
@@ -190,6 +170,21 @@
             "row": 3,
             "col": 7,
             "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 0,
+            "color": "red"
+        },
+        {
+            "row": 4,
+            "col": 1,
+            "color": "blue"
         },
         {
             "row": 4,
@@ -198,52 +193,32 @@
         },
         {
             "row": 4,
-            "col": 3,
-            "color": "red"
-        },
-        {
-            "row": 4,
-            "col": 4,
-            "color": "red"
-        },
-        {
-            "row": 4,
-            "col": 5,
-            "color": "red"
-        },
-        {
-            "row": 4,
-            "col": 6,
-            "color": "red"
-        },
-        {
-            "row": 4,
             "col": 7,
             "color": "red"
+        },
+        {
+            "row": 4,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 4,
+            "col": 9,
+            "color": "red"
+        },
+        {
+            "row": 5,
+            "col": 0,
+            "color": "blue"
         },
         {
             "row": 5,
             "col": 1,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 5,
             "col": 2,
-            "color": "red"
-        },
-        {
-            "row": 5,
-            "col": 3,
-            "color": "red"
-        },
-        {
-            "row": 5,
-            "col": 4,
-            "color": "red"
-        },
-        {
-            "row": 5,
-            "col": 5,
             "color": "red"
         },
         {
@@ -254,7 +229,27 @@
         {
             "row": 5,
             "col": 7,
+            "color": "blue"
+        },
+        {
+            "row": 5,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 6,
+            "col": 0,
             "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 1,
+            "color": "blue"
+        },
+        {
+            "row": 6,
+            "col": 2,
+            "color": "blue"
         },
         {
             "row": 6,
@@ -264,17 +259,42 @@
         {
             "row": 6,
             "col": 4,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 6,
             "col": 5,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 6,
             "col": 6,
             "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 7,
+            "color": "blue"
+        },
+        {
+            "row": 6,
+            "col": 8,
+            "color": "blue"
+        },
+        {
+            "row": 6,
+            "col": 9,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 0,
+            "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 1,
+            "color": "blue"
         },
         {
             "row": 7,
@@ -289,7 +309,7 @@
         {
             "row": 7,
             "col": 4,
-            "color": "red"
+            "color": "blue"
         },
         {
             "row": 7,
@@ -300,6 +320,56 @@
             "row": 7,
             "col": 6,
             "color": "red"
+        },
+        {
+            "row": 7,
+            "col": 7,
+            "color": "blue"
+        },
+        {
+            "row": 7,
+            "col": 8,
+            "color": "red"
+        },
+        {
+            "row": 8,
+            "col": 1,
+            "color": "blue"
+        },
+        {
+            "row": 8,
+            "col": 2,
+            "color": "blue"
+        },
+        {
+            "row": 8,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 8,
+            "col": 4,
+            "color": "blue"
+        },
+        {
+            "row": 8,
+            "col": 5,
+            "color": "blue"
+        },
+        {
+            "row": 8,
+            "col": 6,
+            "color": "red"
+        },
+        {
+            "row": 8,
+            "col": 7,
+            "color": "blue"
+        },
+        {
+            "row": 8,
+            "col": 8,
+            "color": "blue"
         }
     ]
 }
