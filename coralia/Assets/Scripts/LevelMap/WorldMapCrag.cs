@@ -26,8 +26,11 @@ public class WorldMapCrag : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Cuánto asoma la roca por encima de la arena. Es el único trozo que se ve del derecho; el resto baja hacia la fosa. En 0 la roca queda a ras y solo tapa la pared.")]
     [SerializeField] float rise = 0.3f;
 
-    [Tooltip("Cuánto se corre la hilera hacia la fosa. Positivo la mete dentro del hueco, negativo la trae sobre la arena.")]
-    [SerializeField] float zOffset;
+    [Tooltip("Cuánto se corre la hilera de ACÁ, la del filo que se deja atrás. Positivo la mete dentro del hueco, negativo la trae sobre la arena. Va aparte de la de enfrente porque las dos no se ven igual: a esta se la mira desde arriba y a la otra de frente.")]
+    [SerializeField] float nearZOffset;
+
+    [Tooltip("Cuánto se corre la hilera de ENFRENTE, la del filo al que se va. Positivo la aleja hacia su isla, negativo la mete dentro del hueco.")]
+    [SerializeField] float farZOffset;
 
     [Tooltip("Cuánto se solapan dos piezas seguidas, en tanto por uno de su ancho. Sin solape se ve la costura entre una y la siguiente.")]
     [Range(0f, 0.5f)]
@@ -99,17 +102,15 @@ public class WorldMapCrag : MonoBehaviour, IWorldMapRebuildable
 
         for (int i = 0; i + 1 < spans.Count; i++)
         {
-            if (nearEdge) Line(_ground.IslandEnd(spans[i]),       +1f, bounds);
-            if (farEdge)  Line(_ground.IslandStart(spans[i + 1]), -1f, bounds);
+            if (nearEdge) Line(_ground.IslandEnd(spans[i]),       nearZOffset, bounds);
+            if (farEdge)  Line(_ground.IslandStart(spans[i + 1]), farZOffset,  bounds);
         }
     }
 
-    // Una hilera de piezas cruzando el mapa de lado a lado.
-    //
-    // 'into' dice hacia dónde queda la fosa: en el filo de acá está más allá y en el de enfrente
-    // más acá, y el desplazamiento tiene que seguirlo o una de las dos hileras se metería en el
-    // suelo en vez de en el hueco.
-    void Line(float edgeZ, float into, Bounds bounds)
+    // Una hilera de piezas cruzando el mapa de lado a lado. El desplazamiento se aplica tal cual
+    // y sin darle vuelta al signo según el filo: los dos números apuntan al mismo lado, así que
+    // subirlos mueve las dos hileras en la misma dirección y se pueden pensar juntos.
+    void Line(float edgeZ, float offset, Bounds bounds)
     {
         float width = _ground.Width;
         float scale = height / bounds.size.y;
@@ -124,7 +125,7 @@ public class WorldMapCrag : MonoBehaviour, IWorldMapRebuildable
         for (int i = 0; i < count; i++)
         {
             float x = (i - (count - 1) * 0.5f) * step;
-            float z = edgeZ + into * zOffset;
+            float z = edgeZ + offset;
 
             if (followEdge) z += _ground.EdgeAt(x, edgeZ);
 
