@@ -2,7 +2,7 @@
   "chapter": 1,
   "name": "Bahía de Coralia",
   "middle_nodes": true,
-  "start_nodes": false,
+  "start_nodes": true,
   "end_nodes": false,
   "decorations": [
     { "id": "group_1", "start": true, "middle":true, "side": "left", "offset": 0.6, "scale": 0.8 },

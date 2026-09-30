@@ -842,7 +842,13 @@ PlayerSettings:
   enableDirectStorage: 0
   cloudProjectId: 4b9c753a-7253-4c61-810e-2e656f866572
   framebufferDepthMemorylessMode: 0
-  qualitySettingsNames: []
+  qualitySettingsNames:
+  - Very Low
+  - Low
+  - Medium
+  - High
+  - Very High
+  - Ultra
   projectName: coralia
   organizationId: dahored
   cloudEnabled: 0
