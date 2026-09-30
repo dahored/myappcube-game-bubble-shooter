@@ -646,6 +646,22 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         return v - Mathf.Floor(v);
     }
 
+    // Lo que necesita quien quiera apoyar algo justo en el filo de la fosa, para no tener que
+    // rehacer la misma cuenta con los tres números que la componen y arriesgarse a que un día
+    // deje de coincidir con el suelo.
+    public float Width => (WorldMapDefinition.For(this) is { } d ? d.Layout.zigzag * 2f : 0f)
+                        + sideMargin * 2f;
+
+    public float IslandEnd(WorldMapDefinition.Span span) => EdgeZ(PathEnd(span)   + endMargin);
+    public float IslandStart(WorldMapDefinition.Span span) => EdgeZ(PathStart(span) - endMargin);
+
+    float EdgeZ(float index) =>
+        index * (WorldMapDefinition.For(this) is { } d ? d.Layout.spacing : 1f);
+
+    // Cuánto se adelanta o se atrasa el filo en esa X. Quien apoye algo encima lo necesita para
+    // seguir la ondulación en vez de quedarse en una recta que la cruza.
+    public float EdgeAt(float x, float edgeZ) => EdgeOffset(x, edgeZ);
+
     // Las columnas las comparten la isla y la fosa: si no cayeran en los mismos px, sus filos se
     // calcularían en sitios distintos y quedaría un hueco entre una cosa y la otra.
     int Columns(float width) => Mathf.Max(1, Mathf.RoundToInt(width * density * edgeDetail));
