@@ -35,6 +35,16 @@ public class ChapterData
     // tal cual, sin traducir entre convenciones.
     public bool middle_nodes;
 
+    // Si se planta el marco de ENTRADA y el de CIERRE del capítulo — las piezas que llevan
+    // 'start' y 'end', que van antes del primer nodo y después del último.
+    //
+    // Van por separado y no con middle_nodes porque son cosas distintas: aquel decide la densidad
+    // del recorrido, y estos dos si el capítulo tiene topes visuales o se funde con el vecino.
+    //
+    // Sin el campo en el archivo quedan en false y no se plantan, igual que middle_nodes.
+    public bool start_nodes;
+    public bool end_nodes;
+
     public DecorationPlacement[] decorations;
 }
 

@@ -107,9 +107,16 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
     {
         // El marco se coloca respecto del PRIMER y el ÚLTIMO nivel real (ver
         // ChapterData.IndexIn), así que se acomoda solo a cuántos haya.
+        //
+        // Cada punta tiene su interruptor: un capítulo puede querer su entrada marcada y en
+        // cambio fundirse con el siguiente por el final, o al revés.
         foreach (var placement in data.decorations)
-            if (placement != null && (placement.start || placement.end))
-                Plant(placement, span.start + placement.IndexIn(span.count), rng);
+        {
+            if (placement == null) continue;
+
+            if (placement.start) { if (data.start_nodes) Plant(placement, span.start + placement.IndexIn(span.count), rng); continue; }
+            if (placement.end)   { if (data.end_nodes)   Plant(placement, span.start + placement.IndexIn(span.count), rng); continue; }
+        }
 
         // Las piezas del cuerpo, agrupadas por el nodo que declaran.
         var byNode = new Dictionary<int, List<DecorationPlacement>>();

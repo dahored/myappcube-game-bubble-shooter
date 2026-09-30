@@ -28,8 +28,12 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Cuánto sobra de suelo a cada lado del zigzag.")]
     [SerializeField] float sideMargin = 10f;
 
-    [Tooltip("Cuánto sobra de suelo en las puntas INTERIORES de cada isla, las que dan al capítulo vecino. Es lo que decide la separación entre capítulos, junto con 'Chapter Gap'.")]
+    [Tooltip("Cuánto sobra de suelo DESPUÉS de donde termina el camino, en las puntas interiores de cada isla. Se mide contra el camino y no contra el último nodo, así que alargar el camino agranda la isla sola en vez de salirse de ella.")]
     [SerializeField] float endMargin = 12f;
+
+    // Lo lee la definición: forma parte del tamaño de la isla y por eso entra en dónde se coloca
+    // el capítulo siguiente.
+    public float EndMargin => endMargin;
 
     [Tooltip("Cuánto sobra antes de lo primero que se ve del mundo. Va aparte del margen interior porque ahí no hay isla vecina que separar, solo agua de más.")]
     [SerializeField] float outerStartMargin = 2f;
@@ -43,18 +47,88 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Cada cuántas unidades de mundo se repite la textura.")]
     [SerializeField] float tiling = 8f;
 
+    [Header("Fosa entre capítulos")]
+    [Tooltip("Cuánto se hunde el suelo entre un capítulo y el siguiente. En 0 no se genera fosa y las islas quedan como antes.")]
+    [SerializeField] float chasmDepth = 0f;
+
+    [Tooltip("Qué tan abrupta es la caída. En 1 baja y sube parejo; más alto deja las paredes verticales y un fondo plano, que se lee más como una grieta que como un valle.")]
+    [Range(1f, 6f)]
+    [SerializeField] float chasmSteepness = 2.5f;
+
+    [Tooltip("El color del FONDO de la fosa. Se mezcla con el del borde según lo hondo que esté cada punto, así que la oscuridad entra de forma gradual y no hay ningún corte donde empieza la bajada. Un azul frío y oscuro se lee como agua profunda; un gris pardo, como roca.")]
+    [SerializeField] Color chasmShade = new(0.28f, 0.34f, 0.46f, 1f);
+
+    [Tooltip("Material del fondo de la fosa. Vacío usa el mismo del suelo, que suele bastar: lo que vende la profundidad es la sombra de arriba, no la textura. Ponlo solo si quieres roca en vez de arena.")]
+    [SerializeField] Material chasmMaterial;
+
+    [Tooltip("Cuánto se ondula el filo entre la isla y la fosa, en unidades de mundo. En 0 el corte es una recta atravesando el mapa, que se lee como cortado a cuchillo en vez de como roca.")]
+    [SerializeField] float edgeWave = 0.8f;
+
+    [Tooltip("Cuántas alturas distintas puede tener el filo. Con pocas, las columnas de roca quedan a ras unas de otras y se leen como un escalón limpio; con muchas, como piezas sueltas de tamaños dispares.")]
+    [Range(2, 8)]
+    [SerializeField] int edgeFacets = 4;
+
+    [Tooltip("Cuántas veces más cortes a lo ancho que los que pide 'Density'. El detalle del filo no puede ser más fino que sus columnas: con pocas, cualquier forma que se le pida sale redondeada a la fuerza.")]
+    [Range(1, 8)]
+    [SerializeField] int edgeDetail = 3;
+
+    [Header("Roca de la fosa")]
+    [Tooltip("Cuánto se diferencian entre sí las caras de la pared. Dos caras de roca vecinas nunca reflejan igual, y esa variación de franja a franja es lo que la hace leer como piedra partida en vez de como tela lisa. En 0 la pared sale de un solo tono.")]
+    [Range(0f, 1f)]
+    [SerializeField] float facetShade = 0.2f;
+
+    [Tooltip("Cuántas columnas de roca caben a lo ancho. Manda sobre las tres cosas a la vez —el escalón del filo, el tono de la cara y la grieta—, porque las tres salen del mismo reparto. Más alto las hace estrechas; más bajo, placas grandes.")]
+    [Range(0.5f, 12f)]
+    [SerializeField] float facetScale = 4f;
+
+    [Tooltip("Cuánto oscurece la grieta entre dos caras. Es la línea que corre pared abajo donde una cara se junta con la de al lado, y es la que más vende la roca: sin ella las franjas de tono se ven como manchas sueltas y no como piezas separadas.")]
+    [Range(0f, 1f)]
+    [SerializeField] float crackShade = 0.5f;
+
+    [Tooltip("Qué parte de la cara ocupa la grieta. Fina se lee como una hendidura; ancha, como si la pared estuviera sucia. No puede salir más fina que una columna de la malla: si la quieres muy fina, sube 'Edge Detail'.")]
+    [Range(0.05f, 0.8f)]
+    [SerializeField] float crackWidth = 0.12f;
+
+    [Tooltip("Cuánto oscurece la sombra justo debajo del filo, la que proyecta el suelo que sobresale. Sin esa línea la isla se ve pegada a la pared, como calcada encima, en vez de apoyada sobre ella.")]
+    [Range(0f, 1f)]
+    [SerializeField] float lipShadow = 0.35f;
+
+    [Tooltip("Hasta qué hondura llega esa sombra del filo, en unidades de mundo. Corta: es el reborde que sobresale, no la profundidad de la fosa.")]
+    [SerializeField] float lipDepth = 0.6f;
+
+    [Tooltip("Cuánto se sombrean las paredes de la fosa según hacia dónde miran. El shader del mundo es unlit, así que sin esto una pared vertical y el fondo plano salen del MISMO color y la fosa se lee como una mancha oscura en vez de un pozo. Esto le pinta la luz encima, por vértice.")]
+    [Range(0f, 1f)]
+    [SerializeField] float chasmRelief = 0.75f;
+
     [Header("Suelo por capítulo")]
     [Tooltip("Qué material le toca a cada 'ground' de los Chapter_N.json. Un capítulo sin 'ground' —o con uno que no esté acá— usa el material de este mismo objeto.")]
     [SerializeField] GroundMaterial[] materials;
 
     const string ISLAND_PREFIX = "Island ";
+    const string CHASM_PREFIX  = "Chasm ";
 
-    WorldMapDefinition _definition;
+    WorldMapDefinition  _definition;
+    WorldMapPathRibbon  _path;
+
+    // Hasta dónde llega el camino de ese capítulo, en índice de mundo. Sin cinta en la escena se
+    // cae al propio nodo, que es lo que había antes de que el margen mirara el camino.
+    float PathStart(WorldMapDefinition.Span span)
+    {
+        if (_path == null) _path = FindAnyObjectByType<WorldMapPathRibbon>();
+        return span.start - (_path != null ? _path.LeadIn : 0f);
+    }
+
+    float PathEnd(WorldMapDefinition.Span span)
+    {
+        if (_path == null) _path = FindAnyObjectByType<WorldMapPathRibbon>();
+        return span.End + (_path != null ? _path.LeadOut : 0f);
+    }
 
     // Las islas vivas, en el mismo orden que VisibleSpans(). Se reciclan entre reconstrucciones:
     // al cruzar de capítulo cambia CUÁL se dibuja, no cuántas, así que crear y destruir objetos
     // en cada cruce sería basura para nada.
     readonly List<MeshFilter> _islands = new();
+    readonly List<MeshFilter> _chasms  = new();
 
     // Leer y parsear el JSON de un capítulo por cada consulta sería caro: WorldStart y WorldEnd
     // los pide el scroll para calcular sus topes, o sea varias veces por frame.
@@ -101,8 +175,11 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     //
     // Así el margen significa lo que uno espera: cuánto sobra DESPUÉS de la última pieza. Y un
     // capítulo nuevo con otro cierre se acomoda solo.
-    float ContentStart(WorldMapDefinition.Span span) => span.start + DecorationRange(span).min;
-    float ContentEnd(WorldMapDefinition.Span span)   => span.start + DecorationRange(span).max;
+    float ContentStart(WorldMapDefinition.Span span) =>
+        Mathf.Min(span.start + DecorationRange(span).min, PathStart(span));
+
+    float ContentEnd(WorldMapDefinition.Span span) =>
+        Mathf.Max(span.start + DecorationRange(span).max, PathEnd(span));
 
     // Lo que ocupan las decoraciones del capítulo, en índice DENTRO del capítulo. Arranca en el
     // rango de los nodos (0 .. último) y se ensancha con lo que sobresalga: un capítulo sin
@@ -138,8 +215,17 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         return range;
     }
 
-    void OnEnable()   => _needsRebuild = true;
-    void OnValidate() => _needsRebuild = true;
+    void OnEnable() => _needsRebuild = true;
+
+    // 'End Margin' decide hasta dónde llega la isla, y con eso dónde empieza el capítulo
+    // siguiente: no alcanza con rehacer el suelo, hay que recolocar el mundo entero.
+    void OnValidate()
+    {
+        _needsRebuild = true;
+
+        var definition = WorldMapDefinition.For(this);
+        if (definition != null) definition.RebuildWorld();
+    }
 
     // Igual que las decoraciones: nunca dentro de OnValidate. Ahí Unity ignora DestroyImmediate y
     // se queja si se activan objetos, y ahora esto crea GameObjects, no solo una malla.
@@ -183,38 +269,202 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         // hacia el otro lado.
         for (int i = spans.Count; i < _islands.Count; i++)
             if (_islands[i]) _islands[i].gameObject.SetActive(false);
+
+        BuildChasms(spans, width);
+    }
+
+    // La fosa que separa un capítulo del siguiente.
+    //
+    // Es geometría y no un hueco a secas porque un hueco no se lee como profundidad: por debajo
+    // del suelo está el telón del horizonte, agua clara con rayos de sol, y eso dice "lejos", no
+    // "hondo". Bajando el terreno de verdad, la caída se ve.
+    //
+    // Los bordes de la fosa arrancan y terminan en y=0, o sea a la misma altura que las islas
+    // vecinas, así que no hay costura entre una cosa y la otra por más que se cambie la
+    // profundidad.
+    void BuildChasms(List<WorldMapDefinition.Span> spans, float width)
+    {
+        int built = 0;
+
+        if (chasmDepth > 0f)
+            for (int i = 0; i + 1 < spans.Count; i++)
+            {
+                float spacing = _definition.Layout.spacing;
+                float from    = (PathEnd(spans[i])       + endMargin) * spacing;
+                float to      = (PathStart(spans[i + 1]) - endMargin) * spacing;
+
+                // El ancho sale de 'Island Gap' y de nada más: los márgenes de las islas ya
+                // están descontados al colocar los capítulos. En 0 no hay fosa, y es una
+                // decisión, no un fallo.
+                if (to - from < 0.01f) continue;
+
+                BuildChasm(Chasm(built++), from, to, width);
+            }
+
+        for (int i = built; i < _chasms.Count; i++)
+            if (_chasms[i]) _chasms[i].gameObject.SetActive(false);
+
+    }
+
+    void BuildChasm(MeshFilter filter, float from, float to, float width)
+    {
+        var vertices = new List<Vector3>();
+        var uvs      = new List<Vector2>();
+        var colors   = new List<Color>();
+        var indices  = new List<int>();
+
+        float length = to - from;
+        int   cols   = Columns(width);
+
+        // La caída pide cortes aunque la fosa sea angosta: lo que hay que describir no es el
+        // largo sino la bajada, así que la profundidad cuenta igual que el largo.
+        int   rows   = Mathf.Max(8, Mathf.RoundToInt((length + chasmDepth) * density * 2f));
+
+        // El perfil se calcula una vez por fila, antes de generar los vértices: hace falta la
+        // fila anterior para ir sumando la distancia recorrida SOBRE la superficie.
+        var profile = new float[rows + 1];   // altura de cada fila
+
+        for (int z = 0; z <= rows; z++)
+        {
+            float t = z / (float)rows;
+
+            // Seno elevado: en 1 es un valle suave y a más exponente las paredes se enderezan y
+            // el fondo se aplana, que es lo que lo convierte en grieta.
+            //
+            // El Max no sobra: Sin(PI) no da cero exacto sino -8,7e-8 por redondeo, y elevar un
+            // negativo a una fracción da NaN. Un solo vértice con NaN envenena los bounds de la
+            // malla entera y Unity la descarta por "demasiado grande o lejos del origen".
+            profile[z] = -chasmDepth * Mathf.Pow(Mathf.Max(0f, Mathf.Sin(t * Mathf.PI)), 1f / chasmSteepness);
+        }
+
+        // Los filos ondulan, así que cada columna cruza la fosa en un tramo de largo distinto y
+        // recorre su pendiente en distinta medida. Por eso el avance de la textura se acumula
+        // POR COLUMNA, en una pasada aparte: los vértices se generan por filas y ahí ya no se
+        // tiene a mano el de la columna anterior.
+        var edgeFrom = new float[cols + 1];
+        var edgeTo   = new float[cols + 1];
+        var walked   = new float[cols + 1][];
+
+        for (int x = 0; x <= cols; x++)
+        {
+            float px = (x / (float)cols - 0.5f) * width;
+
+            edgeFrom[x] = from + EdgeOffset(px, from);
+            edgeTo[x]   = to   + EdgeOffset(px, to);
+            walked[x]   = new float[rows + 1];
+
+            float dz = (edgeTo[x] - edgeFrom[x]) / rows;
+
+            for (int z = 1; z <= rows; z++)
+            {
+                float dy = profile[z] - profile[z - 1];
+                walked[x][z] = walked[x][z - 1] + Mathf.Sqrt(dz * dz + dy * dy);
+            }
+        }
+
+        for (int z = 0; z <= rows; z++)
+        for (int x = 0; x <= cols; x++)
+        {
+            float px = (x / (float)cols - 0.5f) * width;
+            float pz = Mathf.Lerp(edgeFrom[x], edgeTo[x], z / (float)rows);
+
+            vertices.Add(new Vector3(px, profile[z], pz));
+
+            // La textura se mide por lo que se RECORRE sobre la pendiente, no por lo que se avanza
+            // en Z. Una pared casi vertical baja mucho y avanza poco, así que midiendo en Z le
+            // tocaba un trozo minúsculo de textura estirado sobre una superficie grande.
+            uvs.Add(new Vector2(px / tiling, (edgeFrom[x] + walked[x][z]) / tiling));
+
+            // La sombra va POR VÉRTICE y según la profundidad de ese punto: en el borde queda en
+            // blanco —o sea, igual que la isla vecina— y se va al color del fondo a medida que
+            // baja. Con un material oscuro plano habría un parche con un corte duro justo donde
+            // empieza la bajada, y eso se lee como una mancha, no como un pozo.
+            var tint = Color.Lerp(Color.white, chasmShade, chasmDepth > 0f ? -profile[z] / chasmDepth : 0f);
+
+            // Y encima la luz, también por vértice. La pared que baja alejándose queda de espaldas
+            // y se apaga; la de enfrente, que sube hacia la cámara, se ilumina. Ese contraste
+            // entre las dos caras es lo que hace ver un pozo — el degradado de profundidad solo,
+            // sin él, es una mancha.
+            float lit = Relief(x, z, profile, edgeFrom, edgeTo, rows)
+                      * FacetTint(px, from)
+                      * CrackTint(px, from)
+                      * LipTint(profile[z]);
+
+            colors.Add(new Color(tint.r * lit, tint.g * lit, tint.b * lit, tint.a));
+        }
+
+        for (int z = 0; z < rows; z++)
+        for (int x = 0; x < cols; x++)
+        {
+            int a = z * (cols + 1) + x;
+            int b = a + cols + 1;
+
+            indices.Add(a);     indices.Add(b); indices.Add(a + 1);
+            indices.Add(a + 1); indices.Add(b); indices.Add(b + 1);
+        }
+
+        var mesh = filter.sharedMesh;
+        if (mesh == null)
+        {
+            mesh = new Mesh { name = "WorldMapChasm", hideFlags = HideFlags.DontSave };
+            filter.sharedMesh = mesh;
+        }
+
+        mesh.Clear();
+        mesh.SetVertices(vertices);
+        mesh.SetUVs(0, uvs);
+        mesh.SetColors(colors);
+        mesh.SetTriangles(indices, 0);
+        mesh.RecalculateBounds();
+
+        // Igual que las islas: el shader hunde los vértices al dibujar y Unity descarta por los
+        // bounds SIN curvar, así que hay que agrandarlos o la fosa desaparece mirando al horizonte.
+        var bounds = mesh.bounds;
+        bounds.Expand(new Vector3(0f, _definition.Length * _definition.Layout.spacing, 0f));
+        mesh.bounds = bounds;
+
+        var renderer = filter.GetComponent<MeshRenderer>();
+        renderer.sharedMaterial = chasmMaterial != null ? chasmMaterial : GetComponent<MeshRenderer>().sharedMaterial;
+        renderer.sortingOrder   = WorldMapDefinition.ORDER_GROUND;
     }
 
     // Los objetos DontSave sobreviven a una recompilación de scripts, pero la lista no: sin esto,
     // cada recompilación en el editor construiría islas nuevas encima de las que ya estaban.
     void Adopt()
     {
-        if (_islands.Count > 0) return;
+        if (_islands.Count > 0 || _chasms.Count > 0) return;
 
         foreach (Transform child in transform)
-            if (child.name.StartsWith(ISLAND_PREFIX) && child.TryGetComponent<MeshFilter>(out var filter))
-                _islands.Add(filter);
+        {
+            if (!child.TryGetComponent<MeshFilter>(out var filter)) continue;
+
+            if (child.name.StartsWith(ISLAND_PREFIX)) _islands.Add(filter);
+            else if (child.name.StartsWith(CHASM_PREFIX)) _chasms.Add(filter);
+        }
     }
 
-    MeshFilter Island(int index)
-    {
-        while (_islands.Count <= index) _islands.Add(null);
+    MeshFilter Chasm(int index) => Child(_chasms, CHASM_PREFIX, index);
+    MeshFilter Island(int index)  => Child(_islands, ISLAND_PREFIX, index);
 
-        if (_islands[index] == null)
+    MeshFilter Child(List<MeshFilter> pool, string prefix, int index)
+    {
+        while (pool.Count <= index) pool.Add(null);
+
+        if (pool[index] == null)
         {
-            var go = new GameObject(ISLAND_PREFIX + index, typeof(MeshFilter), typeof(MeshRenderer));
+            var go = new GameObject(prefix + index, typeof(MeshFilter), typeof(MeshRenderer));
 
             // DontSave porque se regenera sola en cada OnEnable: sin esto, cada guardado de la
-            // escena dejaría las islas de ese momento adentro del .unity y al abrirla aparecerían
+            // escena dejaría las piezas de ese momento adentro del .unity y al abrirla aparecerían
             // duplicadas junto a las recién construidas.
             go.hideFlags = HideFlags.DontSave;
             go.transform.SetParent(transform, false);
 
-            _islands[index] = go.GetComponent<MeshFilter>();
+            pool[index] = go.GetComponent<MeshFilter>();
         }
 
-        _islands[index].gameObject.SetActive(true);
-        return _islands[index];
+        pool[index].gameObject.SetActive(true);
+        return pool[index];
     }
 
     void BuildIsland(MeshFilter filter, WorldMapDefinition.Span span, float width,
@@ -280,15 +530,151 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         return fallback;
     }
 
+    // Cuánto se adelanta o se atrasa el filo en esa columna.
+    //
+    // La misma función la usan la isla y la fosa que tiene enfrente, con la misma semilla —la Z
+    // del filo—, así que los dos bordes ondulan idéntico y encajan sin hueco ni solape por más
+    // que se cambie la amplitud.
+    //
+    int Facets => Mathf.Max(2, edgeFacets);
+
+    // El reparto de la pared en columnas de roca, y es UNO SOLO para todo: de acá salen el filo
+    // de arriba, el tono de cada cara y la grieta. Por eso el escalón del borde cae exactamente
+    // sobre una junta y no en cualquier parte.
+    //
+    // Antes el filo venía de un ruido y las caras de otro, cada uno con su escala y su semilla,
+    // y el resultado era un borde que no concordaba con la textura que tenía debajo.
+    //
+    // Devuelve qué columna toca y a qué altura del ancho de esa columna se está: con el centro
+    // en 0,5 y las juntas en 0 y en 1.
+    (float cell, float frac) FacetAt(float px, float seed)
+    {
+        float u = px * facetScale * 0.08f;
+
+        // Sin torcer la coordenada, todas las columnas medirían exactamente lo mismo y la pared
+        // se leería como un enrejado. La amplitud se queda corta a propósito: pasada de vueltas
+        // el avance deja de ser monótono y una misma columna saldría dos veces.
+        u += (Noise(u * 0.6f, seed * 0.37f + 5.1f) - 0.5f) * 0.35f;
+
+        float cell = Mathf.Floor(u);
+
+        return (cell, u - cell);
+    }
+
+    // Un valor escalonado propio de esa columna. La 'sal' permite sacar varios que no tengan nada
+    // que ver entre sí —lo que sobresale y lo que refleja— de las MISMAS columnas: las juntas
+    // siguen cayendo donde mismo, que es lo único que tiene que coincidir.
+    float Level(float cell, float seed, float salt) =>
+        Mathf.Round(Hash(cell, seed * 0.37f + salt) * (Facets - 1)) / (Facets - 1);
+
+    float FacetTint(float px, float seed) =>
+        facetShade <= 0f ? 1f
+                         : 1f - facetShade * (1f - Level(FacetAt(px, seed).cell, seed, 17.3f));
+
+    // La grieta va en la junta, o sea en el filo de la columna.
+    float CrackTint(float px, float seed)
+    {
+        if (crackShade <= 0f) return 1f;
+
+        float d = Mathf.Abs(FacetAt(px, seed).frac - 0.5f) * 2f;   // 0 en el centro, 1 en la junta
+
+        return 1f - crackShade * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1f - crackWidth, 1f, d));
+    }
+
+    // La sombra del reborde. Solo los primeros centímetros de pared, que es lo que tapa el suelo
+    // que sobresale por encima.
+    float LipTint(float y) =>
+        lipShadow <= 0f ? 1f
+                        : 1f - lipShadow * (1f - Mathf.Clamp01(-y / Mathf.Max(0.01f, lipDepth)));
+
+    // La luz falsa que se hornea en el color de los vértices: desde arriba y algo inclinada hacia
+    // la cámara. Dividida por su propia componente vertical, una superficie llana da exactamente
+    // 1, o sea que el fondo de la fosa sale del mismo tono que la isla y solo cambian las paredes.
+    static readonly Vector3 LIGHT = new(0f, 0.6f, -0.8f);
+
+    // La pared de enfrente puede pasarse de 1 y quedar MÁS clara que el suelo llano. Es a
+    // propósito: es la cara que mira a la cámara y recibe la luz de lleno, y ese brillo contra
+    // la pared de acá, que está a oscuras, es lo que separa las dos caras del pozo.
+    const float MAX_LIT = 1.35f;
+
+    float Relief(int x, int z, float[] profile, float[] edgeFrom, float[] edgeTo, int rows)
+    {
+        if (chasmRelief <= 0f) return 1f;
+
+        int   a  = Mathf.Max(0,    z - 1);
+        int   b  = Mathf.Min(rows, z + 1);
+        float dy = profile[b] - profile[a];
+        float dz = (edgeTo[x] - edgeFrom[x]) / rows * (b - a);
+
+        // La normal de una pendiente y = f(z) es (0, 1, -f'), y f' es dy/dz. Sin dividir queda
+        // (0, dz, -dy), que apunta igual; normalizar se encarga del resto.
+        var n = new Vector3(0f, dz, -dy).normalized;
+
+        float lit = Mathf.Clamp(Vector3.Dot(n, LIGHT) / LIGHT.y, 0f, MAX_LIT);
+
+        return Mathf.Lerp(1f, lit, chasmRelief);
+    }
+
+    // El filo de arriba: cada columna de roca corta el suelo a su propia altura, y el escalón
+    // entre una y la siguiente cae justo donde va la grieta. Es lo que hace que el borde de la
+    // isla se vea como la tapa de la roca que tiene debajo y no como un recorte pegado encima.
+    float EdgeOffset(float px, float seed)
+    {
+        if (edgeWave <= 0f) return 0f;
+
+        var facet = FacetAt(px, seed);
+
+        return (Level(facet.cell, seed, 0f) - 0.5f) * 2f * edgeWave;
+    }
+
+    // Ruido de valor de una dimensión, entre 0 y 1. Determinista: el mismo px da el mismo valor
+    // siempre, que es lo que permite que la isla y la fosa de enfrente calculen su filo por
+    // separado y encajen igual.
+    static float Noise(float x, float seed)
+    {
+        float i = Mathf.Floor(x);
+        float f = x - i;
+
+        f = f * f * (3f - 2f * f);   // suaviza el paso de un entero al siguiente
+
+        return Mathf.Lerp(Hash(i, seed), Hash(i + 1f, seed), f);
+    }
+
+    static float Hash(float i, float seed)
+    {
+        float v = Mathf.Sin(i * 12.9898f + seed * 78.233f) * 43758.5453f;
+        return v - Mathf.Floor(v);
+    }
+
+    // Lo que necesita quien quiera apoyar algo justo en el filo de la fosa, para no tener que
+    // rehacer la misma cuenta con los tres números que la componen y arriesgarse a que un día
+    // deje de coincidir con el suelo.
+    public float Width => (WorldMapDefinition.For(this) is { } d ? d.Layout.zigzag * 2f : 0f)
+                        + sideMargin * 2f;
+
+    public float IslandEnd(WorldMapDefinition.Span span) => EdgeZ(PathEnd(span)   + endMargin);
+    public float IslandStart(WorldMapDefinition.Span span) => EdgeZ(PathStart(span) - endMargin);
+
+    float EdgeZ(float index) =>
+        index * (WorldMapDefinition.For(this) is { } d ? d.Layout.spacing : 1f);
+
+    // Cuánto se adelanta o se atrasa el filo en esa X. Quien apoye algo encima lo necesita para
+    // seguir la ondulación en vez de quedarse en una recta que la cruza.
+    public float EdgeAt(float x, float edgeZ) => EdgeOffset(x, edgeZ);
+
+    // Las columnas las comparten la isla y la fosa: si no cayeran en los mismos px, sus filos se
+    // calcularían en sitios distintos y quedaría un hueco entre una cosa y la otra.
+    int Columns(float width) => Mathf.Max(1, Mathf.RoundToInt(width * density * edgeDetail));
+
     void AppendIsland(List<Vector3> vertices, List<Vector2> uvs, List<int> indices,
                       WorldMapDefinition.Span span, float width, bool worldStart, bool worldEnd)
     {
         float spacing = _definition.Layout.spacing;
-        float from    = (worldStart ? ContentStart(span) - outerStartMargin : span.start - endMargin) * spacing;
-        float to      = (worldEnd   ? ContentEnd(span)   + outerEndMargin   : span.End   + endMargin) * spacing;
+        float from    = (worldStart ? ContentStart(span) - outerStartMargin : PathStart(span) - endMargin) * spacing;
+        float to      = (worldEnd   ? ContentEnd(span)   + outerEndMargin   : PathEnd(span)   + endMargin) * spacing;
         float length  = to - from;
 
-        int cols = Mathf.Max(1, Mathf.RoundToInt(width  * density));
+        int cols = Columns(width);
         int rows = Mathf.Max(1, Mathf.RoundToInt(length * density));
         int start = vertices.Count;
 
@@ -296,7 +682,13 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         for (int x = 0; x <= cols; x++)
         {
             float px = (x / (float)cols - 0.5f) * width;
-            float pz = from + z / (float)rows * length;
+
+            // Solo ondulan los filos INTERIORES, los que dan a una fosa. Los extremos del mundo se
+            // dejan rectos: ahí no hay nada enfrente con lo que encajar y la ondulación solo se
+            // vería como un borde mal cortado.
+            float a  = worldStart ? from : from + EdgeOffset(px, from);
+            float b  = worldEnd   ? to   : to   + EdgeOffset(px, to);
+            float pz = Mathf.Lerp(a, b, z / (float)rows);
 
             vertices.Add(new Vector3(px, 0f, pz));
 

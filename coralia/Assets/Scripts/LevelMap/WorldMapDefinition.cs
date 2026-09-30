@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 // Los números que definen el mundo: la forma del trazado, cuántos niveles tiene y dónde empieza
 // cada capítulo. Todo lo que se apoya en el mapa — el suelo, el camino, la banda, los nodos, las
@@ -27,8 +28,9 @@ public class WorldMapDefinition : MonoBehaviour
 
     [SerializeField] WorldMapPath.Layout layout = WorldMapPath.Layout.Default;
 
-    [Tooltip("Cuántos niveles de aire quedan entre un capítulo y el siguiente.")]
-    [SerializeField] float chapterGap = 6f;
+    [Tooltip("Cuánta agua queda ENTRE EL BORDE de una isla y el borde de la siguiente, en niveles. Es el ancho exacto de la fosa: no se lo comen los márgenes de las islas, que se suman aparte. Subirlo separa los capítulos sin encoger nada.")]
+    [FormerlySerializedAs("chapterGap")]
+    [SerializeField] float islandGap = 6f;
 
     [Tooltip("Cuántos niveles dibujar. En 0 usa los que haya en el índice de niveles.")]
     [SerializeField] int levelsOverride;
@@ -56,6 +58,25 @@ public class WorldMapDefinition : MonoBehaviour
     }
 
     public WorldMapPath.Layout Layout => layout;
+
+    // Cuánto sobresale la isla de su fila de nodos, por delante y por detrás.
+    //
+    // El tamaño de la isla no se decide acá: el camino se pasa de largo lo que digan sus 'Lead',
+    // y el suelo sigue un poco más allá con su 'End Margin'. Pero SÍ hay que saberlo para
+    // colocar el capítulo siguiente, porque si no la separación se mediría entre nodos y los
+    // márgenes se la comerían desde adentro.
+    WorldMapGround     _ground;
+    WorldMapPathRibbon _ribbon;
+
+    float IslandPad(bool front)
+    {
+        if (_ground == null) _ground = FindAnyObjectByType<WorldMapGround>();
+        if (_ribbon == null) _ribbon = FindAnyObjectByType<WorldMapPathRibbon>();
+
+        float lead = _ribbon == null ? 0f : (front ? _ribbon.LeadIn : _ribbon.LeadOut);
+
+        return lead + (_ground == null ? 0f : _ground.EndMargin);
+    }
 
     // Del índice real, salvo que se pise a mano para probar. Así la escena no depende de que
     // alguien mantenga un número sincronizado con la cantidad de archivos de nivel.
@@ -89,7 +110,10 @@ public class WorldMapDefinition : MonoBehaviour
                 start      = world,
             });
 
-            world += (i - start - 1) + chapterGap;
+            // El siguiente capítulo arranca detrás de TODO lo de este: sus nodos, lo que la isla
+            // sobresale por atrás, la separación entera y lo que la isla de enfrente sobresale
+            // por delante. Así 'Island Gap' es agua y nada más.
+            world += (i - start - 1) + IslandPad(false) + islandGap + IslandPad(true);
             start  = i;
         }
 
@@ -245,6 +269,14 @@ public class WorldMapDefinition : MonoBehaviour
         foreach (var rebuildable in GetComponentsInChildren<IWorldMapRebuildable>(true))
             rebuildable.Rebuild();
     }
+
+    // Lo llaman los componentes cuyos números cambian el TAMAÑO de la isla: los 'Lead' del camino
+    // y el 'End Margin' del suelo. Eso no solo redibuja a quien lo tocó, corre de sitio a todos
+    // los capítulos siguientes, así que hay que rehacer el mundo entero.
+    //
+    // Siempre desde un OnValidate y nunca desde un Rebuild: el mundo vuelve a llamar a cada hijo,
+    // y un hijo que avisara desde ahí no pararía nunca.
+    public void RebuildWorld() => Rebuild();
 
     void OnValidate()
     {
