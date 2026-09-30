@@ -64,12 +64,8 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Tooltip("Cuánto se ondula el filo entre la isla y la fosa, en unidades de mundo. En 0 el corte es una recta atravesando el mapa, que se lee como cortado a cuchillo en vez de como roca.")]
     [SerializeField] float edgeWave = 0.8f;
 
-    [Tooltip("Cuántas ondulaciones caben a lo ancho. Pocas dan entrantes grandes tipo acantilado; muchas, un filo dentado.")]
-    [Range(0.5f, 8f)]
-    [SerializeField] float edgeWaveScale = 2.5f;
-
-    [Tooltip("En cuántos escalones se parte el filo. En 0 el borde es una curva continua, que se lee como duna. Con escalones el filo avanza a saltos y queda partido en bloques con caras planas, como roca.")]
-    [Range(0, 8)]
+    [Tooltip("Cuántas alturas distintas puede tener el filo. Con pocas, las columnas de roca quedan a ras unas de otras y se leen como un escalón limpio; con muchas, como piezas sueltas de tamaños dispares.")]
+    [Range(2, 8)]
     [SerializeField] int edgeFacets = 4;
 
     [Tooltip("Cuántas veces más cortes a lo ancho que los que pide 'Density'. El detalle del filo no puede ser más fino que sus columnas: con pocas, cualquier forma que se le pida sale redondeada a la fuerza.")]
@@ -81,7 +77,7 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     [Range(0f, 1f)]
     [SerializeField] float facetShade = 0.2f;
 
-    [Tooltip("Cuántas caras de roca caben a lo ancho. Más alto las hace estrechas tipo columnas; más bajo, placas grandes.")]
+    [Tooltip("Cuántas columnas de roca caben a lo ancho. Manda sobre las tres cosas a la vez —el escalón del filo, el tono de la cara y la grieta—, porque las tres salen del mismo reparto. Más alto las hace estrechas; más bajo, placas grandes.")]
     [Range(0.5f, 12f)]
     [SerializeField] float facetScale = 4f;
 
@@ -540,35 +536,49 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
     // del filo—, así que los dos bordes ondulan idéntico y encajan sin hueco ni solape por más
     // que se cambie la amplitud.
     //
-    int Facets => Mathf.Max(1, edgeFacets);
+    int Facets => Mathf.Max(2, edgeFacets);
 
-    // Dónde cae ese punto dentro del reparto de caras, medido EN CARAS: la parte entera dice qué
-    // cara es y el resto, a qué distancia está de la junta. Con eso salen las dos cosas sin
-    // tener que comparar con las columnas de al lado, que es lo que ataba el grosor de la grieta
-    // a lo fina que estuviera la malla.
-    float FacetAt(float px, float seed)
+    // El reparto de la pared en columnas de roca, y es UNO SOLO para todo: de acá salen el filo
+    // de arriba, el tono de cada cara y la grieta. Por eso el escalón del borde cae exactamente
+    // sobre una junta y no en cualquier parte.
+    //
+    // Antes el filo venía de un ruido y las caras de otro, cada uno con su escala y su semilla,
+    // y el resultado era un borde que no concordaba con la textura que tenía debajo.
+    //
+    // Devuelve qué columna toca y a qué altura del ancho de esa columna se está: con el centro
+    // en 0,5 y las juntas en 0 y en 1.
+    (float cell, float frac) FacetAt(float px, float seed)
     {
-        float f = Noise(px * facetScale * 0.08f, seed * 0.37f + 5.1f);
+        float u = px * facetScale * 0.08f;
 
-        // El ruido se amontona en el medio y las caras salían todas del mismo tono. Estirarlo
-        // reparte los extremos y hace que se distingan unas de otras.
-        return Mathf.Clamp01((f - 0.5f) * 1.7f + 0.5f) * Facets;
+        // Sin torcer la coordenada, todas las columnas medirían exactamente lo mismo y la pared
+        // se leería como un enrejado. La amplitud se queda corta a propósito: pasada de vueltas
+        // el avance deja de ser monótono y una misma columna saldría dos veces.
+        u += (Noise(u * 0.6f, seed * 0.37f + 5.1f) - 0.5f) * 0.35f;
+
+        float cell = Mathf.Floor(u);
+
+        return (cell, u - cell);
     }
+
+    // Un valor escalonado propio de esa columna. La 'sal' permite sacar varios que no tengan nada
+    // que ver entre sí —lo que sobresale y lo que refleja— de las MISMAS columnas: las juntas
+    // siguen cayendo donde mismo, que es lo único que tiene que coincidir.
+    float Level(float cell, float seed, float salt) =>
+        Mathf.Round(Hash(cell, seed * 0.37f + salt) * (Facets - 1)) / (Facets - 1);
 
     float FacetTint(float px, float seed) =>
         facetShade <= 0f ? 1f
-                         : 1f - facetShade * (1f - Mathf.Round(FacetAt(px, seed)) / Facets);
+                         : 1f - facetShade * (1f - Level(FacetAt(px, seed).cell, seed, 17.3f));
 
-    // La grieta va exactamente en la junta, que es donde el reparto está a medio camino entre
-    // una cara y la siguiente.
+    // La grieta va en la junta, o sea en el filo de la columna.
     float CrackTint(float px, float seed)
     {
         if (crackShade <= 0f) return 1f;
 
-        float q    = FacetAt(px, seed);
-        float edge = Mathf.Abs(q - Mathf.Round(q)) * 2f;   // 0 en medio de la cara, 1 en la junta
+        float d = Mathf.Abs(FacetAt(px, seed).frac - 0.5f) * 2f;   // 0 en el centro, 1 en la junta
 
-        return 1f - crackShade * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1f - crackWidth, 1f, edge));
+        return 1f - crackShade * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1f - crackWidth, 1f, d));
     }
 
     // La sombra del reborde. Solo los primeros centímetros de pared, que es lo que tapa el suelo
@@ -605,29 +615,16 @@ public class WorldMapGround : MonoBehaviour, IWorldMapRebuildable
         return Mathf.Lerp(1f, lit, chasmRelief);
     }
 
-    // Ruido de valor en vez de senos: sumar dos senos sigue teniendo un ritmo, y un ritmo se ve
-    // como adorno. El ruido no repite, así que cada entrante sale de un tamaño distinto.
-    //
-    // Y encima escalones: una curva continua, por irregular que sea, se lee como arena movida.
-    // La roca se reconoce por las CARAS PLANAS y los saltos entre una y otra, y eso es lo que
-    // hace redondear la amplitud a unos pocos valores.
+    // El filo de arriba: cada columna de roca corta el suelo a su propia altura, y el escalón
+    // entre una y la siguiente cae justo donde va la grieta. Es lo que hace que el borde de la
+    // isla se vea como la tapa de la roca que tiene debajo y no como un recorte pegado encima.
     float EdgeOffset(float px, float seed)
     {
         if (edgeWave <= 0f) return 0f;
 
-        float s = seed * 0.613f;
-        float x = px * edgeWaveScale * 0.35f;
+        var facet = FacetAt(px, seed);
 
-        // Tres octavas: la primera pone los entrantes grandes y las otras le muerden el borde.
-        float n = (Noise(x,          s)
-                + (Noise(x * 2.17f,  s + 31.7f) - 0.5f) * 0.5f
-                + (Noise(x * 4.63f,  s + 71.3f) - 0.5f) * 0.25f) - 0.5f;
-
-        n /= 0.875f;   // las tres octavas juntas no llegan a ±0,5; esto devuelve el rango entero
-
-        if (edgeFacets > 0) n = Mathf.Round(n * edgeFacets) / edgeFacets;
-
-        return n * 2f * edgeWave;
+        return (Level(facet.cell, seed, 0f) - 0.5f) * 2f * edgeWave;
     }
 
     // Ruido de valor de una dimensión, entre 0 y 1. Determinista: el mismo px da el mismo valor
