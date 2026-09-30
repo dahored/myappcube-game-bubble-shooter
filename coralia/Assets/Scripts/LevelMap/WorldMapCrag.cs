@@ -160,6 +160,12 @@ public class WorldMapCrag : MonoBehaviour, IWorldMapRebuildable
         var instance = Instantiate(layer.prefab);
         var tr       = instance.transform;
 
+        // No se guarda con la escena: se regenera sola en cada OnEnable, y sin esto cada guardado
+        // dejaría dentro del .unity cientos de objetos que el componente vuelve a crear igual.
+        // Sobreviven a una recompilación de scripts aunque la lista no, pero Clear() recorre los
+        // hijos del transform y no la lista, así que los readopta y los borra igual.
+        instance.hideFlags = HideFlags.DontSave;
+
         tr.SetParent(transform, false);
         tr.localScale    = Vector3.one * scale;
         tr.localPosition = flat;
