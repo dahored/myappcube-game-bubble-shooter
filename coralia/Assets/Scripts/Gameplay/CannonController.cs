@@ -82,6 +82,10 @@ public class CannonController : MonoBehaviour
     [Tooltip("Cuánto mide el aro mientras se apunta, en veces el tamaño de la burbuja. En 1 queda justo sobre su borde. No tiene que ver con la zona de cancelación: acá solo dice 'esta burbuja está cargada'.")]
     [SerializeField] float aimGlowSize = 1.15f;
 
+    [Tooltip("El grosor del filo del aro, en tanto por uno de su radio. Bajo da una línea nítida; alto, un halo difuso. Se puede mover en pleno Play para verlo. Solo aplica al aro generado por código — con arte propio asignado no hace nada.")]
+    [Range(0.01f, 0.4f)]
+    [SerializeField] float aimGlowEdge = 0.07f;
+
     [Tooltip("El color del halo mientras soltar DISPARA.")]
     [SerializeField] Color aimGlowColor = new(1f, 1f, 1f, 0.85f);
 
@@ -91,6 +95,8 @@ public class CannonController : MonoBehaviour
     [Tooltip("A qué distancia de la burbuja, en unidades del tablero, soltar cancela en vez de disparar. Una burbuja mide 92 de diámetro, así que 130 es poco más que un dedo alrededor. El aro se abre hasta acá cuando el dedo entra: mientras tanto se queda pegado a la burbuja, para no tener un círculo enorme en pantalla todo el rato.")]
     [SerializeField] float cancelRadius = 130f;
 
+    Image        _ownGlowImage;    // el aro generado, para poder redibujarlo si cambia el grosor
+    float        _ownGlowEdge = -1f;
     bool         _ownGlow;         // el aro lo generamos nosotros, así que también lo colocamos
     bool         _cancelArmed;     // el dedo está sobre la burbuja: soltar no dispara
     bool         _pointerDown;     // el dedo está apoyado, aunque el guard haya cortado el apuntado
@@ -168,11 +174,11 @@ public class CannonController : MonoBehaviour
         rt.anchorMin = rt.anchorMax = bubble.anchorMin == bubble.anchorMax ? bubble.anchorMin : new Vector2(0.5f, 0.5f);
         rt.pivot     = new Vector2(0.5f, 0.5f);
 
-        image.sprite = SparkleTextures.Ring;
-        image.type   = Image.Type.Simple;
+        image.type = Image.Type.Simple;
 
-        aimGlow  = image;
-        _ownGlow = true;
+        aimGlow       = image;
+        _ownGlowImage = image;
+        _ownGlow      = true;
     }
 
     // Start() y no Awake(): SafeAreaPanel ajusta el tamaño real de SafeArea en su propio
@@ -267,6 +273,14 @@ public class CannonController : MonoBehaviour
         var anchor = CancelAnchor as RectTransform;
 
         rt.position = CancelAnchor.position;
+
+        // El grosor se mira por frame en vez de solo al crear el aro: así se puede afinar
+        // arrastrando el slider con el juego corriendo, que es la única forma de acertarle.
+        if (!Mathf.Approximately(_ownGlowEdge, aimGlowEdge))
+        {
+            _ownGlowEdge = aimGlowEdge;
+            if (_ownGlowImage) _ownGlowImage.sprite = SparkleTextures.Ring(aimGlowEdge);
+        }
 
         // En reposo el aro se queda pegado a la burbuja: ahí no está diciendo dónde cancelar,
         // está diciendo que esta burbuja es la que va a salir. Tener el círculo entero de la zona
