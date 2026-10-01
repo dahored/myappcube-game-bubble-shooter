@@ -22,7 +22,7 @@ public class TutorialShootDemo : MonoBehaviour
     [Tooltip("La mano que apunta. La misma que usa ShootHintView dentro del gameplay: conviene que sea la misma para que el gesto se reconozca.")]
     [SerializeField] Sprite handSprite;
 
-    [Tooltip("El punto de la línea de trayectoria. Vacío usa un punto redondo dibujado por código.")]
+    [Tooltip("El punto de la línea de trayectoria. Vacío usa la primera burbuja en chiquito, que es lo que hace la línea del juego de verdad.")]
     [SerializeField] Sprite dotSprite;
 
     [Header("Proporciones")]
@@ -85,6 +85,14 @@ public class TutorialShootDemo : MonoBehaviour
     {
         _area = (RectTransform)transform;
 
+        // Ocupar todo el hueco que le toque. El prefab trae el tamaño con el que se guardó, y
+        // todas las medidas de la demostración salen del alto del área: sin esto, la coreografía
+        // se dibujaría a la escala del prefab y no a la del panel que la está mostrando.
+        _area.anchorMin = Vector2.zero;
+        _area.anchorMax = Vector2.one;
+        _area.offsetMin = Vector2.zero;
+        _area.offsetMax = Vector2.zero;
+
         const float TIMEOUT = 1f;
 
         for (float t = 0f; _area.rect.height < 1f && t < TIMEOUT; t += Time.unscaledDeltaTime)
@@ -115,7 +123,7 @@ public class TutorialShootDemo : MonoBehaviour
         // el orden en la jerarquía, no una propiedad que haya que recordar poner.
         for (int i = 0; i < dots; i++)
         {
-            var dot = Spawn("Dot", dotSprite != null ? dotSprite : SparkleTextures.Glow, size * 0.22f);
+            var dot = Spawn("Dot", dotSprite != null ? dotSprite : bubbleSprites[0], size * 0.22f);
             dot.color = new Color(1f, 1f, 1f, 0.55f);
             _trail.Add(dot);
         }
