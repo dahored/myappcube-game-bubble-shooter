@@ -72,6 +72,23 @@ public class CannonController : MonoBehaviour
     ShotBubble   _flyingShot;
     Vector2Int?  _predictedCell;   // dónde prometió la mira que iba a quedar este disparo
     bool         _inputEnabled = true;
+    [Header("Apuntado")]
+    [Tooltip("El halo que se enciende alrededor de la burbuja mientras se apunta. Opcional: sin él se apunta igual, solo que la burbuja no avisa de que está cargada. Se le apaga el raycast solo — si se comiera los toques, apuntar desde encima del cañón dejaría de funcionar.")]
+    [SerializeField] Graphic aimGlow;
+
+    [Tooltip("Cuánto tarda el halo en encenderse y apagarse, en segundos.")]
+    [SerializeField] float aimGlowFade = 0.12f;
+
+    [Tooltip("El color del halo mientras soltar DISPARA.")]
+    [SerializeField] Color aimGlowColor = new(1f, 1f, 1f, 0.85f);
+
+    [Tooltip("El color del halo cuando el dedo volvió encima y soltar CANCELA. Tiene que distinguirse del otro a simple vista: es el único aviso de que el disparo no va a salir.")]
+    [SerializeField] Color cancelGlowColor = new(1f, 0.45f, 0.4f, 1f);
+
+    [Tooltip("A qué distancia de la burbuja, en unidades del tablero, soltar cancela en vez de disparar. Una burbuja mide 92 de diámetro, así que 130 es poco más que un dedo alrededor.")]
+    [SerializeField] float cancelRadius = 130f;
+
+    bool         _cancelArmed;     // el dedo está sobre la burbuja: soltar no dispara
     bool         _pointerDown;     // el dedo está apoyado, aunque el guard haya cortado el apuntado
     Vector2      _pointerPos;      // dónde, para retomar la mira sin esperar a que se mueva
     bool         _dragging;
@@ -100,6 +117,15 @@ public class CannonController : MonoBehaviour
         // el Editor queda activo por error (ej. se dejó así para poder ubicarlo/ajustarlo),
         // esto evita el cuadro blanco (Image sin sprite) visible antes del primer disparo.
         if (travelingBubbleImage) travelingBubbleImage.gameObject.SetActive(false);
+
+        if (aimGlow)
+        {
+            // El halo cae justo encima de la burbuja del cañón, que es desde donde mucha gente
+            // arranca el arrastre. Si se comiera el toque, apuntar desde ahí dejaría de
+            // funcionar — el mismo problema de las esquinas que ya costó una sesión encontrar.
+            aimGlow.raycastTarget = false;
+            aimGlow.color         = Apagado();
+        }
     }
 
     // Start() y no Awake(): SafeAreaPanel ajusta el tamaño real de SafeArea en su propio
@@ -123,6 +149,10 @@ public class CannonController : MonoBehaviour
 
     void Update()
     {
+        // Antes del guard: pausar a mitad de un apuntado tiene que APAGAR el halo, no dejarlo
+        // encendido detrás del panel de pausa.
+        UpdateAimGlow();
+
         // _inputEnabled también congela el disparo ya en vuelo — si no, pausar a mitad de
         // un tiro lo dejaría animándose solo detrás del PausedPanel.
         if (!_inputEnabled) return;
@@ -152,6 +182,33 @@ public class CannonController : MonoBehaviour
             _idleTimer += Time.deltaTime;
             if (_idleTimer >= idleHintDelay) ShowHint();
         }
+    }
+
+    // El halo, por frame y no por corrutina: cambia de color a mitad del gesto cada vez que el
+    // dedo entra o sale de la zona de cancelación, y una corrutina habría que cortarla y
+    // relanzarla en cada cruce.
+    void UpdateAimGlow()
+    {
+        if (aimGlow == null) return;
+
+        bool  lit    = _dragging && _inputEnabled;
+        Color target = lit ? (_cancelArmed ? cancelGlowColor : aimGlowColor) : Apagado();
+        float step   = Time.unscaledDeltaTime / Mathf.Max(0.01f, aimGlowFade);
+
+        aimGlow.color = new Color(
+            Mathf.MoveTowards(aimGlow.color.r, target.r, step),
+            Mathf.MoveTowards(aimGlow.color.g, target.g, step),
+            Mathf.MoveTowards(aimGlow.color.b, target.b, step),
+            Mathf.MoveTowards(aimGlow.color.a, target.a, step));
+    }
+
+    // Apagado conserva el tono del estado en el que está, y solo baja el alfa: si fuera
+    // transparente a secas, soltar con el halo en rojo lo haría virar a blanco mientras se apaga.
+    Color Apagado()
+    {
+        Color from = _cancelArmed ? cancelGlowColor : aimGlowColor;
+
+        return new Color(from.r, from.g, from.b, 0f);
     }
 
     // Le pasa al grid la altura del muzzle, que es contra lo que aquel mide cuánto tiene que
@@ -496,7 +553,8 @@ public class CannonController : MonoBehaviour
         _pointerPos  = screenPos;
 
         if (!_inputEnabled || _flyingShot != null) return;
-        _dragging = true;
+        _dragging    = true;
+        _cancelArmed = false;
         HideHint();
         UpdateAim(screenPos);
     }
@@ -525,6 +583,14 @@ public class CannonController : MonoBehaviour
 
         if (!_dragging) return;
         _dragging = false;
+
+        if (_cancelArmed)
+        {
+            _cancelArmed = false;
+            trajectoryLine.Hide();
+            return;
+        }
+
         // No se oculta la línea acá — se deja visible mostrando el camino que ya está
         // siguiendo el disparo real, hasta que ResolveImpact() la esconde al aterrizar
         // (pedido de Diego: "que salga el trajectory line mientras llega la bola al destino").
@@ -562,7 +628,23 @@ public class CannonController : MonoBehaviour
 
     void UpdateAim(Vector2 screenPos)
     {
-        _aimDir = ComputeAimDir(ScreenToGridLocal(screenPos));
+        Vector2 local = ScreenToGridLocal(screenPos);
+
+        // Volver con el dedo hasta la propia burbuja cancela. Es el gesto que ya existe en casi
+        // cualquier botón del móvil —arrastrar fuera para arrepentirse— solo que acá el sitio
+        // seguro es de donde salió el disparo, que es el único punto de la pantalla al que la
+        // mano siempre sabe volver.
+        _cancelArmed = (local - MuzzleLocal).sqrMagnitude <= cancelRadius * cancelRadius;
+
+        if (_cancelArmed)
+        {
+            // Sin línea no hay a dónde apuntar, y eso dice "esto no va a salir" antes de soltar.
+            // El color del halo lo remata.
+            trajectoryLine.Hide();
+            return;
+        }
+
+        _aimDir = ComputeAimDir(local);
         trajectoryLine.ShowPath(MuzzleLocal, _aimDir, grid.SpriteFor(_current));
     }
 
