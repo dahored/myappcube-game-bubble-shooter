@@ -49,7 +49,7 @@ public class TutorialPanel : UIPanel
     [SerializeField] TMP_Text  titleText;
     [SerializeField] TMP_Text  bodyText;
     [SerializeField] Image     imageSlot;
-    [Tooltip("Dónde se mete el prefab animado de la entrada, si tiene. Suele ser el mismo sitio que ocupa la imagen.")]
+    [Tooltip("Dónde se instancia la demostración de la entrada CUANDO es un prefab del proyecto. Si la demostración ya vive colgada del panel en la escena, esto no hace falta: se queda donde esté y el panel solo la enciende.")]
     [SerializeField] Transform animationSlot;
     [SerializeField] Button    okButton;
     [Tooltip("Texto del botón de cierre. Opcional: si se deja vacío, el botón se queda con lo que diga su propio LocalizedText.")]
@@ -143,11 +143,23 @@ public class TutorialPanel : UIPanel
     {
         ClearVisual();
 
-        if (entry.animation && animationSlot)
+        if (entry.animation)
         {
-            _activeAnimation = Mounted(entry.animation)
-                             ? Switch(entry.animation)
-                             : _spawnedAnimation = Instantiate(entry.animation, animationSlot);
+            // El slot solo hace falta para instanciar: una demostración que ya está en la escena
+            // tiene su sitio desde que se montó. Pedirlo igual dejaba el panel en blanco con todo
+            // bien puesto, que es el peor tipo de fallo — nada señala qué falta.
+            if (Mounted(entry.animation))
+            {
+                _activeAnimation = Switch(entry.animation);
+            }
+            else if (animationSlot != null)
+            {
+                _activeAnimation = _spawnedAnimation = Instantiate(entry.animation, animationSlot);
+            }
+            else
+            {
+                Debug.LogWarning($"[TutorialPanel] '{entry.id}' trae un prefab de demostración pero falta asignar 'Animation Slot': no hay dónde instanciarlo.", this);
+            }
 
             if (imageSlot) imageSlot.enabled = false;
             return;
