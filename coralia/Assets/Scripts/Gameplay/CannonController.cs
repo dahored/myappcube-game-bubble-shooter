@@ -76,8 +76,11 @@ public class CannonController : MonoBehaviour
     [Tooltip("Déjalo vacío y se genera solo: un aro difuso dibujado por código, centrado en la boca del cañón y del tamaño exacto de la zona de cancelación. Solo hace falta asignar algo acá para usar arte propio en su lugar. Se le apaga el raycast de cualquier manera — si se comiera los toques, apuntar desde encima del cañón dejaría de funcionar.")]
     [SerializeField] Graphic aimGlow;
 
-    [Tooltip("Cuánto tarda el halo en encenderse y apagarse, en segundos.")]
+    [Tooltip("Cuánto tarda el halo en encenderse y apagarse, en segundos. También es lo que tarda en abrirse al entrar en la zona de cancelación.")]
     [SerializeField] float aimGlowFade = 0.12f;
+
+    [Tooltip("Cuánto mide el aro mientras se apunta, en veces el tamaño de la burbuja. En 1 queda justo sobre su borde. No tiene que ver con la zona de cancelación: acá solo dice 'esta burbuja está cargada'.")]
+    [SerializeField] float aimGlowSize = 1.15f;
 
     [Tooltip("El color del halo mientras soltar DISPARA.")]
     [SerializeField] Color aimGlowColor = new(1f, 1f, 1f, 0.85f);
@@ -85,7 +88,7 @@ public class CannonController : MonoBehaviour
     [Tooltip("El color del halo cuando el dedo volvió encima y soltar CANCELA. Tiene que distinguirse del otro a simple vista: es el único aviso de que el disparo no va a salir.")]
     [SerializeField] Color cancelGlowColor = new(1f, 0.45f, 0.4f, 1f);
 
-    [Tooltip("A qué distancia de la burbuja, en unidades del tablero, soltar cancela en vez de disparar. Una burbuja mide 92 de diámetro, así que 130 es poco más que un dedo alrededor.")]
+    [Tooltip("A qué distancia de la burbuja, en unidades del tablero, soltar cancela en vez de disparar. Una burbuja mide 92 de diámetro, así que 130 es poco más que un dedo alrededor. El aro se abre hasta acá cuando el dedo entra: mientras tanto se queda pegado a la burbuja, para no tener un círculo enorme en pantalla todo el rato.")]
     [SerializeField] float cancelRadius = 130f;
 
     bool         _ownGlow;         // el aro lo generamos nosotros, así que también lo colocamos
@@ -261,14 +264,32 @@ public class CannonController : MonoBehaviour
 
         var rt     = (RectTransform)aimGlow.transform;
         var parent = rt.parent as RectTransform;
+        var anchor = CancelAnchor as RectTransform;
 
         rt.position = CancelAnchor.position;
 
+        // En reposo el aro se queda pegado a la burbuja: ahí no está diciendo dónde cancelar,
+        // está diciendo que esta burbuja es la que va a salir. Tener el círculo entero de la zona
+        // dibujado todo el rato sería un disco enorme en mitad de la pantalla avisando de algo
+        // que todavía no viene al caso.
+        float resting = (anchor != null ? anchor.rect.width : 92f) * Mathf.Max(0.01f, aimGlowSize);
+
+        // Y al entrar el dedo se abre hasta la zona de verdad, convertida de la escala del
+        // tablero a la suya: recién ahí el aro es la zona, y lo es de verdad y no por parecido.
         float ratio = parent != null && Mathf.Abs(parent.lossyScale.x) > 0.0001f
                     ? gridContainer.lossyScale.x / parent.lossyScale.x
                     : 1f;
 
-        rt.sizeDelta = Vector2.one * (cancelRadius * 2f * ratio);
+        float armed  = cancelRadius * 2f * ratio;
+        float target = _cancelArmed ? armed : resting;
+
+        // Suavizado exponencial y no MoveTowards: la distancia entre un tamaño y el otro cambia
+        // con el radio, y con una velocidad fija el aro se abriría lento con radios grandes y de
+        // golpe con los chicos. Así siempre tarda lo mismo.
+        float k   = 1f - Mathf.Exp(-Time.unscaledDeltaTime / Mathf.Max(0.01f, aimGlowFade));
+        float now = Mathf.Lerp(rt.sizeDelta.x, target, k);
+
+        rt.sizeDelta = Vector2.one * now;
     }
 
     // Apagado conserva el tono del estado en el que está, y solo baja el alfa: si fuera

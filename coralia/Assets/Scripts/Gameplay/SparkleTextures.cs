@@ -51,9 +51,9 @@ public static class SparkleTextures
     // el borde no es decorativo sino el límite de una zona que el dedo tiene que encontrar.
     public static Sprite Ring => _ring != null ? _ring : _ring = Build(RING_SIZE, (x, y) =>
     {
-        const float EDGE = 0.74f;   // a qué distancia del centro está el filo del aro
-        const float SOFT = 0.16f;   // qué tan difuso es
-        const float FILL = 0.22f;   // cuánto resplandor queda adentro
+        const float EDGE = 0.80f;   // a qué distancia del centro está el filo del aro
+        const float SOFT = 0.07f;   // qué tan difuso es: fino, para que se lea como un contorno
+        const float FILL = 0.10f;   // cuánto resplandor queda adentro: apenas, para no apagar la burbuja
 
         float d = Mathf.Sqrt(x * x + y * y);
         if (d >= 1f) return 0f;
