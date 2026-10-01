@@ -215,7 +215,10 @@ public class TutorialShootDemo : MonoBehaviour
             bubble.transform.localScale = Vector3.one;
         }
 
+        // El color también, no solo el enabled: Pop() la deja en alfa 0, así que sin esto la
+        // burbuja vuelve al cañón de la segunda vuelta en adelante pero transparente.
         _shot.enabled = true;
+        _shot.color   = Color.white;
         _shot.transform.localScale = Vector3.one;
         Place(_shot, CannonPos());
 
