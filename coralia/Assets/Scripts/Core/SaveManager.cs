@@ -22,6 +22,7 @@ public static class SaveManager
     const string KEY_SOUND_ENABLED    = "sound_enabled";
     const string KEY_MUSIC_ENABLED    = "music_enabled";
     const string KEY_HAS_FIRED_FIRST_SHOT = "has_fired_first_shot";
+    const string KEY_TUTORIALS_SEEN   = "tutorials_seen";       // ids separados por coma
 
     // true apenas se dispara la primera bala de todo el juego — mientras siga en false,
     // CannonController muestra la mano fantasma de forma obligatoria en cuanto arranca el
@@ -30,6 +31,33 @@ public static class SaveManager
     {
         get => PlayerPrefs.GetInt(KEY_HAS_FIRED_FIRST_SHOT, 0) == 1;
         set { PlayerPrefs.SetInt(KEY_HAS_FIRED_FIRST_SHOT, value ? 1 : 0); PlayerPrefs.Save(); }
+    }
+
+    // Qué tutoriales ya vio el jugador. Van TODOS en una clave y no una por mecánica para no
+    // tener que tocar este archivo cada vez que se agregue una: el panel declara sus entradas y
+    // acá solo se anota el id. De paso, olvidarlos todos es borrar una sola clave, que es lo que
+    // necesita el "cómo jugar" de ajustes y cualquier reinicio de progreso.
+    //
+    // Se compara con las comas puestas para que un id no se dé por visto solo porque otro lo
+    // contiene: sin ellas, haber visto 'rescue_doble' daría por visto 'rescue'.
+    public static bool HasSeenTutorial(string id) =>
+        !string.IsNullOrEmpty(id) &&
+        $",{PlayerPrefs.GetString(KEY_TUTORIALS_SEEN, string.Empty)},".Contains($",{id},");
+
+    public static void MarkTutorialSeen(string id)
+    {
+        if (string.IsNullOrEmpty(id) || HasSeenTutorial(id)) return;
+
+        string seen = PlayerPrefs.GetString(KEY_TUTORIALS_SEEN, string.Empty);
+
+        PlayerPrefs.SetString(KEY_TUTORIALS_SEEN, seen.Length == 0 ? id : $"{seen},{id}");
+        PlayerPrefs.Save();
+    }
+
+    public static void ForgetTutorials()
+    {
+        PlayerPrefs.DeleteKey(KEY_TUTORIALS_SEEN);
+        PlayerPrefs.Save();
     }
 
     // Idioma activo. Si no hay guardado, detecta el idioma del sistema automáticamente.

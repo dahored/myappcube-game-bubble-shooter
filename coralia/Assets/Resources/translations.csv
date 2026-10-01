@@ -294,3 +294,6 @@ chapter.2.name,Bahía de los Naufragios,Shipwreck Bay,Baia dei Relitti,Baie des 
 chapter.3.name,Las Ruinas Dormidas,The Sleeping Ruins,Le Rovine Dormienti,Les Ruines Endormies,Die Schlafenden Ruinen,As Ruínas Adormecidas
 chapter.4.name,Cueva de Cristales,Crystal Cave,Grotta di Cristalli,Grotte de Cristal,Kristallhöhle,Caverna de Cristais
 chapter.5.name,La Aldea Encendida,The Glowing Village,Il Villaggio Luminoso,Le Village Illuminé,Das Leuchtende Dorf,A Aldeia Iluminada
+ui.tutorial.ok,Entendido,Got it,Ho capito,J'ai compris,Verstanden,Entendido
+ui.tutorial.rescue.title,¡Rescata a la criatura!,Rescue the creature!,Salva la creatura!,Sauve la créature !,Rette das Wesen!,Resgata a criatura!
+ui.tutorial.rescue.body,Una criatura quedó atrapada en una burbuja. Haz estallar esa burbuja para liberarla y completar el nivel.,A creature is trapped inside a bubble. Pop that bubble to set it free and finish the level.,Una creatura è intrappolata in una bolla. Fai scoppiare quella bolla per liberarla e completare il livello.,Une créature est prisonnière d'une bulle. Fais éclater cette bulle pour la libérer et terminer le niveau.,Ein Wesen ist in einer Blase gefangen. Lass diese Blase platzen und befreie es.,Uma criatura está presa numa bolha. Estoura essa bolha para libertá-la e concluir o nível.

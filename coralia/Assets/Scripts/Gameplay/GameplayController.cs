@@ -28,6 +28,9 @@ public class GameplayController : MonoBehaviour
 
     [Header("Pausa")]
     [SerializeField] PausedPanel pausedPanel;
+
+    [Tooltip("El panel que explica una mecánica la primera vez (issue #58). Opcional: sin él el nivel arranca igual, solo que nadie explica nada.")]
+    [SerializeField] TutorialPanel tutorialPanel;
     [SerializeField] Button      openPausedButton;
 
     [Header("HUD")]
@@ -77,6 +80,10 @@ public class GameplayController : MonoBehaviour
     int        _popScore;     // acumulado disparo a disparo: cada burbuja valió según la racha de SU momento
     int        _victoryBonus;  // el bonus ya topado — lo reparte el remate de disparos
     int        _comboStreak;  // racha actual de disparos consecutivos con match
+    // El id con el que TutorialPanel conoce la explicación del rescate. Constante y no un string
+    // suelto porque el mismo valor tiene que estar escrito igual en el Inspector del panel.
+    const string TUTORIAL_RESCUE = "rescue";
+
     Vector2Int _creatureCell = new(-1, -1);
     bool       _creatureFreed;
     bool       _levelEnded;
@@ -222,9 +229,27 @@ public class GameplayController : MonoBehaviour
 
         if (preview) yield return gridIntro.Play();
         yield return cannon.RevealCurrent();
+        yield return ExplainMechanics();
 
         if (openPausedButton) openPausedButton.interactable = true;
         cannon.SetInputEnabled(true);
+    }
+
+    // Lo que haya que explicar de este nivel, antes de soltar el control.
+    //
+    // Va acá y no al cargar: el jugador lee teniendo delante el tablero del que se le habla, ya
+    // compuesto y con la burbuja en la recámara. Y como el control todavía no está suelto, no
+    // puede disparar a ciegas por detrás del modal.
+    IEnumerator ExplainMechanics()
+    {
+        if (tutorialPanel == null || _level.objective == null) yield break;
+        if (_level.objective.type != "rescue") yield break;
+
+        bool waiting = true;
+
+        if (!tutorialPanel.Show(TUTORIAL_RESCUE, () => waiting = false)) yield break;
+
+        while (waiting) yield return null;
     }
 
     // La escena se activa a mitad de la animación de burbujas de la transición, así que Start()
@@ -275,6 +300,7 @@ public class GameplayController : MonoBehaviour
         if (levelNumberText  == null) Debug.LogWarning("[GameplayController] Falta asignar 'Level Number Text' en el Inspector — el HUD no va a mostrar el número de nivel.");
         if (claimPanel       == null) Debug.LogWarning("[GameplayController] Falta asignar 'Claim Panel' en el Inspector — comprar disparos extra no va a mostrar confirmación.");
         if (gridIntro        == null) Debug.LogWarning("[GameplayController] Falta asignar 'Grid Intro' en el Inspector — los niveles largos van a empezar sin el barrido de vista previa del tablero.");
+        if (tutorialPanel    == null) Debug.LogWarning("[GameplayController] Falta asignar 'Tutorial Panel' en el Inspector — las mecánicas nuevas no se le van a explicar a nadie.");
 
         return ok;
     }
