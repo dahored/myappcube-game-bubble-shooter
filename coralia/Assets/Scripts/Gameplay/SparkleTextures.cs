@@ -11,9 +11,12 @@ public static class SparkleTextures
 {
     const int GLOW_SIZE = 128;
     const int MOTE_SIZE = 64;
+    const int RING_SIZE = 256;   // más grande que los otros: un filo fino se escalona si la textura es corta
 
     static Sprite _glow;
     static Sprite _mote;
+    static Sprite _ring;
+    static float  _ringSoft = -1f;
 
     // Un resplandor redondo y suave. Dos caídas sumadas: una ancha que da el halo y otra muy
     // cerrada que da el núcleo encendido. Con una sola se ve o un disco plano o un puntito.
@@ -43,6 +46,51 @@ public static class SparkleTextures
 
         return Mathf.Clamp01(Mathf.Max(core, Mathf.Max(armH, armV)));
     });
+
+    // Un aro con algo de resplandor adentro. A diferencia de Glow, que es un disco y quedaría
+    // tapado por lo que tenga encima, el aro deja ver DÓNDE termina: hace falta cuando el borde
+    // no es decorativo sino el límite de una zona que el dedo tiene que encontrar.
+    //
+    // 'softness' es el grosor del filo, en tanto por uno del radio: bajo da una línea nítida y
+    // alto un halo difuso. Como la forma vive en la textura y no en el material, cambiarlo
+    // obliga a redibujarla.
+    public static Sprite Ring(float softness)
+    {
+        softness = Mathf.Clamp(softness, 0.01f, 0.4f);
+
+        if (_ring != null && Mathf.Approximately(_ringSoft, softness)) return _ring;
+
+        // Se tira la anterior en vez de guardarla: esto se ajusta arrastrando un slider en pleno
+        // Play, y cada paso regenera la textura. Cacheando todas, un rato de afinar el grosor
+        // serían decenas de megas de texturas que ya no mira nadie.
+        Release(_ring);
+
+        _ringSoft = softness;
+
+        return _ring = Build(RING_SIZE, (x, y) =>
+        {
+            const float EDGE = 0.80f;   // a qué distancia del centro está el filo
+            const float FILL = 0.10f;   // cuánto resplandor queda adentro: apenas, para no apagar la burbuja
+
+            float d = Mathf.Sqrt(x * x + y * y);
+            if (d >= 1f) return 0f;
+
+            float ring = Mathf.Exp(-((d - EDGE) * (d - EDGE)) / (softness * softness));
+            float fill = Mathf.Pow(1f - d, 2f) * FILL;
+
+            return Mathf.Clamp01(Mathf.Max(ring, fill));
+        });
+    }
+
+    static void Release(Sprite sprite)
+    {
+        if (sprite == null) return;
+
+        var texture = sprite.texture;
+
+        if (Application.isPlaying) { Object.Destroy(sprite); if (texture) Object.Destroy(texture); }
+        else                       { Object.DestroyImmediate(sprite); if (texture) Object.DestroyImmediate(texture); }
+    }
 
     // El color va siempre en blanco y la forma vive en el alfa: así el tinte lo pone la Image que
     // la use, y la misma textura sirve para cualquier color sin regenerarse.

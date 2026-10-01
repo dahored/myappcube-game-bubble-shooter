@@ -72,6 +72,33 @@ public class CannonController : MonoBehaviour
     ShotBubble   _flyingShot;
     Vector2Int?  _predictedCell;   // dónde prometió la mira que iba a quedar este disparo
     bool         _inputEnabled = true;
+    [Header("Apuntado")]
+    [Tooltip("Déjalo vacío y se genera solo: un aro difuso dibujado por código, centrado en la boca del cañón y del tamaño exacto de la zona de cancelación. Solo hace falta asignar algo acá para usar arte propio en su lugar. Se le apaga el raycast de cualquier manera — si se comiera los toques, apuntar desde encima del cañón dejaría de funcionar.")]
+    [SerializeField] Graphic aimGlow;
+
+    [Tooltip("Cuánto tarda el halo en encenderse y apagarse, en segundos. También es lo que tarda en abrirse al entrar en la zona de cancelación.")]
+    [SerializeField] float aimGlowFade = 0.12f;
+
+    [Tooltip("Cuánto mide el aro mientras se apunta, en veces el tamaño de la burbuja. En 1 queda justo sobre su borde. No tiene que ver con la zona de cancelación: acá solo dice 'esta burbuja está cargada'.")]
+    [SerializeField] float aimGlowSize = 1.15f;
+
+    [Tooltip("El grosor del filo del aro, en tanto por uno de su radio. Bajo da una línea nítida; alto, un halo difuso. Se puede mover en pleno Play para verlo. Solo aplica al aro generado por código — con arte propio asignado no hace nada.")]
+    [Range(0.01f, 0.4f)]
+    [SerializeField] float aimGlowEdge = 0.07f;
+
+    [Tooltip("El color del halo mientras soltar DISPARA.")]
+    [SerializeField] Color aimGlowColor = new(1f, 1f, 1f, 0.85f);
+
+    [Tooltip("El color del halo cuando el dedo volvió encima y soltar CANCELA. Tiene que distinguirse del otro a simple vista: es el único aviso de que el disparo no va a salir.")]
+    [SerializeField] Color cancelGlowColor = new(1f, 0.45f, 0.4f, 1f);
+
+    [Tooltip("A qué distancia de la burbuja, en unidades del tablero, soltar cancela en vez de disparar. Una burbuja mide 92 de diámetro, así que 130 es poco más que un dedo alrededor. El aro se abre hasta acá cuando el dedo entra: mientras tanto se queda pegado a la burbuja, para no tener un círculo enorme en pantalla todo el rato.")]
+    [SerializeField] float cancelRadius = 130f;
+
+    Image        _ownGlowImage;    // el aro generado, para poder redibujarlo si cambia el grosor
+    float        _ownGlowEdge = -1f;
+    bool         _ownGlow;         // el aro lo generamos nosotros, así que también lo colocamos
+    bool         _cancelArmed;     // el dedo está sobre la burbuja: soltar no dispara
     bool         _pointerDown;     // el dedo está apoyado, aunque el guard haya cortado el apuntado
     Vector2      _pointerPos;      // dónde, para retomar la mira sin esperar a que se mueva
     bool         _dragging;
@@ -85,6 +112,14 @@ public class CannonController : MonoBehaviour
     bool         _muzzleMeasured;
     Vector2      _muzzleLocalBase; // posición de muzzlePoint convertida al espacio local de gridContainer,
                                     // SIN scroll — calculada acá en vez de a mano, así no importa el anchor/dispositivo
+
+    // El centro de la zona de cancelación, y del aro que la dibuja.
+    //
+    // Es la burbuja que se VE y no muzzlePoint, que es de donde salen los disparos: son dos
+    // puntos que no tienen por qué coincidir, y el que importa acá es el dibujo, porque es el
+    // que el dedo busca al volver. Medir desde el otro dejaba la zona corrida respecto de lo que
+    // el jugador tiene delante.
+    Transform CancelAnchor => currentBubbleImage != null ? currentBubbleImage.transform : muzzlePoint;
 
     // Posición real del muzzle ahora mismo: si GridController retiró el grid (ScrollOffsetY > 0),
     // hay que restarlo acá para que el cañón siga apuntando desde su lugar visual fijo — el
@@ -100,6 +135,50 @@ public class CannonController : MonoBehaviour
         // el Editor queda activo por error (ej. se dejó así para poder ubicarlo/ajustarlo),
         // esto evita el cuadro blanco (Image sin sprite) visible antes del primer disparo.
         if (travelingBubbleImage) travelingBubbleImage.gameObject.SetActive(false);
+
+        BuildAimGlow();
+
+        if (aimGlow)
+        {
+            // El halo cae justo encima de la burbuja del cañón, que es desde donde mucha gente
+            // arranca el arrastre. Si se comiera el toque, apuntar desde ahí dejaría de
+            // funcionar — el mismo problema de las esquinas que ya costó una sesión encontrar.
+            aimGlow.raycastTarget = false;
+            aimGlow.color         = Apagado();
+        }
+    }
+
+    // El aro, dibujado por código. Se genera salvo que haya arte asignado a mano.
+    //
+    // Nace acá y no en la escena porque su sitio y su tamaño NO son decisiones de diseño: tiene
+    // que estar centrado en la boca del cañón y medir exactamente la zona de cancelación, o
+    // dejaría de ser el aviso de dónde soltar para cancelar y pasaría a ser un adorno que
+    // engaña. Dos números que hay que mantener iguales a mano son dos números que un día dejan
+    // de coincidir.
+    void BuildAimGlow()
+    {
+        if (aimGlow != null || currentBubbleImage == null) return;
+
+        var bubble = (RectTransform)currentBubbleImage.transform;
+        var image  = new GameObject("AimGlow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image))
+                        .GetComponent<Image>();
+
+        // Hermano y no hijo: en UGUI los hijos se dibujan DESPUÉS del padre, así que colgarlo de
+        // la burbuja lo pondría encima tapándole el color. Insertado en su mismo índice, la
+        // burbuja se corre un puesto y el aro queda justo detrás.
+        var rt = (RectTransform)image.transform;
+
+        rt.SetParent(bubble.parent, false);
+        rt.SetSiblingIndex(bubble.GetSiblingIndex());
+
+        rt.anchorMin = rt.anchorMax = bubble.anchorMin == bubble.anchorMax ? bubble.anchorMin : new Vector2(0.5f, 0.5f);
+        rt.pivot     = new Vector2(0.5f, 0.5f);
+
+        image.type = Image.Type.Simple;
+
+        aimGlow       = image;
+        _ownGlowImage = image;
+        _ownGlow      = true;
     }
 
     // Start() y no Awake(): SafeAreaPanel ajusta el tamaño real de SafeArea en su propio
@@ -123,6 +202,10 @@ public class CannonController : MonoBehaviour
 
     void Update()
     {
+        // Antes del guard: pausar a mitad de un apuntado tiene que APAGAR el halo, no dejarlo
+        // encendido detrás del panel de pausa.
+        UpdateAimGlow();
+
         // _inputEnabled también congela el disparo ya en vuelo — si no, pausar a mitad de
         // un tiro lo dejaría animándose solo detrás del PausedPanel.
         if (!_inputEnabled) return;
@@ -152,6 +235,84 @@ public class CannonController : MonoBehaviour
             _idleTimer += Time.deltaTime;
             if (_idleTimer >= idleHintDelay) ShowHint();
         }
+    }
+
+    // El halo, por frame y no por corrutina: cambia de color a mitad del gesto cada vez que el
+    // dedo entra o sale de la zona de cancelación, y una corrutina habría que cortarla y
+    // relanzarla en cada cruce.
+    void UpdateAimGlow()
+    {
+        if (aimGlow == null) return;
+
+        if (_ownGlow) PlaceAimGlow();
+
+        bool  lit    = _dragging && _inputEnabled;
+        Color target = lit ? (_cancelArmed ? cancelGlowColor : aimGlowColor) : Apagado();
+        float step   = Time.unscaledDeltaTime / Mathf.Max(0.01f, aimGlowFade);
+
+        aimGlow.color = new Color(
+            Mathf.MoveTowards(aimGlow.color.r, target.r, step),
+            Mathf.MoveTowards(aimGlow.color.g, target.g, step),
+            Mathf.MoveTowards(aimGlow.color.b, target.b, step),
+            Mathf.MoveTowards(aimGlow.color.a, target.a, step));
+    }
+
+    // El aro sale del MISMO punto y del MISMO radio que la zona, no de algo parecido: si se
+    // colocara por su cuenta, el día que uno de los dos se mueva el aro seguiría dibujando una
+    // zona que ya no está ahí.
+    //
+    // Se coloca en coordenadas de mundo y el tamaño se convierte de la escala del tablero a la
+    // suya, así que funciona aunque el cañón y el tablero cuelguen de ramas distintas de la
+    // jerarquía, sin suponer que todo el canvas comparte escala.
+    void PlaceAimGlow()
+    {
+        if (CancelAnchor == null || gridContainer == null) return;
+
+        var rt     = (RectTransform)aimGlow.transform;
+        var parent = rt.parent as RectTransform;
+        var anchor = CancelAnchor as RectTransform;
+
+        rt.position = CancelAnchor.position;
+
+        // El grosor se mira por frame en vez de solo al crear el aro: así se puede afinar
+        // arrastrando el slider con el juego corriendo, que es la única forma de acertarle.
+        if (!Mathf.Approximately(_ownGlowEdge, aimGlowEdge))
+        {
+            _ownGlowEdge = aimGlowEdge;
+            if (_ownGlowImage) _ownGlowImage.sprite = SparkleTextures.Ring(aimGlowEdge);
+        }
+
+        // En reposo el aro se queda pegado a la burbuja: ahí no está diciendo dónde cancelar,
+        // está diciendo que esta burbuja es la que va a salir. Tener el círculo entero de la zona
+        // dibujado todo el rato sería un disco enorme en mitad de la pantalla avisando de algo
+        // que todavía no viene al caso.
+        float resting = (anchor != null ? anchor.rect.width : 92f) * Mathf.Max(0.01f, aimGlowSize);
+
+        // Y al entrar el dedo se abre hasta la zona de verdad, convertida de la escala del
+        // tablero a la suya: recién ahí el aro es la zona, y lo es de verdad y no por parecido.
+        float ratio = parent != null && Mathf.Abs(parent.lossyScale.x) > 0.0001f
+                    ? gridContainer.lossyScale.x / parent.lossyScale.x
+                    : 1f;
+
+        float armed  = cancelRadius * 2f * ratio;
+        float target = _cancelArmed ? armed : resting;
+
+        // Suavizado exponencial y no MoveTowards: la distancia entre un tamaño y el otro cambia
+        // con el radio, y con una velocidad fija el aro se abriría lento con radios grandes y de
+        // golpe con los chicos. Así siempre tarda lo mismo.
+        float k   = 1f - Mathf.Exp(-Time.unscaledDeltaTime / Mathf.Max(0.01f, aimGlowFade));
+        float now = Mathf.Lerp(rt.sizeDelta.x, target, k);
+
+        rt.sizeDelta = Vector2.one * now;
+    }
+
+    // Apagado conserva el tono del estado en el que está, y solo baja el alfa: si fuera
+    // transparente a secas, soltar con el halo en rojo lo haría virar a blanco mientras se apaga.
+    Color Apagado()
+    {
+        Color from = _cancelArmed ? cancelGlowColor : aimGlowColor;
+
+        return new Color(from.r, from.g, from.b, 0f);
     }
 
     // Le pasa al grid la altura del muzzle, que es contra lo que aquel mide cuánto tiene que
@@ -496,7 +657,8 @@ public class CannonController : MonoBehaviour
         _pointerPos  = screenPos;
 
         if (!_inputEnabled || _flyingShot != null) return;
-        _dragging = true;
+        _dragging    = true;
+        _cancelArmed = false;
         HideHint();
         UpdateAim(screenPos);
     }
@@ -525,6 +687,14 @@ public class CannonController : MonoBehaviour
 
         if (!_dragging) return;
         _dragging = false;
+
+        if (_cancelArmed)
+        {
+            _cancelArmed = false;
+            trajectoryLine.Hide();
+            return;
+        }
+
         // No se oculta la línea acá — se deja visible mostrando el camino que ya está
         // siguiendo el disparo real, hasta que ResolveImpact() la esconde al aterrizar
         // (pedido de Diego: "que salga el trajectory line mientras llega la bola al destino").
@@ -562,7 +732,25 @@ public class CannonController : MonoBehaviour
 
     void UpdateAim(Vector2 screenPos)
     {
-        _aimDir = ComputeAimDir(ScreenToGridLocal(screenPos));
+        Vector2 local = ScreenToGridLocal(screenPos);
+
+        // Volver con el dedo hasta la propia burbuja cancela. Es el gesto que ya existe en casi
+        // cualquier botón del móvil —arrastrar fuera para arrepentirse— solo que acá el sitio
+        // seguro es la burbuja, que es el único punto de la pantalla al que la mano siempre
+        // sabe volver.
+        Vector2 center = WorldToGridLocal(CancelAnchor.position);
+
+        _cancelArmed = (local - center).sqrMagnitude <= cancelRadius * cancelRadius;
+
+        if (_cancelArmed)
+        {
+            // Sin línea no hay a dónde apuntar, y eso dice "esto no va a salir" antes de soltar.
+            // El color del halo lo remata.
+            trajectoryLine.Hide();
+            return;
+        }
+
+        _aimDir = ComputeAimDir(local);
         trajectoryLine.ShowPath(MuzzleLocal, _aimDir, grid.SpriteFor(_current));
     }
 
@@ -721,7 +909,57 @@ public class CannonController : MonoBehaviour
         SetOctopusSprite(octopusWaitSprite);
         yield return new WaitForSeconds(octopusWaitHold);
         SetOctopusSprite(octopusIdleSprite);
+
+        yield return AutoSwapIfStale();
     }
+
+    // Si la burbuja que acaba de llegar quedó sin ningún sitio donde servir, el pulpo la cambia
+    // por la siguiente.
+    //
+    // Pasa porque la cola se sortea por adelantado: cuando esta burbuja se mostró como "next",
+    // su color estaba en el tablero, y la cascada del disparo siguiente lo borró entero. La cola
+    // es "smart" (RollColor solo ofrece colores que existen) pero no puede adivinar lo que el
+    // próximo disparo va a tirar.
+    //
+    // Se hace DESPUÉS del relevo y con la animación de cruce, no colándolo dentro: el jugador
+    // vio esa burbuja como "next" durante todo el vuelo anterior, así que primero tiene que
+    // llegar —la promesa se cumple— y recién entonces verse cómo se intercambia. Cambiarla en
+    // silencio sería indistinguible de re-sortearla, que es justo lo que no se quiere.
+    //
+    // No cuesta disparos. Descartarla en su lugar sí costaría uno, y cada disparo que sobra ya
+    // paga 1000 puntos al ganar (ScoreRules.POINTS_PER_REMAINING_SHOT): el descarte sería un mal
+    // trato disfrazado de premio.
+    IEnumerator AutoSwapIfStale()
+    {
+        // Nunca con el dedo apoyado: cambiarle el color a alguien que ya está apuntando es
+        // exactamente lo que esto trata de evitar. Se espera a que suelte; si en vez de soltar
+        // dispara, el intercambio ya no aplica y se descarta solo.
+        while (_dragging && _flyingShot == null) yield return null;
+
+        if (!StaleCurrent()) yield break;
+
+        (_current, _next) = (_next, _current);
+
+        _swapRoutine = StartCoroutine(SwapFeedback());
+    }
+
+    bool StaleCurrent()
+    {
+        if (!_inputEnabled || _flyingShot != null || _swapRoutine != null) return false;
+        if (_shotsRemaining < 2 || grid == null || grid.CellCount == 0)    return false;
+
+        var onGrid = grid.ColorsOnGrid();
+
+        // Las dos condiciones importan: sin la segunda el intercambio movería el problema de
+        // ranura en vez de resolverlo.
+        return !Usable(_current, onGrid) && Usable(_next, onGrid);
+    }
+
+    // ColorsOnGrid deja fuera la arcoíris a propósito, porque como color de tablero no cuenta.
+    // Acá la pregunta es otra —si esta burbuja sirve para algo— y la arcoíris sirve siempre:
+    // sin esta excepción se la tomaría por inservible y se cambiaría por un color corriente.
+    static bool Usable(BubbleColor color, HashSet<BubbleColor> onGrid) =>
+        color == BubbleColor.Rainbow || onGrid.Contains(color);
 
     void SetOctopusSprite(GameObject frame)
     {
