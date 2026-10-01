@@ -32,6 +32,12 @@ public class LevelData
     public List<string> available_colors;
     public List<int> star_thresholds; // [1 estrella, 2 estrellas, 3 estrellas]
     public List<string> obstacles;
+    // Qué tutoriales explica este nivel, por id (los mismos que lista TutorialPanel). Van en el
+    // JSON y no en código porque son una decisión de diseño de niveles: qué mecánica aparece en
+    // cuál. El panel ya se encarga de no repetirlos, así que escribir el mismo id en varios
+    // niveles es correcto — sale en el primero al que el jugador llegue.
+    public List<string> tutorials;
+
     public ObjectiveData objective;
     public List<BubbleEntry> bubbles;
 }

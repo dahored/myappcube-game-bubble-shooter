@@ -242,12 +242,24 @@ public class GameplayController : MonoBehaviour
     // puede disparar a ciegas por detrás del modal.
     IEnumerator ExplainMechanics()
     {
-        if (tutorialPanel == null || _level.objective == null) yield break;
-        if (_level.objective.type != "rescue") yield break;
+        if (tutorialPanel == null) yield break;
 
+        // Los que pide el JSON del nivel, en el orden en que están escritos.
+        if (_level.tutorials != null)
+            foreach (string id in _level.tutorials)
+                yield return Explain(id);
+
+        // Y el del rescate, que no hace falta escribir: el objetivo del nivel ya lo dice. Si
+        // además está en la lista, el panel no lo repite.
+        if (_level.objective != null && _level.objective.type == "rescue")
+            yield return Explain(TUTORIAL_RESCUE);
+    }
+
+    IEnumerator Explain(string id)
+    {
         bool waiting = true;
 
-        if (!tutorialPanel.Show(TUTORIAL_RESCUE, () => waiting = false)) yield break;
+        if (!tutorialPanel.Show(id, () => waiting = false)) yield break;
 
         while (waiting) yield return null;
     }
