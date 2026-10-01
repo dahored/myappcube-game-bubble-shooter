@@ -35,7 +35,7 @@ public class TutorialPanel : UIPanel
         [Tooltip("La imagen fija que acompaña al texto. Opcional si se usa una animación.")]
         public Sprite image;
 
-        [Tooltip("Un prefab animado en lugar de la imagen fija, para mecánicas que se entienden mejor en movimiento. Si está puesto, manda sobre la imagen.")]
+        [Tooltip("Una demostración en movimiento en lugar de la imagen fija, para mecánicas que se entienden mejor viéndolas. Si está puesta, manda sobre la imagen.\n\nVale tanto un PREFAB —se instancia al mostrarlo y se destruye al cerrar— como un objeto que ya esté colgando del panel en la escena, que simplemente se enciende y se apaga. El panel distingue cuál es solo.")]
         public GameObject animation;
 
         [Tooltip("Apagado, el tutorial sale TODAS las veces. Solo para probarlo sin tener que borrar el progreso.")]
@@ -62,7 +62,8 @@ public class TutorialPanel : UIPanel
 
     Entry      _showing;
     Action     _onDismissed;
-    GameObject _spawnedAnimation;
+    GameObject _spawnedAnimation;   // solo si vino de un prefab: hay que destruirla
+    GameObject _activeAnimation;    // la que esté encendida, venga de donde venga
 
     protected override void Awake()
     {
@@ -140,11 +141,13 @@ public class TutorialPanel : UIPanel
 
     void ShowVisual(Entry entry)
     {
-        if (_spawnedAnimation) Destroy(_spawnedAnimation);
+        ClearVisual();
 
         if (entry.animation && animationSlot)
         {
-            _spawnedAnimation = Instantiate(entry.animation, animationSlot);
+            _activeAnimation = Mounted(entry.animation)
+                             ? Switch(entry.animation)
+                             : _spawnedAnimation = Instantiate(entry.animation, animationSlot);
 
             if (imageSlot) imageSlot.enabled = false;
             return;
@@ -157,6 +160,42 @@ public class TutorialPanel : UIPanel
         }
     }
 
+    // Si esa demostración ya vive en la escena en vez de ser un prefab del proyecto. Un objeto
+    // de escena pertenece a una escena cargada y uno del proyecto no, así que la pregunta se
+    // responde sola y no hace falta un check en el Inspector que haya que acordarse de marcar.
+    static bool Mounted(GameObject animation) => animation.scene.IsValid();
+
+    // Las montadas en la escena solo se encienden y se apagan. Se apagan TODAS antes, no solo la
+    // anterior: si alguna quedó visible de cuando se estaba montando el panel, se verían dos
+    // demostraciones a la vez y ninguna sería la que toca.
+    GameObject Switch(GameObject wanted)
+    {
+        if (entries != null)
+            foreach (var other in entries)
+                if (other?.animation != null && Mounted(other.animation) && other.animation != wanted)
+                    other.animation.SetActive(false);
+
+        wanted.SetActive(true);
+
+        return wanted;
+    }
+
+    void ClearVisual()
+    {
+        // Una montada en la escena no se destruye: se apaga, y sigue ahí para la próxima vez. La
+        // instanciada sí, y por eso se la excluye: Destroy tarda hasta el final del frame, así
+        // que apagarla antes sería tocar algo que ya está en camino a desaparecer.
+        if (_activeAnimation && _activeAnimation != _spawnedAnimation) _activeAnimation.SetActive(false);
+
+        _activeAnimation = null;
+
+        if (_spawnedAnimation)
+        {
+            Destroy(_spawnedAnimation);
+            _spawnedAnimation = null;
+        }
+    }
+
     void Dismissed()
     {
         var callback = _onDismissed;
@@ -164,11 +203,7 @@ public class TutorialPanel : UIPanel
         _showing     = null;
         _onDismissed = null;
 
-        if (_spawnedAnimation)
-        {
-            Destroy(_spawnedAnimation);
-            _spawnedAnimation = null;
-        }
+        ClearVisual();
 
         callback?.Invoke();
 
