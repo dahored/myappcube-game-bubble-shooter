@@ -11,9 +11,11 @@ public static class SparkleTextures
 {
     const int GLOW_SIZE = 128;
     const int MOTE_SIZE = 64;
+    const int RING_SIZE = 256;   // más grande que los otros: un filo fino se escalona si la textura es corta
 
     static Sprite _glow;
     static Sprite _mote;
+    static Sprite _ring;
 
     // Un resplandor redondo y suave. Dos caídas sumadas: una ancha que da el halo y otra muy
     // cerrada que da el núcleo encendido. Con una sola se ve o un disco plano o un puntito.
@@ -42,6 +44,24 @@ public static class SparkleTextures
         float core = Mathf.Exp(-(d * d) / (CORE * CORE));
 
         return Mathf.Clamp01(Mathf.Max(core, Mathf.Max(armH, armV)));
+    });
+
+    // Un aro difuso con algo de resplandor adentro. A diferencia de Glow, que es un disco y
+    // quedaría tapado por lo que tenga encima, el aro deja ver DÓNDE termina: hace falta cuando
+    // el borde no es decorativo sino el límite de una zona que el dedo tiene que encontrar.
+    public static Sprite Ring => _ring != null ? _ring : _ring = Build(RING_SIZE, (x, y) =>
+    {
+        const float EDGE = 0.74f;   // a qué distancia del centro está el filo del aro
+        const float SOFT = 0.16f;   // qué tan difuso es
+        const float FILL = 0.22f;   // cuánto resplandor queda adentro
+
+        float d = Mathf.Sqrt(x * x + y * y);
+        if (d >= 1f) return 0f;
+
+        float ring = Mathf.Exp(-((d - EDGE) * (d - EDGE)) / (SOFT * SOFT));
+        float fill = Mathf.Pow(1f - d, 2f) * FILL;
+
+        return Mathf.Clamp01(Mathf.Max(ring, fill));
     });
 
     // El color va siempre en blanco y la forma vive en el alfa: así el tinte lo pone la Image que

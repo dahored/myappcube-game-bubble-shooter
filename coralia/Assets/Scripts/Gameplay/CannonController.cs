@@ -73,7 +73,7 @@ public class CannonController : MonoBehaviour
     Vector2Int?  _predictedCell;   // dónde prometió la mira que iba a quedar este disparo
     bool         _inputEnabled = true;
     [Header("Apuntado")]
-    [Tooltip("El halo que se enciende alrededor de la burbuja mientras se apunta. Opcional: sin él se apunta igual, solo que la burbuja no avisa de que está cargada. Se le apaga el raycast solo — si se comiera los toques, apuntar desde encima del cañón dejaría de funcionar.")]
+    [Tooltip("Déjalo vacío y se genera solo: un aro difuso dibujado por código, centrado en la boca del cañón y del tamaño exacto de la zona de cancelación. Solo hace falta asignar algo acá para usar arte propio en su lugar. Se le apaga el raycast de cualquier manera — si se comiera los toques, apuntar desde encima del cañón dejaría de funcionar.")]
     [SerializeField] Graphic aimGlow;
 
     [Tooltip("Cuánto tarda el halo en encenderse y apagarse, en segundos.")]
@@ -88,6 +88,7 @@ public class CannonController : MonoBehaviour
     [Tooltip("A qué distancia de la burbuja, en unidades del tablero, soltar cancela en vez de disparar. Una burbuja mide 92 de diámetro, así que 130 es poco más que un dedo alrededor.")]
     [SerializeField] float cancelRadius = 130f;
 
+    bool         _ownGlow;         // el aro lo generamos nosotros, así que también lo colocamos
     bool         _cancelArmed;     // el dedo está sobre la burbuja: soltar no dispara
     bool         _pointerDown;     // el dedo está apoyado, aunque el guard haya cortado el apuntado
     Vector2      _pointerPos;      // dónde, para retomar la mira sin esperar a que se mueva
@@ -118,6 +119,8 @@ public class CannonController : MonoBehaviour
         // esto evita el cuadro blanco (Image sin sprite) visible antes del primer disparo.
         if (travelingBubbleImage) travelingBubbleImage.gameObject.SetActive(false);
 
+        BuildAimGlow();
+
         if (aimGlow)
         {
             // El halo cae justo encima de la burbuja del cañón, que es desde donde mucha gente
@@ -126,6 +129,39 @@ public class CannonController : MonoBehaviour
             aimGlow.raycastTarget = false;
             aimGlow.color         = Apagado();
         }
+    }
+
+    // El aro, dibujado por código. Se genera salvo que haya arte asignado a mano.
+    //
+    // Nace acá y no en la escena porque su sitio y su tamaño NO son decisiones de diseño: tiene
+    // que estar centrado en la boca del cañón y medir exactamente la zona de cancelación, o
+    // dejaría de ser el aviso de dónde soltar para cancelar y pasaría a ser un adorno que
+    // engaña. Dos números que hay que mantener iguales a mano son dos números que un día dejan
+    // de coincidir.
+    void BuildAimGlow()
+    {
+        if (aimGlow != null || currentBubbleImage == null) return;
+
+        var bubble = (RectTransform)currentBubbleImage.transform;
+        var image  = new GameObject("AimGlow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image))
+                        .GetComponent<Image>();
+
+        // Hermano y no hijo: en UGUI los hijos se dibujan DESPUÉS del padre, así que colgarlo de
+        // la burbuja lo pondría encima tapándole el color. Insertado en su mismo índice, la
+        // burbuja se corre un puesto y el aro queda justo detrás.
+        var rt = (RectTransform)image.transform;
+
+        rt.SetParent(bubble.parent, false);
+        rt.SetSiblingIndex(bubble.GetSiblingIndex());
+
+        rt.anchorMin = rt.anchorMax = bubble.anchorMin == bubble.anchorMax ? bubble.anchorMin : new Vector2(0.5f, 0.5f);
+        rt.pivot     = new Vector2(0.5f, 0.5f);
+
+        image.sprite = SparkleTextures.Ring;
+        image.type   = Image.Type.Simple;
+
+        aimGlow  = image;
+        _ownGlow = true;
     }
 
     // Start() y no Awake(): SafeAreaPanel ajusta el tamaño real de SafeArea en su propio
@@ -191,6 +227,8 @@ public class CannonController : MonoBehaviour
     {
         if (aimGlow == null) return;
 
+        if (_ownGlow) PlaceAimGlow();
+
         bool  lit    = _dragging && _inputEnabled;
         Color target = lit ? (_cancelArmed ? cancelGlowColor : aimGlowColor) : Apagado();
         float step   = Time.unscaledDeltaTime / Mathf.Max(0.01f, aimGlowFade);
@@ -200,6 +238,29 @@ public class CannonController : MonoBehaviour
             Mathf.MoveTowards(aimGlow.color.g, target.g, step),
             Mathf.MoveTowards(aimGlow.color.b, target.b, step),
             Mathf.MoveTowards(aimGlow.color.a, target.a, step));
+    }
+
+    // El aro va donde está la zona, no donde está el dibujo de la burbuja: la distancia que
+    // decide si soltar cancela se mide desde la boca del cañón, y son dos puntos que no tienen
+    // por qué coincidir.
+    //
+    // Por eso se coloca en coordenadas de MUNDO y el tamaño se convierte de la escala del
+    // tablero a la suya: así el aro mide la zona de verdad aunque cuelgue de otra rama de la
+    // jerarquía, sin tener que suponer que todo el canvas comparte escala.
+    void PlaceAimGlow()
+    {
+        if (muzzlePoint == null || gridContainer == null) return;
+
+        var rt     = (RectTransform)aimGlow.transform;
+        var parent = rt.parent as RectTransform;
+
+        rt.position = muzzlePoint.position;
+
+        float ratio = parent != null && Mathf.Abs(parent.lossyScale.x) > 0.0001f
+                    ? gridContainer.lossyScale.x / parent.lossyScale.x
+                    : 1f;
+
+        rt.sizeDelta = Vector2.one * (cancelRadius * 2f * ratio);
     }
 
     // Apagado conserva el tono del estado en el que está, y solo baja el alfa: si fuera
