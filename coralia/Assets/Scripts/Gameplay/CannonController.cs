@@ -104,6 +104,14 @@ public class CannonController : MonoBehaviour
     Vector2      _muzzleLocalBase; // posición de muzzlePoint convertida al espacio local de gridContainer,
                                     // SIN scroll — calculada acá en vez de a mano, así no importa el anchor/dispositivo
 
+    // El centro de la zona de cancelación, y del aro que la dibuja.
+    //
+    // Es la burbuja que se VE y no muzzlePoint, que es de donde salen los disparos: son dos
+    // puntos que no tienen por qué coincidir, y el que importa acá es el dibujo, porque es el
+    // que el dedo busca al volver. Medir desde el otro dejaba la zona corrida respecto de lo que
+    // el jugador tiene delante.
+    Transform CancelAnchor => currentBubbleImage != null ? currentBubbleImage.transform : muzzlePoint;
+
     // Posición real del muzzle ahora mismo: si GridController retiró el grid (ScrollOffsetY > 0),
     // hay que restarlo acá para que el cañón siga apuntando desde su lugar visual fijo — el
     // grid se mueve, el cañón no.
@@ -240,21 +248,21 @@ public class CannonController : MonoBehaviour
             Mathf.MoveTowards(aimGlow.color.a, target.a, step));
     }
 
-    // El aro va donde está la zona, no donde está el dibujo de la burbuja: la distancia que
-    // decide si soltar cancela se mide desde la boca del cañón, y son dos puntos que no tienen
-    // por qué coincidir.
+    // El aro sale del MISMO punto y del MISMO radio que la zona, no de algo parecido: si se
+    // colocara por su cuenta, el día que uno de los dos se mueva el aro seguiría dibujando una
+    // zona que ya no está ahí.
     //
-    // Por eso se coloca en coordenadas de MUNDO y el tamaño se convierte de la escala del
-    // tablero a la suya: así el aro mide la zona de verdad aunque cuelgue de otra rama de la
-    // jerarquía, sin tener que suponer que todo el canvas comparte escala.
+    // Se coloca en coordenadas de mundo y el tamaño se convierte de la escala del tablero a la
+    // suya, así que funciona aunque el cañón y el tablero cuelguen de ramas distintas de la
+    // jerarquía, sin suponer que todo el canvas comparte escala.
     void PlaceAimGlow()
     {
-        if (muzzlePoint == null || gridContainer == null) return;
+        if (CancelAnchor == null || gridContainer == null) return;
 
         var rt     = (RectTransform)aimGlow.transform;
         var parent = rt.parent as RectTransform;
 
-        rt.position = muzzlePoint.position;
+        rt.position = CancelAnchor.position;
 
         float ratio = parent != null && Mathf.Abs(parent.lossyScale.x) > 0.0001f
                     ? gridContainer.lossyScale.x / parent.lossyScale.x
@@ -693,9 +701,11 @@ public class CannonController : MonoBehaviour
 
         // Volver con el dedo hasta la propia burbuja cancela. Es el gesto que ya existe en casi
         // cualquier botón del móvil —arrastrar fuera para arrepentirse— solo que acá el sitio
-        // seguro es de donde salió el disparo, que es el único punto de la pantalla al que la
-        // mano siempre sabe volver.
-        _cancelArmed = (local - MuzzleLocal).sqrMagnitude <= cancelRadius * cancelRadius;
+        // seguro es la burbuja, que es el único punto de la pantalla al que la mano siempre
+        // sabe volver.
+        Vector2 center = WorldToGridLocal(CancelAnchor.position);
+
+        _cancelArmed = (local - center).sqrMagnitude <= cancelRadius * cancelRadius;
 
         if (_cancelArmed)
         {
