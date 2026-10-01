@@ -803,7 +803,57 @@ public class CannonController : MonoBehaviour
         SetOctopusSprite(octopusWaitSprite);
         yield return new WaitForSeconds(octopusWaitHold);
         SetOctopusSprite(octopusIdleSprite);
+
+        yield return AutoSwapIfStale();
     }
+
+    // Si la burbuja que acaba de llegar quedó sin ningún sitio donde servir, el pulpo la cambia
+    // por la siguiente.
+    //
+    // Pasa porque la cola se sortea por adelantado: cuando esta burbuja se mostró como "next",
+    // su color estaba en el tablero, y la cascada del disparo siguiente lo borró entero. La cola
+    // es "smart" (RollColor solo ofrece colores que existen) pero no puede adivinar lo que el
+    // próximo disparo va a tirar.
+    //
+    // Se hace DESPUÉS del relevo y con la animación de cruce, no colándolo dentro: el jugador
+    // vio esa burbuja como "next" durante todo el vuelo anterior, así que primero tiene que
+    // llegar —la promesa se cumple— y recién entonces verse cómo se intercambia. Cambiarla en
+    // silencio sería indistinguible de re-sortearla, que es justo lo que no se quiere.
+    //
+    // No cuesta disparos. Descartarla en su lugar sí costaría uno, y cada disparo que sobra ya
+    // paga 1000 puntos al ganar (ScoreRules.POINTS_PER_REMAINING_SHOT): el descarte sería un mal
+    // trato disfrazado de premio.
+    IEnumerator AutoSwapIfStale()
+    {
+        // Nunca con el dedo apoyado: cambiarle el color a alguien que ya está apuntando es
+        // exactamente lo que esto trata de evitar. Se espera a que suelte; si en vez de soltar
+        // dispara, el intercambio ya no aplica y se descarta solo.
+        while (_dragging && _flyingShot == null) yield return null;
+
+        if (!StaleCurrent()) yield break;
+
+        (_current, _next) = (_next, _current);
+
+        _swapRoutine = StartCoroutine(SwapFeedback());
+    }
+
+    bool StaleCurrent()
+    {
+        if (!_inputEnabled || _flyingShot != null || _swapRoutine != null) return false;
+        if (_shotsRemaining < 2 || grid == null || grid.CellCount == 0)    return false;
+
+        var onGrid = grid.ColorsOnGrid();
+
+        // Las dos condiciones importan: sin la segunda el intercambio movería el problema de
+        // ranura en vez de resolverlo.
+        return !Usable(_current, onGrid) && Usable(_next, onGrid);
+    }
+
+    // ColorsOnGrid deja fuera la arcoíris a propósito, porque como color de tablero no cuenta.
+    // Acá la pregunta es otra —si esta burbuja sirve para algo— y la arcoíris sirve siempre:
+    // sin esta excepción se la tomaría por inservible y se cambiaría por un color corriente.
+    static bool Usable(BubbleColor color, HashSet<BubbleColor> onGrid) =>
+        color == BubbleColor.Rainbow || onGrid.Contains(color);
 
     void SetOctopusSprite(GameObject frame)
     {
