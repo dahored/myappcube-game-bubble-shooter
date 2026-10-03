@@ -78,7 +78,7 @@ Implementar el primer power-up del GDD: la Bomba de Coral. Explota una zona 3x3 
 - [ ] Visual distintivo de la burbuja-bomba en el cañón (marcador rojo o ícono)
 - [ ] Al impactar grid, explota celda + 6 hex vecinos
 - [ ] Animación de explosión con partículas/shake
-- [ ] Costo: 8 gemas (placeholder hasta implementar economía)
+- [ ] Costo: 8 monedas (placeholder hasta implementar economía)
 - [ ] Counter de power-ups disponibles guardado en `SaveManager`
 
 ### Referencias
@@ -100,7 +100,7 @@ Implementar el sistema de vidas que es base de la monetización F2P. 5 vidas má
 - [ ] `SaveManager` no tiene campos de vidas todavía — agregar `Lives` (int, PlayerPrefs) y `LivesLastRegen` (timestamp)
 - [ ] Al perder un nivel, decrementa vidas en 1 (bloqueado por gameplay)
 - [ ] Al ganar un nivel, NO consume vida
-- [ ] Si vidas = 0 al intentar jugar nivel: popup "Sin vidas" con opciones (esperar / pagar gemas / ver ad — placeholders por ahora)
+- [ ] Si vidas = 0 al intentar jugar nivel: popup "Sin vidas" con opciones (esperar / pagar monedas / ver ad — placeholders por ahora)
 - [ ] Cálculo de regen: cada 30 min real desde `LivesLastRegen`, hasta cap de 5 — conectar con `ResourcePillView.SetTimer()`
 - [ ] Persiste correctamente al cerrar/reabrir el juego
 
@@ -111,19 +111,19 @@ Implementar el sistema de vidas que es base de la monetización F2P. 5 vidas má
 
 ---
 
-## [Phase 2] Sistema de monedas y gemas con drops por nivel
+## [Phase 2] Sistema de monedas con drops por nivel
 
 **Labels:** `phase-2`, `feat`, `economy`, `priority-high`, `size-M`
 
 ### Descripción
-Implementar el sistema dual de monedas (soft) + gemas (hard) según GDD sección 6. **El HUD de monedas ya está listo** (`ResourcePillCoins Variant.prefab`) mostrando un valor hardcodeado — falta conectar datos reales y los drops al completar niveles. Sin compras IAP todavía (eso viene en chunk separado).
+Implementar las fuentes de monedas según GDD 6.3. **Ojo: el GDD describía dos monedas y las gemas se eliminaron en 2026-10** — hay una sola, y hoy completar un nivel NO da monedas a propósito (ver GDD 6.3), así que este issue es sobre las otras fuentes: santuario, dailies, misiones y logros. **El HUD de monedas ya está listo** (`ResourcePillCoins Variant.prefab`) mostrando un valor hardcodeado — falta conectar datos reales y los drops al completar niveles. Sin compras IAP todavía (eso viene en chunk separado).
 
 ### Acceptance criteria
 - [x] HUD muestra el pill de monedas con ícono + valor + botón "+" — `ResourcePillCoins Variant.prefab`
 - [ ] `SaveManager` no tiene campos de economía todavía — agregar `Coins` (int) y `Gems` (int)
 - [ ] Drops por nivel completado (bloqueado por gameplay):
   - 50-100 monedas según capítulo (GDD 6.6)
-  - 1-3 gemas con probabilidad ~30%
+  - 1-3 monedas con probabilidad ~30%
   - +50% bonus en monedas para primera completación de un nivel
 - [ ] Animación de drop de currencies al final del nivel (caen del modal a los HUD counters)
 - [ ] Persistencia en `SaveManager`
@@ -132,7 +132,7 @@ Implementar el sistema dual de monedas (soft) + gemas (hard) según GDD sección
 
 ### Referencias
 - GDD sección 6.3 (Monedas)
-- GDD sección 6.4 (Gemas)
+- GDD sección 6.4 (Monedas)
 - GDD sección 6.6 (Drops por nivel)
 - `Scripts/UI/ResourcePillView.cs` (HUD ya implementado)
 
@@ -220,15 +220,15 @@ Implementar la racha diaria con loop de 7 días según GDD sección 7.2. Pop-up 
 - [ ] Recompensas día 1-7 según GDD 7.2:
   - Día 1: 50 monedas
   - Día 2: 100 monedas
-  - Día 3: 5 gemas
+  - Día 3: 5 monedas
   - Día 4: 1 power-up aleatorio
   - Día 5: 200 monedas + 1 vida
-  - Día 6: 10 gemas
-  - Día 7: 25 gemas + 1 power-up raro
+  - Día 6: 10 monedas
+  - Día 7: 25 monedas + 1 power-up raro
 - [ ] Detección de "primer login del día" (no spam)
 - [ ] Tracking en `SaveManager`: racha actual, racha máxima, último día reclamado, último login
 - [ ] Si pasa más de 1 día sin login, racha rota (current=0, mostrar mensaje al volver)
-- [ ] Streak Shield (50 gemas) — opcional para fase posterior
+- [ ] Streak Shield (50 monedas) — opcional para fase posterior
 
 ### Referencias
 - GDD sección 7.2 (Racha diaria)
@@ -271,7 +271,7 @@ Implementar la pantalla Santuario que es la pantalla principal del juego (GDD se
 - [ ] Decidir: ¿`HomeGame` se convierte en el Santuario, o es una escena separada?
 - [ ] Background del arrecife con animación leve
 - [ ] Criaturas rescatadas (de save de criaturas) aparecen nadando idle
-- [ ] HUD top: monedas, gemas, vidas con countdown — reutilizar `ResourcePillView` ya construido
+- [ ] HUD top: monedas y vidas con countdown — reutilizar `ResourcePillView` ya construido
 - [ ] HUD top-left: Settings icon (ya existe como `OpenSettingsButton` en el TopPanel de LevelMap, evaluar si se replica acá)
 - [ ] HUD top-right: Profile icon
 - [ ] HUD top-center: Events banner (si hay evento activo)
@@ -393,20 +393,20 @@ Integrar AdMob (Google Mobile Ads Unity SDK) con AppLovin MAX como mediación. I
 **Labels:** `phase-2`, `feat`, `monetization`, `priority-medium`, `size-L`
 
 ### Descripción
-Integrar RevenueCat (cross-platform IAP) con los 6 packs de gemas + Starter Pack + Battle Pass según GDD sección 6.5. Configurar productos en App Store Connect y Google Play Console. No implementado todavía.
+Integrar RevenueCat (cross-platform IAP) con los 6 packs de monedas + Starter Pack + Battle Pass según GDD sección 6.5. Configurar productos en App Store Connect y Google Play Console. No implementado todavía.
 
 ### Acceptance criteria
 - [ ] RevenueCat Unity SDK configurado
 - [ ] Productos definidos en RevenueCat dashboard:
-  - Burbujita ($0.99 / 80 gemas)
-  - Concha ($4.99 / 450 gemas)
-  - Coral ($9.99 / 1000 gemas)
+  - Burbujita ($0.99 / 80 monedas)
+  - Concha ($4.99 / 450 monedas)
+  - Coral ($9.99 / 1000 monedas)
   - Tesoro ($19.99 / 2200)
   - Perla Real ($49.99 / 6000)
   - Cofre Mítico ($99.99 / 13000)
   - Starter Pack ($2.99) — 7 días desde install, 1 sola vez
   - Battle Pass S1 ($4.99)
-- [ ] Pantalla Shop implementada con tabs (gemas, vidas, power-ups, especiales) — reutilizar `ResourcePillView` para el header de balance
+- [ ] Pantalla Shop implementada con tabs (monedas, vidas, power-ups, especiales) — reutilizar `ResourcePillView` para el header de balance
 - [ ] Botón "Restaurar compras" en Settings → Cuenta y asistencia funcional
 - [ ] Validación server-side de recibos
 - [ ] Tracking de IAP history en `SaveManager`
@@ -430,7 +430,7 @@ Implementar el Battle Pass de 30 días con 40 tiers, dos tracks (free y premium 
 - [ ] Sistema de XP que trackea XP por acción (50 por nivel ganado, etc. según GDD 8.3)
 - [ ] 40 tiers con recompensas free + premium para temporada 1 "Despertar del Coral"
 - [ ] Premium track elimina ads durante 30 días
-- [ ] Botón comprar premium $4.99 (vía RevenueCat) o 800 gemas
+- [ ] Botón comprar premium $4.99 (vía RevenueCat) o 800 monedas
 - [ ] Hero image y branding de la temporada
 - [ ] Countdown de días restantes
 - [ ] Reset al final de la temporada con auto-start de la siguiente
@@ -563,22 +563,136 @@ Lanzamiento mundial coordinado tras validar con soft launch. Pulido final basado
 
 # Backlog post-MVP (largo plazo)
 
-## [Backlog] Power-ups restantes (Rayo de Luz, Cambio de Color, Mira Láser, Pez Explorador, Burbuja de Aire)
+## [Design] Recalibrar los precios de la economía tras eliminar las gemas
 
-**Labels:** `backlog`, `feat`, `gameplay`, `priority-low`, `size-L`
+**Labels:** `design`, `economy`, `priority-medium`, `size-M`
 
 ### Descripción
-Después del primer power-up (Bomba de Coral), implementar los otros 5 según GDD sección 3.2.
+
+Las gemas se eliminaron (GDD 6.3, actualizado 2026-10-02): el código nunca tuvo una segunda
+moneda y todo quedó en `SaveManager.Coins`. Al hacerlo, las cifras del GDD se quedaron de dos
+escalas incompatibles: la de monedas decía **200 por vida** y la de gemas **25 por la misma
+vida**, y la implementada no es ninguna de las dos — es **4 por vida**.
+
+Hoy sobreviven tres precios reales, y son el único anclaje válido:
+
+| Compra | Precio | Dónde |
+|---|---|---|
+| Refill de las 5 vidas | 20 (4 por vida que falte) | `RefillLivesPanel` |
+| Vidas infinitas 3 h | 47 | `RefillLivesPanel` |
+| Continuar el nivel (+5 disparos) | 10, +5 por reintento | `NoMoreMovesPanel` |
+
+Y hay un agujero del que depende todo lo demás: **no existe ninguna forma de ganar monedas**.
+`GameplayController.CalculateAwards` devuelve una lista vacía a propósito (una sola moneda no
+puede llover por jugar Y trabar las ofertas a la vez), y las fuentes previstas —santuario,
+dailies, misiones, logros— no están implementadas. El único saldo posible es el inicial de 50.
+
+### A decidir
+- [ ] Precio de cada uno de los seis power-ups, contra los tres anclajes de arriba
+- [ ] Qué fuentes de monedas se implementan primero, y cuánto dan
+- [ ] Rehacer las cantidades de los packs IAP (GDD 6.5): están escritas en gemas, ~5× la escala actual
+- [ ] Rehacer los montos de recompensas de retención y Battle Pass (GDD 7 y 8), que perdieron su
+      componente en gemas al consolidar
 
 ### Acceptance criteria
-- [ ] Rayo de luz: elimina columna entera (10 gemas)
-- [ ] Cambio de color: cambia color del cañón al elegido (6 gemas)
-- [ ] Mira láser: trayectoria con todos los rebotes durante 3 disparos (7 gemas)
-- [ ] Pez explorador: pez nada por grid eliminando 5 burbujas del color elegido (12 gemas)
-- [ ] Burbuja de aire: +1 disparo al límite del nivel (5 gemas)
+- [ ] GDD 6.3 con la tabla completa de precios, sin "por definir"
+- [ ] Al menos una fuente de monedas implementada, para que los precios signifiquen algo
+- [ ] Los avisos de "sin recalibrar" de GDD 6.5, 6.6, 6.8, 7 y 8 retirados
 
-### Referencias
-- GDD sección 3.2
+---
+
+## [Design] ✅ RESUELTO — Las dos clases de booster
+
+**Labels:** `design`, `gameplay`, `done`
+
+Resuelto el 2026-10-03. La decisión está escrita en **GDD §3.2**: diez power-ups en dos familias,
+cinco de inicio y cinco de gameplay, repartidos por una sola regla — **si el jugador tiene que
+elegir dónde o cuándo, es de gameplay; si se aplica solo, es de inicio.**
+
+El cap del GDD §3.5 pasa a ser **3 de inicio equipados, y todos los de gameplay desbloqueados**:
+los de inicio se pagan por partida y hay que elegir; los de gameplay solo cuestan si los usas, así
+que limitarlos no protege de nada.
+
+La implementación de cada uno vive en los issues de abajo.
+
+---
+
+## [Feature] Power-ups de inicio (5) — se aplican solos al empezar el nivel
+
+**Labels:** `feature`, `gameplay`, `economy`, `priority-medium`, `size-L`
+
+### Descripción
+
+Los cinco de la familia "de inicio" (GDD §3.2). Se eligen en la pantalla previa —que ya existe y
+funciona, `StartGamePanel` + `BoosterItemView`— y se aplican al abrir el nivel, sin pedir ninguna
+decisión durante la partida. Cada uno toca una palanca distinta.
+
+| Power-up | Efecto | Dónde se engancha |
+|---|---|---|
+| **Reserva de Oxígeno** | +5 al límite de disparos del nivel | `GameplayController._shotsRemaining`, antes del primer tiro |
+| **Perla Arcoíris** | La primera burbuja del cañón es comodín | `CannonController.Init`; `LinksWith` ya trata el arcoíris como comodín |
+| **Marea Baja** | Al empezar, borra la fila más baja del tablero | `GridController` + `CollapseFloating` y la animación de pop que ya existen |
+| **Agua Clara** | El color con menos burbujas se CONVIERTE al color con más, y deja de salir del cañón | `ColorsOnGrid` + `BubbleView.SetColor` (ya existe para la arcoíris) |
+| **Corriente Favorable** | Durante todo el nivel, el cañón favorece los colores que más abundan | sesgar `CannonController.RollColor` |
+
+**Agua Clara convierte, no elimina** — borrar dispararía la caída de todo lo que colgara de esas
+burbujas, un efecto que nadie previó al balancear el nivel, y resolvería parte del objetivo solo.
+Convirtiendo, el racimo grande lo revienta el jugador con su disparo.
+
+### Acceptance criteria
+- [ ] Los cinco en `BubbleSpecial` y en `BoosterRules.NAMES`
+- [ ] Entrada en `BoosterCatalog` con icono, packs y clip
+- [ ] `ui.booster.X.name` y `.description` en los 6 idiomas
+- [ ] Un tutorial por cada uno, con su id = el nombre del booster
+- [ ] Aplicados al abrir el nivel, leyendo `BoosterLoadout.Equipped`
+- [ ] El cap de 3 equipados se respeta en la pantalla previa
+
+### Dependencias
+`BoosterLoadout` ya guarda lo equipado y `StartGamePanel` ya lo reparte. Falta que
+`GameplayController` lea `BoosterLoadout.Equipped` al abrir el nivel y aplique los de esta familia
+— hoy solo se consumen los de gameplay.
+
+---
+
+## [Feature] Power-ups de gameplay (4 restantes) — se activan durante la partida
+
+**Labels:** `feature`, `gameplay`, `priority-medium`, `size-L`
+
+### Descripción
+
+Los cuatro que faltan de la familia "de gameplay" (GDD §3.2). La **Bomba de Coral** ya está
+implementada y sirve de plantilla: `BubbleSpecial`, `SpecialBubbleSkin`, la marca de zona en
+`TrajectoryLine`, el `BoosterButton` del HUD y el consumo en `CannonController.Fire`.
+
+| Power-up | Efecto | Qué reusa |
+|---|---|---|
+| **Torpedo** | Barre entera la fila horizontal donde impacte | El camino de la bomba cambiando qué celdas marca |
+| **Pez Explorador** | Al impactar se divide en tres: revienta la burbuja tocada y las dos de ese color **con menos vecinos del mismo color** | Igual que la bomba + una búsqueda por el grid |
+| **Tinta de Pulpo** | El pulpo salpica 4 burbujas al azar dentro del radio, tiñéndolas del **color que vuelve a la recámara** | `HexGridMath.CellsWithinRadius` + `BubbleView.SetColor` |
+| **Pinza de Langosta** | Tocas una burbuja del tablero y la destruye. No gasta disparo | **Nada: necesita una pieza nueva** |
+
+**Tres de los cuatro son variaciones del mismo camino** — se cargan en el cañón, se apuntan, y lo
+único que cambia es qué le pasa al grid al impactar. La Pinza es la única que pide un modo de
+selección sobre el tablero, que no existe.
+
+Dos detalles que no son opcionales:
+
+- **El Pez va a las aisladas, no a las cercanas.** Yendo a las próximas sería una bomba pequeña y
+  peor; yendo a las que menos vecinos de su color tienen, ataca lo que el jugador no puede
+  resolver solo.
+- **La Tinta tiñe del color que vuelve a la recámara, no del disparado.** Con el disparado, los 4
+  teñidos más la recién pegada hacen match al instante: un efecto, no una jugada. Y como ese color
+  queda tapado por el pulpo, **la marca de zona de la mira se pinta de él** — lo que de paso cierra
+  el mismo hueco que la bomba tiene hoy.
+
+### Acceptance criteria
+- [ ] Los cuatro en `BubbleSpecial` y en `BoosterRules.NAMES`
+- [ ] Entrada en `BoosterCatalog` con icono, frames, packs y clip
+- [ ] `ui.booster.X.name` y `.description` en los 6 idiomas
+- [ ] Un tutorial por cada uno, con su id = el nombre del booster
+- [ ] La marca de zona de la mira refleja el efecto real de cada uno
+- [ ] Modo de selección sobre el tablero para la Pinza
+- [ ] Todos aparecen en el HUD vía `BoosterHudList` sin tocar ese script
 
 ---
 
@@ -633,7 +747,7 @@ Implementar los 40 logros del GDD sección 7.5 con 3 tiers (bronce, plata, oro).
 - [ ] Categorías: progresión, coleccionismo, skill, restauración, generosidad, eficiencia, constancia
 - [ ] Detección automática de logros desbloqueados
 - [ ] Pantalla Profile muestra grid 4×4 con barras de progreso
-- [ ] Recompensas otorgadas al desbloquear (gemas, monedas, power-ups, skins)
+- [ ] Recompensas otorgadas al desbloquear (monedas, power-ups, skins)
 - [ ] Notificación de logro desbloqueado durante gameplay (toast)
 
 ### Referencias
@@ -652,7 +766,7 @@ Sistema de misiones diarias (3 que resetean cada 24h) y semanales (5 que resetea
 - [ ] Pool de ~20 templates de misiones diarias
 - [ ] Pool de templates de misiones semanales
 - [ ] Selección automática al reset
-- [ ] Recompensas según GDD (monedas, gemas, power-ups, BP XP)
+- [ ] Recompensas según GDD (monedas, power-ups, BP XP)
 - [ ] Bonus por completar todas las del día/semana
 - [ ] UI accesible desde santuario
 
@@ -725,7 +839,7 @@ Script que simula N partidas de un nivel para validar solubilidad y estimar difi
 **Labels:** `backlog`, `feat`, `monetization`, `priority-low`, `size-L`
 
 ### Descripción
-Lanzar suscripción mensual tras 3-6 meses post-launch (audiencia base estable). Beneficios: sin ads + 50 gemas/día + vidas infinitas + skin exclusiva mensual + early access a niveles. El HUD de vidas ya soporta el estado "infinito" (`ResourcePillView.SetBadgeInfinite()`), listo para cuando se implemente esto.
+Lanzar suscripción mensual tras 3-6 meses post-launch (audiencia base estable). Beneficios: sin ads + 50 monedas/día + vidas infinitas + skin exclusiva mensual + early access a niveles. El HUD de vidas ya soporta el estado "infinito" (`ResourcePillView.SetBadgeInfinite()`), listo para cuando se implemente esto.
 
 ### Acceptance criteria
 - [ ] Producto suscripción en RevenueCat ($4.99/mes o $39.99/año)

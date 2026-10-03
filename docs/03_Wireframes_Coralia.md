@@ -51,7 +51,7 @@ Para Android: el área útil es similar, con algunos px adicionales arriba para 
 | `Body` | Nunito | 24 px | Regular | Texto general, descripciones |
 | `Body Small` | Nunito | 20 px | Regular | Secundario, captions |
 | `Number Big` | Nunito | 56 px | Black | Score, contadores grandes |
-| `Number Small` | Nunito | 28 px | Black | Vidas, monedas, gemas en HUD |
+| `Number Small` | Nunito | 28 px | Black | Vidas y monedas en HUD |
 | `Button` | Quicksand | 32 px | Semibold | Texto de botones |
 
 ### Spacing scale
@@ -101,7 +101,7 @@ Múltiplos de 8 que se usan consistentemente: `4`, `8`, `16`, `24`, `32`, `48`, 
 - Pill horizontal 48 px alto, ancho contenido
 - Border radius: 24 px
 - Fondo blanco semi-transparente
-- Layout: icono moneda/gema (32×32) + número (estilo `Number Small`)
+- Layout: icono moneda (32×32) + número (estilo `Number Small`)
 - Tap → abre Shop tab correspondiente
 
 #### `hud_lives`
@@ -427,7 +427,7 @@ Cada pantalla se diseña primero en **Modo Arrecife (light)** y se deriva a **Mo
 
 **Estados:**
 
-- **Disponible para reclamar:** botón activo, animación de aparición de gemas/monedas al reclamar
+- **Disponible para reclamar:** botón activo, animación de aparición de monedas al reclamar
 - **Ya reclamado:** botón deshabilitado, countdown visible
 - **Racha rota:** texto rojo "Tu racha se rompió. Día 1 de 7." + botón para reclamar día 1
 
@@ -513,20 +513,20 @@ Cada pantalla se diseña primero en **Modo Arrecife (light)** y se deriva a **Mo
 ┌─────────────────────────────────┐
 │  ←  TIENDA      🪙2,450 💎87   │ ← back + currencies HUD
 │                                 │
-│  Gemas │ Vidas │ Power-ups │ ★ │ ← tabs (★ = especiales/ofertas)
+│  Monedas │ Vidas │ Power-ups │ ★ │ ← tabs (★ = especiales/ofertas)
 │ ───────┴───────┴──────────┴────│
 │                                 │
 │  [Banner: Starter Pack          │ ← banner ofertas activas
 │   $2.99 — termina en 3d 12h]    │
 │                                 │
 │  ┌────────────────────────┐    │
-│  │ 💎  80 Gemas           │    │ ← card_shop_item
+│  │ 💎  80 Monedas           │    │ ← card_shop_item
 │  │ Burbujita        $0.99 │    │
 │  │                  [BUY] │    │
 │  └────────────────────────┘    │
 │                                 │
 │  ┌────────────────────────┐    │
-│  │ 💎💎 450 Gemas  +13%   │    │
+│  │ 💎💎 450 Monedas  +13%   │    │
 │  │ Concha           $4.99 │    │
 │  │                  [BUY] │    │
 │  └────────────────────────┘    │
@@ -544,18 +544,18 @@ Cada pantalla se diseña primero en **Modo Arrecife (light)** y se deriva a **Mo
 **Elementos:**
 
 1. **Header** — back arrow + título "TIENDA" + HUD currencies
-2. **Tabs** — horizontal, 4 tabs: Gemas, Vidas, Power-ups, Especiales (★). Tab activo en `coral_pink`, otros gris medio.
+2. **Tabs** — horizontal, 4 tabs: Monedas, Vidas, Power-ups, Especiales (★). Tab activo en `coral_pink`, otros gris medio.
 3. **Banner ofertas activas** — solo si hay Starter/Weekend/Holiday/Flash deal. Card destacada con countdown.
 4. **Grid de productos** — vertical scroll, cards `card_shop_item` con: imagen del producto, nombre, descripción, precio, botón BUY
-5. **Best value badge** — badge dorado en el pack con mejor relación gemas/$ (típicamente $9.99 o $19.99)
+5. **Best value badge** — badge dorado en el pack con mejor relación monedas/$ (típicamente $9.99 o $19.99)
 6. **Card del Starter Pack** — destacada al top con borde glow + countdown + "Valor $9.99 → $2.99 (70% OFF)"
 
 **Estados por tab:**
 
 | Tab | Productos visibles |
 |---|---|
-| Gemas | 6 packs ($0.99 a $99.99) + Vidas Infinitas (1h, 24h, 7d) |
-| Vidas | Refill instantáneo (100 gemas) o vidas individuales (25 c/u) |
+| Monedas | 6 packs ($0.99 a $99.99) + Vidas Infinitas (1h, 24h, 7d) |
+| Vidas | Refill instantáneo (100 monedas) o vidas individuales (25 c/u) |
 | Power-ups | 6 power-ups en cantidades 1, 5, 20 |
 | Especiales | Starter Pack (si activo), Weekend Deal, eventos |
 
@@ -759,7 +759,7 @@ Cada pantalla se diseña primero en **Modo Arrecife (light)** y se deriva a **Mo
 │  │ [▮▮▮░░░░░░] 40%        │   │
 │  │                         │   │
 │  │ Premios:                │   │
-│  │ ✓ 5 niveles → 50 gemas │   │
+│  │ ✓ 5 niveles → 50 monedas │   │
 │  │ ● 15 niveles → skin    │   │
 │  │ ○ 30 niveles → 200💎    │   │
 │  │                         │   │
@@ -953,8 +953,8 @@ Mini-modal que emerge desde abajo (bottom sheet, 600 px alto) con:
 - **Re-jugar nivel completado:** mismo layout pero con badge "Mejor score: X"
 
 **Interacciones:**
-- Tap slot vacío: bottom sheet con scroll de power-ups disponibles + costo en gemas si no se tiene
-- Tap power-up no disponible: popup "Comprar 1 por X gemas" o cancelar
+- Tap slot vacío: bottom sheet con scroll de power-ups disponibles + costo en monedas si no se tiene
+- Tap power-up no disponible: popup "Comprar 1 por X monedas" o cancelar
 - Tap JUGAR: transición a Gameplay
 
 ---
@@ -1142,7 +1142,7 @@ Mini-modal que emerge desde abajo (bottom sheet, 600 px alto) con:
 **Variante A (Game Over):**
 - Marina con animación triste
 - Mensaje "Sin disparos" o "Sin movimientos"
-- Opciones: ad para +5 disparos, gemas para +5 disparos, aceptar derrota
+- Opciones: ad para +5 disparos, monedas para +5 disparos, aceptar derrota
 
 **Variante B (Victory):**
 - Animación de celebración (Marina + criatura abrazándose)
@@ -1152,7 +1152,7 @@ Mini-modal que emerge desde abajo (bottom sheet, 600 px alto) con:
 
 **Interacciones:**
 - Game Over → ad: trigger ad → si ve completo, +5 disparos y vuelve a Gameplay
-- Game Over → gemas: confirma costo → +5 disparos y vuelve a Gameplay
+- Game Over → monedas: confirma costo → +5 disparos y vuelve a Gameplay
 - Game Over → aceptar: pierde 1 vida, vuelve a Pre-level con opción retry o salir
 - Victory → continuar: → Post-level
 
@@ -1173,7 +1173,7 @@ Mini-modal que emerge desde abajo (bottom sheet, 600 px alto) con:
 │                                 │
 │  ┌──────────────────────────┐  │
 │  │ +75 monedas              │  │
-│  │ +2 gemas                 │  │
+│  │ +2 monedas                 │  │
 │  │ +1 power-up: Bomba       │  │
 │  │ +50 Battle Pass XP       │  │
 │  │ ✨ Lumi rescatada         │  │
@@ -1200,7 +1200,7 @@ Mini-modal que emerge desde abajo (bottom sheet, 600 px alto) con:
 
 1. **Título** — "RECOMPENSAS" H1
 2. **Animación de drop** — items aparecen cayendo con bounce
-3. **Lista de recompensas** — todo lo ganado en el nivel: monedas, gemas, power-ups, BP XP, criatura
+3. **Lista de recompensas** — todo lo ganado en el nivel: monedas, power-ups, BP XP, criatura
 4. **Battle Pass progress** — si subió de tier, animación especial + barra
 5. **Botón duplicar** — `btn_ad`, cap 10/día. Al verla: x2 sobre coins/gems/power-ups
 6. **Botón siguiente nivel** — `btn_primary`, vuelve a Gameplay con el siguiente nivel cargado
