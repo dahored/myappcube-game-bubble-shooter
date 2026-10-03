@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // Grid hexagonal offset: fila 0 = techo, filas impares desplazadas medio diámetro a la derecha.
@@ -57,6 +58,35 @@ public static class HexGridMath
         int   col      = Mathf.RoundToInt((edgeX - LeftMargin - BubbleRadius - xOffset) / BubbleDiameter);
         col = Mathf.Clamp(col, 0, ColsInRow(row) - 1);
         return new Vector2Int(col, row);
+    }
+
+    // Disco hexagonal: la celda + todo lo que esté a 'radius' pasos o menos. Es un BFS por
+    // vecinos y no una fórmula geométrica porque en coordenadas offset el salto a la fila de
+    // arriba/abajo cambia según la fila sea par o impar — caminar los vecinos ya resuelve eso.
+    //
+    // Se filtra por IsValidCell durante la expansión, así contra la pared del tablero el disco
+    // se recorta solo (radio 1 en la columna 0 son 4 celdas, no 7) en vez de devolver celdas
+    // que no existen.
+    public static List<Vector2Int> CellsWithinRadius(Vector2Int center, int radius)
+    {
+        var result   = new List<Vector2Int> { center };
+        var visited  = new HashSet<Vector2Int> { center };
+        var frontier = new List<Vector2Int> { center };
+
+        for (int step = 0; step < radius; step++)
+        {
+            var next = new List<Vector2Int>();
+            foreach (var cell in frontier)
+                foreach (var n in GetNeighbors(cell))
+                {
+                    if (!IsValidCell(n) || !visited.Add(n)) continue;
+                    next.Add(n);
+                    result.Add(n);
+                }
+            frontier = next;
+        }
+
+        return result;
     }
 
     public static Vector2Int[] GetNeighbors(Vector2Int cell)

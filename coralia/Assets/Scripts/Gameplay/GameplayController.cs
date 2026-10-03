@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Solo.MOST_IN_ONE;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -54,6 +55,23 @@ public class GameplayController : MonoBehaviour
     [SerializeField] AudioClip popClip;
     [SerializeField] AudioClip dropClip;
 
+    [Header("Bomba de Coral (booster)")]
+    [Tooltip("El destello de la explosión, en el centro del impacto. Es lo único que distingue a la bomba de un match grande antes de que las burbujas empiecen a reventar.")]
+    [SerializeField] Sparkle.Settings bombSparkle = new();
+
+    [Tooltip("El fogonazo de pantalla y la onda expansiva. El destello avisa de que pasó algo grande mirara donde mirara el jugador; la onda dice dónde y hasta dónde llegó.")]
+    [SerializeField] BombBlast.Settings bombBlast = new();
+
+    [Tooltip("Sonido de la explosión. Opcional — sin esto revienta igual, solo con los pops de cada burbuja.")]
+    [SerializeField] AudioClip bombClip;
+
+    [Tooltip("Sonido de la bomba encendiéndose, desde que se pega hasta que estalla (bubble_loading_sfx). Opcional, y aparte del de la explosión: son dos momentos distintos y lo normal es que sean dos clips.")]
+    [SerializeField] AudioClip bombChargeClip;
+
+    [Tooltip("Cuántos segundos ANTES del estallido arranca el sonido. Para clips que traen silencio o una mecha al principio: con el mismo valor que ese silencio, el golpe del audio cae justo sobre el fogonazo. En 0 suena al explotar. Se topa solo al tiempo de carga.")]
+    [Range(0f, 4f)]
+    [SerializeField] float bombClipLead;
+
     const float END_LEVEL_DELAY      = 1.1f;  // espera a que terminen las animaciones de pop/drop antes de mostrar el panel
     const float WIN_PANEL_PAUSE      = 0.35f; // respiro tras llenarse la barra, para que se vea la última estrella
     const float PROGRESS_BAR_TIMEOUT = 3f;    // tope de espera de esa barra, para no colgar el fin de nivel
@@ -83,6 +101,9 @@ public class GameplayController : MonoBehaviour
     // El id con el que TutorialPanel conoce la explicación del rescate. Constante y no un string
     // suelto porque el mismo valor tiene que estar escrito igual en el Inspector del panel.
     const string TUTORIAL_RESCUE = "rescue";
+
+    // El booster que acaba de presentarse y hay que dejar cargado en cuanto arranque el nivel.
+    BubbleSpecial _autoLoadBooster;
 
     Vector2Int _creatureCell = new(-1, -1);
     bool       _creatureFreed;
@@ -198,6 +219,11 @@ public class GameplayController : MonoBehaviour
 
         RefreshShotsLabel();
 
+        // Desde acá hay partida abierta. Si la app muere antes de que termine, al próximo arranque
+        // se cobra como abandono (SaveManager.SettleAbandonedLevel). Probar un nivel desde el
+        // editor no cuenta, igual que no cuesta vida ni guarda progreso.
+        if (!_isEditorTest) SaveManager.MarkLevelInProgress();
+
         StartCoroutine(OpenLevel());
     }
 
@@ -233,6 +259,17 @@ public class GameplayController : MonoBehaviour
 
         if (openPausedButton) openPausedButton.interactable = true;
         cannon.SetInputEnabled(true);
+
+        // El booster recién presentado llega puesto en la recámara: el jugador acaba de leer qué
+        // hace y lo primero que ve al cerrar el modal es la bomba lista para disparar. Dejarlo en
+        // el inventario sería pedirle que encuentre el ícono del HUD justo cuando todavía no sabe
+        // que existe. Va DESPUÉS de soltar el control porque LoadBooster lo exige, y así además
+        // trae su destello y su sonido en vez de aparecer en silencio.
+        if (_autoLoadBooster != BubbleSpecial.None)
+        {
+            cannon.LoadBooster(_autoLoadBooster);
+            _autoLoadBooster = BubbleSpecial.None;
+        }
     }
 
     // Lo que haya que explicar de este nivel, antes de soltar el control.
@@ -258,6 +295,26 @@ public class GameplayController : MonoBehaviour
     IEnumerator Explain(string id)
     {
         bool waiting = true;
+
+        // Si este tutorial presenta un booster, el jugador se lleva uno para probarlo ahí mismo.
+        //
+        // Se mira Pending ANTES de Show porque Show marca el tutorial como visto: preguntando
+        // después, nunca regalaría. Y como el tutorial sale una sola vez en la vida, el regalo
+        // también — volver a entrar al nivel, o reiniciarlo, no da más.
+        var booster = BoosterRules.BoosterForTutorial(id);
+        if (booster != BubbleSpecial.None && tutorialPanel.Pending(id))
+        {
+            SaveManager.GrantBooster(booster, BoosterRules.TUTORIAL_GRANT);
+
+            // Y se equipa, aunque el jugador no lo haya elegido en la pantalla previa — ahí ni
+            // siquiera se le ofrecía, porque todavía no lo conocía. Sin esto, el segundo que se
+            // le regala no tendría ícono en el HUD y no habría forma de usarlo en este nivel.
+            BoosterLoadout.Equip(booster);
+
+            // Se anota para cargarlo cuando el nivel ya esté en marcha, no acá: LoadBooster exige
+            // que el input esté habilitado, y durante la apertura todavía no lo está.
+            _autoLoadBooster = booster;
+        }
 
         if (!tutorialPanel.Show(id, () => waiting = false)) yield break;
 
@@ -399,7 +456,7 @@ public class GameplayController : MonoBehaviour
         else Debug.LogWarning("[GameplayController] LosePanel no está asignado.");
     }
 
-    void OnBubbleLanded(Vector2Int landedCell)
+    void OnBubbleLanded(Vector2Int landedCell, BubbleSpecial special)
     {
         if (_levelEnded) return;
 
@@ -414,7 +471,55 @@ public class GameplayController : MonoBehaviour
         // de "llegada" (reportado por Diego).
         cannon.UpdateShotsRemainingSilently(_shotsRemaining);
 
-        var removed = ResolveMatchAndDrop(landedCell);
+        // La bomba no revienta al tocar: se queda encendiéndose un momento. Todo lo que viene
+        // después del estallido tiene que esperar a que ocurra, así que se va por una corrutina.
+        if (special == BubbleSpecial.Bomb) { StartCoroutine(ArmAndBlast(landedCell)); return; }
+
+        AfterRemoval(ResolveMatchAndDrop(landedCell));
+    }
+
+    // La bomba se pega, se enciende, y recién entonces estalla.
+    //
+    // La espera no es decoración: sin ella la bomba cae y revienta en el mismo frame, y no se
+    // llega a ver que fue ELLA la que explotó —se lee como un match enorme y raro—. Con la carga,
+    // el jugador ve la bola que acaba de colocar encenderse, y la explosión es su consecuencia.
+    IEnumerator ArmAndBlast(Vector2Int center)
+    {
+        // Sin input ni pausa mientras carga. Otro disparo aterrizando a mitad de la cuenta
+        // cambiaría el tablero sobre el que se calculó la zona que el jugador acaba de ver
+        // marcada; y como la pausa de este juego no congela el tiempo, pausar durante la carga
+        // dejaría la bomba estallando detrás del panel.
+        cannon.SetInputEnabled(false);
+        if (openPausedButton) openPausedButton.interactable = false;
+
+        if (grid.TryGetBubble(center, out var bomb))
+            BombBlast.Charge((RectTransform)bomb.transform, bombBlast);
+
+        // Arranca con la luz, no con la explosión: es el sonido de la mecha.
+        AudioManager.Instance?.PlaySfx(bombChargeClip);
+
+        float charge = Mathf.Max(0f, bombBlast.chargeTime);
+        float lead   = Mathf.Clamp(bombClipLead, 0f, charge);
+
+        if (charge > lead) yield return new WaitForSeconds(charge - lead);
+        AudioManager.Instance?.PlaySfx(bombClip);
+        if (lead > 0f)     yield return new WaitForSeconds(lead);
+
+        if (_levelEnded) yield break;   // el nivel se acabó por otro lado mientras cargaba
+
+        AfterRemoval(ResolveBombBlast(center));
+
+        // Solo si el nivel sigue: con el panel de victoria o derrota ya abierto, devolver el
+        // control sería dejar disparar por detrás de él.
+        if (_levelEnded) yield break;
+
+        cannon.SetInputEnabled(true);
+        if (openPausedButton) openPausedButton.interactable = true;
+    }
+
+    // Lo que hay que mirar después de cualquier remoción, venga de un match o de una explosión.
+    void AfterRemoval(HashSet<Vector2Int> removed)
+    {
         if (removed.Contains(_creatureCell)) _creatureFreed = true;
 
         if (progressScore != null) progressScore.SetScore(LiveScore, _level.star_thresholds);
@@ -467,38 +572,110 @@ public class GameplayController : MonoBehaviour
         }
         _bubblesPopped += matched.Count;
 
-        // Las que caen, de abajo hacia arriba y también escalonadas: es un desmoronamiento, y
-        // soltarlas todas en el mismo frame lo convertía en un bloque que baja de una pieza.
-        var floating  = grid.FindUnreachableFromCeiling();
-        var collapsing = floating.OrderByDescending(cell => cell.y).ToList();
-        float dropStep = ChainStep(collapsing.Count, DROP_CHAIN_DELAY);
-
-        for (int i = 0; i < collapsing.Count; i++)
-        {
-            var cell = collapsing[i];
-            if (grid.TryGetBubble(cell, out var view)) view.PlayDropAnimation(dropClip, i * dropStep);
-            // Las que caen valen fijo, sin racha: el número distinto es justamente lo que hace
-            // ver que se ganaron de otra forma. GridController lo pone a la altura del cañón,
-            // cuando la burbuja terminó de caer.
-            grid.SpawnDropScorePopup(cell, ScoreRules.POINTS_PER_DROP, i * dropStep);
-            grid.RemoveBubble(cell);
-            removed.Add(cell);
-        }
-        _bubblesDropped += floating.Count;
+        var collapsed = CollapseFloating(removed);
 
         // Se acumula acá y no se calcula al final multiplicando el total de burbujas: para
         // entonces la racha de cada disparo ya no se sabe. Y usa el MISMO popValue que se
         // mostró en pantalla, así lo que sumó el marcador es exactamente lo que se vio.
         _popScore += matched.Count * popValue;
 
-        int chainSize = matched.Count + floating.Count;
+        int chainSize = matched.Count + collapsed.count;
 
         // Un golpe de temblor por burbuja, al ritmo de sus pops. Antes era una sola sacudida
         // disparada acá, o sea cuando las burbujas todavía no habían empezado a explotar.
         if (grid.ShakeWorthIt(chainSize))
-            StartCoroutine(ShakeAlongChain(matched.Count, popStep, collapsing.Count, dropStep));
+            StartCoroutine(ShakeAlongChain(matched.Count, popStep, collapsed.count, collapsed.step));
 
         return removed;
+    }
+
+    // La bomba no busca color: revienta un disco hexagonal alrededor de donde cayó, y después
+    // el tablero se desmorona igual que tras un match.
+    //
+    // La bomba CUENTA para la racha de combo, igual que un match: la sube y sus burbujas valen lo
+    // que valga la racha en ese momento (decisión de Diego). Tratarla como un disparo neutro hacía
+    // que una racha de 20 volviera a mostrar 10 al explotar, y se leía como si la bomba la hubiera
+    // roto — que es exactamente lo contrario de lo que un poder debería hacer.
+    HashSet<Vector2Int> ResolveBombBlast(Vector2Int center)
+    {
+        var removed = new HashSet<Vector2Int>();
+
+        // CellsWithinRadius devuelve las celdas en orden de anillo (es un BFS desde el centro),
+        // así que el índice ya es "qué tan lejos del impacto" y alcanza para que la explosión
+        // se abra hacia afuera en vez de reventar todo en el mismo frame.
+        var hit = HexGridMath.CellsWithinRadius(center, BoosterRules.BOMB_RADIUS)
+                             .Where(grid.IsOccupied)
+                             .ToList();
+
+        // Antes de los pops, mientras la burbuja-bomba todavía existe para marcar el lugar.
+        if (grid.TryGetBubble(center, out var bomb))
+            Sparkle.Burst((RectTransform)bomb.transform, bombSparkle);
+
+        // El fogonazo y la onda salen del centro del impacto, en coordenadas del tablero: así la
+        // onda acompaña al tablero si este se desplaza mientras se está abriendo.
+        BombBlast.Play((RectTransform)grid.transform, HexGridMath.CellToLocalPos(center), bombBlast);
+
+        // HeavyImpact, no el LightImpact del resto del juego: cada burbuja que revienta ya da su
+        // propio toque ligero, así que la cadena de diecinueve suena a escombros. El golpe fuerte
+        // va UNA vez y antes que todos ellos — es la explosión, y lo que viene después es su
+        // consecuencia. Con la misma intensidad que los pops, el estallido se perdería entre ellos.
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.HeavyImpact);
+
+        float popStep = ChainStep(hit.Count, POP_CHAIN_DELAY);
+
+        _comboStreak++;
+
+        // Igual que en el match: se calcula una vez porque es el mismo para todas las de este
+        // disparo, y se usa EL MISMO número para el popup y para el marcador, así lo que suma es
+        // exactamente lo que se vio en pantalla.
+        int popValue = ScoreRules.PopValue(_comboStreak);
+
+        for (int i = 0; i < hit.Count; i++)
+        {
+            var cell = hit[i];
+            if (grid.TryGetBubble(cell, out var view))
+                view.PlayPopAnimation(i * popStep, popClip);
+            grid.SpawnScorePopup(cell, popValue, i * popStep, ScorePopup.POP_LIFETIME);
+            grid.RemoveBubble(cell);
+            removed.Add(cell);
+        }
+
+        _bubblesPopped += hit.Count;
+        _popScore      += hit.Count * popValue;
+
+        var collapsed = CollapseFloating(removed);
+
+        if (grid.ShakeWorthIt(hit.Count + collapsed.count))
+            StartCoroutine(ShakeAlongChain(hit.Count, popStep, collapsed.count, collapsed.step));
+
+        return removed;
+    }
+
+    // Todo lo que quedó colgando sin camino al techo se desprende, de abajo hacia arriba y
+    // escalonado: es un desmoronamiento, y soltarlo todo en el mismo frame lo convertía en un
+    // bloque que baja de una pieza.
+    //
+    // Compartido entre el match y la explosión de la bomba: las dos dejan el grid en el mismo
+    // tipo de estado (un agujero), y lo que se cae después de cada una se decide igual.
+    (int count, float step) CollapseFloating(HashSet<Vector2Int> removed)
+    {
+        var collapsing = grid.FindUnreachableFromCeiling().OrderByDescending(cell => cell.y).ToList();
+        float step     = ChainStep(collapsing.Count, DROP_CHAIN_DELAY);
+
+        for (int i = 0; i < collapsing.Count; i++)
+        {
+            var cell = collapsing[i];
+            if (grid.TryGetBubble(cell, out var view)) view.PlayDropAnimation(dropClip, i * step);
+            // Las que caen valen fijo, sin racha: el número distinto es justamente lo que hace
+            // ver que se ganaron de otra forma. GridController lo pone a la altura del cañón,
+            // cuando la burbuja terminó de caer.
+            grid.SpawnDropScorePopup(cell, ScoreRules.POINTS_PER_DROP, i * step);
+            grid.RemoveBubble(cell);
+            removed.Add(cell);
+        }
+        _bubblesDropped += collapsing.Count;
+
+        return (collapsing.Count, step);
     }
 
     // Acompaña la cadena con un golpe de temblor por burbuja, con los mismos tiempos que se le
@@ -556,6 +733,11 @@ public class GameplayController : MonoBehaviour
     void EndLevel(bool won)
     {
         _levelEnded = true;
+
+        // La partida terminó. Al perder esto ya lo hizo LoseLife, pero ganar no pasa por ahí: sin
+        // esta línea, cerrar la app sobre el panel de victoria cobraría una vida por un nivel
+        // que el jugador acababa de ganar.
+        SaveManager.ClearLevelInProgress();
 
         // "Primera vez" = nunca se había GANADO este nivel antes (issue #49) — reemplaza el
         // heurístico viejo basado en MaxUnlockedLevel, que quedaba poco confiable mientras

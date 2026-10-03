@@ -303,7 +303,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Tutorial Description Tutorial Description Tutorial Description
+  m_text: 'Tutorial Description '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2e0e6e539e5d4452e9cc07f5408216aa, type: 2}
   m_sharedMaterial: {fileID: 4171777180409680573, guid: 2e0e6e539e5d4452e9cc07f5408216aa, type: 2}
@@ -723,7 +723,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3853439941456325736
 RectTransform:
   m_ObjectHideFlags: 0
@@ -759,9 +759,13 @@ MonoBehaviour:
   - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
   - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
-  dotSprite: {fileID: 0}
-  bubbleSize: 0.16
+  dotSprite: {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
+  dotColor: {r: 1, g: 1, b: 1, a: 0.85}
+  bubbleSize: 0.1
   dots: 10
+  dotSize: 0.32
+  aimSweep: 30
+  handDistance: 0.42
   holdTime: 0.5
   dragTime: 0.7
   releaseTime: 0.15
@@ -1301,6 +1305,12 @@ MonoBehaviour:
     image: {fileID: 0}
     animation: {fileID: 5916424114649232720}
     once: 0
+  - id: bomb
+    titleKey: ui.tutorial.bomb.title
+    bodyKey: ui.tutorial.bomb.body
+    image: {fileID: 0}
+    animation: {fileID: 9157152008075964167}
+    once: 0
   titleText: {fileID: 6506105488765496103}
   bodyText: {fileID: 5104394503919540149}
   imageSlot: {fileID: 0}
@@ -1338,6 +1348,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3853439941456325736}
+  - {fileID: 2722127346295865928}
   m_Father: {fileID: 8911775597314945009}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1383,3 +1394,74 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &9157152008075964167
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2722127346295865928}
+  - component: {fileID: 5995211956111536111}
+  m_Layer: 0
+  m_Name: TutorialBombDemo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &2722127346295865928
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9157152008075964167}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3588830722398191144}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &5995211956111536111
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9157152008075964167}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b11f52bdcd80e4d96b1f3f2b86433c6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TutorialBombDemo
+  bubbleSprites:
+  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
+  - {fileID: 8811693040233011940, guid: 68cdda231e47a4010b309c4a6f26f53f, type: 3}
+  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
+  - {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
+  bombSprite: {fileID: 2071403333483728115, guid: 889049995aa1941448d12b0865c537d2, type: 3}
+  bombGlowSprite: {fileID: 1505006969088389832, guid: 80daac24c790b47e09242751639cec7c, type: 3}
+  handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
+  bubbleSize: 0.1
+  spin: 1440
+  markColor: {r: 1, g: 1, b: 1, a: 0.85}
+  dots: 12
+  dotSize: 0.6
+  dotColor: {r: 1, g: 1, b: 1, a: 0.9}
+  aimSweep: 30
+  handDistance: 0.42
+  holdTime: 0.6
+  aimTime: 0.7
+  previewTime: 0.9
+  releaseTime: 0.15
+  flyTime: 0.5
+  blastTime: 0.5
+  restTime: 0.9

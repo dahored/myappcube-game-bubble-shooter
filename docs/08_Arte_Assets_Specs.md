@@ -40,7 +40,7 @@
 - [ ] B4 · btn_ad — Figma
 - [ ] B4 · HUD pills — Figma
 - [ ] B5 · Estrellas (star_filled, star_empty) — Figma
-- [ ] B5 · Iconos HUD (corazón, moneda, gema, timer) — Figma + Midjourney
+- [ ] B5 · Iconos HUD (corazón, moneda, timer) — Figma + Midjourney
 - [ ] B5 · Iconos Level Select (lock, check, current) — Figma
 - [ ] B5 · Iconos bottom nav (8 variantes on/off) — Figma + Midjourney
 
@@ -473,7 +473,7 @@ Border: 3px gold_treasure (#F0C040)
 Texto: gold_treasure + icono play video a la izquierda
 ```
 
-#### HUD pill — monedas / gemas / vidas
+#### HUD pill — monedas / vidas
 ```
 Tamaño: ancho variable × 56 px alto
 Border radius: 28 px (completamente redondeado)
@@ -527,7 +527,7 @@ Variantes: 2 por icono — filled + empty
 
 ---
 
-#### Iconos de HUD (vidas, monedas, gemas)
+#### Iconos de HUD (vidas, monedas)
 ```
 Tamaño: 48 × 48 px cada uno
 Formato: PNG con fondo transparente
@@ -538,11 +538,11 @@ Formato: PNG con fondo transparente
 | `icon_heart_full.png` | Corazón lleno (vida activa) | Coral red `#E85D5D` |
 | `icon_heart_empty.png` | Corazón vacío (vida gastada) | Gris `#B0B0B0` |
 | `icon_coin.png` | Moneda de oro | Circle gold, shine arriba-izq |
-| `icon_gem.png` | Gema azul (diamante) | Azul `#4A90D9`, facetas |
+| `icon_gem.png` | Moneda azul (diamante) | Azul `#4A90D9`, facetas |
 | `icon_shots.png` | Burbuja con número (disparos) | Turquesa `#38B2AC` |
 | `icon_timer.png` | Reloj para regen de vidas | Coral `#F4A69F` |
 
-**Prompt Midjourney para moneda y gema (más detalle que Figma):**
+**Prompt Midjourney para la moneda (más detalle que Figma):**
 ```
 single gold coin with star, cute kawaii style, cozy game art,
 glossy metallic finish, clean white background, 2D game icon,

@@ -32,7 +32,7 @@ Este documento es la fuente única de verdad para toda la producción visual de 
 | bubble_purple | #B59FD9 | Burbuja morada |
 | bubble_red | #EE7A7A | Burbuja roja |
 | bubble_orange | #F0A060 | Burbuja naranja (definir con concept) |
-| gold_treasure | #E5BE5C | Gemas, Battle Pass, hitos |
+| gold_treasure | #E5BE5C | Monedas, Battle Pass, hitos |
 | dark_overlay | #0F2238 | Overlays, modo oscuro, derrota |
 
 **Tipografías:**

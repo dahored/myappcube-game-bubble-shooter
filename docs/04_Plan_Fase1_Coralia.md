@@ -19,7 +19,7 @@ El prototipo de Fase 1 deliberadamente **no tiene**:
 - Arte final (placeholders rectangulares de colores está bien)
 - Audio (silencio total)
 - UI bonita (botones nativos de Godot, sin estilo)
-- Monetización (ni gemas, ni vidas, ni Battle Pass)
+- Monetización (ni monedas, ni vidas, ni Battle Pass)
 - Persistencia (cada vez que abrís resetea)
 - Localización (todo en español hardcoded)
 - Onboarding ni splashes

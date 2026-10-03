@@ -17,6 +17,9 @@ public class StartGamePanel : UIPanel
     [SerializeField] Button   playButton;
     [SerializeField] Button   closeButton;
 
+    [Tooltip("Los huecos de booster de la pantalla, en orden. Cuál poder va en cuál lo decide el nivel (LevelData.allowed_boosters), no el Inspector: acá solo se listan los ítems que hay.")]
+    [SerializeField] BoosterItemView[] boosterSlots;
+
     [Header("Ícono según el objetivo (level.objective.type)")]
     [SerializeField] Image  objectiveIcon;
     [SerializeField] Sprite clearAllIcon;
@@ -62,7 +65,33 @@ public class StartGamePanel : UIPanel
 
         if (objectiveIcon) objectiveIcon.sprite = isRescue ? rescueIcon : clearAllIcon;
 
+        ShowBoosters(level);
+
         Open();
+    }
+
+    // Qué boosters ofrece ESTE nivel. Van en el JSON y no en el Inspector porque son una decisión
+    // de diseño de niveles —qué ayudas tienen sentido para este objetivo— igual que los tutoriales.
+    void ShowBoosters(LevelData level)
+    {
+        var allowed = BoosterRules.AllowedFor(level);
+
+        // La selección NO se recuerda entre aperturas. Equipar algo que cuesta dinero tiene que
+        // ser un acto deliberado cada vez: entrar al nivel con un booster puesto que el jugador no
+        // eligió termina en dispararlo por inercia, y ese gasto después se siente robado.
+        //
+        // Se limpia acá y no al terminar el nivel porque este es el único camino de entrada: así
+        // da igual cómo se saliera de la partida anterior —ganando, con la X o matando la app.
+        //
+        // El día que exista un booster INFINITO, ese sí tendría que quedar puesto solo: no se
+        // gasta, así que no hay nada de qué proteger al jugador y pedirle el toque es fricción.
+        BoosterLoadout.Clear();
+
+        if (boosterSlots == null) return;
+
+        for (int i = 0; i < boosterSlots.Length; i++)
+            if (boosterSlots[i] != null)
+                boosterSlots[i].Bind(i < allowed.Length ? allowed[i] : BubbleSpecial.None);
     }
 
     void PlaySelectedLevel()

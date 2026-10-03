@@ -43,6 +43,11 @@ public abstract class UIPanel : MonoBehaviour
     // adentro del panel, en vez de aparecer de golpe mientras la card todavía está entrando.
     public event System.Action OnOpened;
 
+    // Si el panel ya terminó de abrirse. Lo necesita cualquier cosa que se encienda DENTRO de un
+    // panel ya abierto y quiera animar su aparición: OnOpened ya pasó y no vuelve, así que
+    // suscribirse a él la dejaría esperando un evento que nunca llega.
+    public bool IsOpen { get; private set; }
+
     CanvasGroup _overlay;
     Vector3     _baseScale;
     Coroutine   _anim;
@@ -58,7 +63,11 @@ public abstract class UIPanel : MonoBehaviour
         Swap(ref _anim, AnimOpen());
     }
 
-    public virtual void Close() => Swap(ref _anim, AnimClose());
+    public virtual void Close()
+    {
+        IsOpen = false;
+        Swap(ref _anim, AnimClose());
+    }
 
     void Init()
     {
@@ -76,6 +85,7 @@ public abstract class UIPanel : MonoBehaviour
 
     IEnumerator AnimOpen()
     {
+        IsOpen = false;
         _overlay.alpha = 0f;
         if (animateScale) SetCardScale(0f);
 
@@ -91,6 +101,7 @@ public abstract class UIPanel : MonoBehaviour
 
         _overlay.alpha = 1f;
         if (animateScale) SetCardScale(1f);
+        IsOpen = true;
         OnOpened?.Invoke();
     }
 

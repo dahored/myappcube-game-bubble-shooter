@@ -50,8 +50,11 @@ public class PopInView : MonoBehaviour
         transform.localScale = Vector3.zero;
         SetClickBlocked(true);
 
-        if (_panel != null) _panel.OnOpened += PlayPop;
-        else                PlayPop();
+        // Con el panel ya abierto se anima en el acto: este elemento no está apareciendo CON el
+        // panel sino encendiéndose a mitad —un check que se marca, un badge que aparece— y ahí
+        // OnOpened ya pasó y no vuelve, así que esperarlo sería quedarse en escala 0 para siempre.
+        if (_panel != null && !_panel.IsOpen) _panel.OnOpened += PlayPop;
+        else                                  PlayPop();
     }
 
     void OnDisable()

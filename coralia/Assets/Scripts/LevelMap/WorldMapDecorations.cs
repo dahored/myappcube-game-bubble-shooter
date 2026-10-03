@@ -295,7 +295,30 @@ public class WorldMapDecorations : MonoBehaviour, IWorldMapRebuildable
         return height;
     }
 
+    // Todo lo que se planta es regenerable: Clear() borra la tanda anterior y Rebuild() la vuelve
+    // a sembrar desde el catálogo. Sin DontSave, como este componente es [ExecuteAlways], cada vez
+    // que la escena se abre y se guarda en el editor la tanda entera queda escrita dentro del
+    // .unity — y la siguiente se escribe encima de esa. Así llegó esta escena a 2.841 objetos y
+    // 264.000 líneas, con cientos de "(Clone)" dentro.
+    //
+    // Recursivo porque DontSave no se hereda: un prefab con hijos dejaría los hijos serializados.
+    static void MarkGenerated(GameObject go)
+    {
+        go.hideFlags = HideFlags.DontSave;
+
+        foreach (Transform child in go.transform) MarkGenerated(child.gameObject);
+    }
+
     GameObject Build(DecorationCatalog.Entry entry, DecorationPlacement placement)
+    {
+        var built = BuildInstance(entry, placement);
+
+        if (built != null) MarkGenerated(built);
+
+        return built;
+    }
+
+    GameObject BuildInstance(DecorationCatalog.Entry entry, DecorationPlacement placement)
     {
         if (entry.prefab)
         {

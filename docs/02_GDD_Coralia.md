@@ -20,7 +20,7 @@ El concepto creativo (visión, tema, pilares, audiencia) ya está fijado en `01_
 3. **Power-ups** — qué hace cada uno, cuándo se usan, qué cuestan
 4. **Sistemas de progresión del jugador** — XP, niveles, desbloqueos
 5. **Meta-juego: el Santuario** — restauración del arrecife, criaturas rescatadas
-6. **Economía** — monedas, gemas, vidas, drops, costos
+6. **Economía** — monedas, vidas, drops, costos
 7. **Sistemas de retención** — racha, daily, misiones, eventos, leaderboards
 8. **Battle Pass** — temporadas, tracks, recompensas
 9. **Monetización** — IAP, ads, suscripción
@@ -85,7 +85,7 @@ El jugador toca y arrastra desde la parte inferior de la pantalla para apuntar u
 1. Se acaban los disparos disponibles sin cumplir el objetivo.
 2. El "techo" del grid llega a la línea de muerte (en niveles donde el techo desciende cada N disparos — opcional por nivel).
 
-Al perder, se ofrece **continuar** viendo un anuncio (rewarded ad → +5 disparos) o gastando gemas (configurable, ~10-15 gemas).
+Al perder, se ofrece **continuar** viendo un anuncio (rewarded ad → +5 disparos) o gastando monedas (configurable, ~10-15).
 
 ### 1.7 Decisiones lockeadas (2026-04-30)
 
@@ -161,7 +161,7 @@ Nivel       1   5   10  15  20  25  30  35  40  45  50  55  60
 | Onboarding | 1–10 | 90-95% | Muy fáciles. El objetivo es enganchar y enseñar mecánicas básicas. Ningún jugador debería quedarse atascado. |
 | Introducción | 11–25 | 70-80% | Se introducen mecánicas nuevas (un obstáculo cada ~5 niveles). Algunos retries esperados. |
 | Media | 26–40 | 50-60% | Combinaciones de mecánicas. Aquí aparecen las primeras tentaciones de power-ups. |
-| Difícil | 41–55 | 30-40% | Walls de pago estratégicos. Estos niveles son los que monetizan: continuar con ad o gemas. |
+| Difícil | 41–55 | 30-40% | Walls de pago estratégicos. Estos niveles son los que monetizan: continuar con ad o monedas. |
 | Climax | 56–60 | 20-30% | Niveles "hito" antes de revelar la Ciudad de las Perlas. Difíciles pero satisfactorios cuando se ganan. |
 
 **Niveles "muro" estratégicos:** 7, 15, 23, 35, 45, 55. Son ligeramente más difíciles que los vecinos para crear momentos donde el jugador considera usar un power-up o ver un anuncio. Validar tras soft launch con datos reales.
@@ -204,24 +204,96 @@ Coralia usará un flujo híbrido para crear y mantener niveles. Esto hace sosten
 
 ### 3.1 Filosofía de power-ups
 
-Los power-ups en Coralia tienen tres propósitos: **(1)** dar al jugador casual herramientas para superar walls de pago sin frustrarse, **(2)** crear momentos de monetización (gemas o ads), **(3)** enriquecer el puzzle con variedad de soluciones. Se evita el pay-to-win: ningún power-up resuelve un nivel automáticamente; solo facilitan.
+Los power-ups en Coralia tienen tres propósitos: **(1)** dar al jugador casual herramientas para superar walls de pago sin frustrarse, **(2)** crear momentos de monetización (monedas o ads), **(3)** enriquecer el puzzle con variedad de soluciones. Se evita el pay-to-win: ningún power-up resuelve un nivel automáticamente; solo facilitan.
 
-### 3.2 Power-ups del MVP
+### 3.2 Las dos familias
 
-Seis power-ups iniciales, cubriendo distintos casos de uso:
+> **Actualizado 2026-10-03.** Antes había seis power-ups de un solo tipo. Ahora son **diez,
+> repartidos en dos familias** con naturalezas distintas, igual que hace Candy Crush. La regla que
+> decide a cuál pertenece cada uno es una sola: **si el jugador tiene que elegir dónde o cuándo,
+> es de gameplay; si se aplica solo, es de inicio.**
 
-| Power-up | Efecto | Costo (gemas) | Cuándo se desbloquea |
+#### De inicio (5)
+
+Se eligen en la pantalla previa y se aplican al empezar. Ninguno pide una decisión durante la
+partida. Cada uno toca una palanca distinta del nivel.
+
+| Power-up | Efecto | Problema que resuelve | Palanca |
 |---|---|---|---|
-| **Bomba de coral** | Explota una zona 3x3 alrededor del impacto. Útil para limpiar racimos densos. | 8 | Nivel 5 |
-| **Rayo de luz** | Elimina una columna entera de burbujas en línea recta. | 10 | Nivel 12 |
-| **Cambio de color** | Cambia la burbuja actual del cañón al color que el jugador elija. | 6 | Nivel 18 |
-| **Mira láser** | Muestra trayectoria extendida con TODOS los rebotes durante 3 disparos. | 7 | Nivel 24 |
-| **Pez explorador** | Un pez nada por el grid eliminando 5 burbujas aleatorias del color que elijas. | 12 | Nivel 32 |
-| **Burbuja de aire** | Una burbuja adicional al cañón. Suma +1 disparo al límite del nivel. | 5 | Nivel 8 |
+| **Reserva de Oxígeno** | +5 al límite de disparos | Me quedé corto por poco | Cuántos disparos tengo |
+| **Perla Arcoíris** | La primera burbuja del cañón es comodín | La apertura me sale mal | Cómo abro |
+| **Marea Baja** | Al empezar, borra la fila más baja del tablero | El nivel abre demasiado apretado | Cuántas burbujas hay |
+| **Agua Clara** | El color con menos burbujas se convierte al color con más, y deja de salir del cañón | Ese color del que quedan tres sueltas e imposibles de juntar | Cuántos colores hay |
+| **Corriente Favorable** | Durante todo el nivel, el cañón favorece los colores que más abundan en el tablero | Me sale justo el color que no necesito | Qué color me toca |
 
-### 3.3 Activación
+**Agua Clara convierte, no elimina.** Borrar esas burbujas resolvería parte del objetivo solo
+—y dispararía la caída de todo lo que colgara de ellas, que es un efecto que nadie previó al
+balancear el nivel—. Convirtiéndolas, el tablero sigue igual de lleno pero el jugador se lleva un
+racimo grande que revienta **con su disparo**: el mérito es suyo, no del power-up.
 
-Power-ups se compran y equipan en la pantalla **pre-nivel** (antes de empezar). Máximo **3 power-ups equipados por nivel**. Una vez equipados, durante el gameplay el jugador los activa tocando el ícono correspondiente en el HUD inferior. Activar consume el power-up (no es consumible permanente, es un único uso).
+#### De gameplay (5)
+
+Viven en el HUD. Ninguno sirve sin elegir dónde o cuándo.
+
+| Power-up | Efecto | Problema que resuelve | Cómo se activa |
+|---|---|---|---|
+| **Bomba de Coral** | Revienta un hexágono de radio 2 alrededor del impacto (19 burbujas) | Racimo denso sin match posible | Se carga en el cañón |
+| **Torpedo** | Barre entera la fila horizontal donde impacte | El grid se me vino encima | Se carga en el cañón |
+| **Pez Explorador** | Al impactar se divide en tres: uno revienta la burbuja tocada y los otros dos van a por las dos burbujas **más aisladas** de ese mismo color | Un color disperso que no junto | Se carga en el cañón |
+| **Tinta de Pulpo** | Al impactar, el pulpo se suelta y salpica 4 burbujas al azar dentro del radio, tiñéndolas del color que vuelve a la recámara | Tengo este color y ningún sitio donde pegarlo | Se carga en el cañón |
+| **Pinza de Langosta** | Tocas una burbuja del tablero y la destruye. No gasta disparo | *Esa* burbuja que sostiene todo | Selección sobre el tablero |
+
+**El Pez caza las aisladas, no las cercanas.** Si fuera a las más próximas al impacto sería una
+bomba pequeña y peor. Yendo a las que menos vecinos de su color tienen, ataca justo lo que el
+jugador no puede resolver por su cuenta — y no necesita entender la regla: ve que caza las sueltas.
+
+**La Tinta tiñe del color que VUELVE, no del que disparas.** La bomba no consume la cola: al
+dispararla, el color que estaba en la recámara vuelve tal cual, y la Tinta funciona igual. Teñir
+del color disparado haría match al instante y todo reventaría en el mismo movimiento — un efecto,
+no una jugada. Teñir del que vuelve deja el terreno sembrado y el remate es del jugador, en el
+disparo siguiente.
+
+Ese color no se ve mientras el pulpo está cargado, así que **la marca de zona de la mira se pinta
+de él**: apuntas, ves la mancha del color que va a aplicar, y sabes qué va a pasar sin que nadie te
+lo explique. De paso tapa el mismo hueco que la bomba tiene hoy — con un especial cargado, el
+jugador no sabe qué color recupera.
+
+**Cuatro de los cinco se cargan en el cañón y se apuntan.** Solo la Pinza pide una forma distinta
+de activación (tocar el tablero), así que es la única que exige una pieza de interfaz nueva.
+
+**Qué se descartó y por qué**
+
+- **Mira láser** (trayectoria extendida). Coralia **ya dibuja todos los rebotes** hasta el impacto
+  (`TrajectoryLine`). Venderlo sería cobrar por lo que el juego regala. Venía de asumir una mira
+  corta, como la de Puzzle Bobble.
+- **Rayo de luz** como columna. En grid hexagonal las filas impares van media burbuja desplazadas,
+  así que una columna sale en zigzag y se lee como un fallo. Pasa a ser el Torpedo, horizontal, que
+  además provoca el desplome de todo lo que colgaba.
+- **Escudo de techo.** No aplica: en Coralia el grid **se aleja** del cañón cuando se llena
+  (`GridController.scrollTriggerRatio`), no baja hacia el jugador. No hay presión que proteger.
+- **Tercer color visible en la cola.** Solo sirve si puedes planear dos tiros seguidos, y el primer
+  disparo ya cambió el tablero para el segundo.
+- **Rebobinar el último disparo.** Deshacer significa devolver una burbuja ya pegada y recalcular
+  la cadena que provocó. Mucha complejidad para algo que se lee como "me perdonaron".
+
+### 3.3 Activación y desbloqueo
+
+Los **de inicio** se eligen en la pantalla previa al nivel y se aplican solos al empezar.
+
+Los **de gameplay** aparecen en el HUD y se activan tocando su ícono. Los tres que se cargan en el
+cañón transforman la burbuja de la recámara y se gastan al disparar; los otros dos actúan sin
+gastar disparo. Tocar el ícono de uno ya cargado lo **descarga** sin gastarlo: cargarlo por error
+cuesta monedas de verdad.
+
+Todos son de un solo uso. No hay power-ups permanentes.
+
+**El desbloqueo va por tutorial**: un power-up aparece disponible cuando el jugador ha visto la
+explicación de ese poder (`BoosterRules.IsUnlocked`). En qué nivel ocurre eso se decide poniendo su
+id en el `tutorials` del JSON de ese nivel — ver 4.3 para el orden previsto.
+
+Qué power-ups **ofrece** cada nivel se escribe en su `allowed_boosters`: es una decisión de diseño
+de niveles, porque qué ayudas tienen sentido depende del objetivo. Un nivel que no diga nada usa el
+trío por defecto.
 
 ### 3.4 Adquisición no-monetaria
 
@@ -232,15 +304,20 @@ Para evitar sentirse pay-to-win:
 - **Daily rewards:** el día 4 y 7 incluyen power-ups.
 - **Logros:** desbloquear un logro otorga power-ups específicos.
 - **Daily missions:** algunas misiones recompensan con power-ups.
+- **Al presentarlos:** el nivel que explica un power-up por primera vez regala **dos**
+  (`BoosterRules.TUTORIAL_GRANT`). Uno se carga solo para que lo dispare sin buscar nada, y el otro
+  queda en el inventario para que lo use cuando él quiera — que es cuando de verdad se aprende
+  para qué sirve.
 
 ### 3.5 Decisiones lockeadas
 
 | Decisión | Valor | Razón |
 |---|---|---|
-| Total power-ups MVP | **6** | Plan Maestro recomienda 4-6. Seis cubre todos los casos sin saturar UI. |
-| Activación | Pre-nivel + tap durante gameplay | Estándar moderno. |
-| Cap por nivel | **3 equipados** | Balance entre opciones tácticas y simplicidad. |
-| Duración | Single-use por nivel | No hay power-ups permanentes (anti-P2W). |
+| Total power-ups MVP | **10** (5 de inicio + 5 de gameplay) | Cada uno resuelve un problema que ningún otro resuelve. |
+| Reparto entre familias | Pide decisión al jugador → gameplay. Se aplica solo → inicio. | Una sola regla, sin casos a juzgar. |
+| Cap por nivel | **3 de inicio equipados. Los de gameplay, todos los desbloqueados.** | Los de inicio se pagan por partida y hay que elegir; los de gameplay solo cuestan si los usas, así que limitarlos no protege de nada. |
+| Duración | Single-use | No hay power-ups permanentes (anti-P2W). |
+| Precios | Sin fijar | Ver el issue de recalibración de la economía: los únicos anclajes válidos son los tres precios ya implementados (GDD 6.3). |
 
 ## 4. Sistemas de progresión del jugador
 
@@ -397,7 +474,7 @@ La economía de Coralia está diseñada bajo los tres principios validados por l
 
 Esto se traduce en reglas concretas:
 - **Anti pay-to-win:** los power-ups y boosts solo facilitan, nunca resuelven automáticamente. Un jugador free puede ganar cualquier nivel.
-- **Catch-up sano:** los free players reciben drops de gemas regulares (~1 por nivel ganado) que se acumulan a lo largo del tiempo.
+- **Catch-up sano:** los free players reciben drops de monedas regulares (~1 por nivel ganado) que se acumulan a lo largo del tiempo.
 - **Sin presión agresiva:** los popups de tienda aparecen solo en momentos relevantes (perdiste un nivel, vidas en cero), nunca interrumpiendo el juego.
 
 ### 6.2 Sistema de vidas
@@ -409,71 +486,67 @@ Esto se traduce en reglas concretas:
 | Vida perdida por | Fallar un nivel | Ganar no consume vidas |
 | Vida regalada por amigo | +1 (cap diario: 5 vidas recibidas) | Pilar social asíncrono |
 | Vida vía rewarded ad | 1 vida cada 2 horas (cap 3/día) | Driver de ad revenue |
-| Refill instantáneo | 100 gemas (las 5 vidas) o 25 gemas por unidad | Conveniencia premium |
+| Refill instantáneo | 20 monedas las 5 vidas (4 por unidad) | Implementado — `RefillLivesPanel` |
+| Vidas infinitas | 47 monedas por 3 h | Implementado — `RefillLivesPanel` |
 
-### 6.3 Monedas (soft currency)
+### 6.3 Monedas (moneda única del juego)
 
-Las **monedas** son la moneda casual del juego. Se ganan jugando y se gastan en compras frecuentes y de bajo valor. Visualmente representadas por **perlas pequeñas**.
+> **Actualizado 2026-10-02 — se eliminaron las gemas.** El GDD original definía dos monedas:
+> monedas (soft, se gana jugando) y gemas (hard, se compra). Nunca llegó a haber arte ni UI para
+> la segunda, y el código las consolidó en una sola (ver `SaveManager.Coins`). Esta sección
+> reemplaza a las antiguas 6.3 y 6.4.
+>
+> La consecuencia que hay que tener presente al balancear: **una sola moneda tiene que cumplir los
+> dos papeles a la vez** — la que llueve por jugar y la que traba las ofertas de pago. Si se gana
+> con facilidad, ninguna oferta aprieta; si escasea, el juego se siente tacaño. Por eso hoy
+> **completar un nivel no da monedas** (ver `GameplayController.CalculateAwards`): van a venir del
+> santuario, las dailies, las misiones y los logros, no de la sola acción de pasar de nivel.
+
+Las **monedas** son la única moneda del juego. Visualmente representadas por **perlas**.
 
 **Cómo se ganan:**
 
-| Fuente | Cantidad típica |
-|---|---|
-| Completar nivel (capítulo 1) | 50 monedas |
-| Completar nivel (capítulo 2-3) | 75 monedas |
-| Completar nivel (capítulo 4-6) | 100 monedas |
-| Primera completación (bonus único por nivel) | +50% sobre la base |
-| Drop pasivo del santuario | 5-25 monedas/hora (ver sección 5.4) |
-| Daily rewards | 50-200 monedas (ver sección 7) |
-| Misiones diarias | 100-300 monedas |
+| Fuente | Cantidad típica | Estado |
+|---|---|---|
+| Saldo inicial | 50 | Implementado |
+| Completar nivel | — | **Retirado a propósito**, ver el recuadro de arriba |
+| Drop pasivo del santuario | 5-25 por hora (ver 5.4) | Sin implementar |
+| Daily rewards | 50-200 (ver 7) | Sin implementar |
+| Misiones diarias | 100-300 | Sin implementar |
+| Logros | Variable según rareza | Sin implementar |
+| Battle Pass (ambos tracks) | Ver sección 8 | Sin implementar |
 
 **Cómo se gastan:**
 
-| Compra | Costo |
-|---|---|
-| 1 vida | 200 monedas |
-| Retry inmediato sin perder vida (solo dentro del nivel actual) | 150 monedas |
-| Skin común | 1,500-3,000 monedas |
-| Decoraciones del santuario (cosmético) | 500-2,000 monedas |
+| Compra | Costo | Estado |
+|---|---|---|
+| Refill de las 5 vidas | 20 (4 por vida que falte) | Implementado |
+| Vidas infinitas 3 h | 47 | Implementado |
+| Continuar el nivel (+5 disparos) | 10, y +5 por cada vez en la misma partida | Implementado |
+| Bomba de Coral | Por definir | El booster existe; falta su panel de compra |
+| Los otros cinco power-ups | Por definir | Sin implementar |
+| Skins y decoraciones del santuario | Por definir | Sin implementar |
 
-### 6.4 Gemas (hard currency)
+> **Las cifras "por definir" no se heredan del GDD viejo.** Las dos escalas anteriores eran
+> incompatibles entre sí —200 monedas por vida frente a 25 gemas por la misma vida— y la que quedó
+> viva es la de los tres precios ya implementados. Cualquier precio nuevo se calibra contra esos
+> tres, no contra las tablas que había antes.
 
-Las **gemas** son la moneda premium. Se obtienen lentamente jugando o comprándolas con dinero real. Visualmente representadas por **perlas iridiscentes / cristales**.
+### 6.4 Gemas — eliminadas
 
-**Cómo se ganan en juego:**
+No existen. Lo que decía esta sección está recogido en 6.3. Se deja el encabezado porque hay
+referencias cruzadas a "§6.4" repartidas por el resto de los documentos y por el código.
 
-| Fuente | Cantidad típica |
-|---|---|
-| Completar nivel (random drop ~30%) | 1-3 gemas |
-| Primera completación de nivel | +1-3 gemas |
-| Daily rewards (días 3, 6, 7) | 5, 10, 25 gemas |
-| Logros | 5-50 gemas según rareza |
-| Battle Pass (free + premium tracks) | Ver sección 8 |
-| Eventos especiales | Variable |
+### 6.5 IAP packs (compra de monedas con dinero real)
 
-**Promedio aproximado de gema-rate para un free player activo:** ~30-50 gemas por semana sin gastar dinero. Suficientes para usar power-ups ocasionalmente o comprar 1-2 vidas, pero no para cubrir todas las necesidades cuando el juego se pone difícil — ahí entra la monetización.
+Tabla de packs siguiendo el principio de **valor creciente** — cada tier ofrece más monedas por dólar que el anterior, incentivando compras grandes:
 
-**Cómo se gastan:**
+> **Las cantidades están sin recalibrar.** Se escribieron para las gemas, que eran ~5 veces más
+> caras que la moneda que quedó. Los **precios en dólares sí se mantienen** (son estándar de la
+> plataforma); lo que hay que rehacer es cuántas monedas da cada tier, contra los precios reales
+> de 6.3.
 
-| Compra | Costo en gemas |
-|---|---|
-| 1 vida | 25 |
-| Refill completo (5 vidas) | 100 |
-| Continuar nivel (+5 disparos al fallar) | 15 |
-| Bomba de coral (power-up) | 8 |
-| Rayo de luz | 10 |
-| Cambio de color | 6 |
-| Mira láser | 7 |
-| Pez explorador | 12 |
-| Burbuja de aire | 5 |
-| Skip de timer (Battle Pass o evento) | 1 gema/hora |
-| Premium Battle Pass (alternativa al pago directo) | 500-900 gemas |
-
-### 6.5 IAP packs (compra de gemas con dinero real)
-
-Tabla de packs siguiendo el principio de **valor creciente** — cada tier ofrece más gemas por dólar que el anterior, incentivando compras grandes:
-
-| Pack | Precio USD | Gemas | Bonus | Razón comercial |
+| Pack | Precio USD | Monedas | Bonus | Razón comercial |
 |---|---|---|---|---|
 | Burbujita | $0.99 | 80 | — | Entry point. Pago bajo de fricción. |
 | Concha | $4.99 | 450 | +13% | Sweet spot de conversión casual. |
@@ -482,7 +555,7 @@ Tabla de packs siguiendo el principio de **valor creciente** — cada tier ofrec
 | Perla Real | $49.99 | 6,000 | +50% | Whale pack. ~5% de spenders. |
 | Cofre Mítico | $99.99 | 13,000 | +63% | Whale absoluto. ~1% de spenders. |
 
-**Starter Pack** (oferta única primera semana): **$2.99 → 250 gemas + 5 vidas full + 3 power-ups variados**, con etiqueta "Valor $9.99". Conversión esperada: 5-10% de nuevos usuarios (Plan Maestro). Este pack es **la oferta más importante del juego** porque convierte a free players en spenders por primera vez, y un spender de $2.99 tiene ~40% de chance de hacer un segundo IAP en los siguientes 30 días.
+**Starter Pack** (oferta única primera semana): **$2.99 → 250 monedas + 5 vidas full + 3 power-ups variados**, con etiqueta "Valor $9.99". Conversión esperada: 5-10% de nuevos usuarios (Plan Maestro). Este pack es **la oferta más importante del juego** porque convierte a free players en spenders por primera vez, y un spender de $2.99 tiene ~40% de chance de hacer un segundo IAP en los siguientes 30 días.
 
 **Reglas del Starter Pack:**
 - Aparece como popup durante los **primeros 7 días** desde install
@@ -500,17 +573,20 @@ Tabla de packs siguiendo el principio de **valor creciente** — cada tier ofrec
 
 Tabla de cuánto recibe en promedio un jugador que completa un nivel. Calibrada para que un jugador free pueda jugar 60-80 niveles sin nunca pagar y sentirse satisfecho:
 
+> **Esta tabla describe el plan, no lo implementado.** Hoy completar un nivel no da monedas
+> (ver 6.3); el resto de las filas tampoco existe todavía.
+
 | Recurso | Drop típico (por nivel completado) |
 |---|---|
-| Monedas | 50-100 (según capítulo) |
-| Gemas (random ~30% de niveles) | 1-3 |
+| Monedas | Retirado por ahora — ver 6.3 |
 | Power-up gratis (random ~10% de niveles) | 1 power-up aleatorio |
 | Battle Pass XP | 50-100 |
 | Criatura (cuando aplica al objetivo) | 1 criatura nueva al santuario |
 
-**Promedio acumulado tras 60 niveles completados (jugador free):**
-- ~4,500 monedas
-- ~50-80 gemas (sin contar daily, achievements, battle pass)
+**Promedio acumulado tras 60 niveles completados (jugador free):** sin calcular. El número viejo
+asumía el drop por nivel y las dos monedas; hay que rehacerlo cuando existan las fuentes reales
+(santuario, dailies, misiones, logros).
+
 - ~6 power-ups gratis
 - 30-40 criaturas en el santuario
 
@@ -522,9 +598,9 @@ Momento clave de monetización. Cuando el jugador se queda sin disparos antes de
 |---|---|---|
 | **Aceptar derrota** | Pierde 1 vida | Gratis (default) |
 | **Ver rewarded ad** | +5 disparos al nivel actual | Gratis (cap 5 ads/día) |
-| **Pagar gemas** | +5 disparos | 15 gemas |
+| **Pagar monedas** | +5 disparos | 10, y +5 por cada vez en la misma partida |
 
-La pantalla muestra primero la opción del ad (más prominente), luego la opción de gemas. Esto sigue principio de fairness: los free players siempre tienen el ad como salida.
+La pantalla muestra primero la opción del ad (más prominente), luego la de pagar. Esto sigue principio de fairness: los free players siempre tienen el ad como salida.
 
 ### 6.8 Sources vs Sinks (balance económico)
 
@@ -535,26 +611,20 @@ Para que la economía no se rompa (jugadores acumulando demasiado o muy poco), l
 - Sinks/semana esperados: ~4,000-5,000 monedas (vidas ocasionales + 1 cosmético)
 - Buffer mensual: positivo, jugador siente "abundancia" en monedas
 
-**Gemas (free player):**
-- Sources/semana: ~30-50 gemas
-- Sinks/semana: ~40-60 gemas (1-2 power-ups/sesión, vida ocasional)
-- Buffer mensual: ligeramente negativo → presión orgánica para comprar gemas en momentos de wall
-
-**Gemas (paying player que compra Concha $4.99/mes):**
-- Sources/semana: ~30-50 + (450 gemas/mes) = ~140 gemas/semana
-- Sinks/semana: ~100-130 (compra de power-ups con menos restricción)
-- Buffer: positivo, sensación de holgura
+> El desglose por moneda que había acá ya no aplica: con una sola moneda, las dos columnas se
+> funden en la de arriba. Queda pendiente rehacer el balance cuando existan las fuentes reales —
+> hoy no hay ninguna, así que el único saldo que un jugador puede tener es el inicial de 50.
 
 ### 6.9 Decisiones lockeadas
 
 | Decisión | Valor | Razón |
 |---|---|---|
-| Dual currency | Monedas (soft) + Gemas (hard) | Estándar mobile F2P. Permite gating fino. |
+| Moneda única | Monedas | Las gemas se eliminaron en 2026-10: nunca tuvieron arte ni UI, y dos monedas sin la segunda implementada solo generaban cifras que no coincidían con el juego. |
 | Vidas máximas | 5 | Plan Maestro |
 | Regen vida | 30 min | Plan Maestro |
 | Pricing tiers IAP | $0.99 / $4.99 / $9.99 / $19.99 / $49.99 / $99.99 | Estándar mobile + bonus creciente |
 | Starter Pack | $2.99 → "valor $9.99" en primera semana | Plan Maestro |
-| Continuar nivel | 15 gemas o ad gratis (cap 5/día) | Balance fairness + ad revenue |
+| Continuar nivel | 10 monedas (+5 por reintento) o ad gratis (cap 5/día) | Balance fairness + ad revenue |
 | Filosofía | Anti pay-to-win, generoso con free | Estándar 2026 |
 
 ### 6.10 Cadencia de ofertas (offer rotation)
@@ -588,9 +658,14 @@ Estos números son **hipótesis** que se validan con datos reales en Fase 3 (sof
 - **D1 / D7 / D30 retention:** 40% / 20% / 8% mínimo viable
 - **Wall fail rate** en niveles 35, 45, 55: deben ser difíciles pero no rage-quit
 
-Si la data muestra que los drops de gemas son demasiado generosos (jugadores no necesitan comprar), se reduce. Si son muy restrictivos (alta uninstall en walls), se afloja. El balance final solo se conoce con jugadores reales.
+Si la data muestra que los drops de monedas son demasiado generosos (jugadores no necesitan comprar), se reduce. Si son muy restrictivos (alta uninstall en walls), se afloja. El balance final solo se conoce con jugadores reales.
 
 ## 7. Sistemas de retención
+
+> **Los montos de esta sección y de la 8 están sin recalibrar.** Se escribieron cuando había dos
+> monedas: donde un premio decía "150 monedas + 2 gemas", al eliminarse las gemas se quedó solo
+> con la parte en monedas. Los números siguen sirviendo para ver la FORMA de la recompensa —cuál
+> es mayor que cuál— pero las cantidades hay que rehacerlas contra los precios reales de 6.3.
 
 ### 7.1 Filosofía de retención
 
@@ -601,7 +676,7 @@ Tres mecánicas psicológicas guían el diseño:
 | Mecánica | Cómo se usa en Coralia |
 |---|---|
 | **Loss aversion** (perder duele más que ganar) | Racha diaria — perderla cuesta emocionalmente. Vidas que regeneran (no perder oportunidad). |
-| **Variable rewards** (recompensa variable es más adictiva que fija) | Drops aleatorios de gemas y power-ups. Cofres con contenido sorpresa. |
+| **Variable rewards** (recompensa variable es más adictiva que fija) | Drops aleatorios de monedas y power-ups. Cofres con contenido sorpresa. |
 | **Sunk cost** (más invertido = menos quiero abandonar) | Santuario que crece, criaturas coleccionables, Battle Pass que avanza. |
 
 ### 7.2 Racha diaria (Daily Streak)
@@ -612,15 +687,15 @@ Loop de 7 días con recompensa creciente. Rompe la racha si pierde un día.
 |---|---|---|
 | 1 | 50 monedas | Bajo, friendly entrance |
 | 2 | 100 monedas | |
-| 3 | 5 gemas | Primera gema "gratis" |
+| 3 | 5 monedas | Primera moneda "gratis" |
 | 4 | 1 power-up aleatorio | |
 | 5 | 200 monedas + 1 vida | |
-| 6 | 10 gemas | |
-| 7 | **25 gemas + 1 power-up raro + 1 skin de burbuja** | Gran recompensa, lo que mantiene la racha viva |
+| 6 | 10 monedas | |
+| 7 | **25 monedas + 1 power-up raro + 1 skin de burbuja** | Gran recompensa, lo que mantiene la racha viva |
 
-**Rotación:** tras el día 7, vuelve al día 1. La recompensa del día 7 escala ligeramente con el ciclo (semana 2 día 7 da 30 gemas, semana 3 día 7 da 35, etc., con cap en 50).
+**Rotación:** tras el día 7, vuelve al día 1. La recompensa del día 7 escala ligeramente con el ciclo (semana 2 día 7 da 30 monedas, semana 3 día 7 da 35, etc., con cap en 50).
 
-**Streak Shield:** el jugador puede comprar (50 gemas) o ganar (logros) un "escudo de racha" que protege de perder un día si no abre el juego. Máximo 1 escudo activo a la vez.
+**Streak Shield:** el jugador puede comprar (50 monedas) o ganar (logros) un "escudo de racha" que protege de perder un día si no abre el juego. Máximo 1 escudo activo a la vez.
 
 **HUD:** la racha aparece como icono persistente en el santuario. Indicador de tiempo restante en las últimas 4 horas del día ("Tu racha vence en 3h 12m") con animación de urgencia.
 
@@ -634,14 +709,14 @@ Reset cada 24h a la medianoche local del jugador. El sistema selecciona 3 mision
 |---|---|
 | Gana 3 niveles | 100 monedas |
 | Pop 100 burbujas | 100 monedas |
-| Rescata 2 criaturas | 150 monedas + 1 gema |
+| Rescata 2 criaturas | 150 monedas |
 | Usa 5 power-ups | 100 monedas |
 | Gana 1 nivel sin perder vida | 200 monedas |
-| Logra un combo x5 o más | 150 monedas + 2 gemas |
+| Logra un combo x5 o más | 150 monedas |
 | Completa 1 nivel del capítulo más alto desbloqueado | 200 monedas |
 | Visita el santuario de un amigo | 100 monedas |
 
-**Bonus por completar las 3:** un cofre extra con 5 gemas + 1 power-up.
+**Bonus por completar las 3:** un cofre extra con 5 monedas + 1 power-up.
 
 ### 7.4 Weekly missions (5 por semana)
 
@@ -651,13 +726,13 @@ Reset cada lunes 00:00 local. Misiones más grandes que las daily, recompensas m
 
 | Misión | Recompensa típica |
 |---|---|
-| Gana 30 niveles | 20 gemas |
-| Acumula 5,000 monedas | 15 gemas |
-| Rescata 15 criaturas | 25 gemas + 1 power-up raro |
-| Usa 25 power-ups | 15 gemas |
-| Logra 5 primeras completaciones | 30 gemas |
+| Gana 30 niveles | 20 monedas |
+| Acumula 5,000 monedas | 15 monedas |
+| Rescata 15 criaturas | 25 monedas + 1 power-up raro |
+| Usa 25 power-ups | 15 monedas |
+| Logra 5 primeras completaciones | 30 monedas |
 
-**Bonus por completar las 5:** cofre semanal con 50 gemas + 3 power-ups + 1 burbuja arcoíris consumible.
+**Bonus por completar las 5:** cofre semanal con 50 monedas + 3 power-ups + 1 burbuja arcoíris consumible.
 
 ### 7.5 Logros (Achievements)
 
@@ -676,9 +751,9 @@ Reset cada lunes 00:00 local. Misiones más grandes que las daily, recompensas m
 | Constancia | Racha de 7 / 30 / 100 días | Bronce/Plata/Oro |
 
 **Recompensas:**
-- Bronce: 5-10 gemas + 100 monedas
-- Plata: 15-25 gemas + 1 power-up
-- Oro: 50 gemas + skin exclusiva + entrada en hall of fame
+- Bronce: 100 monedas
+- Plata: 15-25 monedas + 1 power-up
+- Oro: 50 monedas + skin exclusiva + entrada en hall of fame
 
 Todos los logros aparecen en pantalla de Profile, con barra de progreso.
 
@@ -709,9 +784,9 @@ Plan Maestro: "Per nivel y global, reset semanal". Adoptado.
 
 | Tipo | Reset | Reward |
 |---|---|---|
-| **Global semanal** | Cada lunes 00:00 UTC | Top 10 → 100 gemas + skin / Top 100 → 50 gemas / Top 1000 → 25 gemas |
-| **Amigos semanal** | Cada lunes | Top 1 entre amigos → 25 gemas y bragging rights |
-| **Per-nivel (high score)** | Persistente | No premia con gemas. Es solo el record del jugador, comparable con amigos. |
+| **Global semanal** | Cada lunes 00:00 UTC | Top 10 → 100 monedas + skin / Top 100 → 50 monedas / Top 1000 → 25 monedas |
+| **Amigos semanal** | Cada lunes | Top 1 entre amigos → 25 monedas y bragging rights |
+| **Per-nivel (high score)** | Persistente | No premia con monedas. Es solo el record del jugador, comparable con amigos. |
 
 **Cómo se acumulan puntos para el global:** suma de scores de niveles ganados durante la semana. Esto incentiva variedad (jugar muchos niveles) y skill (sacar combos largos para más puntos).
 
@@ -727,7 +802,7 @@ Eventos cortos (3-7 días) que rompen la rutina y dan razones extra para jugar. 
 
 | Evento | Duración | Mecánica |
 |---|---|---|
-| Festival de Coral (mensual) | 5 días | Niveles con bonificación de gemas. Leaderboard exclusivo del evento. |
+| Festival de Coral (mensual) | 5 días | Niveles con bonificación de monedas. Leaderboard exclusivo del evento. |
 | Luna Llena Submarina | 3 días | Drop rates de power-ups duplicados. Aparece cada luna llena real (~mensual). |
 | Marea de Coleccionables | 7 días | Una criatura mítica solo aparece durante el evento. Si te la pierdes, vuelve solo en el siguiente ciclo (varios meses). |
 | Holiday Events | Halloween, Navidad, Verano, Año Nuevo | Re-skin temporal del arrecife. Niveles especiales temáticos. |
@@ -809,16 +884,16 @@ Cada acción del jugador otorga XP del Battle Pass. La curva está calibrada par
 | Hito | Recompensa típica |
 |---|---|
 | Tier 1-5 | 50-100 monedas por tier |
-| Tier 5 | 5 gemas |
+| Tier 5 | 5 monedas |
 | Tier 10 | 1 power-up común |
-| Tier 15 | 10 gemas |
+| Tier 15 | 10 monedas |
 | Tier 20 | 1 skin de burbuja exclusiva (free) |
-| Tier 25 | 15 gemas |
+| Tier 25 | 15 monedas |
 | Tier 30 | 1 power-up raro |
-| Tier 35 | 20 gemas |
+| Tier 35 | 20 monedas |
 | Tier 40 | **Decoración exclusiva del santuario** (cosmético free, da bragging rights) |
 
-**Valor total free track aproximado:** 2,500 monedas + 50 gemas + 5 power-ups + 2 cosméticos exclusivos.
+**Valor total free track aproximado:** 2,500 monedas + 5 power-ups + 2 cosméticos exclusivos.
 
 ### 8.5 Premium track ($4.99)
 
@@ -826,18 +901,18 @@ Mismas 40 tiers, pero cada tier tiene una recompensa adicional sustancial. Más 
 
 | Hito | Recompensa adicional (sobre free) |
 |---|---|
-| Activación inmediata al comprar | **No más ads** durante 30 días + 50 gemas instantáneas + 1 vida full + skin "Recién Llegada" |
-| Tier 1-10 | 10-25 gemas adicionales por tier |
+| Activación inmediata al comprar | **No más ads** durante 30 días + 50 monedas instantáneas + 1 vida full + skin "Recién Llegada" |
+| Tier 1-10 | 10-25 monedas adicionales por tier |
 | Tier 5 | Power-up raro extra |
 | Tier 10 | **Skin del cañón exclusiva** |
 | Tier 15 | 1 burbuja arcoíris consumible (rara) |
 | Tier 20 | **Criatura skin exclusiva del santuario** (la criatura del tema de la temporada) |
-| Tier 25 | 100 gemas |
+| Tier 25 | 100 monedas |
 | Tier 30 | Pack de 5 power-ups raros |
-| Tier 35 | 150 gemas |
-| Tier 40 | **Skin de Marina exclusiva del tema de la temporada** + 200 gemas + título cosmético |
+| Tier 35 | 150 monedas |
+| Tier 40 | **Skin de Marina exclusiva del tema de la temporada** + 200 monedas + título cosmético |
 
-**Valor total premium track:** ~700-900 gemas + 15 power-ups + 4 skins exclusivas + 30 días sin ads.
+**Valor total premium track:** ~700-900 monedas + 15 power-ups + 4 skins exclusivas + 30 días sin ads.
 
 **ROI percibido:** un jugador que paga $4.99 obtiene contenido valuado en aproximadamente $25-30 si se comprara como IAP individual. Esta percepción de "obtuve mucho más de lo que pagué" es lo que hace funcionar el modelo.
 
@@ -847,7 +922,7 @@ Para fases posteriores, se puede agregar un tier superior:
 
 - Todo lo del premium ($4.99)
 - **+10 tiers automáticos al activarlo** (catch-up para jugadores que se atrasaron)
-- 200 gemas adicionales instantáneas
+- 200 monedas adicionales instantáneas
 - Skin "Pro" exclusiva del tema
 - 7 días de "Auto Daily Mission Complete" (las daily missions se completan solas durante 1 semana)
 
@@ -876,10 +951,10 @@ Cada temporada tiene un tema visual y narrativo. Los tematices proponen:
 - Recordatorio en el día 25 ("últimos 5 días!") para los que aún no compraron
 - Recordatorio en el día 28 ("últimas 48 horas") con animación de urgencia
 
-**Compra con gemas (alternativa al pago directo):**
-- Premium track ($4.99 equivalente) → **800 gemas**
-- Esto permite a free players hyperactivos pagarlo con gemas acumuladas (~3-4 semanas de ahorro)
-- Drena su stock de gemas → presión orgánica para comprar más gemas en próximo ciclo
+**Compra con monedas (alternativa al pago directo):**
+- Premium track ($4.99 equivalente) → **800 monedas**
+- Esto permite a free players hyperactivos pagarlo con monedas acumuladas (~3-4 semanas de ahorro)
+- Drena su stock de monedas → presión orgánica para comprar más monedas en próximo ciclo
 
 ### 8.9 Decisiones lockeadas
 
@@ -892,7 +967,7 @@ Cada temporada tiene un tema visual y narrativo. Los tematices proponen:
 | XP por tier | 1,000 | ~38-45k XP en 4 semanas casuales |
 | Sin ads premium | Sí, durante 30 días | Killer feature que convierte ad-haters |
 | Battle Pass Pro | Posponer a fase 2 (3-6 meses post-launch) | Foco MVP, agregar cuando hay data |
-| Compra con gemas | 800 gemas | Permite a free hyperactivos convertir, drena stock |
+| Compra con monedas | 800 monedas | Permite a free hyperactivos convertir, drena stock |
 
 ## 9. Monetización (estrategia integral)
 
@@ -917,7 +992,7 @@ Los anuncios en 2026 funcionan **solo si son por elección del jugador o no intr
 |---|---|---|---|
 | **Rewarded — vida extra** | Tras quedarse en 0 vidas, popup ofrece ad | 3/día | +1 vida |
 | **Rewarded — continuar nivel** | Al fallar un nivel | 5/día | +5 disparos para terminar |
-| **Rewarded — duplicar recompensa** | Al completar un nivel, antes de mostrar drop | 10/día | x2 sobre coins, gemas, power-ups del drop |
+| **Rewarded — duplicar recompensa** | Al completar un nivel, antes de mostrar drop | 10/día | x2 sobre coins, monedas, power-ups del drop |
 | **Rewarded — cofre extra** | Daily reward popup | 1/día | Abre cofre adicional con drop random |
 | **Rewarded — power-up gratis** | Pre-nivel, en pantalla de selección de power-ups | 3/día | 1 power-up gratis equipable solo en ese nivel |
 | **Interstitial** | Entre niveles, **máximo 1 cada 3 niveles ganados** | Sin cap | (Sin recompensa, intrusión leve) |
@@ -949,7 +1024,7 @@ Stack recomendado por Plan Maestro:
 
 | Tier | Precio | Contenido |
 |---|---|---|
-| **Coralia Plus** | $4.99/mes o $39.99/año (33% descuento anual) | Sin ads + 50 gemas/día + vidas infinitas + skin exclusiva mensual + early access a niveles nuevos |
+| **Coralia Plus** | $4.99/mes o $39.99/año (33% descuento anual) | Sin ads + 50 monedas/día + vidas infinitas + skin exclusiva mensual + early access a niveles nuevos |
 
 **Por qué post-launch y no en MVP:**
 - Suscripciones requieren retención probada (jugadores leales)
@@ -1065,7 +1140,7 @@ Para cada pantalla: **propósito**, **elementos clave**, **navegación in/out**,
 - **Propósito:** pantalla principal del juego, hub central
 - **Elementos:**
   - Vista panorámica del arrecife con criaturas rescatadas nadando idle
-  - HUD top: monedas, gemas, nivel actual del jugador
+  - HUD top: monedas, nivel actual del jugador
   - HUD bottom: botón **JUGAR** (lleva a Level Select), botones de acceso rápido a Shop, Battle Pass, Eventos
   - Iconos esquinas: Settings, Profile, Daily Rewards (si hay disponible), Friends
   - Indicador de racha visible en top-right
@@ -1093,9 +1168,9 @@ Para cada pantalla: **propósito**, **elementos clave**, **navegación in/out**,
 
 #### Pantalla 7 — Shop
 
-- **Propósito:** venta de gemas, vidas, packs
+- **Propósito:** venta de monedas, vidas, packs
 - **Elementos:**
-  - Tabs: Gemas, Vidas, Power-ups, Especiales (ofertas activas), Cosméticos
+  - Tabs: Monedas, Vidas, Power-ups, Especiales (ofertas activas), Cosméticos
   - Cards con cada producto: imagen, contenido, precio, "best value" badge
   - Starter Pack destacado en top con timer (si aún disponible)
 - **Estados:** Starter Pack activo / Weekend Deal activo / Holiday Pack activo / sin ofertas especiales
@@ -1145,7 +1220,7 @@ Para cada pantalla: **propósito**, **elementos clave**, **navegación in/out**,
 - **Elementos:**
   - Avatar editable (skin de Marina)
   - Username editable
-  - Estadísticas: niveles ganados, criaturas rescatadas, racha actual y máxima, días jugados, gemas/monedas gastadas
+  - Estadísticas: niveles ganados, criaturas rescatadas, racha actual y máxima, días jugados, monedas gastadas
   - Logros con barra de progreso (40 logros)
   - Código de amigo
 - **Estados:** logro recién desbloqueado (badge "nuevo")
@@ -1193,7 +1268,7 @@ Para cada pantalla: **propósito**, **elementos clave**, **navegación in/out**,
   - Slot para 3 power-ups equipables
   - Botón "JUGAR"
   - Botón "ver rewarded ad para power-up gratis" (cap 3/día)
-  - Costo de power-ups en gemas si no se tienen
+  - Costo de power-ups en monedas si no se tienen
 - **Estados:** sin vidas (popup ofrece comprar/ad/esperar)
 
 #### Pantalla 14 — Gameplay
@@ -1222,7 +1297,7 @@ Para cada pantalla: **propósito**, **elementos clave**, **navegación in/out**,
 - **Propósito:** resultado del nivel + ofertas de continuar
 - **Elementos (Game Over):**
   - Título "Sin disparos" + animación triste de Marina
-  - Opciones: ver ad para +5 disparos, pagar 15 gemas, aceptar derrota
+  - Opciones: ver ad para +5 disparos, pagar 15 monedas, aceptar derrota
   - Pierde 1 vida si acepta
 - **Elementos (Victory):**
   - Título "¡Lo lograste!" + animación de rescate
@@ -1234,7 +1309,7 @@ Para cada pantalla: **propósito**, **elementos clave**, **navegación in/out**,
 
 - **Propósito:** mostrar recompensas + opción de duplicar
 - **Elementos:**
-  - Animación de drop: monedas, gemas, power-ups
+  - Animación de drop: monedas, power-ups
   - Battle Pass XP ganado, tier avanzado si aplica
   - Botón "duplicar recompensa viendo ad" (cap 10/día)
   - Botón "siguiente nivel"
@@ -1803,7 +1878,7 @@ Godot maneja servicios globales vía **autoloads** (Project Settings → Autoloa
 | `GameManager` | Estado global del juego, signals, transiciones de pantalla |
 | `AudioManager` | Reproducción de música y SFX, volumen, fade in/out |
 | `SaveManager` | Guardar/cargar progreso local (JSON) y sincronizar con cloud |
-| `EconomyManager` | Monedas, gemas, vidas, transacciones internas |
+| `EconomyManager` | Monedas, vidas, transacciones internas |
 | `BattlePassManager` | XP, tiers, recompensas, temporada activa |
 | `AdsManager` | Wrapper sobre AdMob/AppLovin, tracking de fatigue |
 | `IAPManager` | Wrapper sobre RevenueCat, productos disponibles, restore purchases |
@@ -1922,7 +1997,7 @@ Save local en **JSON encriptado** (AES-256 con key derivada de UUID del disposit
 
 | Riesgo | Mitigación |
 |---|---|
-| Cliente modificado da gemas infinitas | Toda transacción de gemas se loguea en Firestore. Cloud Function detecta jumps imposibles y flagea cuenta |
+| Cliente modificado da monedas infinitas | Toda transacción de monedas se loguea en Firestore. Cloud Function detecta jumps imposibles y flagea cuenta |
 | Score inflado en leaderboard | Score se computa server-side a partir de "moves history" enviado por el cliente. Si el server no puede reproducir el score, se descarta |
 | IAP fake (recibo Android crackeado) | RevenueCat valida recibos contra Apple/Google nativamente |
 | Save game editado | Save encriptado client-side; cloud save es source of truth |
@@ -2142,8 +2217,8 @@ Esta sección consolida **todas las features mencionadas a lo largo del GDD que 
 
 | Feature | Descripción | Sección original | Cuándo |
 |---|---|---|---|
-| **Battle Pass Pro ($9.99)** | Tier superior del Battle Pass: incluye todo el premium + 10 tiers automáticos + 200 gemas + skin Pro + 7 días auto daily missions | 8.6 | Fase 2 (3-6 meses post-launch) según data de spending |
-| **Suscripción Coralia Plus** | $4.99/mes o $39.99/año: sin ads + 50 gemas/día + vidas infinitas + skin mensual exclusiva + early access | 9.3 | Fase 2 (post 3-6 meses) |
+| **Battle Pass Pro ($9.99)** | Tier superior del Battle Pass: incluye todo el premium + 10 tiers automáticos + 200 monedas + skin Pro + 7 días auto daily missions | 8.6 | Fase 2 (3-6 meses post-launch) según data de spending |
+| **Suscripción Coralia Plus** | $4.99/mes o $39.99/año: sin ads + 50 monedas/día + vidas infinitas + skin mensual exclusiva + early access | 9.3 | Fase 2 (post 3-6 meses) |
 | **Second Chance Starter Pack** | Oferta especial similar al Starter (menos generosa) para jugadores muy engaged que no compraron en su primera semana | 6.10 | Post-launch tras analizar datos de conversión |
 | **Personalización de ofertas por segmento** | Casuals ven Weekend Deal, mid-tier ven Progress Pack, whales ven Whale Pack — basado en analytics | 6.10 | LiveOps tras 2-3 meses con data |
 
@@ -2195,7 +2270,7 @@ Esta sección consolida **todas las features mencionadas a lo largo del GDD que 
 |---|---|
 | **MVP** | Minimum Viable Product. Versión mínima del juego que se puede lanzar y monetizar. 60 niveles + sistemas core. |
 | **F2P** | Free-to-Play. Modelo donde el juego es gratis y monetiza via ads + IAP. |
-| **IAP** | In-App Purchase. Compra dentro del juego (gemas, packs, etc.). |
+| **IAP** | In-App Purchase. Compra dentro del juego (monedas, packs, etc.). |
 | **ARPDAU** | Average Revenue Per Daily Active User. Métrica clave de revenue. |
 | **ARPPU** | Average Revenue Per Paying User. Solo cuenta los que pagan. |
 | **eCPM** | Effective Cost Per Mille. Revenue por mil impresiones de anuncios. |

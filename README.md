@@ -54,7 +54,7 @@ Splash Studio (logo estudio) → Splash Game (logo juego + cargando) → Home �
 
 | Manager | Responsabilidad |
 |---|---|
-| `SaveManager` | Persistencia vía `PlayerPrefs` — vidas, gemas, nivel máximo desbloqueado, idioma, volúmenes |
+| `SaveManager` | Persistencia vía `PlayerPrefs` — vidas, monedas, nivel máximo desbloqueado, idioma, volúmenes |
 | `LocaleManager` | Diccionario de traducciones cargado de `Resources/translations.csv`, `Get(key)` |
 | `AudioManager` | SFX/música, tolera clips vacíos sin romper (`Instance?.PlaySfx(...)`) |
 | `SceneLoader` + `SceneTransition` | Constantes de escenas + fade/transición animada entre ellas |
