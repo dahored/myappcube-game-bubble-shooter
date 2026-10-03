@@ -10,7 +10,7 @@ Use this skill when starting work on a new issue.
 ## Pre-implementation checklist
 
 1. **Read the issue** — `gh issue view N`, or `docs/06_Backlog_GitHub_Issues.md` if it predates a real GitHub issue (verify it still matches, that doc was written pre-Unity in places)
-2. **Read the relevant GDD section** in `docs/02_GDD_Coralia.md` — skip §14 (architecture), it's Godot-era and stale
+2. **Read the relevant GDD section** in `docs/02_GDD_Coralia.md` — §14 documents the real architecture
 3. **Check dependencies** — does this feature need another issue done first? Verify against actual code, not just the issue's stated dependency, since docs can lag behind what's really implemented
 4. **Create branch**: `git checkout -b issue-N-short-description`
 
@@ -68,4 +68,4 @@ Then in C#: `someText.text = LocaleManager.Get("ui.button.play");`. For placehol
 
 ## Commit & close
 
-See the `commit` skill for the authoritative branch/message/CHANGELOG conventions — don't duplicate them here, they drift out of sync. In short: `git add` specific files (never `-A`), prefixed commit message, `Closes #N`, PR, update `CHANGELOG.md`.
+See the `commit` skill for the authoritative branch and message conventions — don't duplicate them here, they drift out of sync. In short: `git add` specific files (never `-A`), prefixed commit message, `Closes #N`, PR.

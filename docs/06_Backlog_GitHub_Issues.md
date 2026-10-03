@@ -1,9 +1,9 @@
 # Backlog — GitHub Issues para Coralia
 
-**Versión:** 0.2 — 2026-08-15 (revisión Unity — v0.1 era 2026-05-01, escrita para Defold)
+**Versión:** 0.3 — 2026-10-03
 **Propósito:** este documento traduce el plan del proyecto a issues de GitHub. Cada sección H2 (`##`) es un issue independiente — copy-pasteable directo a "New Issue" en GitHub.
 
-⚠️ **Nota de esta revisión:** el proyecto migró de Defold a **Unity 6** en mayo 2026. Las acceptance criteria de diseño/producto de cada issue siguen siendo válidas — se actualizaron las referencias técnicas (nombres de módulo, rutas de archivo, APIs) que apuntaban a Defold/Lua. Los issues ya completados quedan marcados con **✅ COMPLETADO** debajo del título, con una nota de qué se hizo realmente.
+Los issues ya completados quedan marcados con **✅ COMPLETADO** debajo del título, con una nota de qué se hizo realmente.
 
 ---
 
@@ -26,7 +26,7 @@ Recomendado crear estos labels en GitHub primero:
 
 # Estado actual (referencia, no es un issue)
 
-**Fase 1 — Prototipo:** ✅ Completada en Godot 4 (2026-05-01). Referencia de diseño, no se portó código 1:1.
+**Fase 1 — Prototipo:** ✅ Completada. Referencia de diseño; el código no se portó 1:1.
 **Fase 2 — MVP:** 🔄 En progreso, motor **Unity 6**. Completado: Settings, Localización runtime, Level Map/Level Select, HUD superior (`ResourcePillView` — visual listo, datos pendientes). Sigue faltando: gameplay (cañón/grid/match), sistema de vidas/monedas con datos reales, Santuario, onboarding.
 
 Ver `07_Status_y_Roadmap.md` para el detalle completo y actualizado.
@@ -49,7 +49,7 @@ Conectar los SFX de gameplay al `AudioManager` ya existente cuando se implemente
 ### Acceptance criteria
 - [x] `AudioManager` con canales configurables: `music`, `sfx` (ui_fx), `ui`, `pop` (bubble_pop) — ya implementado, un canal más que el GDD original (separa UI de gameplay SFX)
 - [x] Volúmenes leídos de `SaveManager` (`MusicVolume`, `SfxVolume`, `UiVolume`, `PopVolume`)
-- [x] Vibración (toggle) implementada — vía plugin `MOST_HapticFeedback` (bridge nativo Android/iOS), no `sys.vibrate()` (eso era Defold)
+- [x] Vibración (toggle) implementada — vía plugin `MOST_HapticFeedback` (bridge nativo Android/iOS)
 - [x] Música de fondo loop en el lobby (`AudioManager.PlayLobbyMusic()`)
 - [ ] SFX de pop de burbuja al hacer match (con variación leve de pitch) — bloqueado por gameplay
 - [ ] SFX de drop de flotantes — bloqueado por gameplay
@@ -465,7 +465,7 @@ La especificación de los wireframes está completa en `docs/03_Wireframes_Coral
 **Labels:** `phase-1`, `chore`, `priority-low`, `size-S`
 
 ### Descripción
-Antes del global launch hay que hacer al menos un playtest informal para validar diversión con audiencia objetivo. **Bloqueado hasta que exista gameplay jugable en Unity** — el playtest del prototipo Godot no cuenta porque el gameplay no se portó.
+Antes del global launch hay que hacer al menos un playtest informal para validar diversión con audiencia objetivo. El loop de juego ya está completo, así que esto ya se puede hacer.
 
 ### Acceptance criteria
 - [ ] Build standalone (macOS o mobile) de Coralia con gameplay funcional compartido a 1-3 personas
@@ -863,7 +863,7 @@ Lanzar suscripción mensual tras 3-6 meses post-launch (audiencia base estable).
 **Labels:** `bug`, `gameplay`, `priority-low`, `size-S`
 
 ### Descripción
-En clear_all, si quedan ≥1 burbujas huérfanas que no pueden formar matches con ningún otro color en grid, el nivel se vuelve unwinnable. Este bug viene del prototipo Godot — hay que verificar si aplica de nuevo cuando se implemente el smart queue en Unity. **No aplicable todavía: no hay gameplay en Unity.**
+En clear_all, si quedan ≥1 burbujas huérfanas que no pueden formar matches con ningún otro color en grid, el nivel se vuelve unwinnable. Viene del prototipo original. Hay que verificar si aplica al smart queue actual.
 
 ### Acceptance criteria
 - [ ] Al implementar el smart queue en Unity, detectar caso "no hay matches posibles"

@@ -13,8 +13,6 @@ Coralia es un Bubble Shooter cozy submarino donde Marina, una joven sirena, rest
 
 Modelo F2P híbrido (Ads + IAP + Battle Pass), audiencia objetivo: mujeres 25-45 casual.
 
-> El proyecto arrancó como prototipo en Godot 4, pasó brevemente por Defold, y migró a Unity 6 en mayo 2026. Todo el código activo hoy es Unity/C#.
-
 ## Requisitos para desarrollar
 
 - **Unity 6** (LTS) con soporte Android + iOS instalado
@@ -69,7 +67,7 @@ Splash Studio (logo estudio) → Splash Game (logo juego + cargando) → Home �
 ## Documentación
 
 - `CLAUDE.md` — contexto del proyecto para asistencia con IA, estado real del código
-- `docs/02_GDD_Coralia.md` — Game Design Document completo (§14 arquitectura es de la era Godot, no confiar en esa sección)
+- `docs/02_GDD_Coralia.md` — Game Design Document completo
 - `docs/03_Wireframes_Coralia.md` — Especificación de las pantallas
 - `docs/06_Backlog_GitHub_Issues.md` — Backlog de issues (verificar contra `gh issue list`)
 - `docs/07_Status_y_Roadmap.md` — Estado actual + roadmap

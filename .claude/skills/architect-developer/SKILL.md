@@ -94,7 +94,7 @@ Bubble entries are **objects** (`{row, col, color}`), not `[col, row, "color"]` 
 
 ## Adding a new feature — checklist
 
-1. Read the relevant GDD section (`docs/02_GDD_Coralia.md`) — but not its §14 (architecture), which is Godot-era and stale.
+1. Read the relevant GDD section (`docs/02_GDD_Coralia.md`). §14 documents the real architecture.
 2. Check `docs/07_Status_y_Roadmap.md` and the actual code for what's already implemented before assuming a feature is missing.
 3. Add new `SaveManager` properties following the existing per-property PlayerPrefs pattern if the feature needs persistence.
 4. Communicate cross-system state via C# events (`public event System.Action ...`) on the relevant controller/panel, not a global signal bus.

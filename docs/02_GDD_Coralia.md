@@ -28,7 +28,7 @@ El concepto creativo (visión, tema, pilares, audiencia) ya está fijado en `01_
 11. **Arte y dirección visual** — paleta, estilo, lista de assets
 12. **Audio** — música y SFX
 13. **Narrativa y personajes** — Marina, criaturas hero, antagonista
-14. **Stack técnico y arquitectura** — Godot 4, librerías, servicios
+14. **Stack técnico y arquitectura** — Unity 6, estructura real del proyecto, lo que falta
 15. **Analytics** — eventos a trackear
 16. **Roadmap Post-MVP / Opcionales** — features deferidas, fase 2+, ideas en radar
 17. **Apéndices** — glosario, referencias, archivos
@@ -181,7 +181,7 @@ Regla general: **disparos disponibles = disparos óptimos × 1.3**, donde "ópti
 
 ### 2.6 Editor de niveles (herramienta interna)
 
-Como advierte el Plan Maestro: sin editor de niveles, hacer 60 niveles a mano es una pesadilla y mata el proyecto. La decisión original de construir un editor visual en Fase 1 (época Godot) nunca se ejecutó — los niveles se siguen escribiendo/editando a mano en JSON (ver skill `level-designer`). Queda como issue separado para más adelante, no bloquea el resto del roadmap.
+Como advierte el Plan Maestro: sin editor de niveles, hacer 60 niveles a mano es una pesadilla y mata el proyecto. La decisión original de construir un editor visual en Fase 1 nunca se ejecutó — los niveles se siguen escribiendo/editando a mano en JSON (ver skill `level-designer`). Queda como issue separado para más adelante, no bloquea el resto del roadmap.
 
 ### 2.7 Estrategia híbrida de creación de niveles (mano + AI)
 
@@ -1736,325 +1736,172 @@ Doce criaturas distribuidas a lo largo de los 6 capítulos. Cada una tiene un no
 
 ## 14. Stack técnico y arquitectura
 
-### 14.1 Stack base
+> **Reescrita 2026-10-03** contra el código real. Lo que había antes describía un proyecto que no
+> es este: otro motor, otro lenguaje y otra estructura de carpetas.
 
 **Estudio:** myappcube. **Producto:** Coralia.
 
-| Capa | Tecnología | Versión / detalle | Por qué |
-|---|---|---|---|
-| Engine | **Godot** | 4.3+ (LTS al inicio del desarrollo) | Plan Maestro. Open source, gratis, exportable a Android + iOS, lenguaje propio (GDScript) productivo |
-| Lenguaje | **GDScript** | Tipado estático cuando sea posible | Plan Maestro. Performance suficiente para casual puzzle. Iteración rápida. |
-| Backend / cloud | **Firebase** | Free tier al inicio | Plan Maestro. Auth + Firestore + Cloud Messaging + Remote Config + Analytics + Crashlytics |
-| IAP | **RevenueCat** | SDK Godot (community plugin) | Plan Maestro. Maneja IAP cross-platform con un solo backend |
-| Ads | **AdMob** + **AppLovin MAX** | Plugins nativos Godot Android/iOS | Plan Maestro. Mediación competitiva |
-| Versionado | **Git** + GitHub privado | — | Estándar |
-| CI/CD (post-MVP) | GitHub Actions o Jenkins | — | Automatizar builds Android/iOS |
+### 14.1 Stack base
+
+| Capa | Tecnología | Detalle |
+|---|---|---|
+| Engine | **Unity** | 6000.6.1f1 |
+| Lenguaje | **C#** | Sin namespaces: todo va al global |
+| Render | **URP** | Portrait 1080×1920 |
+| Interfaz | **uGUI** (`RectTransform` + `Image`) | Sin Physics2D en ninguna parte, tampoco en el gameplay |
+| Texto | **TextMesh Pro** | Fuente Fredoka |
+| Háptica | **MOST_HapticFeedback** | Bridge nativo Android/iOS |
+| Persistencia | **PlayerPrefs** | Sin backend todavía |
+| Versionado | **Git** + GitHub privado | — |
+| Backend, IAP, Ads | Firebase, RevenueCat, AdMob | **Sin implementar** — ver 14.6 |
+
+**Todo el gameplay es uGUI, sin física.** Las posiciones del grid, los rebotes y las colisiones se
+calculan a mano en `HexGridMath` y `ShotBubble`. No es una limitación heredada: un bubble shooter
+necesita que la burbuja caiga en una celda exacta, y un motor de física da posiciones aproximadas
+que luego hay que corregir igual.
 
 ### 14.2 Estructura de carpetas
 
 ```
 coralia/
-├── project.godot
-├── icon.svg
-├── .gitignore
-├── README.md
-│
-├── scenes/                    # Escenas de Godot (.tscn)
-│   ├── main/
-│   │   ├── company_splash.tscn
-│   │   ├── loading_splash.tscn
-│   │   └── onboarding.tscn
-│   ├── santuario/
-│   │   ├── santuario.tscn
-│   │   └── creature_idle.tscn
-│   ├── gameplay/
-│   │   ├── gameplay.tscn
-│   │   ├── grid.tscn
-│   │   ├── canon.tscn
-│   │   └── bubble.tscn
-│   ├── ui/
-│   │   ├── shop.tscn
-│   │   ├── battle_pass.tscn
-│   │   ├── settings.tscn
-│   │   ├── profile.tscn
-│   │   ├── leaderboard.tscn
-│   │   ├── events.tscn
-│   │   ├── level_select.tscn
-│   │   ├── pre_level.tscn
-│   │   ├── pause.tscn
-│   │   ├── game_over.tscn
-│   │   ├── victory.tscn
-│   │   ├── post_level.tscn
-│   │   └── daily_rewards.tscn
-│   └── tools/                 # Editor de niveles, debug tools
-│       └── level_editor.tscn
-│
-├── scripts/                   # Scripts GDScript (.gd)
-│   ├── autoloads/             # Singletons globales
-│   │   ├── game_manager.gd
-│   │   ├── audio_manager.gd
-│   │   ├── save_manager.gd
-│   │   ├── economy_manager.gd
-│   │   ├── battle_pass_manager.gd
-│   │   ├── ads_manager.gd
-│   │   ├── iap_manager.gd
-│   │   ├── analytics_manager.gd
-│   │   └── firebase_manager.gd
-│   ├── gameplay/
-│   │   ├── grid_logic.gd
-│   │   ├── bubble.gd
-│   │   ├── match_detector.gd
-│   │   ├── physics_helper.gd
-│   │   └── level_loader.gd
-│   ├── ui/
-│   │   └── (un .gd por cada escena UI)
-│   ├── data/
-│   │   ├── level_data.gd      # Resource class para niveles
-│   │   ├── creature_data.gd
-│   │   └── powerup_data.gd
-│   └── utils/
-│       └── (helpers varios)
-│
-├── resources/                 # Resources de Godot (.tres)
-│   ├── creatures/
-│   │   ├── coqui.tres
-│   │   ├── burbujin.tres
-│   │   └── ... (12 criaturas)
-│   ├── powerups/
-│   │   ├── bomba_coral.tres
-│   │   └── ... (6 power-ups)
-│   └── battle_passes/
-│       └── season_01_despertar.tres
-│
-├── data/                      # Datos de niveles en JSON
-│   └── levels/
-│       ├── 001.json
-│       ├── 002.json
-│       └── ... (60 archivos)
-│
-├── assets/                    # Assets crudos
-│   ├── sprites/
-│   │   ├── characters/
-│   │   ├── bubbles/
-│   │   ├── creatures/
-│   │   ├── ui/
-│   │   ├── backgrounds/
-│   │   └── particles/
-│   ├── audio/
-│   │   ├── music/
-│   │   └── sfx/
-│   ├── fonts/
-│   └── shaders/
-│
-├── localization/              # Archivos i18n (6 idiomas convención cross-proyecto)
-│   ├── es.csv     # Español
-│   ├── en.csv     # English
-│   ├── it.csv     # Italiano
-│   ├── fr.csv     # Français
-│   ├── de.csv     # Deutsch
-│   └── pt.csv     # Português
-│
-├── platform/                  # Configuración específica de plataforma
-│   ├── android/
-│   │   └── (export presets, signing)
-│   └── ios/
-│       └── (export presets, certificates)
-│
-├── docs/                      # Documentación interna
-│   ├── Plan_Maestro_Bubble_Shooter.docx
-│   ├── 01_Concepto_Inicial.md
-│   └── 02_GDD_Coralia.md
-│
-└── tests/                     # Tests unitarios
-    └── (gdUnit4 tests)
+├── Assets/
+│   ├── Scenes/
+│   │   ├── Splash/      SplashStudio, SplashGame
+│   │   ├── Home/        HomeGame
+│   │   └── Game/        LevelMap, LevelMapCurve, LevelMapCurve3d, Gameplay
+│   ├── Scripts/
+│   │   ├── Core/        managers y transición de escena (8)
+│   │   ├── Data/        LevelData, ChapterData, LevelLoader, LevelIndex (4)
+│   │   ├── Gameplay/    cañón, grid, match, boosters, paneles de partida (34)
+│   │   ├── LevelMap/    mapa curvo, nodos, decoraciones (37)
+│   │   ├── UI/          componentes reutilizables y paneles (33)
+│   │   ├── Home/        HomeGame (1)
+│   │   └── Splash/      los dos splash (2)
+│   ├── Prefabs/
+│   │   ├── UI/          buttons, panels, items, game, inputs, user, views
+│   │   ├── Gameplay/    Bubble, ScorePopup
+│   │   └── Animals/     criaturas de mundo y de UI
+│   ├── Resources/       cargado por código en runtime
+│   │   ├── translations.csv
+│   │   ├── levels_index.json
+│   │   ├── Levels/Chapter_1..3/*.json
+│   │   ├── Chapters/
+│   │   ├── Audio/AudioManager.prefab
+│   │   └── BoosterCatalog.asset
+│   ├── Data/            ScriptableObjects de configuración (DecorationCatalog)
+│   ├── Sprites/         Bubbles, UI, Game, Animals, Backgrounds, Decorations…
+│   ├── Editor/          menús y drawers solo de editor
+│   └── Plugins/iOS/     bridge nativo
+├── ProjectSettings/     nunca se edita a mano
+└── Packages/
 ```
 
-### 14.3 Autoloads (singletons globales)
+Fuera del proyecto Unity, en la raíz del repo: `design/exported/` (exports de arte antes de
+importarlos), `assets/audio/` (fuentes de sonido sin procesar) y `docs/`.
 
-Godot maneja servicios globales vía **autoloads** (Project Settings → Autoload). Coralia tiene los siguientes:
+### 14.3 Managers globales
 
-| Autoload | Responsabilidad |
+**Clases estáticas, no singletons MonoBehaviour.** No necesitan escena, no se duplican al cambiar
+de escena y no dependen de que alguien se acuerde de ponerlas en la jerarquía.
+
+| Manager | Qué guarda |
 |---|---|
-| `GameManager` | Estado global del juego, signals, transiciones de pantalla |
-| `AudioManager` | Reproducción de música y SFX, volumen, fade in/out |
-| `SaveManager` | Guardar/cargar progreso local (JSON) y sincronizar con cloud |
-| `EconomyManager` | Monedas, vidas, transacciones internas |
-| `BattlePassManager` | XP, tiers, recompensas, temporada activa |
-| `AdsManager` | Wrapper sobre AdMob/AppLovin, tracking de fatigue |
-| `IAPManager` | Wrapper sobre RevenueCat, productos disponibles, restore purchases |
-| `AnalyticsManager` | Eventos de tracking → Firebase Analytics + GameAnalytics |
-| `FirebaseManager` | Auth, Firestore, Cloud Messaging, Remote Config |
-| `LevelManager` | Carga niveles desde JSON, valida formato |
-| `LocaleManager` | Localización (espñol/inglés), cambio en runtime |
+| `SaveManager` | Todo el progreso: vidas, monedas, niveles, estrellas, tutoriales vistos, inventario y desbloqueo de boosters, idioma, volúmenes |
+| `LocaleManager` | Los seis idiomas desde `translations.csv` |
+| `SceneLoader` | Constantes de nombre de escena, delega en `SceneTransition` |
+| `SceneReady` | Señal de "la escena ya está compuesta" |
 
-**Regla:** ningún autoload depende de otro autoload directamente (acoplamiento bajo). Comunicación entre autoloads vía **signals** del bus central de `GameManager`.
+Dos excepciones con estado de escena: **`AudioManager`** es un MonoBehaviour con `Instance` y
+`DontDestroyOnLoad`, porque necesita `AudioSource` reales; se auto-instancia desde `Resources` con
+`[RuntimeInitializeOnLoadMethod]`. **`SceneTransition`** igual, por su animación entre escenas.
 
-### 14.4 Formato de archivo de nivel (JSON)
+### 14.4 Reglas de juego en código, no en el Inspector
 
-Los niveles son **archivos JSON estructurados** para soportar generación AI-assisted (sección 2.7).
+Las constantes que **varios sitios tienen que compartir** viven en clases estáticas, no como campos
+serializados:
+
+- `HexGridMath` — geometría del grid hexagonal, vecinos, rebotes.
+- `ScoreRules` — valor de las burbujas y escalada por racha.
+- `BoosterRules` — radio de la bomba, nombres de booster, desbloqueo, acceso al catálogo.
+
+El motivo es siempre el mismo: el radio de la bomba lo necesitan la explosión, la marca de la mira
+y el tutorial, y los tres tienen que decir lo mismo. Con un campo por componente, mantenerlos
+sincronizados depende de acordarse.
+
+Lo que **sí** es configurable por el Inspector es lo que se afina a ojo: duraciones, curvas,
+colores, tamaños, velocidades.
+
+### 14.5 Formato de nivel (JSON)
+
+`Resources/Levels/Chapter_N/NNN.json`, deserializado a `LevelData` con `JsonUtility`.
 
 ```json
 {
-  "id": 1,
+  "id": 2,
   "chapter": 1,
-  "name": "Primer encuentro",
-  "objective": {
-    "type": "rescue",
-    "target_creature_id": "coqui",
-    "trapped_position": [4, 6]
-  },
-  "max_shots": 22,
-  "grid": {
-    "width": 11,
-    "height": 8,
-    "bubbles": [
-      [1, "red"], [2, "blue"], [3, "yellow"],
-      [12, "red"], [13, "red"]
-    ]
-  },
-  "obstacles": [
-    {"type": "ice", "position": [5, 3]}
-  ],
-  "available_colors": ["red", "blue", "yellow", "green"],
-  "rainbow_chance": 0.05,
-  "creature_to_unlock": "coqui",
-  "star_thresholds": [280, 430, 600],
-  "first_completion_bonus": {
-    "coins": 75,
-    "gems": 2
-  }
+  "name": "Aguas tranquilas",
+  "max_shots": 18,
+  "min_shots_to_clear": 7,
+  "star_thresholds": [610, 1000, 1380],
+  "available_colors": ["red", "blue"],
+  "tutorials": ["bomb"],
+  "allowed_boosters": ["bomb", "", ""],
+  "obstacles": [],
+  "objective": { "type": "clear_all", "creature_id": "", "creature_position": [] },
+  "bubbles": [ { "row": 0, "col": 0, "color": "blue" } ]
 }
 ```
 
-`star_thresholds` es un array de 3 enteros `[1★, 2★, 3★]`. Se calibra playtestando el nivel con el juego real (ver sección 4.2). El score que se compara contra los thresholds es `score_base + tiros_sobrantes × 10`.
+El nombre que ve el jugador sale de `translations.csv` con la clave `level.{id}.name`; el `name`
+del JSON es el original en español y hace de respaldo.
 
-```
-```
+### 14.6 Lo que todavía no existe
 
-**Validación:** un script `level_validator.gd` carga cada nivel y verifica formato, valida tipos de objetivo, posiciones dentro del grid, etc. Se ejecuta en runtime al cargar y en CI antes de cada release.
+Para que el GDD no se lea como si estuviera construido:
 
-### 14.5 Formato de save game
+- **Firebase**, **RevenueCat** y **AdMob/AppLovin**: nada integrado. El save es local.
+- **Sin fuentes de monedas**: completar un nivel no da (ver 6.3), y santuario, dailies, misiones y
+  logros no están implementados.
+- **Battle Pass, social, eventos, logros, misiones**: solo en este documento.
+- **Nueve de los diez power-ups**: solo la Bomba de Coral está implementada (ver 3.2).
 
-Save local en **JSON encriptado** (AES-256 con key derivada de UUID del dispositivo + salt fijo del juego). Cloud save sincroniza el mismo JSON a Firestore.
+### 14.7 Convenciones de código
 
-```json
-{
-  "version": "1.0.0",
-  "player_id": "uuid-aleatorio",
-  "username": "Marina123",
-  "current_level": 27,
-  "highest_level": 27,
-  "creatures_rescued": ["coqui", "burbujin", "lua", ...],
-  "currencies": {
-    "coins": 4520,
-    "gems": 87
-  },
-  "lives": 3,
-  "lives_last_regen": 1730000000,
-  "streak": {
-    "current": 12,
-    "longest": 15,
-    "last_claim_day": 12,
-    "last_login_timestamp": 1730000000
-  },
-  "battle_pass": {
-    "season": 1,
-    "is_premium": true,
-    "tier": 18,
-    "xp_current_tier": 450
-  },
-  "achievements": ["bronze_first_win", "bronze_first_creature", ...],
-  "settings": {
-    "language": "es",
-    "music_volume": 0.7,
-    "sfx_volume": 1.0,
-    "notifications_enabled": true
-  },
-  "iap_history": ["starter_pack_1", "battle_pass_s1"]
-}
-```
+- Sin namespaces. Un archivo por clase pública, `PascalCase.cs`.
+- Campos serializados: `camelCase` con `[SerializeField]`, alineados en columna cuando van varios.
+- Campos privados: `_camelCase`.
+- Constantes: `SCREAMING_SNAKE_CASE`.
+- Comentarios **solo donde el porqué no sea obvio**. Sin docstrings.
+- Ningún string visible en código: todo a `translations.csv` vía `LocaleManager.Get(key)`.
+- Niveles siempre en JSON, nunca hardcodeados.
+- Hijos generados en runtime llevan `HideFlags.DontSave`, y de forma **recursiva** si tienen
+  descendencia: sin eso, un `[ExecuteAlways]` los serializa dentro del `.unity` en cada guardado.
+- Las traducciones se parsean con un `Split(',')` sencillo: **ningún valor puede llevar una coma**,
+  y cada fila tiene exactamente seis.
 
-**Sincronización cloud:**
-- Trigger: cada 60 segundos durante gameplay activo (debounced)
-- Conflicto: si la versión cloud es más reciente, prevalece cloud
-- Ofuscación: el campo `currencies` no se valida solo client-side; transacciones se logean para detectar cheaters
+### 14.8 Performance
 
-### 14.6 Servicios Firebase
-
-| Servicio | Uso |
+| Objetivo | Valor |
 |---|---|
-| **Authentication** | Login con Apple ID, Google, Facebook. Anonymous auth para usuarios free sin login. |
-| **Firestore** | Cloud save (un documento por player_id), leaderboards, friends list |
-| **Cloud Messaging (FCM)** | Push notifications |
-| **Remote Config** | Tunear drop rates, costos, ofertas sin redeploy. Crítico para LiveOps |
-| **Analytics** | Eventos custom (ver sección 15) |
-| **Crashlytics** | Crash reporting automático |
-| **Cloud Functions** | Validación server-side de scores, anti-cheat, eventos especiales |
-
-**Coste estimado fase 1:** Firebase free tier cubre hasta ~50,000 DAU. Coste se vuelve significativo solo con tracción real.
-
-### 14.7 Anti-cheat (mínimo viable)
-
-| Riesgo | Mitigación |
-|---|---|
-| Cliente modificado da monedas infinitas | Toda transacción de monedas se loguea en Firestore. Cloud Function detecta jumps imposibles y flagea cuenta |
-| Score inflado en leaderboard | Score se computa server-side a partir de "moves history" enviado por el cliente. Si el server no puede reproducir el score, se descarta |
-| IAP fake (recibo Android crackeado) | RevenueCat valida recibos contra Apple/Google nativamente |
-| Save game editado | Save encriptado client-side; cloud save es source of truth |
-
-### 14.8 Performance targets
-
-| Métrica | Target |
-|---|---|
-| Frame rate | 60 FPS sostenido en device de gama media (Snapdragon 6 series, iPhone 11+) |
-| Tiempo de carga inicial | <3 segundos a Santuario |
-| Tiempo de carga de nivel | <1 segundo |
-| Memoria usada | <300 MB en runtime |
-| Tamaño de instalación | <150 MB MVP |
-| Batería | <8% drain por hora de juego activo |
+| FPS | 60 estable en gama media |
+| Resolución dinámica | `AdaptiveRenderScale` baja la escala si el frame se pasa |
+| Arranque | < 3 s hasta el menú |
 
 ### 14.9 Build y deploy
 
-**Android:**
-- Build: **Android App Bundle (AAB)** firmado con keystore propio (NUNCA committearse)
-- Distribución: Google Play Console
-- Flujo: Internal testing → Closed beta → Open beta → Production
-- Min API: 24 (Android 7.0) — cubre 95%+ de devices activos
+Android e iOS desde el editor de Unity. `ProjectSettings/` **no se edita a mano**: todo pasa por el
+editor, incluida la lista de escenas del build.
 
-**iOS:**
-- Build: archive vía Xcode (requiere Mac + cuenta Apple Developer)
-- Distribución: App Store Connect → TestFlight → App Review → Production
-- Min iOS: 14 — cubre iPhone 6s+
-- Cumplimiento: SKAdNetwork + ATT obligatorios en 2026
-
-### 14.10 Convenciones de código
-
-| Convención | Regla |
-|---|---|
-| Naming archivos | `snake_case.gd` |
-| Naming clases | `PascalCase` (`class_name`) |
-| Naming variables | `snake_case` |
-| Naming constantes | `SCREAMING_SNAKE_CASE` |
-| Naming signals | `verb_in_past_tense` (`level_completed`, `bubble_popped`) |
-| Tipado | Tipado estático cuando posible: `var lives: int = 5` |
-| Comentarios | Docstring en funciones públicas con 3+ líneas |
-| i18n | Todo string visible al usuario va a `localization/*.csv`, nunca hardcoded |
-
-### 14.11 Decisiones lockeadas
+### 14.10 Decisiones lockeadas
 
 | Decisión | Valor | Razón |
 |---|---|---|
-| Engine | Godot 4.3+ | Plan Maestro |
-| Lenguaje | GDScript con tipado estático | Velocidad de iteración + performance suficiente |
-| Backend | Firebase (free tier al inicio) | Plan Maestro |
-| IAP | RevenueCat | Plan Maestro, cross-platform |
-| Ads | AdMob + AppLovin MAX | Plan Maestro |
-| Formato niveles | JSON | Soporta AI gen + diff-friendly en Git |
-| Formato save | JSON encriptado AES-256 + sync Firestore | Estándar mobile + cloud save |
-| Min Android | API 24 (Android 7.0) | 95%+ cobertura |
-| Min iOS | iOS 14 | iPhone 6s+ |
-| Orientación | Portrait only | Estándar mobile casual |
-| Tamaño MVP | <150 MB | Anti-friction de install |
+| Engine | Unity 6 | Migrado en mayo 2026 |
+| UI y gameplay | uGUI sin física | Un bubble shooter necesita celdas exactas, no posiciones aproximadas |
+| Managers | Clases estáticas | Sin escena, sin duplicados, sin orden de inicialización que cuidar |
+| Persistencia | PlayerPrefs | Suficiente hasta que exista backend |
+| Niveles | JSON en `Resources` | Editables a mano, versionables, legibles en un diff |
+| i18n | Un CSV con los seis idiomas | Una fila por clave: traducir es comparar columnas |
 
 ## 15. Analytics
 
