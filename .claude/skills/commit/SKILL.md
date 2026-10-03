@@ -1,6 +1,6 @@
 ---
 name: commit
-description: Git commit conventions for Coralia — prefixes, branch naming, CHANGELOG update
+description: Git commit conventions for Coralia — prefixes, branch naming, staging rules
 ---
 
 # Git Commit Conventions — Coralia
@@ -26,9 +26,8 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 **Rule: one issue = one commit.** Don't split a feature across multiple commits.
 
 ## After each commit
-1. Update `CHANGELOG.md` with a bullet under the appropriate phase/chunk
-2. Open a PR against `main` even solo — forces self-review
-3. Close the GitHub issue in the PR description with `Closes #N`
+1. Open a PR against `main` even solo — forces self-review
+2. Close the GitHub issue in the PR description with `Closes #N`
 
 ## Staging files
 - Never `git add -A` or `git add .` — stage specific files to avoid committing `.gitignore`-worthy files

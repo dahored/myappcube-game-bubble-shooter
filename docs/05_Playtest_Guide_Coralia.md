@@ -1,9 +1,11 @@
-# Guía de Playtest — Coralia (Chunk 7 Fase 1)
+# Guía de Playtest — Coralia
 
-> ⚠️ **Documento histórico de la era Godot.** Los pasos de build/export descritos acá (Godot editor, export presets) corresponden al prototipo original en Godot 4, previo a la migración a Unity 6 — este playtest específico fue salteado (ver `docs/06_Backlog_GitHub_Issues.md`). Se conserva como registro de la metodología planeada, no como guía técnica vigente. Para un playtest real hoy, la parte técnica de build hay que rehacerla para Unity; la metodología de observación (secciones de abajo) sigue siendo válida.
+**Versión:** 0.2 — 2026-10-03
+**Objetivo:** validar con 3-5 jugadores reales si el juego es **divertido** antes de seguir invirtiendo.
 
-**Versión:** 0.1 — 2026-05-01
-**Objetivo:** validar con 3-5 jugadores reales si el prototipo es **divertido** antes de invertir en Fase 2 (MVP).
+> El playtest previsto para la Fase 1 nunca se hizo. Ahora el loop de juego está completo de punta
+> a punta, así que ya hay algo que poner en manos de alguien — y sigue siendo el riesgo abierto más
+> grande del proyecto (ver `07_Status_y_Roadmap.md`).
 
 ---
 
@@ -17,23 +19,33 @@ Si los playtesters te dicen "no es divertido", eso vale **muchísimo más** que 
 
 ---
 
-## Paso 1: Build standalone para macOS
+## Paso 1: Build para el tester
 
-1. Abrir Godot con el proyecto Coralia
-2. Menu superior: `Project → Export...`
-3. Si no hay un preset de macOS, click **Add...** → seleccionar "macOS"
-4. Si dice **"Export templates not found"**: click el link "Manage Export Templates" → Download and Install. Espera ~5 min para que termine.
-5. En el preset de macOS:
-   - **Application/Name:** Coralia
-   - **Application/Identifier:** com.myappcube.coralia (o lo que prefieras)
-   - **Application/Version:** 1.0.0-prototype
-   - **Codesign:** Off para builds locales (no necesitás firmar para tests)
-6. Click **Export Project...**
-7. Guardá como `Coralia-prototype.app` en alguna carpeta de tu preferencia
-8. Probá vos primero abriendo el .app — debería arrancar igual que cuando lo corrés desde Godot
-9. Si funciona, comprimí el .app a un .zip (right-click → Compress) — más fácil de compartir vía AirDrop, WeTransfer, Drive, etc.
+### Opción A — en el móvil del tester (recomendada)
 
-**Si hay problemas de "App is damaged" al abrirlo en otra Mac:** macOS bloquea apps no firmadas. El tester debe ir a **Settings → Privacy & Security → "Open Anyway"** o ejecutar `sudo xattr -cr /path/to/Coralia.app` desde Terminal. Es esperable porque no firmamos el build.
+Es un juego mobile: probarlo con el dedo, en vertical y en la pantalla real es parte de lo que se
+está midiendo.
+
+**Android:** `File → Build Settings → Android → Build`, y le pasas el `.apk`. El tester tiene que
+permitir instalar de orígenes desconocidos.
+
+**iOS:** necesita cuenta de Apple Developer y TestFlight, que todavía no está montado (ver las
+decisiones administrativas en `07_Status_y_Roadmap.md`). Mientras tanto, Android o la opción B.
+
+### Opción B — standalone de escritorio
+
+1. `File → Build Settings → macOS` (o Windows) → **Build**
+2. Guárdalo como `Coralia-playtest`
+3. Ábrelo tú primero: tiene que arrancar igual que en Play mode
+4. Comprime la carpeta a `.zip` para compartirla
+
+**Si en otra Mac dice "App is damaged":** macOS bloquea apps sin firmar. El tester entra a
+**Ajustes → Privacidad y seguridad → "Abrir de todos modos"**, o ejecuta
+`sudo xattr -cr /ruta/a/Coralia.app`. Es esperable: no firmamos el build.
+
+**Deja el juego en un estado limpio antes de pasarlo.** Si tu partida tiene 99 bombas y el nivel 40
+desbloqueado, el tester no va a ver lo que ve un jugador nuevo — que es justo lo que quieres medir.
+El botón de reset está en Settings.
 
 ---
 

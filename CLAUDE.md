@@ -8,8 +8,6 @@ Este archivo se carga automáticamente al iniciar una sesión de Claude Code en 
 
 Protagonista: **Marina** (sirena joven). Antagonista: **La Sombra Profunda** (criatura herida que Marina libera con compasión). Estructura: 6 capítulos × 10 niveles = 60 niveles MVP. 6 idiomas al lanzamiento (es, en, it, fr, de, pt).
 
-> El proyecto arrancó como prototipo en **Godot 4**, pasó brevemente por **Defold**, y migró a **Unity 6** en mayo 2026 (`fb0a6da chore: migrar a Unity 6 — eliminar Defold`). Todo el código activo hoy es Unity/C#. Si encontrás referencias a Godot o Defold en `docs/`, `README.md` o `CHANGELOG.md`, son históricas y NO reflejan el estado actual — no confíes en sus secciones técnicas de engine, solo en las de diseño (GDD, wireframes, narrativa).
-
 ## Motor: Unity 6
 
 Proyecto Unity en `coralia/`. Tipos de archivo clave:
@@ -23,9 +21,7 @@ Render pipeline: URP. Orientación: portrait 1080×1920 (`defaultScreenWidth/Hei
 
 ## Documentos de referencia (orden de lectura)
 
-⚠️ Estos docs describen diseño y roadmap con precisión, pero sus secciones de **arquitectura técnica / engine están desactualizadas** (escritas para Godot o Defold). Usalos para game design, no para convenciones de código.
-
-1. **`docs/07_Status_y_Roadmap.md`** — punto de partida, pero su sección de engine es vieja. Verificar estado real contra el código antes de asumir algo.
+1. **`docs/07_Status_y_Roadmap.md`** — punto de partida: qué existe hoy y qué falta.
 2. **`docs/06_Backlog_GitHub_Issues.md`** — el backlog. Cada H2 es un issue con acceptance criteria.
 3. **`docs/02_GDD_Coralia.md`** — GDD completo (17 secciones). Consultar antes de implementar features:
    - Mecánicas → secciones 1-4
@@ -37,10 +33,9 @@ Render pipeline: URP. Orientación: portrait 1080×1920 (`defaultScreenWidth/Hei
    - Arte → sección 11
    - Audio → sección 12
    - Narrativa (criaturas, antagonista) → sección 13
-   - Arquitectura técnica → sección 14 (⚠️ vieja, no confiar)
+   - Arquitectura técnica → sección 14
 4. **`docs/03_Wireframes_Coralia.md`** — spec textual de las pantallas.
 5. **`docs/08_Arte_Assets_Specs.md`** — specs de producción de arte (tamaños, colores, prompts) para sprites/iconos/UI. Vigente y últil al exportar assets nuevos.
-6. **`CHANGELOG.md`** — histórico de chunks, pero solo cubre hasta Fase 1 Godot. Los commits de Unity no están volcados ahí — usar `git log` para historial reciente.
 
 ## Estructura de archivos (Unity)
 
@@ -103,7 +98,6 @@ design/exported/          ← exports de diseño (PNGs a distintas densidades) a
 - **Prefijo en commits**: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `polish:`
 - **Branch por issue**: `git checkout -b issue-N-short-description`
 - **Mergear a main vía PR**
-- **Actualizar CHANGELOG.md** al cerrar cada chunk (nota: no se viene haciendo desde la migración a Unity — retomar si Diego lo pide)
 
 ## Workflow de issues
 
@@ -113,7 +107,6 @@ design/exported/          ← exports de diseño (PNGs a distintas densidades) a
 4. Branch → implementar según acceptance criteria
 5. Probar en Unity Editor (Play mode)
 6. Commit + push + PR → mergear + cerrar issue
-7. Update CHANGELOG.md
 
 ## Estado actual del código (2026-08-11)
 
@@ -128,7 +121,7 @@ design/exported/          ← exports de diseño (PNGs a distintas densidades) a
 - `TopPanelController` (safe area del panel superior) — en progreso
 
 ### Pendiente (priorizado)
-Ver `docs/06_Backlog_GitHub_Issues.md` (con la salvedad de que fue escrito para Defold — validar contra el código real antes de asumir qué falta). Top conocido:
+Ver `docs/06_Backlog_GitHub_Issues.md`. Top conocido:
 1. Gameplay: cañón + grid hexagonal + match + win/lose (carpeta `Scripts/Gameplay/` está vacía)
 2. Audio: música + SFX in-game
 3. Sistema de vidas (5 vidas, regen 30 min)
@@ -143,7 +136,6 @@ Ver `docs/06_Backlog_GitHub_Issues.md` (con la salvedad de que fue escrito para 
 - ❌ NO hardcodear strings UI (van a `Resources/translations.csv`)
 - ❌ NO commitear: `*.keystore`, `google-services.json`, `GoogleService-Info.plist`
 - ❌ NO editar `ProjectSettings/` a mano — pasar por el editor de Unity
-- ❌ NO asumir que las secciones de engine/arquitectura de `docs/` son ciertas sin verificar contra el código — están escritas para Godot/Defold
 
 ## Cómo Diego prefiere trabajar
 
