@@ -3,9 +3,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Panel de confirmación reutilizable: "esto es lo que reclamaste/compraste" — vidas por ahora
-// (único camino real, ya que la tienda de monedas todavía no existe, issue #57), monedas y
-// boosters a futuro. El título queda fijo ("¡Listo!", ui.claim.panel.title vía LocalizedText
+// Panel de confirmación reutilizable: "esto es lo que reclamaste/compraste" — vidas, disparos
+// extra y boosters. Las monedas siguen sin camino real hasta que exista la tienda (issue #57). El título queda fijo ("¡Listo!", ui.claim.panel.title vía LocalizedText
 // en el Editor) — no cambia según qué se muestre, no hace falta tocarlo desde acá.
 public class ClaimPanel : UIPanel
 {
@@ -32,6 +31,12 @@ public class ClaimPanel : UIPanel
     [Header("Monedas (sin uso todavía — depende de issue #57)")]
     [SerializeField] GameObject coinsItemRoot; // ClaimItemCoins
     [SerializeField] TMP_Text   totalCoinsText;
+
+    [Header("Boosters (RefillBoosterPanel)")]
+    [SerializeField] GameObject boosterItemRoot;  // ClaimItemBooster
+    [Tooltip("El dibujo del poder. Lo pone quien abre el panel, porque el mismo ítem sirve para los seis.")]
+    [SerializeField] Image      boosterIcon;
+    [SerializeField] TMP_Text   totalBoosterText;
 
     [Header("Disparos extra (NoMoreMovesPanel)")]
     [SerializeField] GameObject shootsItemRoot; // ClaimItemShoots
@@ -114,6 +119,22 @@ public class ClaimPanel : UIPanel
         Open();
     }
 
+    // RefillBoosterPanel — al comprar un pack de boosters.
+    public void ShowBooster(Sprite icon, int total)
+    {
+        ShowOnly(boosterItemRoot);
+
+        if (boosterIcon != null && icon != null) boosterIcon.sprite = icon;
+
+        if (totalBoosterText)
+        {
+            totalBoosterText.gameObject.SetActive(true);
+            totalBoosterText.text = total.ToString();
+        }
+
+        Open();
+    }
+
     // Activa SOLO la variante pedida y apaga las otras dos — evita que cada Show* tenga que
     // acordarse de ocultar a mano cada vez que se agrega una variante nueva.
     void ShowOnly(GameObject target)
@@ -121,6 +142,7 @@ public class ClaimPanel : UIPanel
         if (livesItemRoot)  livesItemRoot.SetActive(target == livesItemRoot);
         if (coinsItemRoot)  coinsItemRoot.SetActive(target == coinsItemRoot);
         if (shootsItemRoot) shootsItemRoot.SetActive(target == shootsItemRoot);
+        if (boosterItemRoot) boosterItemRoot.SetActive(target == boosterItemRoot);
 
         // Reset por si quedó en escala 0 del ZoomOutItem de la vez anterior.
         if (target) target.transform.localScale = Vector3.one;
@@ -139,5 +161,8 @@ public class ClaimPanel : UIPanel
         if (!totalCoinsText) Debug.LogWarning("[ClaimPanel] Falta asignar 'Total Coins Text' en el Inspector.");
         if (!shootsItemRoot)  Debug.LogWarning("[ClaimPanel] Falta asignar 'Shoots Item Root' en el Inspector.");
         if (!totalShootsText) Debug.LogWarning("[ClaimPanel] Falta asignar 'Total Shoots Text' en el Inspector.");
+        if (!boosterItemRoot)  Debug.LogWarning("[ClaimPanel] Falta asignar 'Booster Item Root' en el Inspector.");
+        if (!boosterIcon)      Debug.LogWarning("[ClaimPanel] Falta asignar 'Booster Icon' en el Inspector.");
+        if (!totalBoosterText) Debug.LogWarning("[ClaimPanel] Falta asignar 'Total Booster Text' en el Inspector.");
     }
 }

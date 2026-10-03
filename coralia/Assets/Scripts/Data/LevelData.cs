@@ -38,6 +38,15 @@ public class LevelData
     // niveles es correcto — sale en el primero al que el jugador llegue.
     public List<string> tutorials;
 
+    // Qué boosters se OFRECEN en la pantalla previa de este nivel, por nombre ("bomb", ...), y en
+    // el orden en que se muestran. Decisión de diseño de niveles igual que los tutoriales: qué
+    // ayudas tienen sentido para este objetivo. Un nivel de rescate no ofrece lo mismo que uno de
+    // limpiar el tablero.
+    //
+    // Opcional: vacío o ausente usa el trío por defecto (BoosterRules.AllowedFor), así los JSON
+    // ya escritos no hay que tocarlos. Los huecos salen con candado.
+    public List<string> allowed_boosters;
+
     public ObjectiveData objective;
     public List<BubbleEntry> bubbles;
 }

@@ -167,6 +167,68 @@ public static class SaveManager
         set { PlayerPrefs.SetInt(KEY_COINS, Mathf.Max(0, value)); PlayerPrefs.Save(); }
     }
 
+    // ---- Boosters (GDD §3.2) ----------------------------------------------------------
+    //
+    // Un contador por booster, en su propia clave. No se guardan todos juntos en una cadena
+    // separada por comas como los tutoriales vistos porque acá hay CANTIDADES, y un contador
+    // que sube y baja dentro de una cadena es parseo por cada compra y cada uso.
+    //
+    // La clave lleva el nombre del valor del enum: renombrar un BubbleSpecial deja huérfano lo
+    // que el jugador tuviera comprado de ese booster. Si alguna vez hay que renombrar uno, va
+    // con migración acá.
+    static string BoosterKey(BubbleSpecial booster) => $"booster_{booster}";
+
+    public static int BoosterCount(BubbleSpecial booster) =>
+        booster == BubbleSpecial.None ? 0 : PlayerPrefs.GetInt(BoosterKey(booster), 0);
+
+    // Avisa de cualquier cambio en el inventario, venga de un regalo, una compra o un uso. El
+    // ícono del HUD se cuelga de acá en vez de que cada sitio que toca el inventario tenga que
+    // acordarse de refrescarlo.
+    public static event Action OnBoostersChanged;
+
+    public static void GrantBooster(BubbleSpecial booster, int amount = 1)
+    {
+        if (booster == BubbleSpecial.None || amount <= 0) return;
+        PlayerPrefs.SetInt(BoosterKey(booster), BoosterCount(booster) + amount);
+        UnlockBooster(booster);
+        PlayerPrefs.Save();
+        OnBoostersChanged?.Invoke();
+    }
+
+    // Si el jugador ya CONOCE este booster, independientemente de cuántos le queden.
+    //
+    // Es un bit aparte del contador y no "¿tiene alguno?" porque conocer un poder no se deshace:
+    // gastar el último lo dejaría otra vez bloqueado en la pantalla previa, como si nunca lo
+    // hubiera usado, y sin forma de volver a conseguirlo porque ni siquiera se muestra.
+    static string BoosterUnlockKey(BubbleSpecial booster) => $"booster_unlocked_{booster}";
+
+    public static bool IsBoosterUnlocked(BubbleSpecial booster) =>
+        booster != BubbleSpecial.None && PlayerPrefs.GetInt(BoosterUnlockKey(booster), 0) == 1;
+
+    // Se llama solo desde GrantBooster: llegue por el tutorial, por una recompensa diaria o por
+    // una compra, recibir uno es lo que lo da a conocer. Separarlo sería poder regalar un poder
+    // que el jugador nunca ve.
+    public static void UnlockBooster(BubbleSpecial booster)
+    {
+        if (booster == BubbleSpecial.None || IsBoosterUnlocked(booster)) return;
+
+        PlayerPrefs.SetInt(BoosterUnlockKey(booster), 1);
+        PlayerPrefs.Save();
+    }
+
+    // Devuelve false si no había ninguno — así quien lo use no puede gastar lo que no existe
+    // por haberse olvidado de preguntar antes.
+    public static bool ConsumeBooster(BubbleSpecial booster)
+    {
+        int have = BoosterCount(booster);
+        if (have <= 0) return false;
+
+        PlayerPrefs.SetInt(BoosterKey(booster), have - 1);
+        PlayerPrefs.Save();
+        OnBoostersChanged?.Invoke();
+        return true;
+    }
+
     // Vidas (GDD §6.2). Máximo 5, regen 30 min POR VIDA individual (confirmado con Diego —
     // de 0 a 5 llenas tardaría 2.5h). El regen se calcula por diferencia de tiempo real
     // (DateTimeOffset.UtcNow vs. un timestamp guardado), no por un timer corriendo en
@@ -189,12 +251,62 @@ public static class SaveManager
     // vida por Quit/Restart/derrota sí avisa apenas se aterriza donde corresponda.
     public static bool NotifyOutOfLivesOnMapLoad;
 
+    // ---- Partida a medias --------------------------------------------------------------
+    //
+    // Marca que hay un nivel abierto. Se pone al armarlo y se quita al cerrarlo por cualquier vía
+    // legítima (ganar, perder, salir por el menú). Si al arrancar la app sigue puesta, es que la
+    // partida anterior murió con la app: el jugador la cerró a mitad, y eso cuesta una vida igual
+    // que abandonar por el menú. Sin esto, ir perdiendo y matar la app sale gratis.
+    //
+    // Va por una marca persistida y NO por OnApplicationQuit a propósito: en iOS ese callback
+    // normalmente no llega a ejecutarse cuando el usuario mata la app con el gesto, que es
+    // exactamente el caso que hay que cubrir. Una marca escrita de antemano no depende de que el
+    // juego llegue a correr nada al cerrarse.
+    //
+    // Minimizar NO cuenta: la app sigue viva y la marca se limpia cuando el nivel termina de
+    // verdad (confirmado con Diego).
+    const string KEY_LEVEL_IN_PROGRESS = "level_in_progress";
+
+    public static void MarkLevelInProgress()
+    {
+        PlayerPrefs.SetInt(KEY_LEVEL_IN_PROGRESS, 1);
+        PlayerPrefs.Save();
+    }
+
+    public static void ClearLevelInProgress()
+    {
+        if (!PlayerPrefs.HasKey(KEY_LEVEL_IN_PROGRESS)) return;
+        PlayerPrefs.DeleteKey(KEY_LEVEL_IN_PROGRESS);
+        PlayerPrefs.Save();
+    }
+
+    // Corre solo al arrancar el juego, antes de la primera escena. Acá y no en el Start de alguna
+    // escena porque no depende de por cuál se entre: con Unity reanudando en el Level Map, en un
+    // splash o donde sea, la deuda se salda igual.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void SettleAbandonedLevel()
+    {
+        if (PlayerPrefs.GetInt(KEY_LEVEL_IN_PROGRESS, 0) == 0) return;
+
+        ClearLevelInProgress();
+
+        // LoseLife ya arma NotifyOutOfLivesOnMapLoad si esto deja al jugador en cero, así que el
+        // aviso de "sin vidas" aparece solo al llegar al mapa, sin nada más que hacer acá.
+        LoseLife();
+
+        Debug.Log("[SaveManager] La partida anterior se cerró a mitad: -1 vida.");
+    }
+
     // Resta 1 vida por gameplay (abandonar/reiniciar/declinar continuar). Los call sites que
     // restan vidas deben usar esto en vez de "Lives--" directo, para que el cronómetro de
     // regen arranque en el momento correcto (solo al pasar de llena a no-llena — si ya
     // estaba regenerando, no se reinicia el timer en curso).
     public static void LoseLife()
     {
+        // Antes del return por vidas infinitas: la partida se cerró igual, y dejar la marca puesta
+        // haría que al siguiente arranque se cobrara una vida por un nivel que ya terminó.
+        ClearLevelInProgress();
+
         if (IsInfiniteLivesActive) return; // el boost activo hace que perder no cueste nada
 
         int current = Lives; // ya aplica regen pendiente antes de restar

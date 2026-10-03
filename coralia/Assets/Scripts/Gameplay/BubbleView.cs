@@ -48,9 +48,20 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     const float POP_PARTICLE_SPEED    = 260f; // px/s
     const float POP_PARTICLE_LIFETIME = 0.35f;
 
-    public Vector2Int  Cell       { get; private set; }
-    public BubbleColor ColorType  { get; private set; }
-    public bool        IsCreature { get; private set; }
+    public Vector2Int    Cell       { get; private set; }
+    public BubbleColor   ColorType  { get; private set; }
+    public bool          IsCreature { get; private set; }
+    public BubbleSpecial Special    { get; private set; }
+
+    // El poder que lleva esta burbuja, con su arte. Las capas van sobre la raíz (este mismo
+    // objeto), encima del sprite de color: una bomba no se mezcla con su color, lo tapa.
+    public void SetSpecial(BubbleSpecial special)
+    {
+        Special = special;
+
+        if (special == BubbleSpecial.None) SpecialBubbleSkin.Clear(this);
+        else                               SpecialBubbleSkin.Apply(this, special);
+    }
 
     public void Setup(Vector2Int cell, BubbleColor color, Sprite sprite)
     {
@@ -137,6 +148,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
             float p = t / POP_DURATION;
             transform.localScale = baseScale * (1f + 0.3f * p);
             if (bubbleImage) bubbleImage.color = new Color(1f, 1f, 1f, 1f - p);
+            if (Special != BubbleSpecial.None) SpecialBubbleSkin.SetAlpha(this, 1f - p);
             yield return null;
         }
         Destroy(gameObject);
@@ -207,6 +219,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
             {
                 float fadeP = (t - DROP_FADE_START) / (DROP_MAX_DURATION - DROP_FADE_START);
                 bubbleImage.color = new Color(1f, 1f, 1f, 1f - fadeP);
+                if (Special != BubbleSpecial.None) SpecialBubbleSkin.SetAlpha(this, 1f - fadeP);
             }
             yield return null;
         }

@@ -25,14 +25,29 @@ public class TutorialShootDemo : MonoBehaviour
     [Tooltip("El punto de la línea de trayectoria. Vacío usa la primera burbuja en chiquito, que es lo que hace la línea del juego de verdad.")]
     [SerializeField] Sprite dotSprite;
 
+    [Tooltip("Color de los puntos de la mira.")]
+    [SerializeField] Color dotColor = new(1f, 1f, 1f, 0.85f);
+
     [Header("Proporciones")]
     [Tooltip("Cuánto mide una burbuja, en tanto por uno del alto del hueco.")]
-    [Range(0.08f, 0.3f)]
-    [SerializeField] float bubbleSize = 0.16f;
+    [Range(0.05f, 0.3f)]
+    [SerializeField] float bubbleSize = 0.1f;
 
     [Tooltip("Cuántos puntos tiene la línea de trayectoria.")]
-    [Range(4, 20)]
-    [SerializeField] int dots = 10;
+    [Range(4, 24)]
+    [SerializeField] int dots = 12;
+
+    [Tooltip("Tamaño de cada punto de la mira, en tanto por uno de la burbuja.")]
+    [Range(0.1f, 0.6f)]
+    [SerializeField] float dotSize = 0.32f;
+
+    [Tooltip("Cuánto se desvía la mira al empezar a apuntar, en grados. Es lo que convierte el gesto en APUNTAR: la línea entra torcida y se va asentando sobre el objetivo. En cero, la mano va derecho del cañón al destino y se lee como si arrastrara la burbuja hasta ahí.")]
+    [Range(0f, 60f)]
+    [SerializeField] float aimSweep = 30f;
+
+    [Tooltip("A qué altura de la línea se dibuja la mano, en tanto por uno de la distancia al objetivo.")]
+    [Range(0.1f, 0.9f)]
+    [SerializeField] float handDistance = 0.42f;
 
     [Header("Tiempos (segundos)")]
     [SerializeField] float holdTime    = 0.5f;   // el tablero quieto, antes de empezar
@@ -42,14 +57,20 @@ public class TutorialShootDemo : MonoBehaviour
     [SerializeField] float popTime     = 0.4f;   // las tres estallan
     [SerializeField] float restTime    = 0.7f;   // y se espera antes de repetir
 
-    // El color que hace match va en los índices 1 y 2 de la fila: así el hueco de abajo toca a
-    // los dos y el disparo completa el trío sin tener que explicar la geometría hexagonal.
+    // Celdas de verdad del tablero, no posiciones inventadas: así la fila y el hueco de abajo
+    // quedan donde quedarían jugando. TARGET es vecino hexagonal de (2,0) y (3,0) —las dos del
+    // color que matchea—, que es lo que hace que el disparo complete el trío.
+    static readonly Vector2Int[] ROW_CELLS = { new(1, 0), new(2, 0), new(3, 0), new(4, 0) };
+    static readonly Vector2Int   TARGET    = new(2, 1);
+
+    // El color que hace match va en los índices 1 y 2: así el hueco de abajo toca a los dos.
     static readonly int[] ROW = { 1, 0, 0, 1 };
 
     readonly List<Image> _row  = new();
     readonly List<Image> _trail = new();
 
     RectTransform _area;
+    Vector2       _aimTo;   // hacia dónde apunta la mira ahora mismo: la línea sale del cañón hasta acá
     Image         _shot;
     Image         _hand;
     Coroutine     _loop;
@@ -123,8 +144,8 @@ public class TutorialShootDemo : MonoBehaviour
         // el orden en la jerarquía, no una propiedad que haya que recordar poner.
         for (int i = 0; i < dots; i++)
         {
-            var dot = Spawn("Dot", dotSprite != null ? dotSprite : bubbleSprites[0], size * 0.22f);
-            dot.color = new Color(1f, 1f, 1f, 0.55f);
+            var dot = Spawn("Dot", dotSprite != null ? dotSprite : bubbleSprites[0], size * dotSize);
+            dot.color = dotColor;
             _trail.Add(dot);
         }
 
@@ -170,16 +191,18 @@ public class TutorialShootDemo : MonoBehaviour
     float Width()  => _area.rect.width;
     float Height() => _area.rect.height;
 
-    Vector2 RowPos(int i)
-    {
-        float size = Size();
+    // Del tablero real a la escala de la demostración.
+    float Scale => Size() / HexGridMath.BubbleDiameter;
 
-        return new Vector2((i - (ROW.Length - 1) * 0.5f) * size, Height() * 0.26f);
-    }
+    // La MISMA fórmula del tablero, escalada y medida desde el hueco de destino. Derivada y no
+    // copiada: el tejido hexagonal de la demostración es el del juego por construcción.
+    Vector2 CellPos(Vector2Int cell) =>
+        (HexGridMath.CellToLocalPos(cell) - HexGridMath.CellToLocalPos(TARGET)) * Scale + TargetPos();
 
-    // El hueco donde cae el disparo: justo debajo y en medio de las dos del color que matchea,
-    // que es donde toca a las dos a la vez. 0,87 es el alto de una fila hexagonal.
-    Vector2 TargetPos() => (RowPos(1) + RowPos(2)) * 0.5f - Vector2.up * (Size() * 0.87f);
+    Vector2 RowPos(int i) => CellPos(ROW_CELLS[i]);
+
+    // Dónde queda el hueco donde cae el disparo dentro del área. La fila cuelga de acá.
+    Vector2 TargetPos() => new(0f, Height() * 0.14f);
 
     Vector2 CannonPos() => new(0f, -Height() * 0.34f);
 
@@ -226,26 +249,63 @@ public class TutorialShootDemo : MonoBehaviour
         // enseña empieza tocando la burbuja, y si la mano apareciera ya a medio camino el
         // jugador no vería de dónde sale.
         _hand.enabled = true;
-        Place(_hand, CannonPos() + new Vector2(size * 0.35f, -size * 0.55f));
+        Place(_hand, HandAtCannon());
         _hand.transform.localScale = Vector3.one;
 
+        _aimTo = AimPointAt(StartAngle());
         ShowTrail(0f);
     }
 
+    // --- La mira ---
+    //
+    // El dedo no ARRASTRA la burbuja hasta el hueco: elige una DIRECCIÓN, y la línea sale del
+    // cañón hacia ahí. Por eso la mira entra desviada y se va asentando sobre el objetivo, en vez
+    // de que la mano viaje derecho del cañón al destino — eso último se lee como arrastrar, que
+    // es justo lo que el gesto no es.
+
+    // Ángulo en grados hacia el objetivo, 0 = recto hacia arriba.
+    float TargetAngle()
+    {
+        Vector2 d = TargetPos() - CannonPos();
+        return Mathf.Atan2(d.x, d.y) * Mathf.Rad2Deg;
+    }
+
+    float StartAngle() => TargetAngle() + aimSweep;
+
+    // Hasta dónde llega la mira apuntando con ese ángulo: siempre la misma distancia, así la
+    // línea no se estira ni se encoge mientras barre.
+    Vector2 AimPointAt(float degrees)
+    {
+        float   rad = degrees * Mathf.Deg2Rad;
+        Vector2 dir = new(Mathf.Sin(rad), Mathf.Cos(rad));
+
+        return CannonPos() + dir * Vector2.Distance(CannonPos(), TargetPos());
+    }
+
+    Vector2 HandAtCannon() => CannonPos() + new Vector2(Size() * 0.4f, -Size() * 0.6f);
+
+    // La mano va SOBRE la línea, corrida a un lado para no taparla.
+    Vector2 HandOnAim() =>
+        Vector2.Lerp(CannonPos(), _aimTo, handDistance) + new Vector2(Size() * 0.6f, -Size() * 0.35f);
+
     IEnumerator Aim()
     {
-        Vector2 from = CannonPos() + new Vector2(Size() * 0.35f, -Size() * 0.55f);
-        Vector2 to   = TargetPos() + new Vector2(Size() * 0.35f, -Size() * 0.55f);
+        Vector2 handFrom = HandAtCannon();
+        float   from     = StartAngle();
+        float   to       = TargetAngle();
 
         for (float t = 0f; t < dragTime; t += Time.unscaledDeltaTime)
         {
             float p = Smooth(t / dragTime);
 
-            Place(_hand, Vector2.Lerp(from, to, p));
-            ShowTrail(p);   // la línea crece con el dedo: es la relación que hay que enseñar
+            _aimTo = AimPointAt(Mathf.Lerp(from, to, p));
+            Place(_hand, Vector2.Lerp(handFrom, HandOnAim(), p));
+            ShowTrail(1f);   // completa desde el primer frame, como en el juego: lo que cambia es hacia dónde apunta, no cuánto mide
             yield return null;
         }
 
+        _aimTo = TargetPos();
+        Place(_hand, HandOnAim());
         ShowTrail(1f);
     }
 
@@ -303,18 +363,19 @@ public class TutorialShootDemo : MonoBehaviour
         _shot.enabled = false;
     }
 
-    // Cuántos puntos de la línea se ven, de 0 a 1.
+    // Cuántos puntos de la línea se ven, de 0 a 1. Van del cañón a _aimTo, o sea a donde apunte
+    // la mira en este instante — durante el vuelo eso ya es el objetivo, y la fracción sirve para
+    // que la línea se consuma por detrás de la burbuja.
     void ShowTrail(float progress)
     {
         Vector2 from = CannonPos();
-        Vector2 to   = TargetPos();
         int     show = Mathf.RoundToInt(Mathf.Clamp01(progress) * _trail.Count);
 
         for (int i = 0; i < _trail.Count; i++)
         {
             _trail[i].enabled = i < show;
 
-            if (i < show) Place(_trail[i], Vector2.Lerp(from, to, (i + 1f) / _trail.Count));
+            if (i < show) Place(_trail[i], Vector2.Lerp(from, _aimTo, (i + 1f) / _trail.Count));
         }
     }
 

@@ -8,3 +8,5 @@ freesound_community-water-drip-45622 -> shine_bonus_drop_v2
 freesound_community-water-drip-45622 -> shine_bonus_drop_v2
 dragon-studio-christmas-twinkle-effect-451850- > shine_v2
 virtual_vibes-simple-pop-noise-383737 -> swap
+bryansantosbreton-christmas-vibes-windy-whoosh-magical-chimes-180863 -> bubble_bomb
+freesound_community-sparkler_fuse_nmwav-14738 -> fuse

@@ -64,11 +64,16 @@ public class RefillLivesPanel : UIPanel
     }
 
     // Precio por vida = coinsToFillAllLives / MAX_LIVES — ej. 20/5 = 4 monedas por vida.
+    //
+    // El precio base redondea hacia ARRIBA y el descuento hacia ABAJO, y no es un descuido: si el
+    // precio base bajara, comprar las vidas de una en una saldría más barato que el refill entero
+    // y el pack dejaría de tener sentido. El descuento no tiene ese problema, así que ahí se
+    // redondea a favor del jugador — mismo criterio que BoosterCatalog.Pack.Discounted.
     int PriceForMissingLives(int missing, int discount)
     {
         float pricePerLife = (float)coinsToFillAllLives / SaveManager.MAX_LIVES;
         int   price        = Mathf.CeilToInt(missing * pricePerLife);
-        if (discount > 0) price = Mathf.Max(1, Mathf.RoundToInt(price * (1f - discount / 100f)));
+        if (discount > 0) price = Mathf.Max(1, Mathf.FloorToInt(price * (1f - discount / 100f)));
         return price;
     }
 

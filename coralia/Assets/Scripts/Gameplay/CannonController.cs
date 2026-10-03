@@ -62,16 +62,39 @@ public class CannonController : MonoBehaviour
     [SerializeField] float         hintTrajectoryAlpha = 0.4f; // línea "fantasma" semitransparente, distinta de un apuntado real
     [SerializeField] float         hintHandDistance    = 550f; // qué tan lejos del cañón se posiciona la mano sobre la línea
 
-    public event System.Action<Vector2Int> OnBubbleLanded;
+    public event System.Action<Vector2Int, BubbleSpecial> OnBubbleLanded;
 
     List<string>      _availableColors;
     List<BubbleColor> _availableColorsParsed; // fallback de RollColor() si el grid se queda sin colores rastreables
     int          _shotsRemaining;
     BubbleColor  _current;
     BubbleColor  _next;
+
+    Coroutine _boosterFx;
+    Vector3   _currentBaseScale;
+    bool      _currentScaleSaved;
+
+    // El poder cargado en el cañón, None mientras no haya ninguno. Tapa a _current sin
+    // reemplazarlo: al dispararse la bomba, el color que estaba en la ranura sigue estando.
+    // Gastar el booster Y perder la burbuja de color sería cobrar dos veces por lo mismo.
+    BubbleSpecial _currentSpecial;
     ShotBubble   _flyingShot;
     Vector2Int?  _predictedCell;   // dónde prometió la mira que iba a quedar este disparo
     bool         _inputEnabled = true;
+    [Header("Boosters")]
+    [Tooltip("Sonido al cargar un booster en el cañón. Opcional.")]
+    [SerializeField] AudioClip boosterLoadClip;
+
+    [Tooltip("Cuánto dura el golpe de la burbuja al transformarse en el booster.")]
+    [SerializeField] float boosterLoadDuration = 0.3f;
+
+    [Tooltip("Hasta dónde crece en el pico de ese golpe. 1 = no crece.")]
+    [Range(1f, 2f)]
+    [SerializeField] float boosterLoadScale = 1.35f;
+
+    [Tooltip("El destello que acompaña la transformación.")]
+    [SerializeField] Sparkle.Settings boosterLoadSparkle = new();
+
     [Header("Apuntado")]
     [Tooltip("Déjalo vacío y se genera solo: un aro difuso dibujado por código, centrado en la boca del cañón y del tamaño exacto de la zona de cancelación. Solo hace falta asignar algo acá para usar arte propio en su lugar. Se le apaga el raycast de cualquier manera — si se comiera los toques, apuntar desde encima del cañón dejaría de funcionar.")]
     [SerializeField] Graphic aimGlow;
@@ -384,8 +407,10 @@ public class CannonController : MonoBehaviour
         _availableColorsParsed = new List<BubbleColor>();
         foreach (var c in availableColors) _availableColorsParsed.Add(BubbleColorExtensions.Parse(c));
         _shotsRemaining  = shotsRemaining;
-        _current = RollColor();
-        _next    = RollColor();
+        _current        = RollColor();
+        _next           = RollColor();
+        _currentSpecial = BubbleSpecial.None;
+        BoosterChanged();
         RefreshPreview();
         SetOctopusSprite(octopusIdleSprite);
 
@@ -537,6 +562,12 @@ public class CannonController : MonoBehaviour
     // del grid de la última jugada y pueden ser uno solo repetido.
     public void PrepareCelebrationColors()
     {
+        // Una bomba que quedó cargada sin usarse al terminar el nivel no se gasta en el remate:
+        // sigue en el inventario (nunca se descontó) y lo único que haría acá es que las diez
+        // burbujas de la celebración salieran con su aspecto.
+        _currentSpecial = BubbleSpecial.None;
+        BoosterChanged();
+
         _current = LevelColor();
         _next    = LevelColor();
         RefreshPreview();
@@ -726,7 +757,7 @@ public class CannonController : MonoBehaviour
     void AimAndFire(Vector2 targetLocal)
     {
         _aimDir = ComputeAimDir(targetLocal);
-        trajectoryLine.ShowPath(MuzzleLocal, _aimDir, grid.SpriteFor(_current));
+        trajectoryLine.ShowPath(MuzzleLocal, _aimDir, DotSprite, 1f, AimBlastRadius);
         Fire();
     }
 
@@ -751,7 +782,7 @@ public class CannonController : MonoBehaviour
         }
 
         _aimDir = ComputeAimDir(local);
-        trajectoryLine.ShowPath(MuzzleLocal, _aimDir, grid.SpriteFor(_current));
+        trajectoryLine.ShowPath(MuzzleLocal, _aimDir, DotSprite, 1f, AimBlastRadius);
     }
 
     Vector2 ComputeAimDir(Vector2 targetLocal)
@@ -796,10 +827,23 @@ public class CannonController : MonoBehaviour
 
         var go   = Instantiate(bubblePrefab, gridContainer);
         var shot = go.AddComponent<ShotBubble>();
-        shot.Init(gridContainer, grid, MuzzleLocal, _aimDir, shotSpeed, _current, grid.SpriteFor(_current));
+        shot.Init(gridContainer, grid, MuzzleLocal, _aimDir, shotSpeed, _current, CurrentSprite);
+
+        // La bomba conserva su aspecto durante el vuelo: la que sale del cañón y la que llega
+        // al tablero tienen que ser la misma burbuja.
+        if (_currentSpecial != BubbleSpecial.None)
+            go.GetComponent<BubbleView>()
+              .SetSpecial(_currentSpecial);
         _flyingShot = shot;
         AudioManager.Instance?.PlaySfx(shootClip);
         if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
+
+        // Recién acá se gasta: el disparo ya salió y no hay vuelta atrás.
+        if (_currentSpecial != BubbleSpecial.None)
+        {
+            SaveManager.ConsumeBooster(_currentSpecial);
+            BoosterChanged();
+        }
 
         if (!SaveManager.HasFiredFirstShot) SaveManager.HasFiredFirstShot = true;
         HideHint();
@@ -833,13 +877,26 @@ public class CannonController : MonoBehaviour
         Destroy(_flyingShot); // el componente ShotBubble ya cumplió su función, la BubbleView sigue viva
         _flyingShot = null;
 
-        _current = _next; // avanzar la cola no depende del resultado del match, es siempre así
+        // La bomba no consume la cola: tapaba a _current, así que al irse el color vuelve a
+        // estar donde estaba. Lo que sí consume es el disparo del nivel (eso lo descuenta
+        // GameplayController), que es el precio de usarla sobre el tablero.
+        var fired = _currentSpecial;
+        _currentSpecial = BubbleSpecial.None;
+
+        // Hay que avisar DOS veces por disparo, y no sobra: Fire() avisa del gasto —el número del
+        // ícono baja apenas sale el tiro— pero ahí la recámara todavía tiene el booster puesto. Es
+        // acá, al aterrizar, donde deja de estar cargado, y sin este aviso el ícono se quedaría
+        // marcado como "cargado" para el resto del nivel.
+        if (fired != BubbleSpecial.None) BoosterChanged();
+
+        if (fired == BubbleSpecial.None)
+            _current = _next; // avanzar la cola no depende del resultado del match, es siempre así
 
         // OnBubbleLanded dispara GameplayController.ResolveMatchAndDrop de forma síncrona —
         // para cuando termina esta línea, el grid ya refleja el match/drop de este disparo
         // (incluida la cascada: burbujas de OTRO color que cayeron por quedar desconectadas
         // del techo, no solo las que matchearon directo).
-        OnBubbleLanded?.Invoke(cell);
+        OnBubbleLanded?.Invoke(cell, fired);
 
         // El "current" NO se re-sortea aunque la cascada haya borrado todas las burbujas de su
         // color. El jugador ya lo vio como "next" durante todo el vuelo del disparo anterior: es
@@ -849,6 +906,14 @@ public class CannonController : MonoBehaviour
         // Si quedó sin uso, el swap está para eso, y el nuevo "next" ya se sortea contra el grid
         // de después de la cascada, así que siempre sirve. Vale más no mentir sobre lo que se va a
         // disparar que ahorrarle un disparo perdido de vez en cuando.
+        // Con bomba no hay relevo que animar: la cola quedó igual, solo hay que volver a
+        // mostrar el color que la bomba estaba tapando.
+        if (fired != BubbleSpecial.None)
+        {
+            RefreshPreview();
+            return;
+        }
+
         _next = RollColor();
         StartCoroutine(AnimateNextIntoCurrent());
     }
@@ -974,6 +1039,12 @@ public class CannonController : MonoBehaviour
         // terminado no hay turno del jugador, y el swap es una jugada como cualquier otra.
         if (!_inputEnabled || _flyingShot != null) return; // GDD 1.3: swap es gratis pero no durante el vuelo
         if (_swapRoutine != null) return;                  // ya hay un intercambio cruzando
+
+        // Con un booster cargado, tocar la burbuja lo descarga en vez de intercambiar. El
+        // intercambio ocurriría igual —la bomba tapa a _current, no lo reemplaza— pero debajo de
+        // la bomba, o sea sin que se vea nada: un toque que aparenta no hacer nada y cambia el
+        // color que va a salir después. Descargar es lo que el gesto parece decir.
+        if (_currentSpecial != BubbleSpecial.None) { UnloadBooster(); return; }
 
         // Sin "next" no hay con qué intercambiar. Antes esto no se miraba: en el último disparo,
         // donde la next ni siquiera se muestra, tocar la current igual cambiaba su color por el de
@@ -1164,15 +1235,160 @@ public class CannonController : MonoBehaviour
     // "Current" solo se muestra si queda al menos 1 disparo; "next" solo si queda más de 1
     // (si no, no habría con qué disparar después del actual) — antes se mostraban siempre
     // los dos sin importar cuántos disparos quedaban de verdad.
+    // Lo que se ve y se dispara: el arte del poder cuando hay uno cargado, el color si no.
+    // Pasa por acá todo lo que dibuja la burbuja actual (la ranura, la mira, el disparo), para
+    // que la bomba no se vea en un lado y el color en otro.
+    Sprite CurrentSprite =>
+        _currentSpecial == BubbleSpecial.None ? grid.SpriteFor(_current)
+                                              : BoosterRules.BubbleSpriteFor(_currentSpecial);
+
+    // Los puntos de la mira llevan el color de lo que se va a disparar, que para un booster es
+    // BLANCO y no su propio arte: una fila de bombitas en miniatura se lee como si fueran a salir
+    // muchas. Blanco dice "esta es la trayectoria" sin prometer nada más.
+    Sprite DotSprite =>
+        _currentSpecial == BubbleSpecial.None ? grid.SpriteFor(_current) : SparkleTextures.Glow;
+
+    // Cuántos anillos marcar en el tablero mientras se apunta. Solo los poderes de área tienen
+    // zona; un disparo normal marca su celda y nada más.
+    int AimBlastRadius =>
+        _currentSpecial == BubbleSpecial.Bomb ? BoosterRules.BOMB_RADIUS : 0;
+
     void RefreshPreview()
     {
         bool hasCurrent = _shotsRemaining > 0;
         bool hasNext    = _shotsRemaining > 1;
 
         currentBubbleImage.enabled = hasCurrent; // por si venía oculta de Fire() — vuelve a mostrarse con el color ya rotado
-        if (hasCurrent) currentBubbleImage.sprite = grid.SpriteFor(_current);
+        if (hasCurrent) currentBubbleImage.sprite = CurrentSprite;
+
+        // Las capas van sobre la ranura, no sobre el sprite: el giro y el brillo tienen que
+        // verse ya en el cañón, antes de disparar, o el jugador no sabe que cargó el booster.
+        if (hasCurrent && _currentSpecial != BubbleSpecial.None)
+            SpecialBubbleSkin.Apply(currentBubbleImage, _currentSpecial);
+        else
+            SpecialBubbleSkin.Clear(currentBubbleImage);
 
         nextBubbleImage.enabled = hasNext;
         if (hasNext) nextBubbleImage.sprite = grid.SpriteFor(_next);
+    }
+
+    // ---- Boosters -------------------------------------------------------------------------
+
+    public BubbleSpecial LoadedBooster => _currentSpecial;
+
+    // Para que el ícono del HUD se entere de cargar/descargar/gastar sin preguntar por frame.
+    public event System.Action OnBoosterChanged;
+
+    // Mientras algo esté en movimiento no se carga: a mitad de un vuelo o de un cruce de la cola,
+    // el estado que la bomba tiene que tapar todavía está cambiando.
+    public bool CanLoadBooster =>
+        _inputEnabled && _flyingShot == null && _swapRoutine == null && _shotsRemaining > 0;
+
+    // Devuelve false si no se pudo cargar, para que quien ofrezca el booster (el HUD) no lo
+    // descuente del inventario por nada.
+    public bool LoadBooster(BubbleSpecial booster)
+    {
+        if (booster == BubbleSpecial.None || !CanLoadBooster) return false;
+        if (SaveManager.BoosterCount(booster) <= 0) return false;
+        if (BoosterRules.BubbleSpriteFor(booster) == null)
+        {
+            Debug.LogWarning($"[CannonController] El booster {booster} no tiene sprite asignado en GridController — no se carga.", this);
+            return false;
+        }
+
+        // Cargar NO descuenta: el inventario se gasta recién en Fire(). Así equivocarse de
+        // ícono no cuesta monedas, y una bomba cargada que quedó sin usar al terminar el nivel
+        // sigue estando la próxima vez.
+        _currentSpecial = booster;
+        HideHint();
+        RefreshPreview();
+        PlayBoosterLoad();
+        BoosterChanged();
+        return true;
+    }
+
+    // El aviso de que el booster entró: la burbuja da un golpe, suelta un destello y suena. Sin
+    // esto, cargarlo cambia el sprite y nada más — y un cambio silencioso de sprite se confunde
+    // con que la cola avanzó sola, que es otra cosa completamente distinta.
+    void PlayBoosterLoad()
+    {
+        if (currentBubbleImage == null || !currentBubbleImage.enabled) return;
+
+        AudioManager.Instance?.PlaySfx(boosterLoadClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.MediumImpact);
+
+        Sparkle.Burst((RectTransform)currentBubbleImage.transform, boosterLoadSparkle);
+
+        var rect = (RectTransform)currentBubbleImage.transform;
+
+        // La escala de reposo se guarda UNA vez. Leyéndola en cada arranque, una animación
+        // interrumpida a medias dejaría su escala inflada haciendo de nueva base, y la burbuja
+        // crecería un poco más con cada carga y descarga.
+        if (!_currentScaleSaved) { _currentBaseScale = rect.localScale; _currentScaleSaved = true; }
+
+        if (_boosterFx != null) { StopCoroutine(_boosterFx); rect.localScale = _currentBaseScale; }
+
+        _boosterFx = StartCoroutine(BoosterLoadPop(rect));
+    }
+
+    // Mismo gesto que la aparición de la burbuja al abrir el nivel (RevealCurrent): sube de golpe
+    // pasándose del tamaño y después se asienta. Un crecimiento suave se lee como que algo se
+    // acerca; este, como un impacto.
+    IEnumerator BoosterLoadPop(RectTransform rect)
+    {
+        const float RISE = 0.4f;   // qué fracción del total se va en llegar al pico
+
+        float duration = Mathf.Max(0.01f, boosterLoadDuration);
+
+        for (float t = 0f; t < duration; t += Time.deltaTime)
+        {
+            float p     = t / duration;
+            float scale = p < RISE
+                ? Mathf.Lerp(1f, boosterLoadScale, p / RISE)
+                : Mathf.Lerp(boosterLoadScale, 1f, (p - RISE) / (1f - RISE));
+
+            rect.localScale = _currentBaseScale * scale;
+            yield return null;
+        }
+
+        rect.localScale = _currentBaseScale;
+        _boosterFx      = null;
+    }
+
+    // Un solo sitio para "el booster de la recámara cambió": avisa a quien escuche y pone el
+    // sonido de fondo acorde. Separados, cada rama nueva tenía que acordarse de las dos cosas —y
+    // una mecha que sigue sonando con la bomba ya disparada no se olvida nadie, pero una que no
+    // arranca sí.
+    void BoosterChanged()
+    {
+        ApplyBoosterLoop();
+        OnBoosterChanged?.Invoke();
+    }
+
+    // El bucle lo lleva el CAÑÓN y no la burbuja: la misma burbuja especial se dibuja en el grid,
+    // en la recámara y en la que vuela, y si el sonido viviera con ella sonarían tres mechas
+    // encimadas. Cargado en la recámara hay uno solo, siempre.
+    void ApplyBoosterLoop()
+    {
+        if (AudioManager.Instance == null) return;
+
+        var art = BoosterRules.ArtFor(_currentSpecial);
+
+        if (art == null || art.loadedLoopClip == null) AudioManager.Instance.StopSfxLoop();
+        else AudioManager.Instance.PlaySfxLoop(art.loadedLoopClip, art.loadedLoopVolume);
+    }
+
+    // Se corta al salir del nivel pase lo que pase: una mecha que sigue sonando sobre el mapa es
+    // de las cosas que solo se descubren cuando ya está publicado.
+    void OnDisable() => AudioManager.Instance?.StopSfxLoop();
+
+    // Volver a tocar el ícono descarga el booster sin gastarlo: cargarlo por error y no poder
+    // deshacerlo cuesta monedas de verdad.
+    public void UnloadBooster()
+    {
+        if (_currentSpecial == BubbleSpecial.None) return;
+        _currentSpecial = BubbleSpecial.None;
+        RefreshPreview();
+        BoosterChanged();
     }
 }

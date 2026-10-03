@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // Las dos texturas del brillo, dibujadas por código una sola vez por sesión.
@@ -13,10 +14,23 @@ public static class SparkleTextures
     const int MOTE_SIZE = 64;
     const int RING_SIZE = 256;   // más grande que los otros: un filo fino se escalona si la textura es corta
 
+    // A qué distancia del centro cae el filo del aro, en tanto por uno del radio de la textura.
+    // Es público porque quien quiera que el aro rodee algo EXACTO —una burbuja, por ejemplo— no
+    // puede darle el tamaño de esa cosa: tiene que dividir por esto, o el aro le queda por dentro.
+    public const float RING_EDGE = 0.80f;
+
     static Sprite _glow;
     static Sprite _mote;
-    static Sprite _ring;
-    static float  _ringSoft = -1f;
+
+    // Un aro POR grosor, no uno solo. Antes se guardaba el último y se destruía el anterior, y
+    // funcionó mientras hubo un único usuario; en cuanto hubo dos con grosores distintos —el aro
+    // del cañón y las marcas de la zona de la bomba— cada pedido de uno destruía la textura del
+    // otro, que se quedaba con un Sprite muerto y se dibujaba como un cuadro.
+    //
+    // El grosor se cuantiza al centésimo, que es lo que acota el caché: el rango útil va de 0,01 a
+    // 0,4, o sea 40 entradas como mucho. Ese era el motivo de no cachear —afinar el slider en Play
+    // generaba una textura por paso—, y redondear lo resuelve sin volver a la destrucción.
+    static readonly Dictionary<int, Sprite> _rings = new();
 
     // Un resplandor redondo y suave. Dos caídas sumadas: una ancha que da el halo y otra muy
     // cerrada que da el núcleo encendido. Con una sola se ve o un disco plano o un puntito.
@@ -58,38 +72,25 @@ public static class SparkleTextures
     {
         softness = Mathf.Clamp(softness, 0.01f, 0.4f);
 
-        if (_ring != null && Mathf.Approximately(_ringSoft, softness)) return _ring;
+        int key = Mathf.RoundToInt(softness * 100f);
+        softness = key / 100f;
 
-        // Se tira la anterior en vez de guardarla: esto se ajusta arrastrando un slider en pleno
-        // Play, y cada paso regenera la textura. Cacheando todas, un rato de afinar el grosor
-        // serían decenas de megas de texturas que ya no mira nadie.
-        Release(_ring);
+        // El != null de Unity también cubre una textura destruida por una recarga de dominio: en
+        // ese caso se vuelve a dibujar en vez de devolver un Sprite muerto.
+        if (_rings.TryGetValue(key, out var cached) && cached != null) return cached;
 
-        _ringSoft = softness;
-
-        return _ring = Build(RING_SIZE, (x, y) =>
+        return _rings[key] = Build(RING_SIZE, (x, y) =>
         {
-            const float EDGE = 0.80f;   // a qué distancia del centro está el filo
             const float FILL = 0.10f;   // cuánto resplandor queda adentro: apenas, para no apagar la burbuja
 
             float d = Mathf.Sqrt(x * x + y * y);
             if (d >= 1f) return 0f;
 
-            float ring = Mathf.Exp(-((d - EDGE) * (d - EDGE)) / (softness * softness));
+            float ring = Mathf.Exp(-((d - RING_EDGE) * (d - RING_EDGE)) / (softness * softness));
             float fill = Mathf.Pow(1f - d, 2f) * FILL;
 
             return Mathf.Clamp01(Mathf.Max(ring, fill));
         });
-    }
-
-    static void Release(Sprite sprite)
-    {
-        if (sprite == null) return;
-
-        var texture = sprite.texture;
-
-        if (Application.isPlaying) { Object.Destroy(sprite); if (texture) Object.Destroy(texture); }
-        else                       { Object.DestroyImmediate(sprite); if (texture) Object.DestroyImmediate(texture); }
     }
 
     // El color va siempre en blanco y la forma vive en el alfa: así el tinte lo pone la Image que

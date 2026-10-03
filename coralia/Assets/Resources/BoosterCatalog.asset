@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcf54a097adf04babb32784dd000f2c2, type: 3}
+  m_Name: BoosterCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::BoosterCatalog
+  sharedGlow: {fileID: 1505006969088389832, guid: 80daac24c790b47e09242751639cec7c, type: 3}
+  entries:
+  - booster: 1
+    icon: {fileID: 3513427453089786545, guid: bec15bc44fcc54ea4b6b2957c94a26d7, type: 3}
+    bubbleFrames:
+    - {fileID: 2071403333483728115, guid: 889049995aa1941448d12b0865c537d2, type: 3}
+    - {fileID: 8661716057833069622, guid: 5d25dcddc5c2b4ea4a2c7c2c52714122, type: 3}
+    spin: 0
+    framesPerSecond: 8
+    loadedLoopClip: {fileID: 8300000, guid: 3a6108d9e4a794136b761ba8e98e561f, type: 3}
+    loadedLoopVolume: 0.5
+    packs:
+    - amount: 1
+      price: 10
+      discountPercent: 0
+    - amount: 5
+      price: 50
+      discountPercent: 29
+    - amount: 15
+      price: 150
+      discountPercent: 40
+    glowOverride: {fileID: 0}

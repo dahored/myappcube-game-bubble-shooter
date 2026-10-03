@@ -15,6 +15,23 @@ public class TrajectoryLine : MonoBehaviour
     [Header("Preview de aterrizaje (sprite bubble_field)")]
     [SerializeField] Image landingPreview;
 
+    [Header("Zona de la bomba")]
+    [Tooltip("Color del hexágono que marca qué va a volar al apuntar con un booster de área. Las marcas se dibujan solas, no hay nada que asignar.")]
+    [SerializeField] Color blastMarkColor = new(1f, 1f, 1f, 0.6f);
+
+    [Tooltip("Grosor del filo de esas marcas: bajo da una línea nítida, alto un halo difuso.")]
+    [Range(0.02f, 0.4f)]
+    [SerializeField] float blastMarkEdge = 0.1f;
+
+    [Tooltip("Cuánto se atenúan las marcas que caen sobre una celda VACÍA, respecto a las que están sobre una burbuja. Las de encima de una burbuja son las que importan —esas son las que vuelan—; las vacías solo completan la forma del hexágono.")]
+    [Range(0f, 1f)]
+    [SerializeField] float blastEmptyFade = 0.3f;
+
+    // Crecen bajo demanda hasta el tamaño de la zona más grande que se haya mostrado y de ahí en
+    // más se reusan: la mira se recalcula cada frame mientras el dedo se mueve, y crear y destruir
+    // diecinueve Image por frame es presión de GC constante.
+    readonly List<Image> _blastMarks = new();
+
     readonly List<RectTransform> _pool      = new();
     readonly List<Image>         _poolImage = new();
 
@@ -45,7 +62,9 @@ public class TrajectoryLine : MonoBehaviour
     // se ve como una mini burbuja real, sin depender de teñir un sprite genérico. alpha:
     // 1 = línea real (default), más bajo = look "fantasma" semitransparente para la demo
     // del tutorial (ver CannonController.SwayTrajectoryDemo).
-    public void ShowPath(Vector2 originLocal, Vector2 dir, Sprite sprite, float alpha = 1f)
+    // blastRadius: cuántos anillos marcar alrededor del punto de aterrizaje. 0 (lo normal) no
+    // marca nada — solo tiene zona lo que explota por área.
+    public void ShowPath(Vector2 originLocal, Vector2 dir, Sprite sprite, float alpha = 1f, int blastRadius = 0)
     {
         Vector2 pos       = originLocal;
         Vector2 direction = dir.normalized;
@@ -80,13 +99,84 @@ public class TrajectoryLine : MonoBehaviour
             if (landingPreview) landingPreview.gameObject.SetActive(false);
         }
 
+        // Después de resolver el aterrizaje, porque la zona cuelga de esa celda.
+        ShowBlastZone(blastRadius, alpha);
+
         for (int i = used; i < maxDots; i++) _pool[i].gameObject.SetActive(false);
     }
 
     public void Hide()
     {
         foreach (var dot in _pool) dot.gameObject.SetActive(false);
+        foreach (var mark in _blastMarks) mark.gameObject.SetActive(false);
         if (landingPreview) landingPreview.gameObject.SetActive(false);
+    }
+
+    // El hexágono que va a volar, dibujado sobre el tablero mientras se apunta. Es la misma
+    // promesa que hace el círculo de aterrizaje, extendida a un área: con un poder que se paga,
+    // disparar a ciegas y descubrir después qué se llevó es lo que hace que no se use.
+    //
+    // Sale de CellsWithinRadius, el mismo cálculo que la explosión de verdad — no de una forma
+    // dibujada aparte que habría que acordarse de actualizar.
+    void ShowBlastZone(int radius, float alpha)
+    {
+        int used = 0;
+
+        if (radius > 0 && LandingCell.HasValue)
+        {
+            foreach (var cell in HexGridMath.CellsWithinRadius(LandingCell.Value, radius))
+            {
+                var mark = MarkAt(used++);
+                mark.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);
+
+                // La marca sobre una burbuja es la que cuenta: esa burbuja vuela. La que cae en un
+                // hueco solo está completando la forma del hexágono, así que va atenuada — si
+                // pesaran lo mismo, apuntando al borde del tablero se ve un hexágono entero
+                // brillando sobre el agua vacía y parece que va a explotar la nada.
+                float weight = gridController.IsOccupied(cell) ? 1f : blastEmptyFade;
+
+                mark.color = new Color(blastMarkColor.r, blastMarkColor.g, blastMarkColor.b,
+                                       blastMarkColor.a * alpha * weight);
+                mark.gameObject.SetActive(true);
+
+                // DELANTE de las burbujas, y se reafirma cada vez: el gridContainer va sumando
+                // burbujas al final a medida que aterrizan, así que una marca colocada al frente
+                // una sola vez queda sepultada por todo lo que llegue después. Detrás no sirve —
+                // sobre una burbuja el anillo no se vería, que es justo donde hace falta.
+                mark.rectTransform.SetAsLastSibling();
+            }
+        }
+
+        for (int i = used; i < _blastMarks.Count; i++) _blastMarks[i].gameObject.SetActive(false);
+    }
+
+    Image MarkAt(int index)
+    {
+        while (_blastMarks.Count <= index)
+        {
+            var go = new GameObject("BlastMark", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image))
+            {
+                // Misma convención que el resto de los hijos generados del proyecto: sin esto
+                // quedan serializados dentro del .unity.
+                hideFlags = HideFlags.DontSave,
+            };
+
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(gridContainer, false);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            // Dividido por RING_EDGE: el filo del aro vive al 80% del radio de su textura, así
+            // que una marca del tamaño exacto de la burbuja dibuja un aro POR DENTRO de ella.
+            // Agrandando la textura en esa proporción, el filo cae justo sobre el borde.
+            rt.sizeDelta = Vector2.one * (HexGridMath.BubbleDiameter / SparkleTextures.RING_EDGE);
+
+            var image = go.GetComponent<Image>();
+            image.sprite        = SparkleTextures.Ring(blastMarkEdge);
+            image.raycastTarget = false;   // apuntar por encima de la marca tiene que seguir funcionando
+
+            _blastMarks.Add(image);
+        }
+
+        return _blastMarks[index];
     }
 
     // Misma lógica que CannonController.ResolveImpact — así el preview nunca miente sobre

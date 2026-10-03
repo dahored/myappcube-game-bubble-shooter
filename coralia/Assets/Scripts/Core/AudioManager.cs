@@ -19,6 +19,9 @@ public class AudioManager : MonoBehaviour
     [SerializeField] AudioSource sfxSource;   // Canal de efectos de juego
     [SerializeField] AudioSource uiSource;    // Canal de clicks de botones
     [SerializeField] AudioSource popSource;   // Canal de sonido de burbujas
+
+    [Tooltip("Canal de efectos EN BUCLE (la mecha de un booster cargado, por ejemplo). Opcional: si se deja vacío se crea solo al arrancar. Sigue el volumen y el mute de los efectos de juego, porque para el jugador es un efecto más — que se repita es cosa del clip, no un canal distinto que quiera regular aparte.")]
+    [SerializeField] AudioSource sfxLoopSource;
     [SerializeField] AudioClip   lobbyMusic;     // Música del menú principal (Home + Level Map)
     [SerializeField] AudioClip[] gameplayMusic;  // Música in-game — distinta y más calma que la del lobby, varias pistas elegidas al azar por nivel (pedido de Diego)
     [SerializeField, Range(0f, 1f)] float gameplayMusicVolumeScale = 0.5f; // multiplicador propio sobre MusicVolume — los clips de gameplay vienen masterizados más fuerte que el de lobby y sonaban "muy alto" (reportado por Diego), sin esto solo se podía bajar con el slider general (que también afecta el lobby)
@@ -42,6 +45,15 @@ public class AudioManager : MonoBehaviour
 #if UNITY_IOS && !UNITY_EDITOR
         if (ignoreSilentSwitch) SetAudioSessionPlayback(); // fuerza sonido, ignora el switch — apagado por default
 #endif
+        // Se crea si falta para que un bucle funcione sin tener que tocar el prefab: un canal que
+        // hay que acordarse de añadir es un sonido que no suena y nadie sabe por qué.
+        if (sfxLoopSource == null)
+        {
+            sfxLoopSource      = gameObject.AddComponent<AudioSource>();
+            sfxLoopSource.playOnAwake = false;
+        }
+        sfxLoopSource.loop = true;
+
         ApplyAllVolumes(); // Aplica volúmenes guardados al arrancar
     }
 
@@ -121,11 +133,12 @@ public class AudioManager : MonoBehaviour
         if (sfxSource) sfxSource.mute = !enabled;
         if (uiSource)  uiSource.mute  = !enabled;
         if (popSource) popSource.mute  = !enabled;
+        if (sfxLoopSource) sfxLoopSource.mute = !enabled;
     }
 
     // Sliders de volumen desde Settings — guardan valor y lo aplican en tiempo real
     public void SetMusicVolume(float v) { SaveManager.MusicVolume = v; if (musicSource) musicSource.volume = v * _currentMusicVolumeScale; }
-    public void SetSfxVolume(float v)   { SaveManager.SfxVolume   = v; if (sfxSource)   sfxSource.volume   = v; }
+    public void SetSfxVolume(float v)   { SaveManager.SfxVolume   = v; if (sfxSource)   sfxSource.volume   = v; if (sfxLoopSource) sfxLoopSource.volume = v; }
     public void SetUiVolume(float v)    { SaveManager.UiVolume    = v; if (uiSource)    uiSource.volume    = v; }
     public void SetPopVolume(float v)   { SaveManager.PopVolume   = v; if (popSource)   popSource.volume   = v; }
 
@@ -135,6 +148,29 @@ public class AudioManager : MonoBehaviour
     public void PlaySfx(AudioClip clip, float volumeScale = 1f) => PlayOn(sfxSource, clip, volumeScale);
     public void PlayUi(AudioClip clip, float volumeScale = 1f)  => PlayOn(uiSource,  clip, volumeScale);
     public void PlayPop(AudioClip clip, float volumeScale = 1f) => PlayOn(popSource, clip, volumeScale);
+
+    // Un efecto que suena mientras dura un estado, no un golpe. Llamarlo con el mismo clip que ya
+    // está sonando no lo reinicia: quien lo pida no tiene que llevar la cuenta de si ya lo pidió.
+    public void PlaySfxLoop(AudioClip clip, float volumeScale = 1f)
+    {
+        if (sfxLoopSource == null) return;
+
+        if (clip == null) { StopSfxLoop(); return; }
+
+        if (sfxLoopSource.isPlaying && sfxLoopSource.clip == clip) return;
+
+        sfxLoopSource.clip   = clip;
+        sfxLoopSource.volume = SaveManager.SfxVolume * volumeScale;
+        sfxLoopSource.Play();
+    }
+
+    public void StopSfxLoop()
+    {
+        if (sfxLoopSource == null || !sfxLoopSource.isPlaying) return;
+
+        sfxLoopSource.Stop();
+        sfxLoopSource.clip = null;
+    }
 
     // Llamado por UIPanel.Open() en cada panel de la app. overrideClip: el 'Open Sound' propio
     // del panel (UIPanel.openSound), si tiene uno asignado — si no, cae al default de acá.
