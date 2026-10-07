@@ -579,6 +579,24 @@ public class GameplayController : MonoBehaviour
             return removed;
         }
 
+        // El efecto del comodín no depende de que la arcoíris sea la que acaba de aterrizar: una
+        // que se quedó en el tablero de un disparo anterior y ahora entra en el grupo hizo
+        // exactamente el mismo trabajo, y antes se iba en silencio.
+        //
+        // La semilla de los efectos es el comodín y no la aterrizada: es la que los provocó, y
+        // con varias en el grupo la primera del recorrido es la más cercana al impacto.
+        Vector2Int rainbowCell = landedCell;
+        bool       hasRainbow  = wasRainbow;
+
+        if (!hasRainbow)
+            foreach (var cell in matched)
+                if (grid.TryGetBubble(cell, out var v) && v.ColorType == BubbleColor.Rainbow)
+                {
+                    hasRainbow = true;
+                    rainbowCell = cell;
+                    break;
+                }
+
         _comboStreak++;
 
         // FindConnectedSameColor devuelve las celdas en orden de flood-fill (BFS) desde la
@@ -602,18 +620,18 @@ public class GameplayController : MonoBehaviour
         //
         // Separarlas es lo que deja VER la propagación: mezcladas, cada burbuja se teñía y moría
         // en el mismo gesto y el efecto se leía igual que un match normal.
-        RectTransform seed = grid.TryGetBubble(matched[0], out var seedView) ? (RectTransform)seedView.transform : null;
+        RectTransform seed = grid.TryGetBubble(rainbowCell, out var seedView) ? (RectTransform)seedView.transform : null;
 
         // El contagio tiene sus propios tiempos, del catálogo: es el efecto del poder y tiene que
         // poder verse: con el paso de los pops era demasiado rápido para notarse.
-        var   rainbowArt = wasRainbow ? BoosterRules.ArtFor(Booster.Rainbow) : null;
+        var   rainbowArt = hasRainbow ? BoosterRules.ArtFor(Booster.Rainbow) : null;
         float claimStep  = rainbowArt != null
             ? ChainStep(matched.Count, rainbowArt.claimStep, rainbowArt.claimMaxTotal)
             : 0f;
         float claimFade  = rainbowArt?.claimFade ?? 0f;
 
         // Y el estallido espera además la pausa con todas ya teñidas.
-        float burstDelay = wasRainbow
+        float burstDelay = hasRainbow
             ? (matched.Count - 1) * claimStep + claimFade + (rainbowArt?.claimHold ?? 0f)
             : 0f;
 
@@ -623,15 +641,15 @@ public class GameplayController : MonoBehaviour
 
             if (grid.TryGetBubble(cell, out var view))
             {
-                if (wasRainbow) view.ClaimAsRainbow(i * claimStep, claimFade);
+                if (hasRainbow) view.ClaimAsRainbow(i * claimStep, claimFade);
 
                 // Y una sola suena: quince pops a la vez son ruido, y lo que tiene que oírse es
                 // el golpe del poder.
-                view.PlayPopAnimation(wasRainbow ? burstDelay : i * popStep,
-                                      wasRainbow && i > 0 ? null : popClip);
+                view.PlayPopAnimation(hasRainbow ? burstDelay : i * popStep,
+                                      hasRainbow && i > 0 ? null : popClip);
             }
 
-            grid.SpawnScorePopup(cell, popValue, wasRainbow ? burstDelay : i * popStep, ScorePopup.POP_LIFETIME);
+            grid.SpawnScorePopup(cell, popValue, hasRainbow ? burstDelay : i * popStep, ScorePopup.POP_LIFETIME);
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
@@ -648,7 +666,7 @@ public class GameplayController : MonoBehaviour
 
         // El golpe del comodín espera a que el color haya llegado a la última: es el remate de la
         // contaminación, no algo que pase mientras.
-        if (wasRainbow)
+        if (hasRainbow)
         {
             StartCoroutine(RainbowBurst(seed, burstDelay, matched.Count, collapsed.count, collapsed.step));
         }

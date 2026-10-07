@@ -95,6 +95,14 @@ public class RefillBoosterPanel : UIPanel
         SaveManager.Coins -= pack.FinalPrice;
         SaveManager.GrantBooster(_booster, pack.amount);
 
+        // Y queda equipado. Comprarlo ES la decisión deliberada que la pantalla previa pide para
+        // equipar: gastó monedas en este poder y en ningún otro. Hacerle tocarlo además sería
+        // preguntarle dos veces lo mismo.
+        //
+        // Si ya tenía el cupo lleno, Equip no hace nada y el booster se queda en el inventario:
+        // el cap del GDD §3.5 manda sobre la comodidad.
+        BoosterLoadout.Equip(_booster);
+
         // Se repinta ANTES de cerrar: si el jugador vuelve a abrir el panel, los precios y el
         // "no te alcanza" ya están al día sin esperar a la próxima apertura.
         Refresh();

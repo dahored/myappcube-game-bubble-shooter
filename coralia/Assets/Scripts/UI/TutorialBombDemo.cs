@@ -36,6 +36,10 @@ public class TutorialBombDemo : MonoBehaviour
     [Range(0.05f, 0.3f)]
     [SerializeField] float bubbleSize = 0.1f;
 
+    [Tooltip("Proporción ancho/alto de la composición. Acota el área usada dentro del hueco para que la demostración no se estire en pantallas altas. 0.72 es casi el formato de un móvil en vertical.")]
+    [Range(0.4f, 1.6f)]
+    [SerializeField] float aspect = 0.72f;
+
     [Tooltip("Color de la marca que señala qué va a volar.")]
     [SerializeField] Color markColor = new(1f, 1f, 1f, 0.85f);
 
@@ -241,8 +245,15 @@ public class TutorialBombDemo : MonoBehaviour
 
     // --- Geometría, toda relativa al hueco que haya ---
 
-    float Size()   => _area.rect.height * bubbleSize;
-    float Height() => _area.rect.height;
+    // Todas las medidas salen de un área de PROPORCIÓN FIJA centrada en el hueco, no del hueco
+    // entero. En una pantalla alta —un iPad, un panel estirado por un texto largo— la composición
+    // se repartía por todo el alto y la acción quedaba perdida en el medio con los bordes vacíos.
+    //
+    // Acotando el alto a lo que el ancho permite, la demostración se ve igual de compacta en
+    // cualquier pantalla y solo cambia su tamaño, que es lo que debe cambiar.
+    float Height() => Mathf.Min(_area.rect.height, _area.rect.width / Mathf.Max(0.1f, aspect));
+    float Width()  => Mathf.Min(_area.rect.width, Height() * aspect);
+    float Size()   => Height() * bubbleSize;
 
     // Del tablero real a la escala de la demostración.
     float Scale => Size() / HexGridMath.BubbleDiameter;

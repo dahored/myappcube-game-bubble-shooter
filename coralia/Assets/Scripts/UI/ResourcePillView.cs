@@ -9,6 +9,9 @@ public class ResourcePillView : MonoBehaviour
     [SerializeField] TMP_Text valueText;
     [SerializeField] Button   plusButton;
 
+    [Tooltip("Botón que cubre TODA la pastilla. Hace lo mismo que el '+', que pasa a ser solo la señal: el objetivo de toque útil es la pieza entera, no el icono de la esquina.\n\nOpcional: sin esto solo responde el '+'.")]
+    [SerializeField] Button   pillButton;
+
     [Header("Badge (opcional — ej. cantidad de vidas sobre el ícono)")]
     [SerializeField] GameObject badgeRoot;
     [SerializeField] TMP_Text   badgeText;
@@ -19,6 +22,10 @@ public class ResourcePillView : MonoBehaviour
     void Awake()
     {
         if (plusButton) plusButton.onClick.AddListener(() => OnPlusClicked?.Invoke());
+
+        // Los dos llevan al mismo sitio. El '+' sigue existiendo porque es lo que le dice al
+        // jugador que la pastilla se toca — sin él, el área grande sería un secreto.
+        if (pillButton) pillButton.onClick.AddListener(() => OnPlusClicked?.Invoke());
     }
 
     public void SetIcon(Sprite sprite)
@@ -31,6 +38,10 @@ public class ResourcePillView : MonoBehaviour
     public void SetPlusVisible(bool visible)
     {
         if (plusButton) plusButton.gameObject.SetActive(visible);
+
+        // La pastilla entera se apaga con el '+': si no hay nada que comprar, tocarla tampoco
+        // debe abrir nada — y un área grande que no responde se siente rota, no deshabilitada.
+        if (pillButton) pillButton.interactable = visible;
     }
 
     public void SetValue(int value)
