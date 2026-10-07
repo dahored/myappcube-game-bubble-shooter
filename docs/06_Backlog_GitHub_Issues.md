@@ -617,6 +617,142 @@ La implementación de cada uno vive en los issues de abajo.
 
 ---
 
+## [Feature] Promociones de boosters (2x1 y similares) activables
+
+**Labels:** `feature`, `economy`, `liveops`, `priority-low`, `size-M`
+
+### Descripción
+
+Ofertas puntuales sobre los packs de booster — 2x1, descuento extra, pack doble — que se puedan
+**encender y apagar sin tocar código ni publicar una build**.
+
+Hoy `BoosterCatalog.Pack` ya tiene `price` y `discountPercent`, y el precio final se calcula solo
+(`Pack.Discounted`). Una promoción es, en esencia, un segundo descuento encima o una cantidad
+distinta por el mismo precio. Lo que falta es **la ventana**: cuándo empieza, cuándo acaba y quién
+lo decide.
+
+Esto encaja en la cadencia de ofertas del GDD 6.10, que ya prevé Weekend Deals y Flash Sales. La
+diferencia es que aquella tabla habla de packs de moneda y esto es sobre boosters concretos.
+
+### A decidir
+- [ ] **Qué activa la promoción.** Tres niveles, de menos a más trabajo:
+      un check en el catálogo (lo enciende Diego y hay que publicar build);
+      una fecha de inicio y fin en el catálogo (se programa por adelantado, sigue necesitando build);
+      Firebase Remote Config (se enciende sin publicar — lo correcto a futuro, pero Firebase no
+      está integrado, ver GDD 14.6).
+- [ ] **Qué forma tiene la promoción.** 2x1 es "misma cantidad, doble de unidades", que no es lo
+      mismo que un descuento: hay que decidir si se modela como un pack alternativo o como un
+      multiplicador sobre el existente.
+- [ ] **Cómo se anuncia.** Hoy la etiqueta del `RefillBoosterItemView` muestra el `discountPercent`.
+      Un 2x1 no es un porcentaje, así que o se traduce a uno (50%) o la tarjeta necesita otra marca.
+- [ ] **Si aplica a todos los boosters o a uno.** Una promo sobre la Bomba vende distinto que una
+      sobre todo el catálogo.
+
+### Acceptance criteria
+- [ ] La promoción se enciende y se apaga sin recompilar
+- [ ] El precio cobrado y el anunciado salen del mismo cálculo, como ahora
+- [ ] `RefillBoosterPanel` muestra la oferta y se refresca cuando cambia
+- [ ] Al terminar la ventana, los precios vuelven solos a los del catálogo
+
+### Dependencias
+Bloqueado de hecho por el issue de recalibración de precios: sin precios base cerrados, un
+descuento sobre ellos no significa nada.
+
+---
+
+## [Feature] Rescate — multi-rescate, objetos y la cadena hasta el santuario
+
+**Labels:** `feature`, `gameplay`, `narrative`, `priority-medium`, `size-L`
+
+### Descripción
+
+El objetivo `rescue` **está implementado**: el JSON del nivel declara `creature_position` y
+`creature_id`, la burbuja marcada lleva su icono, y el nivel se gana cuando esa celda desaparece —
+por match directo o por caída, sin flag aparte.
+
+Lo que falta es todo lo que el GDD construye encima:
+
+| Qué | Estado | Dónde |
+|---|---|---|
+| Rescate simple | ✅ implementado | `GameplayController`, `BubbleView.SetCreatureMarker` |
+| **Multi-rescate** (3-5 criaturas en un nivel) | sin implementar | GDD 2.2, previsto para el nivel 31 |
+| **Criaturas con identidad** (12 hero, bestiario) | sin implementar | GDD 5.3 — ver su propio issue |
+| **Que la criatura llegue al santuario** | sin implementar | GDD 5.2. Hoy se rescata y no va a ninguna parte |
+| **Objetos rescatables** (no criaturas) | **no está en el GDD** | pedido nuevo de Diego |
+
+### Lo que hay que decidir primero
+
+**Los objetos son una ampliación del diseño, no una tarea pendiente.** El GDD solo contempla
+criaturas, y el rescate es la mecánica narrativa central —cada una se une al santuario, GDD 2.2—.
+Un objeto que se rescata necesita responder a dónde va y qué significa, o compite con la criatura
+sin aportar historia.
+
+- [ ] ¿Qué es un objeto rescatable y para qué sirve? (¿decoración del santuario? ¿moneda?
+      ¿fragmento coleccionable?)
+- [ ] ¿Se rescata igual que una criatura —liberar la burbuja— o de otra forma?
+- [ ] ¿Convive con la criatura en el mismo nivel o son objetivos excluyentes?
+- [ ] Multi-rescate: ¿se gana al liberar todas, o cada una suma a un contador?
+
+### Acceptance criteria
+- [ ] `ObjectiveData` admite varias posiciones en vez de una
+- [ ] El HUD muestra cuántas quedan cuando hay más de una
+- [ ] Lo rescatado se registra en `SaveManager` y sobrevive al nivel
+- [ ] GDD 2.2 actualizado con lo que se decida sobre los objetos
+
+---
+
+## [Feature] Obstáculos (6 tipos) — el campo del JSON existe y no hace nada
+
+**Labels:** `feature`, `gameplay`, `level-design`, `priority-medium`, `size-XL`
+
+### Descripción
+
+`LevelData.obstacles` existe desde el principio y **está vacío en los 30 niveles**. El GDD 2.3 ya
+define los seis tipos y en qué nivel entra cada uno, pero no hay nada implementado: ni el parseo,
+ni el comportamiento, ni el arte.
+
+| Obstáculo | Comportamiento (GDD 2.3) | Nivel |
+|---|---|---|
+| **Burbuja de hielo** | Dos impactos: el primero rompe el hielo, el segundo la burbuja | 11 |
+| **Jaula de coral** | Encierra una criatura. Se rompe con un match adyacente | 16 |
+| **Burbuja pegajosa** | No cae aunque pierda la conexión al techo. Solo muere por match directo | 21 |
+| **Generador de algas** | Cada 5 disparos produce una burbuja nueva en una posición fija | 26 |
+| **Burbuja-bomba** | — | 36 |
+| **Cadena viva** | Dos burbujas unidas. Solo se rompen las dos a la vez | 46 |
+
+El **crustáceo pegado** que menciona Diego encaja con la burbuja pegajosa, pero como criatura en vez
+de como textura: un percebe agarrado a la burbuja explica por qué esa no cae, y es más del mundo
+del juego que "una burbuja pegajosa". Decidir si es un renombrado o un obstáculo aparte.
+
+### Por qué es XL
+
+Cada obstáculo toca sitios distintos del núcleo, y varios rompen supuestos que hoy están dados por
+hechos:
+
+- **El hielo** necesita vida por burbuja. Hoy una burbuja se quita o no se quita.
+- **La pegajosa** rompe `FindUnreachableFromCeiling`: la caída es una propiedad de grafo recalculada
+  desde cero, y esto introduce excepciones por celda.
+- **El generador** añade burbujas a mitad de partida, con lo que el grid deja de ser algo que solo
+  mengua — afecta al scroll de retirada y a la condición de derrota.
+- **La cadena** une dos celdas, y hoy cada celda es independiente.
+
+Conviene **partirlo en un issue por obstáculo** y empezar por el hielo, que es el que menos
+supuestos rompe y además es el primero que ve el jugador.
+
+### A decidir
+- [ ] Formato en el JSON: `obstacles` es `List<string>` y ninguno de estos cabe en un string suelto
+      (hace falta al menos tipo + posición)
+- [ ] Si la burbuja-bomba del nivel 36 es un obstáculo o una variante de la Bomba de Coral — el GDD
+      no describe su comportamiento
+- [ ] El crustáceo: renombrado de la pegajosa, o séptimo tipo
+
+### Acceptance criteria
+- [ ] `LevelData` modela los obstáculos con tipo y posición
+- [ ] Un issue por obstáculo, cada uno con su tutorial y su arte
+- [ ] El skill `level-designer` documenta el formato nuevo
+
+---
+
 ## [Feature] Power-ups de inicio (5) — se aplican solos al empezar el nivel
 
 **Labels:** `feature`, `gameplay`, `economy`, `priority-medium`, `size-L`
