@@ -8629,6 +8629,7 @@ MonoBehaviour:
     travel: 95
     moteDuration: 0.55
     stagger: 0.22
+    rainbowMotes: 0
   bombBlast:
     chargeTime: 0.1
     chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
@@ -8645,9 +8646,7 @@ MonoBehaviour:
     waveEdge: 0.07
     waveCount: 2
     waveStagger: 0.08
-  bombClip: {fileID: 8300000, guid: 2bc19cb1498714ed7a9d0606323ba591, type: 3}
-  bombChargeClip: {fileID: 0}
-  bombClipLead: 0
+    rainbowWaves: 0
 --- !u!4 &820312950
 Transform:
   m_ObjectHideFlags: 0
@@ -18291,6 +18290,7 @@ MonoBehaviour:
     travel: 95
     moteDuration: 0.55
     stagger: 0.22
+    rainbowMotes: 0
   shootHint: {fileID: 1330918401}
   idleHintDelay: 10
   hintSwayAngle: 15
@@ -18313,6 +18313,7 @@ MonoBehaviour:
     travel: 95
     moteDuration: 0.55
     stagger: 0.22
+    rainbowMotes: 0
   aimGlow: {fileID: 0}
   aimGlowFade: 0.05
   aimGlowSize: 1.15
@@ -18620,7 +18621,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 155.7017, y: -49.77349}
-  m_SizeDelta: {x: 81.7768, y: 73.5819}
+  m_SizeDelta: {x: 203.9875, y: 73.5819}
   m_Pivot: {x: 0.5, y: 0.5000001}
 --- !u!114 &1757747556
 MonoBehaviour:
@@ -18689,7 +18690,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 48
   m_fontStyle: 0
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 4096
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -20811,7 +20812,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 155.7017, y: -49.77349}
-  m_SizeDelta: {x: 97.5065, y: 73.5819}
+  m_SizeDelta: {x: 221.5976, y: 73.5819}
   m_Pivot: {x: 0.5, y: 0.5000001}
 --- !u!114 &2035463965
 MonoBehaviour:
@@ -20880,7 +20881,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 48
   m_fontStyle: 0
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 4096
   m_textAlignment: 65535
   m_characterSpacing: 0
