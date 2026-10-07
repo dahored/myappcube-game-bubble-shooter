@@ -16,14 +16,14 @@ public static class BoosterLoadout
 
     public static event Action OnChanged;
 
-    static List<BubbleSpecial> _equipped;
+    static List<Booster> _equipped;
 
     // Lo que el jugador decidió llevar, se le haya gastado o no durante el nivel.
     //
     // NO se filtra por inventario a propósito: el ícono del HUD tiene que seguir ahí al gastar el
     // último —con su '+' para reponerlo— en vez de desaparecer a mitad de partida. Que no se
     // pueda equipar lo que no se tiene ya lo impide CanEquip, que es donde corresponde.
-    public static IReadOnlyList<BubbleSpecial> Equipped
+    public static IReadOnlyList<Booster> Equipped
     {
         get
         {
@@ -34,25 +34,25 @@ public static class BoosterLoadout
 
     public static int Count => Equipped.Count;
 
-    public static bool IsEquipped(BubbleSpecial booster)
+    public static bool IsEquipped(Booster booster)
     {
-        if (booster == BubbleSpecial.None) return false;
+        if (booster == Booster.None) return false;
 
         Load();
 
         return _equipped.Contains(booster);
     }
 
-    public static bool CanEquip(BubbleSpecial booster) =>
-        booster != BubbleSpecial.None &&
+    public static bool CanEquip(Booster booster) =>
+        booster != Booster.None &&
         SaveManager.BoosterCount(booster) > 0 &&
         (IsEquipped(booster) || Count < MAX_EQUIPPED);
 
     // Devuelve si quedó equipado, para que quien llame pueda dar feedback de "no se pudo"
     // sin volver a preguntar.
-    public static bool Toggle(BubbleSpecial booster)
+    public static bool Toggle(Booster booster)
     {
-        if (booster == BubbleSpecial.None) return false;
+        if (booster == Booster.None) return false;
 
         Load();
 
@@ -73,9 +73,9 @@ public static class BoosterLoadout
 
     // Equipar sin pasar por el toque del jugador. Lo usa el tutorial que presenta un booster: ahí
     // no lo eligió él, se lo pusieron en la mano, y aun así tiene que aparecerle en el HUD.
-    public static bool Equip(BubbleSpecial booster)
+    public static bool Equip(Booster booster)
     {
-        if (booster == BubbleSpecial.None || IsEquipped(booster)) return false;
+        if (booster == Booster.None || IsEquipped(booster)) return false;
 
         // El cap se respeta igual: romperlo por la puerta de atrás dejaría al jugador con cuatro
         // íconos en un HUD diseñado para tres.
@@ -101,10 +101,10 @@ public static class BoosterLoadout
     {
         if (_equipped != null) return;
 
-        _equipped = new List<BubbleSpecial>();
+        _equipped = new List<Booster>();
 
         foreach (var name in PlayerPrefs.GetString(KEY, "").Split(','))
-            if (Enum.TryParse(name, out BubbleSpecial booster) && booster != BubbleSpecial.None && !_equipped.Contains(booster))
+            if (Enum.TryParse(name, out Booster booster) && booster != Booster.None && !_equipped.Contains(booster))
                 _equipped.Add(booster);
     }
 

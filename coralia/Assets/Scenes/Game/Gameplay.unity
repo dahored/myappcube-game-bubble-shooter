@@ -5206,26 +5206,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -1020
       objectReference: {fileID: 0}
-    - target: {fileID: 1407531958104327639, guid: 6c8fcee7d8af54fd2b2ba21458a71662, type: 3}
-      propertyPath: entries.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 1407531958104327639, guid: 6c8fcee7d8af54fd2b2ba21458a71662, type: 3}
-      propertyPath: entries.Array.data[1].id
-      value: bomb
-      objectReference: {fileID: 0}
-    - target: {fileID: 1407531958104327639, guid: 6c8fcee7d8af54fd2b2ba21458a71662, type: 3}
-      propertyPath: entries.Array.data[1].bodyKey
-      value: ui.tutorial.bomb.body
-      objectReference: {fileID: 0}
-    - target: {fileID: 1407531958104327639, guid: 6c8fcee7d8af54fd2b2ba21458a71662, type: 3}
-      propertyPath: entries.Array.data[1].titleKey
-      value: ui.tutorial.bomb.title
-      objectReference: {fileID: 0}
-    - target: {fileID: 1407531958104327639, guid: 6c8fcee7d8af54fd2b2ba21458a71662, type: 3}
-      propertyPath: entries.Array.data[1].animation
-      value: 
-      objectReference: {fileID: 1551454455}
     - target: {fileID: 3588830722398191144, guid: 6c8fcee7d8af54fd2b2ba21458a71662, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -15947,11 +15927,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1545401357}
   m_CullTransparentMesh: 1
---- !u!1 &1551454455 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 9157152008075964167, guid: 6c8fcee7d8af54fd2b2ba21458a71662, type: 3}
-  m_PrefabInstance: {fileID: 505022699}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &1565018719 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6925610069074204805, guid: 6509a23c40ea845c3b8762f8b1b7eceb, type: 3}
@@ -18875,7 +18850,6 @@ MonoBehaviour:
   spriteMintGreen: {fileID: 5547376898668789171, guid: 13fd4b4a4e05042eebd4a5aa316ece11, type: 3}
   spriteDarkBlue: {fileID: 1777979291482398335, guid: 11e7bf195f63049d497eced4e853f1b5, type: 3}
   spriteDarkGrey: {fileID: 4248598887970464769, guid: 60fb68342afc44cae95be79e156235cf, type: 3}
-  spriteRainbow: {fileID: 0}
   scrollTriggerRatio: 0.65
   maxScrollOffset: 552
   scrollSpeed: 900

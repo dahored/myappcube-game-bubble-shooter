@@ -221,10 +221,24 @@ partida. Cada uno toca una palanca distinta del nivel.
 | Power-up | Efecto | Problema que resuelve | Palanca |
 |---|---|---|---|
 | **Reserva de Oxígeno** | +5 al límite de disparos | Me quedé corto por poco | Cuántos disparos tengo |
-| **Perla Arcoíris** | La primera burbuja del cañón es comodín | La apertura me sale mal | Cómo abro |
+| **Perla Arcoíris** | **Al menos 3** burbujas comodín repartidas por el nivel, la primera al empezar | No tengo con qué encajar lo que me toca | Cómo abro y qué me toca |
 | **Marea Baja** | Al empezar, borra la fila más baja del tablero | El nivel abre demasiado apretado | Cuántas burbujas hay |
 | **Agua Clara** | El color con menos burbujas se convierte al color con más, y deja de salir del cañón | Ese color del que quedan tres sueltas e imposibles de juntar | Cuántos colores hay |
 | **Corriente Favorable** | Durante todo el nivel, el cañón favorece los colores que más abundan en el tablero | Me sale justo el color que no necesito | Qué color me toca |
+
+**La Perla da un MÍNIMO garantizado, no una probabilidad.** El jugador tiene que saber qué compra
+antes de pagar, y "al menos tres" se cumple igual en un nivel de 20 disparos que en uno de 45 — con
+un porcentaje a secas, el mismo precio compraba el doble en el nivel largo.
+
+Tres es el piso (`RAINBOW_COUNT`), repartidas entre los disparos que quedan, así que salen siempre
+y el jugador no puede predecir el tiro exacto. Por encima de eso, cada disparo puede traer una de
+regalo (`RAINBOW_BONUS_CHANCE`): es lo que impide que el booster valga menos cuanto más largo es el
+nivel, que es justo donde más falta hace. En la práctica, una partida de 20 disparos da entre 3 y 5,
+y una de 45 ronda las 5.
+
+Esto recupera `LevelData.rainbow_chance`, que llevaba meses sin uso. Se había retirado porque una
+arcoíris de semilla del flood-fill se llevaba el tablero entero, y eso ya lo resuelve
+`GridController.ResolveRainbow`: al aterrizar adopta el color mayoritario de sus vecinos.
 
 **Agua Clara convierte, no elimina.** Borrar esas burbujas resolvería parte del objetivo solo
 —y dispararía la caída de todo lo que colgara de ellas, que es un efecto que nadie previó al

@@ -23,7 +23,7 @@ public class RefillBoosterPanel : UIPanel
     [Tooltip("La confirmación de compra. Opcional: sin esto la compra se hace igual, pero sin feedback.")]
     [SerializeField] ClaimPanel claimPanel;
 
-    BubbleSpecial _booster;
+    Booster _booster;
 
     protected override void Awake()
     {
@@ -43,7 +43,7 @@ public class RefillBoosterPanel : UIPanel
             }
     }
 
-    public void Show(BubbleSpecial booster)
+    public void Show(Booster booster)
     {
         _booster = booster;
 

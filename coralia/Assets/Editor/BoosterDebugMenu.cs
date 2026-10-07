@@ -13,8 +13,8 @@ public static class BoosterDebugMenu
     [MenuItem("Coralia/Debug — Regalar 5 bombas")]
     static void GrantBombs()
     {
-        SaveManager.GrantBooster(BubbleSpecial.Bomb, GRANT);
-        Debug.Log($"[Coralia] Bombas disponibles: {SaveManager.BoosterCount(BubbleSpecial.Bomb)}");
+        SaveManager.GrantBooster(Booster.Bomb, GRANT);
+        Debug.Log($"[Coralia] Bombas disponibles: {SaveManager.BoosterCount(Booster.Bomb)}");
     }
 
     // Qué ve cada pantalla de boosters y por qué. Los tres datos viven en sitios distintos
@@ -25,9 +25,9 @@ public static class BoosterDebugMenu
     {
         var report = new System.Text.StringBuilder("[Coralia] Estado de los boosters\n");
 
-        foreach (BubbleSpecial booster in System.Enum.GetValues(typeof(BubbleSpecial)))
+        foreach (Booster booster in System.Enum.GetValues(typeof(Booster)))
         {
-            if (booster == BubbleSpecial.None) continue;
+            if (booster == Booster.None) continue;
 
             report.AppendLine(
                 $"  {booster}: tengo {SaveManager.BoosterCount(booster)} · " +

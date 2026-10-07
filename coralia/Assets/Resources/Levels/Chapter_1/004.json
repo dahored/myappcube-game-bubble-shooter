@@ -5,7 +5,8 @@
     "max_shots": 45,
     "min_shots_to_clear": 22,
     "rainbow_chance": 0.0,
-    "allowed_boosters": ["bomb", "", ""],
+    "allowed_boosters": ["bomb", "rainbow", ""],
+    "tutorials": ["rainbow"],
     "available_colors": [
         "red",
         "blue",

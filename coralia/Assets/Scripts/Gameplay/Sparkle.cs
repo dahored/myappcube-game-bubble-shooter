@@ -42,6 +42,9 @@ public class Sparkle : MonoBehaviour
 
         [Tooltip("Cuánto se reparte la salida de las chispas. En 0 salen todas juntas, que se lee como un golpe en vez de un chisporroteo.")]
         public float stagger      = 0.22f;
+
+        [Tooltip("Cada chispa toma un color distinto del espectro en lugar de 'Mote Color'. Para la arcoíris: un arcoíris ES luz separada en colores, así que el efecto cuenta el poder en vez de decorarlo.\n\nSe conserva el alfa de 'Mote Color'.")]
+        public bool  rainbowMotes;
     }
 
     RectTransform _rt;
@@ -70,7 +73,14 @@ public class Sparkle : MonoBehaviour
             float angle = 360f / Mathf.Max(1, s.moteCount) * i + Random.Range(-16f, 16f);
             Vector2 dir = new(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
 
-            Piece(beside, SparkleTextures.Mote, s.moteSize * Random.Range(0.65f, 1.2f), s.moteColor,
+            // El tono se reparte por el círculo igual que el ángulo, así que la chispa que sale
+            // hacia arriba siempre lleva el mismo color: el abanico se lee como un espectro y no
+            // como colores al azar.
+            Color color = s.rainbowMotes
+                ? Rainbow(i / (float)Mathf.Max(1, s.moteCount), s.moteColor.a)
+                : s.moteColor;
+
+            Piece(beside, SparkleTextures.Mote, s.moteSize * Random.Range(0.65f, 1.2f), color,
                   dir * s.spawnRadius,
                   dir * (s.spawnRadius + s.travel * Random.Range(0.7f, 1.3f)),
                   1f,
@@ -79,6 +89,15 @@ public class Sparkle : MonoBehaviour
                   Random.Range(-90f, 90f),
                   twinkle: true);
         }
+    }
+
+    // Saturación y brillo altos a propósito: una chispa es luz, y un color apagado se lee como
+    // suciedad sobre el fondo oscuro del tablero.
+    static Color Rainbow(float hue, float alpha)
+    {
+        var c = Color.HSVToRGB(Mathf.Repeat(hue, 1f), 0.85f, 1f);
+        c.a = alpha;
+        return c;
     }
 
     static Sparkle Piece(RectTransform beside, Sprite sprite, float size, Color color,

@@ -41,11 +41,11 @@ public class TutorialBombDemo : MonoBehaviour
 
     [Tooltip("Cuántos puntos tiene la línea de la mira.")]
     [Range(4, 24)]
-    [SerializeField] int dots = 12;
+    [SerializeField] int dots = 10;
 
     [Tooltip("Tamaño de cada punto de la mira, en tanto por uno de la burbuja.")]
     [Range(0.1f, 0.6f)]
-    [SerializeField] float dotSize = 0.32f;
+    [SerializeField] float dotSize = 0.2f;
 
     [Tooltip("Color de los puntos. Blanco para los boosters: una fila de bombitas en miniatura se leería como si fueran a salir muchas.")]
     [SerializeField] Color dotColor = new(1f, 1f, 1f, 0.9f);
@@ -113,7 +113,7 @@ public class TutorialBombDemo : MonoBehaviour
         _loop = null;
     }
 
-    static Sprite BombSprite => BoosterRules.BubbleSpriteFor(BubbleSpecial.Bomb);
+    static Sprite BombSprite => BoosterRules.BubbleSpriteFor(Booster.Bomb);
 
     bool Ready()
     {
@@ -206,7 +206,7 @@ public class TutorialBombDemo : MonoBehaviour
         // Las dos capas de verdad, no una imitación: la bomba de la demostración se mueve igual
         // que la del juego porque es el mismo componente leyendo el mismo catálogo. Enseñar un
         // arte que luego no coincide con el del tablero es enseñar mal.
-        SpecialBubbleSkin.Apply(_bomb, BubbleSpecial.Bomb);
+        SpecialBubbleSkin.Apply(_bomb, Booster.Bomb);
         _bomb.color = new Color(1f, 1f, 1f, 0f); // el fondo lo dibuja la capa, no esta Image
 
         _hand = handSprite != null ? Spawn("Hand", handSprite, size * 1.6f) : null;

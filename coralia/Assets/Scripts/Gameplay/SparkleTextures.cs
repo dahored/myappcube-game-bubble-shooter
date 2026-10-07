@@ -93,6 +93,79 @@ public static class SparkleTextures
         });
     }
 
+    // Un aro ARCOÍRIS: el mismo filo que Ring, pero el color recorre el espectro a lo ancho del
+    // anillo — rojo por fuera y violeta por dentro, como un arcoíris de verdad.
+    //
+    // Hace falta que sea UNA textura y no varios aros de colores superpuestos: varios anillos
+    // sueltos se leen como anillos sueltos, y lo que tiene que expandirse por la pantalla es un
+    // arcoíris. La diferencia se ve en cuanto la onda es ancha.
+    static readonly Dictionary<int, Sprite> _rainbowRings = new();
+
+    public static Sprite RainbowRing(float softness)
+    {
+        softness = Mathf.Clamp(softness, 0.01f, 0.4f);
+
+        int key = Mathf.RoundToInt(softness * 100f);
+        softness = key / 100f;
+
+        if (_rainbowRings.TryGetValue(key, out var cached) && cached != null) return cached;
+
+        float width = softness * 2.2f;   // a qué distancia del filo se reparte el espectro
+
+        return _rainbowRings[key] = BuildColored(RING_SIZE, (x, y) =>
+        {
+            float d = Mathf.Sqrt(x * x + y * y);
+            if (d >= 1f) return Color.clear;
+
+            float alpha = Mathf.Exp(-((d - RING_EDGE) * (d - RING_EDGE)) / (softness * softness));
+
+            // De dentro hacia fuera del anillo, en 0..1 — y de ahí al espectro. Se corta en 0,8
+            // porque el último tramo del círculo de tono vuelve al rojo y el arcoíris se cerraría
+            // sobre sí mismo.
+            float band = Mathf.Clamp01((d - RING_EDGE + width) / (width * 2f));
+
+            var color = Color.HSVToRGB(0.8f - band * 0.8f, 0.85f, 1f);
+            color.a   = alpha;
+            return color;
+        });
+    }
+
+    // Igual que Build pero el color lo decide cada píxel, no solo su alfa.
+    static Sprite BuildColored(int size, System.Func<float, float, Color> colorAt)
+    {
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, mipChain: false)
+        {
+            name       = "SparkleTexture",
+            filterMode = FilterMode.Bilinear,
+            wrapMode   = TextureWrapMode.Clamp,
+            hideFlags  = HideFlags.HideAndDontSave
+        };
+
+        var pixels = new Color32[size * size];
+
+        for (int py = 0; py < size; py++)
+        for (int px = 0; px < size; px++)
+        {
+            float x = (px + 0.5f) / size * 2f - 1f;
+            float y = (py + 0.5f) / size * 2f - 1f;
+
+            Color c = colorAt(x, y);
+            pixels[py * size + px] = new Color32(
+                (byte)(Mathf.Clamp01(c.r) * 255f),
+                (byte)(Mathf.Clamp01(c.g) * 255f),
+                (byte)(Mathf.Clamp01(c.b) * 255f),
+                (byte)(Mathf.Clamp01(c.a) * 255f));
+        }
+
+        texture.SetPixels32(pixels);
+        texture.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+
+        var sprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f));
+        sprite.name      = "Sparkle";
+        sprite.hideFlags = HideFlags.HideAndDontSave;
+        return sprite;
+    }
+
     // El color va siempre en blanco y la forma vive en el alfa: así el tinte lo pone la Image que
     // la use, y la misma textura sirve para cualquier color sin regenerarse.
     static Sprite Build(int size, System.Func<float, float, float> alphaAt)

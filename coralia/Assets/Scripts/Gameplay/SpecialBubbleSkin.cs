@@ -40,7 +40,7 @@ public class SpecialBubbleSkin : MonoBehaviour
     // Recibe el booster y no los sprites: el arte vive en BoosterCatalog, y los tres sitios que
     // dibujan una burbuja especial —el grid, la recámara del cañón y la que vuela— no tienen por
     // qué saber de dónde sale ni repetir la consulta cada uno a su manera.
-    public static void Apply(Component host, BubbleSpecial booster)
+    public static void Apply(Component host, Booster booster)
     {
         if (host == null) return;
 
