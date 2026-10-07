@@ -20,6 +20,22 @@ public static class BoosterRules
     // Contra la pared del tablero el disco se recorta solo.
     public const int BOMB_RADIUS = 2;
 
+    // Cuántas burbujas comodín da la Perla Arcoíris en todo el nivel, contando la primera.
+    //
+    // Una CANTIDAD y no una probabilidad: el jugador tiene que saber qué compra antes de pagar, y
+    // "tres perlas" vale lo mismo en un nivel de 20 disparos que en uno de 45. Con un porcentaje,
+    // el mismo precio compraba el doble en el nivel largo.
+    //
+    // El cuándo sí es al azar, repartido a lo largo de la partida — ver CannonController.RollColor.
+    public const int RAINBOW_COUNT = 3;
+
+    // Y la probabilidad de que caiga alguna DE MÁS en cada disparo, una vez repartidas las tres.
+    //
+    // Las tres son el piso, no el techo: sin esto el valor del booster se diluye en los niveles
+    // largos —tres perlas en 45 disparos es una cada quince— y es justo donde el jugador más las
+    // necesita. Con el extra, un nivel largo da más que uno corto, que es lo que corresponde.
+    public const float RAINBOW_BONUS_CHANCE = 0.05f;
+
     // Cuántos se regalan al presentar un booster por primera vez. DOS y no uno: el primero se
     // carga solo en el cañón para que el jugador lo dispare sin tener que descubrir el ícono del
     // HUD, y el segundo queda en el inventario para que pueda volver a usarlo cuando ÉL quiera
@@ -37,25 +53,25 @@ public static class BoosterRules
     // Existe para poder REGALAR uno al explicarlo: un tutorial que enseña un poder que el jugador
     // no tiene lo deja leyendo sobre algo que no puede probar, y la primera impresión de un
     // booster es justo lo que decide si después lo compra.
-    public static BubbleSpecial BoosterForTutorial(string tutorialId) => Parse(tutorialId, warnIfUnknown: false);
+    public static Booster BoosterForTutorial(string tutorialId) => Parse(tutorialId, warnIfUnknown: false);
 
     // Un poder que el jugador todavía no conoce se muestra bloqueado, aunque el nivel lo ofrezca.
     // El filtro va acá y no en cada JSON para que el diseñador de niveles no tenga que repetir en
     // 60 archivos una regla que es siempre la misma: el nivel dice qué ayudas tienen sentido para
     // su objetivo, no a partir de cuándo existen.
-    static BubbleSpecial Offered(BubbleSpecial booster) => IsUnlocked(booster) ? booster : BubbleSpecial.None;
+    static Booster Offered(Booster booster) => IsUnlocked(booster) ? booster : Booster.None;
 
     // El trío que se ofrece cuando el JSON del nivel no dice nada. Existe para que los niveles ya
     // escritos sigan funcionando sin editarlos uno por uno; un nivel que quiera otra cosa lo pone
     // en su 'allowed_boosters'.
-    static readonly BubbleSpecial[] DEFAULT_ALLOWED = { BubbleSpecial.Bomb, BubbleSpecial.None, BubbleSpecial.None };
+    static readonly Booster[] DEFAULT_ALLOWED = { Booster.Bomb, Booster.None, Booster.None };
 
     // Siempre devuelve SLOTS posiciones, rellenando con None lo que el nivel no ofrezca — así
     // quien lo muestre no tiene que decidir qué hacer con una lista corta: un hueco en None es
     // exactamente lo que el ítem dibuja como candado.
-    public static BubbleSpecial[] AllowedFor(LevelData level)
+    public static Booster[] AllowedFor(LevelData level)
     {
-        var slots = new BubbleSpecial[SLOTS];
+        var slots = new Booster[SLOTS];
 
         var names = level?.allowed_boosters;
         if (names == null || names.Count == 0)
@@ -84,12 +100,13 @@ public static class BoosterRules
     //
     // Los nombres no se derivan del enum (booster.ToString()) para que el JSON no quede atado al
     // nombre en C#: renombrar el enum no debería obligar a reescribir 60 niveles.
-    static readonly (BubbleSpecial booster, string name)[] NAMES =
+    static readonly (Booster booster, string name)[] NAMES =
     {
-        (BubbleSpecial.Bomb, "bomb"),
+        (Booster.Rainbow, "rainbow"),
+        (Booster.Bomb,    "bomb"),
     };
 
-    public static string NameOf(BubbleSpecial booster)
+    public static string NameOf(Booster booster)
     {
         foreach (var (candidate, name) in NAMES)
             if (candidate == booster) return name;
@@ -99,18 +116,18 @@ public static class BoosterRules
 
     // El aviso se apaga para quien pregunta por algo que LEGÍTIMAMENTE puede no ser un booster,
     // como el id de un tutorial.
-    public static BubbleSpecial Parse(string name, bool warnIfUnknown = true)
+    public static Booster Parse(string name, bool warnIfUnknown = true)
     {
         string clean = name?.Trim().ToLowerInvariant() ?? "";
 
-        if (clean.Length == 0 || clean == "none") return BubbleSpecial.None;
+        if (clean.Length == 0 || clean == "none") return Booster.None;
 
         foreach (var (booster, candidate) in NAMES)
             if (candidate == clean) return booster;
 
         if (warnIfUnknown) Debug.LogWarning($"[BoosterRules] '{name}' no es ningún booster conocido: el hueco se muestra bloqueado.");
 
-        return BubbleSpecial.None;
+        return Booster.None;
     }
 
     // El catálogo de arte, cargado una vez. Se guarda aunque venga nulo —con el bool aparte— para
@@ -137,14 +154,22 @@ public static class BoosterRules
     // Las claves de i18n se DERIVAN del nombre en vez de guardarse en el catálogo, igual que
     // LevelData.NameKey: son siempre la misma fórmula, y un campo por texto es un campo donde
     // escribir mal una clave y quedarse con el texto en crudo en pantalla.
-    public static string NameKeyFor(BubbleSpecial booster)        => $"ui.booster.{NameOf(booster)}.name";
-    public static string DescriptionKeyFor(BubbleSpecial booster) => $"ui.booster.{NameOf(booster)}.description";
+    public static string NameKeyFor(Booster booster)        => $"ui.booster.{NameOf(booster)}.name";
+    public static string DescriptionKeyFor(Booster booster) => $"ui.booster.{NameOf(booster)}.description";
 
-    public static Sprite IconFor(BubbleSpecial booster)         => Catalog != null ? Catalog.IconFor(booster)         : null;
-    public static Sprite BubbleSpriteFor(BubbleSpecial booster) => Catalog != null ? Catalog.BubbleSpriteFor(booster) : null;
-    public static Sprite GlowFor(BubbleSpecial booster)         => Catalog != null ? Catalog.GlowFor(booster)         : null;
+    public static Sprite IconFor(Booster booster)         => Catalog != null ? Catalog.IconFor(booster)         : null;
+    public static Sprite BubbleSpriteFor(Booster booster) => Catalog != null ? Catalog.BubbleSpriteFor(booster) : null;
+    public static Sprite GlowFor(Booster booster)         => Catalog != null ? Catalog.GlowFor(booster)         : null;
 
-    public static BoosterCatalog.Entry ArtFor(BubbleSpecial booster) => Catalog != null ? Catalog.EntryFor(booster) : null;
+    public static BoosterCatalog.Entry ArtFor(Booster booster) => Catalog != null ? Catalog.EntryFor(booster) : null;
+
+    // De qué familia es. Sin entrada en el catálogo se asume de gameplay: un poder sin configurar
+    // que aparece en el HUD se ve enseguida; uno que se aplicara solo al empezar no se vería nunca.
+    public static BoosterCatalog.Family FamilyOf(Booster booster) =>
+        ArtFor(booster)?.family ?? BoosterCatalog.Family.InGame;
+
+    public static bool IsInGame(Booster booster) => FamilyOf(booster) == BoosterCatalog.Family.InGame;
+    public static bool IsStart(Booster booster)  => booster != Booster.None && FamilyOf(booster) == BoosterCatalog.Family.Start;
 
     // Si el jugador ya conoce este poder. Un booster que aparece en la pantalla previa antes de
     // que nadie le haya explicado qué hace es un ícono que no significa nada — y encima con un
@@ -157,9 +182,9 @@ public static class BoosterRules
     // El tutorial visto cuenta además del bit de SaveManager para cubrir un tutorial que explique
     // un poder sin regalarlo. Hoy siempre regala, pero el id del tutorial ES el nombre del
     // booster, así que la comprobación sale gratis.
-    public static bool IsUnlocked(BubbleSpecial booster)
+    public static bool IsUnlocked(Booster booster)
     {
-        if (booster == BubbleSpecial.None) return false;
+        if (booster == Booster.None) return false;
 
         return SaveManager.IsBoosterUnlocked(booster) || SaveManager.HasSeenTutorial(NameOf(booster));
     }

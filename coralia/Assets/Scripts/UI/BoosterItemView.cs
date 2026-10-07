@@ -15,7 +15,7 @@ using UnityEngine.UI;
 public class BoosterItemView : MonoBehaviour
 {
     [Tooltip("Qué poder representa, cuando nadie lo asigna por código. En la pantalla previa lo pisa el nivel (LevelData.allowed_boosters), así que acá se deja en 'None'.\n\n'None' es lo que marca el ítem como BLOQUEADO: un hueco que no apunta a ningún poder no tiene nada que equipar.")]
-    [SerializeField] BubbleSpecial booster = BubbleSpecial.None;
+    [SerializeField] Booster booster = Booster.None;
 
     [SerializeField] Button button;
 
@@ -40,7 +40,7 @@ public class BoosterItemView : MonoBehaviour
     [Tooltip("El modal de compra. Sin esto, tocar un booster que está en cero no hace nada.\n\nSi el '+' tiene su propio Button, quítaselo o nunca se llega acá: se come el toque antes de que llegue a este ítem.")]
     [SerializeField] RefillBoosterPanel refillPanel;
 
-    bool Locked => booster == BubbleSpecial.None;
+    bool Locked => booster == Booster.None;
 
     void Awake()
     {
@@ -56,7 +56,7 @@ public class BoosterItemView : MonoBehaviour
 
     // Qué poder muestra este hueco. Lo decide el nivel, no el prefab: la pantalla previa reparte
     // acá el trío de LevelData.allowed_boosters, y el mismo ítem sirve para cualquiera.
-    public void Bind(BubbleSpecial value)
+    public void Bind(Booster value)
     {
         booster = value;
         Refresh();

@@ -91,7 +91,7 @@ public class StartGamePanel : UIPanel
 
         for (int i = 0; i < boosterSlots.Length; i++)
             if (boosterSlots[i] != null)
-                boosterSlots[i].Bind(i < allowed.Length ? allowed[i] : BubbleSpecial.None);
+                boosterSlots[i].Bind(i < allowed.Length ? allowed[i] : Booster.None);
     }
 
     void PlaySelectedLevel()

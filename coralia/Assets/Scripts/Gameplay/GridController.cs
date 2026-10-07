@@ -37,7 +37,6 @@ public class GridController : MonoBehaviour
     [SerializeField] Sprite spriteMintGreen;
     [SerializeField] Sprite spriteDarkBlue;
     [SerializeField] Sprite spriteDarkGrey;
-    [SerializeField] Sprite spriteRainbow;
 
     [Header("Scroll de retirada (GDD: el grid se aleja del cañón cuando se llena)")]
     [Range(0f, 1f)]
@@ -543,9 +542,15 @@ public class GridController : MonoBehaviour
     // si queda de semilla del flood-fill conecta con todo lo que toque, y eso con todo lo que
     // toque: un solo disparo limpiaba el nivel entero. Como comodín pasivo dentro de un grupo de
     // otro color sigue funcionando igual — el problema era solo cuando arrancaba la búsqueda.
-    public void ResolveRainbow(Vector2Int cell)
+    // Devuelve si quedó convertida. False significa que SIGUE siendo comodín, y por lo tanto que
+    // no hubo match — quien llame tiene que saltarse el flood-fill, porque con una arcoíris de
+    // semilla conecta con todo lo que toque y eso con todo lo que toque, y se lleva el grid.
+    // Cuántas burbujas iguales hacen falta para que estallen (GDD 1.4).
+    public const int MIN_MATCH = 3;
+
+    public bool ResolveRainbow(Vector2Int cell)
     {
-        if (!TryGetBubble(cell, out var view) || view.ColorType != BubbleColor.Rainbow) return;
+        if (!TryGetBubble(cell, out var view) || view.ColorType != BubbleColor.Rainbow) return true;
 
         var best      = BubbleColor.Rainbow;
         int bestCount = 0;
@@ -561,8 +566,21 @@ public class GridController : MonoBehaviour
             best      = candidate;
         }
 
-        // Si no tenía ningún vecino con color (cayó entre arcoíris, o sola), vuelve a ser comodín.
+        // Solo se gasta si el cambio sirve de algo. Si ningún color del vecindario llega a un
+        // match, se queda comodín en el tablero y espera: convertirla igual la malgastaba en
+        // rellenar un hueco, que es justo lo contrario de lo que el jugador pagó.
+        //
+        // Quedarse acá es seguro mientras no vuelva a ser semilla, y no puede serlo: la semilla
+        // es siempre la burbuja que acaba de aterrizar. Como vecina entra en el grupo de quien sí
+        // lo sea, que es lo que un comodín tiene que hacer.
+        if (bestCount < MIN_MATCH)
+        {
+            view.SetColor(BubbleColor.Rainbow, SpriteFor(BubbleColor.Rainbow));
+            return false;
+        }
+
         view.SetColor(best, SpriteFor(best));
+        return true;
     }
 
     HashSet<BubbleColor> NeighborColors(Vector2Int cell)
@@ -649,7 +667,10 @@ public class GridController : MonoBehaviour
         BubbleColor.MintGreen => spriteMintGreen,
         BubbleColor.DarkBlue  => spriteDarkBlue,
         BubbleColor.DarkGrey  => spriteDarkGrey,
-        BubbleColor.Rainbow   => spriteRainbow,
+        // La arcoíris sale del catálogo y no de un campo de acá: es el arte del booster que la
+        // produce (BoosterCatalog, entrada Rainbow), y tenerlo además en el Inspector eran dos
+        // sitios para el mismo sprite — con el de acá sin asignar, la burbuja salía en blanco.
+        BubbleColor.Rainbow   => BoosterRules.BubbleSpriteFor(Booster.Rainbow),
         _                     => null,
     };
 }

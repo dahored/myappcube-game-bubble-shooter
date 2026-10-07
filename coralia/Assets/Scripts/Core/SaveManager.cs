@@ -173,22 +173,22 @@ public static class SaveManager
     // separada por comas como los tutoriales vistos porque acá hay CANTIDADES, y un contador
     // que sube y baja dentro de una cadena es parseo por cada compra y cada uso.
     //
-    // La clave lleva el nombre del valor del enum: renombrar un BubbleSpecial deja huérfano lo
+    // La clave lleva el nombre del valor del enum: renombrar un Booster deja huérfano lo
     // que el jugador tuviera comprado de ese booster. Si alguna vez hay que renombrar uno, va
     // con migración acá.
-    static string BoosterKey(BubbleSpecial booster) => $"booster_{booster}";
+    static string BoosterKey(Booster booster) => $"booster_{booster}";
 
-    public static int BoosterCount(BubbleSpecial booster) =>
-        booster == BubbleSpecial.None ? 0 : PlayerPrefs.GetInt(BoosterKey(booster), 0);
+    public static int BoosterCount(Booster booster) =>
+        booster == Booster.None ? 0 : PlayerPrefs.GetInt(BoosterKey(booster), 0);
 
     // Avisa de cualquier cambio en el inventario, venga de un regalo, una compra o un uso. El
     // ícono del HUD se cuelga de acá en vez de que cada sitio que toca el inventario tenga que
     // acordarse de refrescarlo.
     public static event Action OnBoostersChanged;
 
-    public static void GrantBooster(BubbleSpecial booster, int amount = 1)
+    public static void GrantBooster(Booster booster, int amount = 1)
     {
-        if (booster == BubbleSpecial.None || amount <= 0) return;
+        if (booster == Booster.None || amount <= 0) return;
         PlayerPrefs.SetInt(BoosterKey(booster), BoosterCount(booster) + amount);
         UnlockBooster(booster);
         PlayerPrefs.Save();
@@ -200,17 +200,17 @@ public static class SaveManager
     // Es un bit aparte del contador y no "¿tiene alguno?" porque conocer un poder no se deshace:
     // gastar el último lo dejaría otra vez bloqueado en la pantalla previa, como si nunca lo
     // hubiera usado, y sin forma de volver a conseguirlo porque ni siquiera se muestra.
-    static string BoosterUnlockKey(BubbleSpecial booster) => $"booster_unlocked_{booster}";
+    static string BoosterUnlockKey(Booster booster) => $"booster_unlocked_{booster}";
 
-    public static bool IsBoosterUnlocked(BubbleSpecial booster) =>
-        booster != BubbleSpecial.None && PlayerPrefs.GetInt(BoosterUnlockKey(booster), 0) == 1;
+    public static bool IsBoosterUnlocked(Booster booster) =>
+        booster != Booster.None && PlayerPrefs.GetInt(BoosterUnlockKey(booster), 0) == 1;
 
     // Se llama solo desde GrantBooster: llegue por el tutorial, por una recompensa diaria o por
     // una compra, recibir uno es lo que lo da a conocer. Separarlo sería poder regalar un poder
     // que el jugador nunca ve.
-    public static void UnlockBooster(BubbleSpecial booster)
+    public static void UnlockBooster(Booster booster)
     {
-        if (booster == BubbleSpecial.None || IsBoosterUnlocked(booster)) return;
+        if (booster == Booster.None || IsBoosterUnlocked(booster)) return;
 
         PlayerPrefs.SetInt(BoosterUnlockKey(booster), 1);
         PlayerPrefs.Save();
@@ -218,7 +218,7 @@ public static class SaveManager
 
     // Devuelve false si no había ninguno — así quien lo use no puede gastar lo que no existe
     // por haberse olvidado de preguntar antes.
-    public static bool ConsumeBooster(BubbleSpecial booster)
+    public static bool ConsumeBooster(Booster booster)
     {
         int have = BoosterCount(booster);
         if (have <= 0) return false;

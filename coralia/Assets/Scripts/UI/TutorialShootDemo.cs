@@ -35,11 +35,11 @@ public class TutorialShootDemo : MonoBehaviour
 
     [Tooltip("Cuántos puntos tiene la línea de trayectoria.")]
     [Range(4, 24)]
-    [SerializeField] int dots = 12;
+    [SerializeField] int dots = 10;
 
     [Tooltip("Tamaño de cada punto de la mira, en tanto por uno de la burbuja.")]
     [Range(0.1f, 0.6f)]
-    [SerializeField] float dotSize = 0.32f;
+    [SerializeField] float dotSize = 0.2f;
 
     [Tooltip("Cuánto se desvía la mira al empezar a apuntar, en grados. Es lo que convierte el gesto en APUNTAR: la línea entra torcida y se va asentando sobre el objetivo. En cero, la mano va derecho del cañón al destino y se lee como si arrastrara la burbuja hasta ahí.")]
     [Range(0f, 60f)]

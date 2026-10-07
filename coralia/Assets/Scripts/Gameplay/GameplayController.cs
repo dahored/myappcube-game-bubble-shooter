@@ -62,16 +62,6 @@ public class GameplayController : MonoBehaviour
     [Tooltip("El fogonazo de pantalla y la onda expansiva. El destello avisa de que pasó algo grande mirara donde mirara el jugador; la onda dice dónde y hasta dónde llegó.")]
     [SerializeField] BombBlast.Settings bombBlast = new();
 
-    [Tooltip("Sonido de la explosión. Opcional — sin esto revienta igual, solo con los pops de cada burbuja.")]
-    [SerializeField] AudioClip bombClip;
-
-    [Tooltip("Sonido de la bomba encendiéndose, desde que se pega hasta que estalla (bubble_loading_sfx). Opcional, y aparte del de la explosión: son dos momentos distintos y lo normal es que sean dos clips.")]
-    [SerializeField] AudioClip bombChargeClip;
-
-    [Tooltip("Cuántos segundos ANTES del estallido arranca el sonido. Para clips que traen silencio o una mecha al principio: con el mismo valor que ese silencio, el golpe del audio cae justo sobre el fogonazo. En 0 suena al explotar. Se topa solo al tiempo de carga.")]
-    [Range(0f, 4f)]
-    [SerializeField] float bombClipLead;
-
     const float END_LEVEL_DELAY      = 1.1f;  // espera a que terminen las animaciones de pop/drop antes de mostrar el panel
     const float WIN_PANEL_PAUSE      = 0.35f; // respiro tras llenarse la barra, para que se vea la última estrella
     const float PROGRESS_BAR_TIMEOUT = 3f;    // tope de espera de esa barra, para no colgar el fin de nivel
@@ -84,8 +74,11 @@ public class GameplayController : MonoBehaviour
     //
     // La clave es que NINGUNA comparte instante con otra: un combo de veinte explota veinte veces
     // seguidas, muy rápido, en vez de cinco veces y un golpe.
-    static float ChainStep(int count, float naturalStep) =>
-        count > 1 ? Mathf.Min(naturalStep, CHAIN_TOTAL_MAX / (count - 1)) : 0f;
+    // maxTotal: cuánto puede durar la cadena entera. Por defecto el tope de los pops; el contagio
+    // de un comodín pasa el suyo, que es más largo a propósito — ahí la cadena ES el efecto, no el
+    // acompañamiento de la explosión.
+    static float ChainStep(int count, float naturalStep, float maxTotal = CHAIN_TOTAL_MAX) =>
+        count > 1 ? Mathf.Min(naturalStep, maxTotal / (count - 1)) : 0f;
 
     // La fórmula vive en ScoreRules, compartida con LevelDifficultyEstimator. Si cambia, hay
     // que recalcular star_thresholds en TODOS los niveles: Coralia -> Recalcular umbrales de
@@ -103,7 +96,7 @@ public class GameplayController : MonoBehaviour
     const string TUTORIAL_RESCUE = "rescue";
 
     // El booster que acaba de presentarse y hay que dejar cargado en cuanto arranque el nivel.
-    BubbleSpecial _autoLoadBooster;
+    Booster _autoLoadBooster;
 
     Vector2Int _creatureCell = new(-1, -1);
     bool       _creatureFreed;
@@ -206,6 +199,8 @@ public class GameplayController : MonoBehaviour
         cannon.Init(_level.available_colors, _shotsRemaining);
         cannon.OnBubbleLanded += OnBubbleLanded;
 
+        ApplyStartBoosters();
+
         // noMoreShotsPanel puede no estar asignado todavía (WIP) — ya se avisó en
         // ValidateReferences(), acá solo evita el crash si falta.
         if (noMoreShotsPanel != null)
@@ -265,10 +260,34 @@ public class GameplayController : MonoBehaviour
         // el inventario sería pedirle que encuentre el ícono del HUD justo cuando todavía no sabe
         // que existe. Va DESPUÉS de soltar el control porque LoadBooster lo exige, y así además
         // trae su destello y su sonido en vez de aparecer en silencio.
-        if (_autoLoadBooster != BubbleSpecial.None)
+        if (_autoLoadBooster != Booster.None)
         {
             cannon.LoadBooster(_autoLoadBooster);
-            _autoLoadBooster = BubbleSpecial.None;
+            _autoLoadBooster = Booster.None;
+        }
+    }
+
+    // Los boosters de inicio que el jugador trajo equipados (GDD §3.2). Se gastan acá, al abrir el
+    // nivel, y no al disparar como los de gameplay: su efecto ya quedó puesto y no hay un momento
+    // posterior en el que el jugador decida nada.
+    //
+    // Se desequipan además de consumirse. El loadout se limpia al abrir la pantalla previa, pero
+    // reiniciar el nivel desde dentro no pasa por ahí — sin esto, cada reintento volvería a
+    // aplicar un booster que ya no está en el inventario.
+    void ApplyStartBoosters()
+    {
+        // Sobre una copia: desequipar modifica la misma lista que se está recorriendo.
+        foreach (var booster in new List<Booster>(BoosterLoadout.Equipped))
+        {
+            if (!BoosterRules.IsStart(booster)) continue;
+            if (!SaveManager.ConsumeBooster(booster)) continue;
+
+            switch (booster)
+            {
+                case Booster.Rainbow: cannon.MakeCurrentRainbow(); break;
+            }
+
+            BoosterLoadout.Toggle(booster);
         }
     }
 
@@ -302,7 +321,7 @@ public class GameplayController : MonoBehaviour
         // después, nunca regalaría. Y como el tutorial sale una sola vez en la vida, el regalo
         // también — volver a entrar al nivel, o reiniciarlo, no da más.
         var booster = BoosterRules.BoosterForTutorial(id);
-        if (booster != BubbleSpecial.None && tutorialPanel.Pending(id))
+        if (booster != Booster.None && tutorialPanel.Pending(id))
         {
             SaveManager.GrantBooster(booster, BoosterRules.TUTORIAL_GRANT);
 
@@ -311,9 +330,12 @@ public class GameplayController : MonoBehaviour
             // le regala no tendría ícono en el HUD y no habría forma de usarlo en este nivel.
             BoosterLoadout.Equip(booster);
 
-            // Se anota para cargarlo cuando el nivel ya esté en marcha, no acá: LoadBooster exige
-            // que el input esté habilitado, y durante la apertura todavía no lo está.
-            _autoLoadBooster = booster;
+            // Solo los de gameplay se cargan en la recámara. Uno de inicio se aplica en el acto:
+            // su momento era al abrir el nivel y ya pasó, así que esperar al final del tutorial es
+            // lo más cerca que se puede estar de ese momento. Pasarlo por LoadBooster lo trataría
+            // como una burbuja especial y lo dejaría cargado sin poder dispararse nunca.
+            if (BoosterRules.IsInGame(booster)) _autoLoadBooster = booster;
+            else                                ApplyStartBoosters();
         }
 
         if (!tutorialPanel.Show(id, () => waiting = false)) yield break;
@@ -456,7 +478,7 @@ public class GameplayController : MonoBehaviour
         else Debug.LogWarning("[GameplayController] LosePanel no está asignado.");
     }
 
-    void OnBubbleLanded(Vector2Int landedCell, BubbleSpecial special)
+    void OnBubbleLanded(Vector2Int landedCell, Booster special)
     {
         if (_levelEnded) return;
 
@@ -473,7 +495,7 @@ public class GameplayController : MonoBehaviour
 
         // La bomba no revienta al tocar: se queda encendiéndose un momento. Todo lo que viene
         // después del estallido tiene que esperar a que ocurra, así que se va por una corrutina.
-        if (special == BubbleSpecial.Bomb) { StartCoroutine(ArmAndBlast(landedCell)); return; }
+        if (special == Booster.Bomb) { StartCoroutine(ArmAndBlast(landedCell)); return; }
 
         AfterRemoval(ResolveMatchAndDrop(landedCell));
     }
@@ -496,13 +518,15 @@ public class GameplayController : MonoBehaviour
             BombBlast.Charge((RectTransform)bomb.transform, bombBlast);
 
         // Arranca con la luz, no con la explosión: es el sonido de la mecha.
-        AudioManager.Instance?.PlaySfx(bombChargeClip);
+        var art = BoosterRules.ArtFor(Booster.Bomb);
+
+        AudioManager.Instance?.PlaySfx(art?.chargeClip);
 
         float charge = Mathf.Max(0f, bombBlast.chargeTime);
-        float lead   = Mathf.Clamp(bombClipLead, 0f, charge);
+        float lead   = Mathf.Clamp(art?.clipLead ?? 0f, 0f, charge);
 
         if (charge > lead) yield return new WaitForSeconds(charge - lead);
-        AudioManager.Instance?.PlaySfx(bombClip);
+        AudioManager.Instance?.PlaySfx(art?.burstClip);
         if (lead > 0f)     yield return new WaitForSeconds(lead);
 
         if (_levelEnded) yield break;   // el nivel se acabó por otro lado mientras cargaba
@@ -533,12 +557,23 @@ public class GameplayController : MonoBehaviour
     {
         var removed = new HashSet<Vector2Int>();
 
+        // Hay que preguntarlo ANTES de resolverla: un instante después ya es de otro color y no
+        // queda rastro de que el estallido lo provocó un comodín.
+        bool wasRainbow = grid.TryGetBubble(landedCell, out var landed) && landed.ColorType == BubbleColor.Rainbow;
+
         // Antes del flood-fill: si lo que aterrizó fue una arcoíris, acá elige de qué color se
         // vuelve. Si no, sería la semilla de un match que se lleva el grid completo.
-        grid.ResolveRainbow(landedCell);
+        //
+        // Cuando devuelve false sigue siendo comodín, y eso ya dice que no hubo match: no se puede
+        // buscar desde ella sin reventar el tablero, y tampoco hace falta.
+        if (!grid.ResolveRainbow(landedCell))
+        {
+            _comboStreak = 0;
+            return removed;
+        }
 
         var matched = grid.FindConnectedSameColor(landedCell);
-        if (matched.Count < 3)
+        if (matched.Count < GridController.MIN_MATCH)
         {
             _comboStreak = 0; // el disparo no matcheó nada — corta la racha de combo
             return removed;
@@ -561,18 +596,48 @@ public class GameplayController : MonoBehaviour
         // porque es igual para todas las del match — lo que cambia entre disparos, no dentro.
         int popValue = ScoreRules.PopValue(_comboStreak);
 
+        // Con un comodín hay DOS fases en vez de una cascada. Primero el color se propaga por todo
+        // el grupo, desde la que tocó la perla hacia afuera —el orden del flood-fill es el orden en
+        // que las reclamó de verdad— y cuando ha llegado a la última, estallan todas juntas.
+        //
+        // Separarlas es lo que deja VER la propagación: mezcladas, cada burbuja se teñía y moría
+        // en el mismo gesto y el efecto se leía igual que un match normal.
+        RectTransform seed = grid.TryGetBubble(matched[0], out var seedView) ? (RectTransform)seedView.transform : null;
+
+        // El contagio tiene sus propios tiempos, del catálogo: es el efecto del poder y tiene que
+        // poder verse: con el paso de los pops era demasiado rápido para notarse.
+        var   rainbowArt = wasRainbow ? BoosterRules.ArtFor(Booster.Rainbow) : null;
+        float claimStep  = rainbowArt != null
+            ? ChainStep(matched.Count, rainbowArt.claimStep, rainbowArt.claimMaxTotal)
+            : 0f;
+        float claimFade  = rainbowArt?.claimFade ?? 0f;
+
+        // Y el estallido espera además la pausa con todas ya teñidas.
+        float burstDelay = wasRainbow
+            ? (matched.Count - 1) * claimStep + claimFade + (rainbowArt?.claimHold ?? 0f)
+            : 0f;
+
         for (int i = 0; i < matched.Count; i++)
         {
             var cell = matched[i];
+
             if (grid.TryGetBubble(cell, out var view))
-                view.PlayPopAnimation(i * popStep, popClip);
-            grid.SpawnScorePopup(cell, popValue, i * popStep, ScorePopup.POP_LIFETIME);
+            {
+                if (wasRainbow) view.ClaimAsRainbow(i * claimStep, claimFade);
+
+                // Y una sola suena: quince pops a la vez son ruido, y lo que tiene que oírse es
+                // el golpe del poder.
+                view.PlayPopAnimation(wasRainbow ? burstDelay : i * popStep,
+                                      wasRainbow && i > 0 ? null : popClip);
+            }
+
+            grid.SpawnScorePopup(cell, popValue, wasRainbow ? burstDelay : i * popStep, ScorePopup.POP_LIFETIME);
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
         _bubblesPopped += matched.Count;
 
-        var collapsed = CollapseFloating(removed);
+        var collapsed = CollapseFloating(removed, burstDelay);
 
         // Se acumula acá y no se calcula al final multiplicando el total de burbujas: para
         // entonces la racha de cada disparo ya no se sabe. Y usa el MISMO popValue que se
@@ -581,10 +646,18 @@ public class GameplayController : MonoBehaviour
 
         int chainSize = matched.Count + collapsed.count;
 
+        // El golpe del comodín espera a que el color haya llegado a la última: es el remate de la
+        // contaminación, no algo que pase mientras.
+        if (wasRainbow)
+        {
+            StartCoroutine(RainbowBurst(seed, burstDelay, matched.Count, collapsed.count, collapsed.step));
+        }
         // Un golpe de temblor por burbuja, al ritmo de sus pops. Antes era una sola sacudida
         // disparada acá, o sea cuando las burbujas todavía no habían empezado a explotar.
-        if (grid.ShakeWorthIt(chainSize))
+        else if (grid.ShakeWorthIt(chainSize))
+        {
             StartCoroutine(ShakeAlongChain(matched.Count, popStep, collapsed.count, collapsed.step));
+        }
 
         return removed;
     }
@@ -619,7 +692,7 @@ public class GameplayController : MonoBehaviour
         // propio toque ligero, así que la cadena de diecinueve suena a escombros. El golpe fuerte
         // va UNA vez y antes que todos ellos — es la explosión, y lo que viene después es su
         // consecuencia. Con la misma intensidad que los pops, el estallido se perdería entre ellos.
-        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.HeavyImpact);
+        Vibrate(Booster.Bomb);
 
         float popStep = ChainStep(hit.Count, POP_CHAIN_DELAY);
 
@@ -645,7 +718,7 @@ public class GameplayController : MonoBehaviour
 
         var collapsed = CollapseFloating(removed);
 
-        if (grid.ShakeWorthIt(hit.Count + collapsed.count))
+        if ((BoosterRules.ArtFor(Booster.Bomb)?.shake ?? false) || grid.ShakeWorthIt(hit.Count + collapsed.count))
             StartCoroutine(ShakeAlongChain(hit.Count, popStep, collapsed.count, collapsed.step));
 
         return removed;
@@ -657,7 +730,10 @@ public class GameplayController : MonoBehaviour
     //
     // Compartido entre el match y la explosión de la bomba: las dos dejan el grid en el mismo
     // tipo de estado (un agujero), y lo que se cae después de cada una se decide igual.
-    (int count, float step) CollapseFloating(HashSet<Vector2Int> removed)
+    // delay: cuánto esperan las caídas antes de arrancar. Lo necesita el comodín, cuyas burbujas
+    // estallan todas juntas al final de la contaminación: sin esto lo que colgaba de ellas caería
+    // antes de que explotaran, que es el orden al revés.
+    (int count, float step) CollapseFloating(HashSet<Vector2Int> removed, float delay = 0f)
     {
         var collapsing = grid.FindUnreachableFromCeiling().OrderByDescending(cell => cell.y).ToList();
         float step     = ChainStep(collapsing.Count, DROP_CHAIN_DELAY);
@@ -665,11 +741,11 @@ public class GameplayController : MonoBehaviour
         for (int i = 0; i < collapsing.Count; i++)
         {
             var cell = collapsing[i];
-            if (grid.TryGetBubble(cell, out var view)) view.PlayDropAnimation(dropClip, i * step);
+            if (grid.TryGetBubble(cell, out var view)) view.PlayDropAnimation(dropClip, delay + i * step);
             // Las que caen valen fijo, sin racha: el número distinto es justamente lo que hace
             // ver que se ganaron de otra forma. GridController lo pone a la altura del cañón,
             // cuando la burbuja terminó de caer.
-            grid.SpawnDropScorePopup(cell, ScoreRules.POINTS_PER_DROP, i * step);
+            grid.SpawnDropScorePopup(cell, ScoreRules.POINTS_PER_DROP, delay + i * step);
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
@@ -685,6 +761,53 @@ public class GameplayController : MonoBehaviour
     // La energía del temblor se acumula y decae sola (GridController.ShakePulse), así que esto no
     // produce sacudidas sueltas: mientras los pops llegan más rápido de lo que la energía baja, la
     // pantalla tiembla de forma sostenida y se apaga cuando termina la cadena.
+    // El remate del comodín, una vez que el color llegó a la última burbuja: el chispazo, el golpe
+    // sonoro, la vibración y el temblor, todos a la vez.
+    //
+    // El temblor es una sacudida ÚNICA y no una cadena: las burbujas estallan juntas, así que
+    // repartirlo por burbuja lo convertiría en un temblequeo largo en vez de un golpe.
+    IEnumerator RainbowBurst(RectTransform seed, float delay, int popCount, int dropCount, float dropStep)
+    {
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        PlayBoosterBurst(Booster.Rainbow);
+
+        var art = BoosterRules.ArtFor(Booster.Rainbow);
+        if (art != null && seed != null)
+        {
+            Sparkle.Burst(seed, art.burstSparkle);
+
+            // Y el golpe de pantalla, que es lo que convierte el estallido en algo que se nota
+            // mirara donde mirara el jugador en vez de quedarse en el racimo.
+            BombBlast.Play((RectTransform)grid.transform, seed.anchoredPosition, art.burstBlast);
+        }
+
+        if ((art?.shake ?? false) || grid.ShakeWorthIt(popCount + dropCount))
+            yield return ShakeAlongChain(popCount, 0f, dropCount, dropStep);
+    }
+
+    // El golpe de un booster al hacer efecto: su sonido y su vibración, los dos del catálogo.
+    //
+    // Va aparte del pop de cada burbuja porque son dos cosas distintas: el pop es la burbuja
+    // muriendo y esto es el poder haciendo lo suyo. Y vive en el catálogo y no acá para que
+    // añadir un booster nuevo no obligue a tocar este archivo.
+    void PlayBoosterBurst(Booster booster)
+    {
+        var art = BoosterRules.ArtFor(booster);
+        if (art == null) return;
+
+        AudioManager.Instance?.PlaySfx(art.burstClip);
+        Vibrate(booster);
+    }
+
+    void Vibrate(Booster booster)
+    {
+        var art = BoosterRules.ArtFor(booster);
+
+        if (art != null && art.vibrate && SaveManager.Vibration)
+            MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.HeavyImpact);
+    }
+
     IEnumerator ShakeAlongChain(int popCount, float popStep, int dropCount, float dropStep)
     {
         for (int i = 0; i < popCount; i++)

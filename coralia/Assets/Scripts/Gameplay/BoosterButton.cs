@@ -11,11 +11,11 @@ using UnityEngine.UI;
 public class BoosterButton : MonoBehaviour
 {
     [Tooltip("Qué poder carga este ícono. Un botón por booster.")]
-    [SerializeField] BubbleSpecial booster = BubbleSpecial.Bomb;
+    [SerializeField] Booster booster = Booster.Bomb;
 
     // Qué poder muestra, para que la lista del HUD pueda preguntárselo sin duplicar el dato en
     // su propio Inspector.
-    public BubbleSpecial Booster => booster;
+    public Booster Booster => booster;
 
     [SerializeField] CannonController cannon;
     [SerializeField] Button           button;

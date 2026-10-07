@@ -10,3 +10,4 @@ dragon-studio-christmas-twinkle-effect-451850- > shine_v2
 virtual_vibes-simple-pop-noise-383737 -> swap
 bryansantosbreton-christmas-vibes-windy-whoosh-magical-chimes-180863 -> bubble_bomb
 freesound_community-sparkler_fuse_nmwav-14738 -> fuse
+koiroylers-magic-spell-353606 -> rainbow

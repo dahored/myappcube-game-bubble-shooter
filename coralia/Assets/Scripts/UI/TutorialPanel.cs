@@ -38,9 +38,12 @@ public class TutorialPanel : UIPanel
         [Tooltip("Una demostración en movimiento en lugar de la imagen fija, para mecánicas que se entienden mejor viéndolas. Si está puesta, manda sobre la imagen.\n\nVale tanto un PREFAB —se instancia al mostrarlo y se destruye al cerrar— como un objeto que ya esté colgando del panel en la escena, que simplemente se enciende y se apaga. El panel distingue cuál es solo.")]
         public GameObject animation;
 
-        [Tooltip("Apagado, el tutorial sale TODAS las veces. Solo para probarlo sin tener que borrar el progreso.")]
+        [Tooltip("Apagado, ESTE tutorial sale todas las veces. Solo para probarlo sin tener que borrar el progreso.\n\nEl interruptor de arriba manda sobre todos: con él apagado, este también sale siempre aunque esté marcado.")]
         public bool once = true;
     }
+
+    [Tooltip("Prendido (normal): cada tutorial sale una sola vez en la vida, según su propio 'Once'.\n\nApagado: NINGUNO se recuerda y todos vuelven a salir cada vez que toque. Es el interruptor para probar sin ir marcando entrada por entrada ni borrar el progreso del jugador — que es lo que hace el menú de depuración, y no es lo mismo: esto no toca lo guardado, solo deja de consultarlo.")]
+    [SerializeField] bool rememberSeen = true;
 
     [Tooltip("Todo lo que el juego explica, en un solo sitio. Quien dispara un tutorial solo nombra el id.")]
     [SerializeField] Entry[] entries;
@@ -86,11 +89,11 @@ public class TutorialPanel : UIPanel
         var entry = Find(id);
         if (entry == null) return false;
 
-        if (entry.once && SaveManager.HasSeenTutorial(entry.id)) return false;
+        if (Remembers(entry) && SaveManager.HasSeenTutorial(entry.id)) return false;
 
         // Se marca al PEDIRLO y no al cerrarlo: si el jugador sale del nivel con el panel abierto
         // no se vuelve a marcar nunca, y el tutorial saldría en bucle cada vez que entre.
-        if (entry.once) SaveManager.MarkTutorialSeen(entry.id);
+        if (Remembers(entry)) SaveManager.MarkTutorialSeen(entry.id);
 
         _pending.Enqueue((entry, onDismissed));
 
@@ -105,8 +108,12 @@ public class TutorialPanel : UIPanel
     {
         var entry = Find(id);
 
-        return entry != null && (!entry.once || !SaveManager.HasSeenTutorial(entry.id));
+        return entry != null && (!Remembers(entry) || !SaveManager.HasSeenTutorial(entry.id));
     }
+
+    // Los dos interruptores en uno. El global manda: apagarlo devuelve todos los tutoriales de
+    // golpe sin tocar las entradas una por una, que es lo que hace falta mientras se prueba.
+    bool Remembers(Entry entry) => rememberSeen && entry.once;
 
     Entry Find(string id)
     {

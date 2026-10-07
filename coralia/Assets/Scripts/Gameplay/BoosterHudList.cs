@@ -40,7 +40,9 @@ public class BoosterHudList : MonoBehaviour
             // Por lo EQUIPADO y no por lo que queda en el inventario: gastar el último no puede
             // hacer desaparecer el ícono a mitad de partida. Sin existencias el botón se queda y
             // muestra su '+', que es el camino para reponerlo.
-            bool show = BoosterLoadout.IsEquipped(button.Booster);
+            // Y solo los de gameplay: los de inicio ya hicieron su trabajo al abrir el nivel, así
+            // que un ícono suyo en el HUD sería un botón que no hace nada.
+            bool show = BoosterLoadout.IsEquipped(button.Booster) && BoosterRules.IsInGame(button.Booster);
 
             if (button.gameObject.activeSelf != show) button.gameObject.SetActive(show);
 

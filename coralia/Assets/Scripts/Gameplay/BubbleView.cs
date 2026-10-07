@@ -51,16 +51,16 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     public Vector2Int    Cell       { get; private set; }
     public BubbleColor   ColorType  { get; private set; }
     public bool          IsCreature { get; private set; }
-    public BubbleSpecial Special    { get; private set; }
+    public Booster Special    { get; private set; }
 
     // El poder que lleva esta burbuja, con su arte. Las capas van sobre la raíz (este mismo
     // objeto), encima del sprite de color: una bomba no se mezcla con su color, lo tapa.
-    public void SetSpecial(BubbleSpecial special)
+    public void SetSpecial(Booster special)
     {
         Special = special;
 
-        if (special == BubbleSpecial.None) SpecialBubbleSkin.Clear(this);
-        else                               SpecialBubbleSkin.Apply(this, special);
+        if (special != Booster.None) SpecialBubbleSkin.Apply(this, special);
+        else                         RefreshColorSkin();   // al descargar vuelve el skin del color, si lo tiene
     }
 
     public void Setup(Vector2Int cell, BubbleColor color, Sprite sprite)
@@ -68,6 +68,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
         Cell      = cell;
         ColorType = color;
         if (bubbleImage) bubbleImage.sprite = sprite;
+        RefreshColorSkin();
 
         var rt = (RectTransform)transform;
         rt.anchoredPosition = HexGridMath.CellToLocalPos(cell);
@@ -80,6 +81,20 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     {
         ColorType = color;
         if (bubbleImage) bubbleImage.sprite = sprite;
+        RefreshColorSkin();
+    }
+
+    // La arcoíris también es una burbuja especial, así que lleva el brillo esférico del catálogo
+    // igual que la bomba. Lo pide el color y no un booster cargado: una arcoíris puede venir del
+    // JSON de un nivel, de la Perla o de la cola del cañón, y en los tres casos se ve igual.
+    //
+    // El booster manda sobre el color: una bomba tapa lo que haya debajo, incluido esto.
+    void RefreshColorSkin()
+    {
+        if (Special != Booster.None) return;
+
+        if (ColorType == BubbleColor.Rainbow) SpecialBubbleSkin.Apply(this, Booster.Rainbow);
+        else                                  SpecialBubbleSkin.Clear(this);
     }
 
     public void SetCreatureMarker(bool isCreature)
@@ -121,6 +136,41 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     // volvería a moverse nunca.
     void OnDestroy() => EndAnimation();
 
+
+
+    // El comodín reclama esta burbuja: se tiñe de arcoíris y un instante después estalla.
+    //
+    // Cuenta lo que hizo el booster. Sin esto, un match de arcoíris se ve idéntico a uno normal y
+    // el jugador no tiene forma de saber que lo que pagó es lo que acaba de pasar.
+    //
+    // Pasa por SetSpecial y no por un tinte propio porque así el pop lo desvanece solo: ya sabe
+    // bajarle el alfa a las capas de una burbuja con poder.
+    public void ClaimAsRainbow(float delay, float fade) => StartCoroutine(ClaimRoutine(delay, fade));
+
+    IEnumerator ClaimRoutine(float delay, float fade)
+    {
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        SetSpecial(Booster.Rainbow);
+        SpecialBubbleSkin.SetAlpha(this, 0f);
+
+        // Un pelín más grande mientras se tiñe, y vuelve. Sin el gesto, el cambio de color sobre
+        // una burbuja quieta se pierde entre las demás que ya están cambiando.
+        Vector3 baseScale = transform.localScale;
+
+        for (float t = 0f; t < fade; t += Time.deltaTime)
+        {
+            float p = Mathf.Clamp01(t / fade);
+
+            SpecialBubbleSkin.SetAlpha(this, p);
+            transform.localScale = baseScale * (1f + 0.12f * Mathf.Sin(p * Mathf.PI));
+            yield return null;
+        }
+
+        SpecialBubbleSkin.SetAlpha(this, 1f);
+        transform.localScale = baseScale;
+    }
+
     public void PlayPopAnimation(float delay = 0f, AudioClip popClip = null) => StartCoroutine(PopAndDestroy(delay, popClip));
 
     // dropClip: mismo criterio que popClip — suena una vez POR burbuja que cae, no una sola
@@ -148,7 +198,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
             float p = t / POP_DURATION;
             transform.localScale = baseScale * (1f + 0.3f * p);
             if (bubbleImage) bubbleImage.color = new Color(1f, 1f, 1f, 1f - p);
-            if (Special != BubbleSpecial.None) SpecialBubbleSkin.SetAlpha(this, 1f - p);
+            if (Special != Booster.None) SpecialBubbleSkin.SetAlpha(this, 1f - p);
             yield return null;
         }
         Destroy(gameObject);
@@ -219,7 +269,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
             {
                 float fadeP = (t - DROP_FADE_START) / (DROP_MAX_DURATION - DROP_FADE_START);
                 bubbleImage.color = new Color(1f, 1f, 1f, 1f - fadeP);
-                if (Special != BubbleSpecial.None) SpecialBubbleSkin.SetAlpha(this, 1f - fadeP);
+                if (Special != Booster.None) SpecialBubbleSkin.SetAlpha(this, 1f - fadeP);
             }
             yield return null;
         }

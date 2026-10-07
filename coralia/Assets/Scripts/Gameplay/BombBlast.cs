@@ -69,6 +69,9 @@ public class BombBlast : MonoBehaviour
 
         [Tooltip("Separación entre un aro y el siguiente.")]
         public float waveStagger = 0.08f;
+
+        [Tooltip("La onda pasa a ser un ARCOÍRIS: un anillo cuyo color recorre el espectro a lo ancho, rojo por fuera y violeta por dentro.\n\nCon esto basta UNA onda ancha — subir 'Wave Count' apila arcoíris, que es otra cosa. De 'Wave Color' solo se usa el alfa.")]
+        public bool rainbowWaves;
     }
 
     // La luz que la bomba acumula antes de estallar. Se monta al lado de la burbuja y se apaga
@@ -150,7 +153,16 @@ public class BombBlast : MonoBehaviour
 
     static void Wave(RectTransform gridContainer, Vector2 localPos, Settings s, float delay)
     {
-        var rt = NewPiece("BombWave", gridContainer, SparkleTextures.Ring(s.waveEdge), s.waveColor);
+        // Con 'Rainbow Waves' la onda ES el arcoíris: una textura cuyo color recorre el espectro a
+        // lo ancho del anillo. Teñir varios aros planos de colores distintos no servía — se leían
+        // como anillos sueltos, no como un arcoíris.
+        //
+        // El tinte va en blanco para no ensuciar los colores de la textura; solo se conserva el
+        // alfa de 'Wave Color', que sigue mandando sobre la intensidad.
+        Sprite ring  = s.rainbowWaves ? SparkleTextures.RainbowRing(s.waveEdge) : SparkleTextures.Ring(s.waveEdge);
+        Color  color = s.rainbowWaves ? new Color(1f, 1f, 1f, s.waveColor.a)    : s.waveColor;
+
+        var rt = NewPiece("BombWave", gridContainer, ring, color);
 
         rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = localPos;
