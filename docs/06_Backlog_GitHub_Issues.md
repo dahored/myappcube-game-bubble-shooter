@@ -525,6 +525,7 @@ Antes del soft launch necesitás cuentas de developer y backend configuradas. Si
 Lanzar Coralia en 2-3 países pequeños (Filipinas, Colombia, México por ejemplo) para iterar con data real antes del lanzamiento global. 6-8 semanas de tracking de KPIs.
 
 ### Acceptance criteria
+- [ ] **Interruptores de desarrollo apagados** — `TutorialPanel` con `Remember Seen` y todos los `Once` marcados, y `TempActions` fuera de `SettingsPanel`. Con `Remember Seen` apagado, cada entrada al nivel de un tutorial vuelve a regalar dos power-ups: es una fuente infinita. Ver el issue del reparto de tutoriales
 - [ ] Build production firmado con keystore propio
 - [ ] Submission a Google Play Open Beta en países seleccionados
 - [ ] Submission a Apple App Store en países seleccionados
@@ -802,6 +803,43 @@ Si hay que recolocar uno, estas son las restricciones a respetar:
 5. **Por complejidad, no por potencia.** El criterio no es cuánto ayuda sino cuánto hay que
    entender para usarlo: la Tinta llega tarde por difícil de explicar, no por fuerte.
 
+### Cómo funciona el desbloqueo (importante para leer la tabla)
+
+El nivel de la tabla **no es "a partir de aquí"**: es dónde se ve el tutorial. Lo que desbloquea
+el poder es haberlo visto, no haber llegado a cierto nivel.
+
+- **El desbloqueo es global y permanente.** `BoosterRules.IsUnlocked` consulta un bit guardado, no
+  el nivel en que estás. Visto el tutorial, el poder está disponible **también en los niveles
+  anteriores**: si vuelves al 3 después de ver el de la Raya en el 6, ahí la tienes.
+- **Y permanente de verdad**: gastar la última unidad no vuelve a bloquearlo. El ícono se queda con
+  su `+` para reponerlo, que es el camino a la compra.
+- **Pero solo si se vio.** Un jugador que de alguna forma llegue al 20 sin pasar por el 6 no tiene
+  la Raya, aunque los niveles del 7 al 20 la ofrezcan. El tutorial es la única llave.
+
+**El nivel decide si lo OFRECE, el tutorial decide si EXISTE.** Son dos filtros encadenados: el
+poder aparece en la pantalla previa solo si el nivel lo lista en su `allowed_boosters` **y** está
+desbloqueado. Un nivel que no diga nada usa el trío por defecto, que hoy es solo la bomba
+(`BoosterRules.DEFAULT_ALLOWED`) — así que un jugador con los diez desbloqueados sigue viendo uno
+solo en un nivel sin `allowed_boosters`. Al repartir la tabla hay que repasar también qué niveles
+ofrecen qué.
+
+### ⚠️ Qué hay que apagar antes de shippear
+
+Hoy `TutorialPanel.prefab` está en **modo pruebas**, y no es un detalle cosmético:
+
+| Dónde | Está | Para producción |
+|---|---|---|
+| `TutorialPanel` → **Remember Seen** | apagado | **marcado** |
+| Cada entrada → **Once** | apagadas (las 6) | **marcadas** |
+| `SettingsPanel` → `TempActions` (botón de monedas y de borrar progreso) | en el prefab | **fuera** |
+
+**El motivo no es que los tutoriales se repitan, es que REGALAN.** `GameplayController.Explain`
+pregunta `tutorialPanel.Pending(id)` antes de conceder las dos unidades, y con `Remember Seen`
+apagado `Pending` devuelve `true` siempre. O sea: **cada vez que se entra al nivel 2 caen dos
+bombas más**, sin límite. Shippear así es una fuente infinita de power-ups gratis.
+
+El menú `Coralia/Debug` no hace falta tocarlo: vive en `Assets/Editor/` y no entra en la build.
+
 ### Lo que esto implica para la economía
 
 Cada tutorial regala **dos** unidades del poder que presenta (`BoosterRules.TUTORIAL_GRANT`). Con
@@ -815,6 +853,8 @@ recalibrar precios, porque regalar de más mata la primera compra.
 - [ ] Una entrada por id en el `TutorialPanel` de `Gameplay.unity`, con su demo
 - [ ] `ui.tutorial.X.title` y `.body` en los 6 idiomas
 - [ ] Ningún nivel con dos tutoriales de power-up
+- [ ] Repasado qué `allowed_boosters` ofrece cada nivel después de cada desbloqueo
+- [ ] **Antes de shippear**: `Remember Seen` y todos los `Once` marcados, `TempActions` fuera
 
 ### Dependencias
 Los siete power-ups que faltan. Este issue solo decide DÓNDE va cada uno; implementarlos son los
