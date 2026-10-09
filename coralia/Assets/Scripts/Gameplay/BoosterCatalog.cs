@@ -84,6 +84,9 @@ public class BoosterCatalog : ScriptableObject
         [Range(1f, 30f)]
         public float framesPerSecond = 8f;
 
+        [Tooltip("El chisporroteo de DENTRO de la burbuja: dos rayos horizontales saliendo de un destello en el medio. Se dibuja por código, así que no hace falta arte ni frames.")]
+        public SpecialBubbleSkin.Spark bubbleSpark = new();
+
         [Header("Mientras está cargado en el cañón")]
         [Tooltip("Sonido EN BUCLE que suena mientras el poder está puesto en la recámara — la mecha encendida de la bomba, por ejemplo. Se corta al descargarlo o al dispararlo.\n\nOpcional: sin clip no suena nada y el poder funciona igual.")]
         public AudioClip loadedLoopClip;
@@ -114,6 +117,14 @@ public class BoosterCatalog : ScriptableObject
 
         [Tooltip("El destello de PANTALLA y las ondas expansivas. Es lo que hace que el estallido se note mirara donde mirara el jugador, en vez de quedarse en el racimo.\n\nPara un poder de color: sube 'Wave Count' y marca 'Rainbow Waves' — lo que se abre por la pantalla pasa a ser un arcoíris.")]
         public BombBlast.Settings burstBlast = new();
+
+        // Por defecto FALSE: es lo que ya hace la bomba, así que las entradas que existen hoy no
+        // cambian de comportamiento al aparecer este campo.
+        [Tooltip("Marcado: no hay una explosión en el centro, sino que cada burbuja alcanzada estalla con su propia onda, una detrás de otra. Para un poder que barre en línea, donde un solo estallido central deja los extremos sin nada que mirar.\n\nLas ondas se configuran igual, en 'Burst Blast' — conviene bajarles el tamaño, porque ahora se ven una por burbuja.")]
+        public bool burstPerBubble;
+
+        [Tooltip("La descarga eléctrica que recorre la fila desde el impacto hacia los dos lados. Solo tiene sentido en un poder que barra en línea: marca 'Enabled' aquí dentro para encenderla.")]
+        public Lightning.Settings burstLightning = new();
 
         [Header("Contagio (poderes que tiñen antes de estallar)")]
         [Range(0.02f, 0.3f)]

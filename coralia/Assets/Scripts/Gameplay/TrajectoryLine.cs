@@ -44,6 +44,9 @@ public class TrajectoryLine : MonoBehaviour
     // que a veces caen del otro lado de la frontera entre dos celdas.
     public Vector2Int? LandingCell { get; private set; }
 
+    // Contra cuál chocó, que no es lo mismo que dónde se posa. Nulo si fue el techo.
+    public Vector2Int? StruckCell { get; private set; }
+
     void Awake()
     {
         for (int i = 0; i < maxDots; i++)
@@ -62,9 +65,9 @@ public class TrajectoryLine : MonoBehaviour
     // se ve como una mini burbuja real, sin depender de teñir un sprite genérico. alpha:
     // 1 = línea real (default), más bajo = look "fantasma" semitransparente para la demo
     // del tutorial (ver CannonController.SwayTrajectoryDemo).
-    // blastRadius: cuántos anillos marcar alrededor del punto de aterrizaje. 0 (lo normal) no
+    // booster: cuál va cargado, para marcar lo que se va a llevar. None (lo normal) no
     // marca nada — solo tiene zona lo que explota por área.
-    public void ShowPath(Vector2 originLocal, Vector2 dir, Sprite sprite, float alpha = 1f, int blastRadius = 0)
+    public void ShowPath(Vector2 originLocal, Vector2 dir, Sprite sprite, float alpha = 1f, Booster booster = Booster.None)
     {
         Vector2 pos       = originLocal;
         Vector2 direction = dir.normalized;
@@ -96,11 +99,12 @@ public class TrajectoryLine : MonoBehaviour
         if (!landed)
         {
             LandingCell = null;
+            StruckCell  = null;
             if (landingPreview) landingPreview.gameObject.SetActive(false);
         }
 
         // Después de resolver el aterrizaje, porque la zona cuelga de esa celda.
-        ShowBlastZone(blastRadius, alpha);
+        ShowBlastZone(booster, alpha);
 
         for (int i = used; i < maxDots; i++) _pool[i].gameObject.SetActive(false);
     }
@@ -116,23 +120,24 @@ public class TrajectoryLine : MonoBehaviour
     // promesa que hace el círculo de aterrizaje, extendida a un área: con un poder que se paga,
     // disparar a ciegas y descubrir después qué se llevó es lo que hace que no se use.
     //
-    // Sale de CellsWithinRadius, el mismo cálculo que la explosión de verdad — no de una forma
-    // dibujada aparte que habría que acordarse de actualizar.
-    void ShowBlastZone(int radius, float alpha)
+    // Sale de BoosterRules.CellsHitBy, el mismo cálculo que la explosión de verdad — no de una
+    // forma dibujada aparte que habría que acordarse de actualizar. Por eso vale para cualquier
+    // poder sin tocar este archivo: la bomba marca su hexágono y el torpedo su fila.
+    void ShowBlastZone(Booster booster, float alpha)
     {
         int used = 0;
 
-        if (radius > 0 && LandingCell.HasValue)
+        if (booster != Booster.None && LandingCell.HasValue)
         {
-            foreach (var cell in HexGridMath.CellsWithinRadius(LandingCell.Value, radius))
+            foreach (var cell in BoosterRules.CellsHitBy(booster, LandingCell.Value, StruckCell))
             {
                 var mark = MarkAt(used++);
                 mark.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);
 
                 // La marca sobre una burbuja es la que cuenta: esa burbuja vuela. La que cae en un
-                // hueco solo está completando la forma del hexágono, así que va atenuada — si
-                // pesaran lo mismo, apuntando al borde del tablero se ve un hexágono entero
-                // brillando sobre el agua vacía y parece que va a explotar la nada.
+                // hueco solo está completando la forma, así que va atenuada — si pesaran lo mismo,
+                // apuntando al borde del tablero se vería la forma entera brillando sobre el agua
+                // vacía y parecería que va a explotar la nada.
                 float weight = gridController.IsOccupied(cell) ? 1f : blastEmptyFade;
 
                 mark.color = new Color(blastMarkColor.r, blastMarkColor.g, blastMarkColor.b,
@@ -191,6 +196,7 @@ public class TrajectoryLine : MonoBehaviour
         // Se guarda aunque no haya sprite de preview asignado: el destino del disparo no depende
         // de que se esté dibujando el círculo.
         LandingCell = cell;
+        StruckCell  = hitCeiling ? null : struckCell;
 
         if (!landingPreview) return;
 

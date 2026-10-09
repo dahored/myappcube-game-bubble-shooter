@@ -63,8 +63,8 @@ public class BombBlast : MonoBehaviour
         [Range(0.02f, 0.4f)]
         public float waveEdge = 0.07f;
 
-        [Tooltip("Cuántos aros encadenados. Dos o tres se leen como una sacudida del agua; uno solo, como un círculo que crece.")]
-        [Range(1, 4)]
+        [Tooltip("Cuántos aros encadenados. Dos o tres se leen como una sacudida del agua; uno solo, como un círculo que crece. CERO deja solo el fogonazo, para un poder que ya trae su propio efecto —una descarga, por ejemplo— y al que los aros solo le estorban.")]
+        [Range(0, 4)]
         public int waveCount = 2;
 
         [Tooltip("Separación entre un aro y el siguiente.")]
@@ -104,6 +104,17 @@ public class BombBlast : MonoBehaviour
 
         for (int i = 0; i < s.waveCount; i++)
             Wave(gridContainer, localPos, s, i * s.waveStagger);
+    }
+
+    // Solo las ondas, y con retardo. Es lo que necesita un poder que estalla burbuja por burbuja:
+    // el fogonazo de Play() cubre la pantalla entera, así que repetirlo una vez por celda
+    // convertiría la fila en un estroboscopio. El acontecimiento es la cadena, no cada eslabón.
+    public static void Ripple(RectTransform gridContainer, Vector2 localPos, Settings s, float delay = 0f)
+    {
+        if (gridContainer == null || s == null) return;
+
+        for (int i = 0; i < s.waveCount; i++)
+            Wave(gridContainer, localPos, s, delay + i * s.waveStagger);
     }
 
     // El destello cuelga del CANVAS y no del tablero: tiene que cubrir la pantalla entera, y el

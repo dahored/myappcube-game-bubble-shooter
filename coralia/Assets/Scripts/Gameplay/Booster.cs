@@ -19,4 +19,5 @@ public enum Booster
     None    = 0,
     Bomb    = 1,
     Rainbow = 2,
+    Torpedo = 3,
 }

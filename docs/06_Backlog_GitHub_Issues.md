@@ -753,20 +753,24 @@ supuestos rompe y además es el primero que ve el jugador.
 
 ---
 
-## [Feature] Power-ups de inicio (5) — se aplican solos al empezar el nivel
+## [Feature] Power-ups de inicio (4 restantes) — se aplican solos al empezar el nivel
 
 **Labels:** `feature`, `gameplay`, `economy`, `priority-medium`, `size-L`
 
 ### Descripción
 
-Los cinco de la familia "de inicio" (GDD §3.2). Se eligen en la pantalla previa —que ya existe y
-funciona, `StartGamePanel` + `BoosterItemView`— y se aplican al abrir el nivel, sin pedir ninguna
-decisión durante la partida. Cada uno toca una palanca distinta.
+Los cuatro que faltan de la familia "de inicio" (GDD §3.2). Se eligen en la pantalla previa —que
+ya existe y funciona, `StartGamePanel` + `BoosterItemView`— y se aplican al abrir el nivel, sin
+pedir ninguna decisión durante la partida. Cada uno toca una palanca distinta.
+
+La **Perla Arcoíris** ya está implementada y es la plantilla: `GameplayController.ApplyStartBoosters`
+recorre lo equipado, consume el que sea de inicio y lo aplica. Un poder nuevo de esta familia solo
+añade su caso a ese `switch`.
 
 | Power-up | Efecto | Dónde se engancha |
 |---|---|---|
 | **Reserva de Oxígeno** | +5 al límite de disparos del nivel | `GameplayController._shotsRemaining`, antes del primer tiro |
-| **Perla Arcoíris** | La primera burbuja del cañón es comodín | `CannonController.Init`; `LinksWith` ya trata el arcoíris como comodín |
+| ~~**Perla Arcoíris**~~ ✅ | Al menos 3 comodines repartidos por el nivel, el primero al empezar | Hecho — `CannonController.MakeCurrentRainbow` + el reparto en `RollColor` |
 | **Marea Baja** | Al empezar, borra la fila más baja del tablero | `GridController` + `CollapseFloating` y la animación de pop que ya existen |
 | **Agua Clara** | El color con menos burbujas se CONVIERTE al color con más, y deja de salir del cañón | `ColorsOnGrid` + `BubbleView.SetColor` (ya existe para la arcoíris) |
 | **Corriente Favorable** | Durante todo el nivel, el cañón favorece los colores que más abundan | sesgar `CannonController.RollColor` |
@@ -776,40 +780,66 @@ burbujas, un efecto que nadie previó al balancear el nivel, y resolvería parte
 Convirtiendo, el racimo grande lo revienta el jugador con su disparo.
 
 ### Acceptance criteria
-- [ ] Los cinco en `BubbleSpecial` y en `BoosterRules.NAMES`
-- [ ] Entrada en `BoosterCatalog` con icono, packs y clip
+- [ ] Los cuatro en el enum `Booster` (con valor explícito, añadidos AL FINAL) y en `BoosterRules.NAMES`
+- [ ] Entrada en `BoosterCatalog` con `Family = Start`, icono, packs y clip
 - [ ] `ui.booster.X.name` y `.description` en los 6 idiomas
 - [ ] Un tutorial por cada uno, con su id = el nombre del booster
-- [ ] Aplicados al abrir el nivel, leyendo `BoosterLoadout.Equipped`
+- [ ] Su caso en el `switch` de `GameplayController.ApplyStartBoosters`
 - [ ] El cap de 3 equipados se respeta en la pantalla previa
 
 ### Dependencias
-`BoosterLoadout` ya guarda lo equipado y `StartGamePanel` ya lo reparte. Falta que
-`GameplayController` lea `BoosterLoadout.Equipped` al abrir el nivel y aplique los de esta familia
-— hoy solo se consumen los de gameplay.
+Ninguna: el camino entero está abierto desde la Perla. `BoosterLoadout` guarda lo equipado,
+`StartGamePanel` lo reparte y `ApplyStartBoosters` lo consume al abrir el nivel.
 
 ---
 
-## [Feature] Power-ups de gameplay (4 restantes) — se activan durante la partida
+## [Feature] Power-ups de gameplay (3 restantes) — se activan durante la partida
 
 **Labels:** `feature`, `gameplay`, `priority-medium`, `size-L`
 
 ### Descripción
 
-Los cuatro que faltan de la familia "de gameplay" (GDD §3.2). La **Bomba de Coral** ya está
-implementada y sirve de plantilla: `BubbleSpecial`, `SpecialBubbleSkin`, la marca de zona en
-`TrajectoryLine`, el `BoosterButton` del HUD y el consumo en `CannonController.Fire`.
+Los tres que faltan de la familia "de gameplay" (GDD §3.2). Hay **dos** implementados que sirven
+de plantilla, y entre los dos cubren casi todo lo que un poder nuevo puede necesitar:
+
+- **Bomba de Coral** — el camino base: enum `Booster`, `SpecialBubbleSkin`, la marca de zona en
+  `TrajectoryLine`, el `BoosterButton` del HUD y el consumo en `CannonController.Fire`.
+- **Raya Eléctrica** — el poder que probó que el camino aguanta uno nuevo sin tocarse. Entró sin
+  modificar `BoosterHudList`, `SpecialBubbleSkin`, `BoosterButton`, `BoosterItemView` ni
+  `RefillBoosterPanel`.
 
 | Power-up | Efecto | Qué reusa |
 |---|---|---|
-| **Torpedo** | Barre entera la fila horizontal donde impacte | El camino de la bomba cambiando qué celdas marca |
-| **Pez Explorador** | Al impactar se divide en tres: revienta la burbuja tocada y las dos de ese color **con menos vecinos del mismo color** | Igual que la bomba + una búsqueda por el grid |
+| ~~**Raya Eléctrica**~~ ✅ | Barre entera la fila horizontal que golpea | Hecho |
+| **Pez Explorador** | Al impactar se divide en tres: revienta la burbuja tocada y las dos de ese color **con menos vecinos del mismo color** | `CellsHitBy` + una búsqueda por el grid |
 | **Tinta de Pulpo** | El pulpo salpica 4 burbujas al azar dentro del radio, tiñéndolas del **color que vuelve a la recámara** | `HexGridMath.CellsWithinRadius` + `BubbleView.SetColor` |
 | **Pinza de Langosta** | Tocas una burbuja del tablero y la destruye. No gasta disparo | **Nada: necesita una pieza nueva** |
 
-**Tres de los cuatro son variaciones del mismo camino** — se cargan en el cañón, se apuntan, y lo
+**Dos de los tres son variaciones del mismo camino** — se cargan en el cañón, se apuntan, y lo
 único que cambia es qué le pasa al grid al impactar. La Pinza es la única que pide un modo de
 selección sobre el tablero, que no existe.
+
+### Lo que la Raya Eléctrica dejó montado
+
+Cambios transversales que un poder nuevo hereda gratis. Están aquí para que no se reimplementen:
+
+- **`BoosterRules.CellsHitBy(booster, landed, struck)`** — un poder declara QUÉ CELDAS se lleva, y
+  de ahí salen a la vez la marca de la mira, el orden de los pops y la explosión. No hay forma de
+  que la mira prometa una cosa y pase otra.
+- **`struck` es la burbuja golpeada, que no es donde se posa.** Disparando desde abajo la burbuja
+  se pega una fila por debajo de la que tocó. Todo poder cuya zona dependa de a qué apuntaba el
+  jugador tiene que resolver sobre `struck`, no sobre la celda de aterrizaje.
+- **La burbuja del propio poder siempre se va con él** (`hit.Insert(0, center)`), aunque caiga
+  fuera de la zona que afecta. Sin eso se quedaba colgando y caía al fondo en vez de estallar.
+- **`HexGridMath.CellsInRowFrom(row, fromCol)`** — una fila ordenada desde el impacto hacia los dos
+  lados. Quien escalone por el índice obtiene el efecto en abanico sin pedirlo.
+- **`Entry.burstPerBubble`** — en vez de una onda desde el centro, cada burbuja pone la suya al
+  ritmo de su propio pop. Para cualquier poder que barra en línea.
+- **`Lightning`** — una descarga que recorre una fila, tramo a tramo, con texturas procedurales.
+- **`SpecialBubbleSkin.Spark`** — el chisporroteo de dentro de la burbuja, también procedural: dos
+  brazos independientes y un destello con su propio latido. Sin arte que exportar.
+- **`BombBlast.Settings.waveCount` llega a 0** — para un poder que ya trae su efecto y al que los
+  aros solo le estorban.
 
 Dos detalles que no son opcionales:
 
@@ -822,8 +852,9 @@ Dos detalles que no son opcionales:
   el mismo hueco que la bomba tiene hoy.
 
 ### Acceptance criteria
-- [ ] Los cuatro en `BubbleSpecial` y en `BoosterRules.NAMES`
-- [ ] Entrada en `BoosterCatalog` con icono, frames, packs y clip
+- [ ] Los tres en el enum `Booster` (con valor explícito, añadidos AL FINAL) y en `BoosterRules.NAMES`
+- [ ] Entrada en `BoosterCatalog` con `Family = In Game`, icono, frames, packs y clips
+- [ ] Un `BoosterButton` por poder en `Gameplay.unity` — el HUD no los instancia, los enciende
 - [ ] `ui.booster.X.name` y `.description` en los 6 idiomas
 - [ ] Un tutorial por cada uno, con su id = el nombre del booster
 - [ ] La marca de zona de la mira refleja el efecto real de cada uno

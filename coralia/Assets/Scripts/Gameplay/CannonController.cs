@@ -62,7 +62,8 @@ public class CannonController : MonoBehaviour
     [SerializeField] float         hintTrajectoryAlpha = 0.4f; // línea "fantasma" semitransparente, distinta de un apuntado real
     [SerializeField] float         hintHandDistance    = 550f; // qué tan lejos del cañón se posiciona la mano sobre la línea
 
-    public event System.Action<Vector2Int, Booster> OnBubbleLanded;
+    // (dónde queda pegada, contra cuál chocó —nulo si fue el techo—, qué poder traía)
+    public event System.Action<Vector2Int, Vector2Int?, Booster> OnBubbleLanded;
 
     List<string>      _availableColors;
     List<BubbleColor> _availableColorsParsed; // fallback de RollColor() si el grid se queda sin colores rastreables
@@ -759,7 +760,7 @@ public class CannonController : MonoBehaviour
     void AimAndFire(Vector2 targetLocal)
     {
         _aimDir = ComputeAimDir(targetLocal);
-        trajectoryLine.ShowPath(MuzzleLocal, _aimDir, DotSprite, 1f, AimBlastRadius);
+        trajectoryLine.ShowPath(MuzzleLocal, _aimDir, DotSprite, 1f, _currentSpecial);
         Fire();
     }
 
@@ -784,7 +785,7 @@ public class CannonController : MonoBehaviour
         }
 
         _aimDir = ComputeAimDir(local);
-        trajectoryLine.ShowPath(MuzzleLocal, _aimDir, DotSprite, 1f, AimBlastRadius);
+        trajectoryLine.ShowPath(MuzzleLocal, _aimDir, DotSprite, 1f, _currentSpecial);
     }
 
     Vector2 ComputeAimDir(Vector2 targetLocal)
@@ -898,7 +899,7 @@ public class CannonController : MonoBehaviour
         // para cuando termina esta línea, el grid ya refleja el match/drop de este disparo
         // (incluida la cascada: burbujas de OTRO color que cayeron por quedar desconectadas
         // del techo, no solo las que matchearon directo).
-        OnBubbleLanded?.Invoke(cell, fired);
+        OnBubbleLanded?.Invoke(cell, impact.HitCeiling ? null : impact.StruckCell, fired);
 
         // El "current" NO se re-sortea aunque la cascada haya borrado todas las burbujas de su
         // color. El jugador ya lo vio como "next" durante todo el vuelo del disparo anterior: es
@@ -1279,11 +1280,6 @@ public class CannonController : MonoBehaviour
     // muchas. Blanco dice "esta es la trayectoria" sin prometer nada más.
     Sprite DotSprite =>
         _currentSpecial == Booster.None ? grid.SpriteFor(_current) : SparkleTextures.Glow;
-
-    // Cuántos anillos marcar en el tablero mientras se apunta. Solo los poderes de área tienen
-    // zona; un disparo normal marca su celda y nada más.
-    int AimBlastRadius =>
-        _currentSpecial == Booster.Bomb ? BoosterRules.BOMB_RADIUS : 0;
 
     void RefreshPreview()
     {

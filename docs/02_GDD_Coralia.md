@@ -252,7 +252,7 @@ Viven en el HUD. Ninguno sirve sin elegir dónde o cuándo.
 | Power-up | Efecto | Problema que resuelve | Cómo se activa |
 |---|---|---|---|
 | **Bomba de Coral** | Revienta un hexágono de radio 2 alrededor del impacto (19 burbujas) | Racimo denso sin match posible | Se carga en el cañón |
-| **Torpedo** | Barre entera la fila horizontal donde impacte | El grid se me vino encima | Se carga en el cañón |
+| **Raya Eléctrica** | Barre entera la fila horizontal que golpea | El grid se me vino encima | Se carga en el cañón |
 | **Pez Explorador** | Al impactar se divide en tres: uno revienta la burbuja tocada y los otros dos van a por las dos burbujas **más aisladas** de ese mismo color | Un color disperso que no junto | Se carga en el cañón |
 | **Tinta de Pulpo** | Al impactar, el pulpo se suelta y salpica 4 burbujas al azar dentro del radio, tiñéndolas del color que vuelve a la recámara | Tengo este color y ningún sitio donde pegarlo | Se carga en el cañón |
 | **Pinza de Langosta** | Tocas una burbuja del tablero y la destruye. No gasta disparo | *Esa* burbuja que sostiene todo | Selección sobre el tablero |
@@ -272,6 +272,12 @@ de él**: apuntas, ves la mancha del color que va a aplicar, y sabes qué va a p
 lo explique. De paso tapa el mismo hueco que la bomba tiene hoy — con un especial cargado, el
 jugador no sabe qué color recupera.
 
+**La Raya Eléctrica barre la fila que GOLPEA, no aquella en la que se posa.** Disparando desde
+abajo la burbuja se pega justo debajo de la que tocó, y esa fila suele estar vacía: resolver sobre
+ella era apuntar a una hilera y que no pasara nada. La clave del nombre es que el arma se llama
+así POR el pez —`Torpedo` es el género de las rayas eléctricas—, de modo que el id interno
+`torpedo` ya era correcto y no hizo falta renombrar nada fuera del CSV.
+
 **Cuatro de los cinco se cargan en el cañón y se apuntan.** Solo la Pinza pide una forma distinta
 de activación (tocar el tablero), así que es la única que exige una pieza de interfaz nueva.
 
@@ -281,7 +287,8 @@ de activación (tocar el tablero), así que es la única que exige una pieza de 
   (`TrajectoryLine`). Venderlo sería cobrar por lo que el juego regala. Venía de asumir una mira
   corta, como la de Puzzle Bobble.
 - **Rayo de luz** como columna. En grid hexagonal las filas impares van media burbuja desplazadas,
-  así que una columna sale en zigzag y se lee como un fallo. Pasa a ser el Torpedo, horizontal, que
+  así que una columna sale en zigzag y se lee como un fallo. Pasa a ser la Raya Eléctrica,
+  horizontal, que
   además provoca el desplome de todo lo que colgaba.
 - **Escudo de techo.** No aplica: en Coralia el grid **se aleja** del cañón cuando se llena
   (`GridController.scrollTriggerRatio`), no baja hacia el jugador. No hay presión que proteger.
