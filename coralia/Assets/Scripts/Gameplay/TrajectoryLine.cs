@@ -122,7 +122,7 @@ public class TrajectoryLine : MonoBehaviour
     //
     // Sale de BoosterRules.CellsHitBy, el mismo cálculo que la explosión de verdad — no de una
     // forma dibujada aparte que habría que acordarse de actualizar. Por eso vale para cualquier
-    // poder sin tocar este archivo: la bomba marca su hexágono y el torpedo su fila.
+    // poder sin tocar este archivo: la bomba marca su hexágono y la raya su fila.
     void ShowBlastZone(Booster booster, float alpha)
     {
         int used = 0;

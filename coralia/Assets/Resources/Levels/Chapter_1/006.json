@@ -5,8 +5,8 @@
     "max_shots": 47,
     "min_shots_to_clear": 18,
     "rainbow_chance": 0.0,
-    "allowed_boosters": ["bomb", "rainbow", "torpedo"],
-    "tutorials": ["torpedo"],
+    "allowed_boosters": ["bomb", "rainbow", "electric_ray"],
+    "tutorials": ["electric_ray"],
     "available_colors": [
         "red",
         "blue",

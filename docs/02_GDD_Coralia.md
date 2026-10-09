@@ -274,9 +274,12 @@ jugador no sabe qué color recupera.
 
 **La Raya Eléctrica barre la fila que GOLPEA, no aquella en la que se posa.** Disparando desde
 abajo la burbuja se pega justo debajo de la que tocó, y esa fila suele estar vacía: resolver sobre
-ella era apuntar a una hilera y que no pasara nada. La clave del nombre es que el arma se llama
-así POR el pez —`Torpedo` es el género de las rayas eléctricas—, de modo que el id interno
-`torpedo` ya era correcto y no hizo falta renombrar nada fuera del CSV.
+ella era apuntar a una hilera y que no pasara nada.
+
+El nombre salió de que el arma se llama así POR el pez: `Torpedo` es el género de las rayas
+eléctricas. Aun así el id interno pasó de `torpedo` a `electric_ray`, porque quien lea el código
+dentro de un año va a pensar en el arma y no en el animal — y su arte y su audio ya se llamaban
+así.
 
 **Cuatro de los cinco se cargan en el cañón y se apuntan.** Solo la Pinza pide una forma distinta
 de activación (tocar el tablero), así que es la única que exige una pieza de interfaz nueva.

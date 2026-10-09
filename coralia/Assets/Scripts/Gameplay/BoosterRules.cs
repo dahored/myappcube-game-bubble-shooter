@@ -46,7 +46,7 @@ public static class BoosterRules
 
     // Qué celdas se lleva un poder al impactar en 'cell'. Lista vacía = no revienta nada por área.
     //
-    // Es UN solo sitio y no un radio porque no todos los poderes tienen forma de disco: el Torpedo
+    // Es UN solo sitio y no un radio porque no todos los poderes tienen forma de disco: la Raya Eléctrica
     // barre una fila y no hay radio que la describa. Lo consultan la marca de la mira y la
     // explosión de verdad, así que lo que se promete al apuntar y lo que pasa al disparar no
     // pueden separarse — si se separan, el jugador deja de confiar en la mira.
@@ -55,7 +55,7 @@ public static class BoosterRules
     // recorta solo en vez de devolver celdas que no existen.
     // 'struck' es la burbuja CONTRA la que chocó el disparo, que no es donde acaba posado: la
     // burbuja se pega en el hueco de al lado, casi siempre una fila más abajo. Los poderes que
-    // afectan a una zona alrededor del impacto ignoran el dato; el Torpedo no puede, porque esa
+    // afectan a una zona alrededor del impacto ignoran el dato; la Raya Eléctrica no puede, porque esa
     // fila de abajo suele estar vacía y barrerla no hacía nada (reportado por Diego). Tampoco
     // sirve deducirla del tablero: una sola burbuja suelta en la fila de abajo bastaba para que
     // la heurística se quedara ahí en vez de subir a la hilera a la que el jugador apuntaba.
@@ -65,7 +65,7 @@ public static class BoosterRules
     public static List<Vector2Int> CellsHitBy(Booster booster, Vector2Int cell, Vector2Int? struck = null) => booster switch
     {
         Booster.Bomb    => HexGridMath.CellsWithinRadius(cell, BOMB_RADIUS),
-        Booster.Torpedo => HexGridMath.CellsInRowFrom((struck ?? cell).y, (struck ?? cell).x),
+        Booster.ElectricRay => HexGridMath.CellsInRowFrom((struck ?? cell).y, (struck ?? cell).x),
         _               => new List<Vector2Int>(),
     };
 
@@ -130,7 +130,7 @@ public static class BoosterRules
     {
         (Booster.Rainbow, "rainbow"),
         (Booster.Bomb,    "bomb"),
-        (Booster.Torpedo, "torpedo"),
+        (Booster.ElectricRay, "electric_ray"),
     };
 
     public static string NameOf(Booster booster)

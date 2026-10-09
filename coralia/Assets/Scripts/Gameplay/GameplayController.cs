@@ -513,7 +513,7 @@ public class GameplayController : MonoBehaviour
     // llega a ver que fue ELLA la que explotó —se lee como un match enorme y raro—. Con la carga,
     // el jugador ve la bola que acaba de colocar encenderse, y la explosión es su consecuencia.
     //
-    // El tiempo de carga sale del catálogo de cada poder: la bomba tiene mecha, el torpedo apenas
+    // El tiempo de carga sale del catálogo de cada poder: la bomba tiene mecha, la raya apenas
     // un instante. En cero, estalla en cuanto toca.
     IEnumerator ArmAndBlast(Booster booster, Vector2Int center, Vector2Int? struck)
     {
@@ -704,7 +704,7 @@ public class GameplayController : MonoBehaviour
         var art     = BoosterRules.ArtFor(booster);
 
         // Las mismas celdas que la mira acaba de marcar. El orden lo da CellsHitBy —anillos para
-        // la bomba, de un extremo al otro para el torpedo— y el índice ya sirve para escalonar la
+        // la bomba, de un extremo al otro para la raya— y el índice ya sirve para escalonar la
         // explosión en vez de reventar todo en el mismo frame.
         var hit = BoosterRules.CellsHitBy(booster, center, struck)
                               .Where(grid.IsOccupied)

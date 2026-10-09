@@ -777,7 +777,7 @@ seis capítulos del GDD §2.1 caben dentro de esos 60.
 | 1 ✅ | `first_steps`, `cancel` | — | Lo básico, antes de nada |
 | 2 ✅ | `bomb`, `swap` | gameplay | La bomba primero porque es la que se entiende sola: apuntas y revienta alrededor |
 | 4 ✅ | `rainbow` (Perla Arcoíris) | inicio | El primer poder que NO se apunta. Separado de la bomba para que la diferencia entre familias se note |
-| 6 ✅ | `torpedo` (Raya Eléctrica) | gameplay | Segundo poder de área, ya sabiendo apuntar uno |
+| 6 ✅ | `electric_ray` (Raya Eléctrica) | gameplay | Segundo poder de área, ya sabiendo apuntar uno |
 | 9 | `oxygen` (Reserva de Oxígeno) | inicio | El más simple de todos: +5 disparos. Cae cuando el margen de tiros empieza a apretar |
 | 13 | `scout` (Pez Explorador) | gameplay | Ataca el color disperso, que es el problema que aparece al subir a cuatro colores |
 | 18 | `lowtide` (Marea Baja) | inicio | Cuando los tableros empiezan a abrir cargados |

@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // La mini-vista que enseña la Raya Eléctrica dentro del TutorialPanel. Su entrada en el panel es
-// 'torpedo' —el id interno del poder, que no cambió al ponerle nombre— y el bucle es:
+// 'electric_ray' —el mismo id que usan su arte y su audio— y el bucle es:
 //
 //   1. tres filas de burbujas de colores mezclados
 //   2. la mano apunta a una burbuja de la fila de ABAJO
@@ -106,7 +106,7 @@ public class TutorialElectricRayDemo : MonoBehaviour
         _loop = null;
     }
 
-    static Sprite RaySprite => BoosterRules.BubbleSpriteFor(Booster.Torpedo);
+    static Sprite RaySprite => BoosterRules.BubbleSpriteFor(Booster.ElectricRay);
 
     bool Ready()
     {
@@ -202,13 +202,13 @@ public class TutorialElectricRayDemo : MonoBehaviour
 
         // Las capas de verdad, no una imitación: la raya de la demostración chisporrotea igual
         // que la del juego porque es el mismo componente leyendo el mismo catálogo.
-        SpecialBubbleSkin.Apply(_ray, Booster.Torpedo);
+        SpecialBubbleSkin.Apply(_ray, Booster.ElectricRay);
         _ray.color = new Color(1f, 1f, 1f, 0f); // el fondo lo dibuja la capa, no esta Image
 
         _hand = handSprite != null ? Spawn("Hand", handSprite, size * 1.6f) : null;
     }
 
-    List<Vector2Int> HitCells() => BoosterRules.CellsHitBy(Booster.Torpedo, Landed, Struck);
+    List<Vector2Int> HitCells() => BoosterRules.CellsHitBy(Booster.ElectricRay, Landed, Struck);
 
     Image Spawn(string label, Sprite sprite, float size)
     {
