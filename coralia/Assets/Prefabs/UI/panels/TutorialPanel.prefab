@@ -1204,6 +1204,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 505140162048760022}
+  - component: {fileID: 473286864240994648}
   m_Layer: 0
   m_Name: TutorialElectricRayDemo
   m_TagString: Untagged
@@ -1230,6 +1231,38 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &473286864240994648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7676310694796035754}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f8c2a16d59ac4fdf894932473cdb35f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TutorialElectricRayDemo
+  bubbleSprites:
+  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
+  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
+  - {fileID: 5547376898668789171, guid: 13fd4b4a4e05042eebd4a5aa316ece11, type: 3}
+  handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
+  aspect: 0.72
+  markColor: {r: 0.75, g: 0.95, b: 1, a: 0.85}
+  boltColor: {r: 0.8, g: 0.95, b: 1, a: 1}
+  dots: 10
+  dotSize: 0.2
+  dotColor: {r: 1, g: 1, b: 1, a: 0.9}
+  aimSweep: 30
+  handDistance: 0.42
+  holdTime: 0.5
+  aimTime: 0.7
+  previewTime: 0.9
+  releaseTime: 0.15
+  flyTime: 0.4
+  sweepTime: 0.7
+  restTime: 0.8
 --- !u!1 &8443132305376686780
 GameObject:
   m_ObjectHideFlags: 0
@@ -1572,9 +1605,9 @@ MonoBehaviour:
     image: {fileID: 0}
     animation: {fileID: 5513800614660147185}
     once: 0
-  - id: electricray
-    titleKey: ui.tutorial.rainbow.title
-    bodyKey: ui.tutorial.rainbow.body
+  - id: electric_ray
+    titleKey: ui.tutorial.electric_ray.title
+    bodyKey: ui.tutorial.electric_ray.body
     image: {fileID: 0}
     animation: {fileID: 7676310694796035754}
     once: 0
