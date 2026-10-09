@@ -754,6 +754,121 @@ supuestos rompe y además es el primero que ve el jugador.
 
 ---
 
+## [Design] Qué poder sirve contra qué obstáculo — la matriz, y el rescate como excusa
+
+**Labels:** `design`, `gameplay`, `level-design`, `priority-medium`, `size-M`
+
+### Por qué hace falta decidirlo antes de construir nada
+
+Hoy los diez power-ups son diez formas distintas de **quitar burbujas de colores**, y eso es todo
+lo que hay en el tablero. En cuanto entren los obstáculos, cada poder puede además responder mejor
+o peor a cada uno — y eso no es un detalle de balance, es lo que decide si el sistema entero vale.
+
+Sin esta matriz pasan dos cosas, las dos malas:
+
+- **Los obstáculos se vuelven "más vida".** Si todos los poderes les hacen lo mismo, un obstáculo
+  no es un problema nuevo: es la misma burbuja pidiendo dos tiros en vez de uno.
+- **Los poderes se vuelven intercambiables.** Si ninguno responde mejor que otro a nada, elegir
+  cuál llevar es elegir cuál gastar, y el jugador acaba comprando siempre el más barato.
+
+Con la matriz, en cambio, el jugador aprende a **leer el tablero antes de elegir**: ve hielo y
+piensa en área, ve una pegajosa y piensa en la Pinza. Ese momento —mirar el nivel y decidir qué
+llevar— es el que convierte la pantalla previa en una jugada en vez de en un escaparate.
+
+### La regla que no se negocia
+
+**Un poder ACELERA, nunca HABILITA.** Todo obstáculo tiene que poder romperse sin gastar un solo
+power-up. En cuanto exista uno que solo cierta compra abre, el nivel pasa a ser un peaje — y el
+GDD §3.1 cierra esa puerta de entrada: *"ningún power-up resuelve un nivel automáticamente"*.
+
+La diferencia correcta es de **coste en disparos**, no de posibilidad: el hielo se rompe a mano en
+dos tiros, o en uno con la bomba. Eso vale. "El hielo solo lo rompe la bomba" no vale.
+
+### La matriz tentativa
+
+Sale de la mecánica de cada uno, no de repartir ventajas a ojo. ✅ es sinergia clara, ➖ es que no
+aporta nada especial.
+
+| Obstáculo | Qué lo defiende | Poder con sinergia | Por qué |
+|---|---|---|---|
+| **Hielo** (nivel 11) | Pide dos impactos | Bomba ✅ · Raya ✅ | Un poder de área se lleva hielo y burbuja en el mismo golpe |
+| **Jaula de coral** (16) | Se rompe con un match adyacente | Perla ✅ · Pez Explorador ✅ | Los dos fuerzan un match donde no lo había, que es justo lo que la jaula pide |
+| **Pegajosa / crustáceo** (21) | No cae nunca; solo muere por match directo | **Pinza de Langosta** ✅ | Es LA respuesta: destruye una celda concreta sin necesitar match. El resto ➖ |
+| **Generador de algas** (26) | Produce una burbuja cada 5 disparos | Raya ✅ · Agua Clara ✅ | La Raya barre su fila entera; Agua Clara le quita el color con el que alimenta |
+| **Burbuja-bomba** (36) | sin definir en el GDD | — | Depende de qué haga; decidirlo en su propio issue |
+| **Cadena viva** (46) | Dos burbujas unidas, mueren juntas o no mueren | Bomba ✅ · Raya ✅ | Un área se lleva las dos a la vez sin pensarlo |
+
+Tres de los diez poderes (Reserva de Oxígeno, Marea Baja, Corriente Favorable) no tienen sinergia
+con ningún obstáculo, **y está bien**: son los que tocan las palancas del nivel —tiros, cuántas
+burbujas, qué color sale— y su sitio es otro. Forzarles una sinergia sería inventarla.
+
+### El rescate es lo que le da sentido
+
+Un obstáculo suelto es una molestia. El mismo obstáculo **encerrando a una criatura** es una
+escena, y ahí es donde esto deja de ser balance y pasa a ser el juego:
+
+- La **jaula de coral** ya nace para esto en el GDD: *"encierra una criatura"*. Jaula + rescate es
+  la pareja obvia y debería ser el primer nivel que combine las dos cosas.
+- Una criatura detrás de **pegajosas** no se puede liberar dejándola caer: hay que ir a por ella.
+  Es el nivel donde la Pinza se explica sola.
+- Una criatura bajo un **generador** mete prisa sin poner un reloj: cada cinco disparos el camino
+  que abriste se vuelve a cerrar.
+
+El rescate convierte la matriz en algo que el jugador siente en vez de calcular. Y de paso es la
+mejor razón de compra que tiene el juego: no "me falta un tiro" sino "quiero sacarla de ahí".
+
+### ⚠️ Un conflicto ya existente con el reparto de tutoriales
+
+Cruzando esta matriz con el reparto tentativo sale un choque que hay que resolver:
+
+| | Obstáculo entra en | Poder que lo resuelve | Se desbloquea en |
+|---|---|---|---|
+| Pegajosa | **21** | Pinza de Langosta | **45** ❌ |
+| Generador | 26 | Agua Clara | 30 ❌ |
+| Jaula | 16 | Pez Explorador | 13 ✅ |
+| Hielo | 11 | Bomba | 2 ✅ |
+
+**La pegajosa aparece 24 niveles antes que el poder pensado para ella.** La Pinza está al final del
+reparto porque es la única que pide un gesto nuevo, no por difícil de entender — así que mover una
+de las dos es razonable, y probablemente sea la Pinza la que suba.
+
+Esto no significa que el obstáculo sea injugable antes: la regla de arriba garantiza que se puede
+sin el poder. Significa que el jugador se come el obstáculo en su peor versión durante 24 niveles
+y luego descubre que había una herramienta. El descubrimiento llega tarde para que sea un premio.
+
+### Cómo implementarlo sin reescribir diez poderes
+
+**Que cada obstáculo declare de qué se defiende, no que cada poder declare qué rompe.** Es la misma
+lección que `CellsHitBy`: un poder dice qué celdas se lleva y la mira, los pops y la explosión
+salen de ahí.
+
+Si la relación vive en el booster, cada obstáculo nuevo obliga a abrir los diez poderes y añadirle
+un caso. Si vive en el obstáculo, un obstáculo nuevo se escribe una vez y ya sabe responder a todo
+lo que existe y a lo que venga.
+
+En la práctica: cuando el estallido de un poder alcanza una celda con obstáculo, se le pregunta al
+obstáculo qué le pasa con ESE tipo de daño —área, match, contacto directo, teñido— en vez de que
+el poder sepa de obstáculos. Los poderes siguen sin saber que existen.
+
+### Acceptance criteria
+- [ ] Matriz cerrada, con la justificación mecánica de cada sinergia
+- [ ] Ninguna casilla hace un obstáculo **imposible** sin power-up — solo más caro en disparos
+- [ ] Resuelto el choque Pinza / pegajosa, y repasado el reparto entero contra la matriz
+- [ ] Decidido qué tipos de daño existen (área, match, directo, teñido) antes de escribir el primero
+- [ ] Al menos un nivel por pareja obstáculo + rescate, empezando por jaula + criatura
+- [ ] El GDD §2.3 recoge la matriz
+
+### Dependencias
+
+Va **antes** de implementar los obstáculos y **después** de tener los poderes decididos (ya lo
+están, GDD §3.2). Es un issue de decisión, no de código: lo que produce es la tabla con la que se
+escriben los otros dos.
+
+Relacionado: *Obstáculos (6 tipos)*, *Rescate — multi-rescate, objetos y la cadena hasta el
+santuario*, *Dónde se desbloquea cada power-up*.
+
+---
+
 ## [Design] Dónde se desbloquea cada power-up — reparto TENTATIVO
 
 **Labels:** `design`, `gameplay`, `levels`, `priority-medium`, `size-S`
@@ -854,6 +969,7 @@ recalibrar precios, porque regalar de más mata la primera compra.
 - [ ] `ui.tutorial.X.title` y `.body` en los 6 idiomas
 - [ ] Ningún nivel con dos tutoriales de power-up
 - [ ] Repasado qué `allowed_boosters` ofrece cada nivel después de cada desbloqueo
+- [ ] Contrastado con la matriz poder × obstáculo: un obstáculo no debería entrar muchos niveles antes que el poder pensado para él (hoy la pegajosa entra en el 21 y la Pinza en el 45)
 - [ ] **Antes de shippear**: `Remember Seen` y todos los `Once` marcados, `TempActions` fuera
 
 ### Dependencias y orden
