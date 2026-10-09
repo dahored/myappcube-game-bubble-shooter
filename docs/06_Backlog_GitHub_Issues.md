@@ -753,6 +753,75 @@ supuestos rompe y además es el primero que ve el jugador.
 
 ---
 
+## [Design] Dónde se desbloquea cada power-up — reparto TENTATIVO
+
+**Labels:** `design`, `gameplay`, `levels`, `priority-medium`, `size-S`
+
+### Descripción
+
+Un power-up queda disponible cuando el jugador ha visto su tutorial (`BoosterRules.IsUnlocked`), y
+eso se decide poniendo su id en el `tutorials` del JSON de ese nivel. Hoy hay cuatro repartidos a
+ojo y siete sin sitio. Este issue fija el reparto.
+
+**Todo lo de la columna "Nivel" es tentativo**: son los números con los que arrancar, no una
+decisión cerrada. Se mueven en cuanto haya una partida de verdad que diga dónde hace falta cada
+ayuda.
+
+**El reparto va sobre `Resources/Levels/Chapter_1/`, que tiene los 60 niveles del MVP** (001 a 060,
+de "Tu primer disparo" a "El corazón de Coralia"). La carpeta no es el capítulo narrativo 1: los
+seis capítulos del GDD §2.1 caben dentro de esos 60.
+
+| Nivel | Tutorial | Familia | Por qué ahí |
+|---|---|---|---|
+| 1 ✅ | `first_steps`, `cancel` | — | Lo básico, antes de nada |
+| 2 ✅ | `bomb`, `swap` | gameplay | La bomba primero porque es la que se entiende sola: apuntas y revienta alrededor |
+| 4 ✅ | `rainbow` (Perla Arcoíris) | inicio | El primer poder que NO se apunta. Separado de la bomba para que la diferencia entre familias se note |
+| 6 ✅ | `torpedo` (Raya Eléctrica) | gameplay | Segundo poder de área, ya sabiendo apuntar uno |
+| 9 | `oxygen` (Reserva de Oxígeno) | inicio | El más simple de todos: +5 disparos. Cae cuando el margen de tiros empieza a apretar |
+| 13 | `scout` (Pez Explorador) | gameplay | Ataca el color disperso, que es el problema que aparece al subir a cuatro colores |
+| 18 | `lowtide` (Marea Baja) | inicio | Cuando los tableros empiezan a abrir cargados |
+| 24 | `ink` (Tinta de Pulpo) | gameplay | El más difícil de los que se cargan: tiñe del color que VUELVE, así que pide dominar la cola |
+| 30 | `clearwater` (Agua Clara) | inicio | Mitad del recorrido, con cinco colores en el tablero: ahí es donde sobra uno |
+| 38 | `current` (Corriente Favorable) | inicio | Un sesgo sutil. Solo se aprecia habiendo sufrido la mala suerte de colores |
+| 45 | `claw` (Pinza de Langosta) | gameplay | El último: es el único que pide una forma de activación nueva (tocar el tablero) |
+
+Del 46 al 60 no entra ninguno nuevo: el tramo final se juega con todo lo aprendido.
+
+### Las reglas que generan esa tabla
+
+Si hay que recolocar uno, estas son las restricciones a respetar:
+
+1. **Nunca dos tutoriales de power-up en el mismo nivel.** El del nivel 2 es la excepción aparente:
+   `swap` es una mecánica, no un poder.
+2. **Separación creciente**: 2, 2, 4, 5, 6, 6, 7, 8. Al principio todo es nuevo y el jugador está
+   receptivo; más adelante, un tutorial cada pocos niveles interrumpe una partida que ya fluye.
+3. **Alternar familias.** Dos de inicio seguidos se confunden entre sí, porque ninguno pide una
+   decisión y los dos "pasan solos" al empezar.
+4. **El que pide interfaz nueva, el último.** La Pinza no se apunta: se toca una burbuja del
+   tablero. Enseñar un gesto nuevo cuando el resto ya es automático cuesta menos.
+5. **Por complejidad, no por potencia.** El criterio no es cuánto ayuda sino cuánto hay que
+   entender para usarlo: la Tinta llega tarde por difícil de explicar, no por fuerte.
+
+### Lo que esto implica para la economía
+
+Cada tutorial regala **dos** unidades del poder que presenta (`BoosterRules.TUTORIAL_GRANT`). Con
+once tutoriales, el jugador recibe **22 power-ups gratis** a lo largo del capítulo. Es mucho, y es
+a propósito mientras no haya ninguna fuente de monedas — pero hay que volver sobre ello al
+recalibrar precios, porque regalar de más mata la primera compra.
+
+### Acceptance criteria
+- [ ] Cada id de la tabla, en el `tutorials` del JSON de su nivel
+- [ ] Ese mismo id en el `allowed_boosters` de ese nivel y de los siguientes que lo quieran ofrecer
+- [ ] Una entrada por id en el `TutorialPanel` de `Gameplay.unity`, con su demo
+- [ ] `ui.tutorial.X.title` y `.body` en los 6 idiomas
+- [ ] Ningún nivel con dos tutoriales de power-up
+
+### Dependencias
+Los siete power-ups que faltan. Este issue solo decide DÓNDE va cada uno; implementarlos son los
+dos issues de power-ups.
+
+---
+
 ## [Feature] Power-ups de inicio (4 restantes) — se aplican solos al empezar el nivel
 
 **Labels:** `feature`, `gameplay`, `economy`, `priority-medium`, `size-L`
@@ -863,19 +932,31 @@ Dos detalles que no son opcionales:
 
 ---
 
-## [Backlog] 60 niveles totales (de 30 a 60) para MVP
+## [Backlog] Revisar y balancear los 60 niveles del MVP
 
 **Labels:** `backlog`, `feat`, `levels`, `priority-medium`, `size-XL`
 
 ### Descripción
-Completar los 60 niveles del MVP siguiendo la curva del GDD sección 2.4. Estos son los 6 capítulos × 10 niveles — hoy hay 30 (capítulos 1-3). Estrategia híbrida hand + AI.
+
+Los 60 del MVP **ya están escritos** — `Resources/Levels/Chapter_1/`, de 001 a 060. Lo que falta
+no es escribirlos sino jugarlos: hoy ninguno se ha validado contra la curva del GDD §2.4.
+
+⚠️ **La carpeta no es el capítulo narrativo.** `Chapter_1/` tiene los 60 del MVP enteros y los
+seis capítulos del GDD §2.1 caben dentro. `Chapter_2..5/` suman otros 150 niveles ya escritos
+(061 a 210), que son contenido posterior y quedan fuera de este issue.
+
+Lo que se ve de entrada y hay que contrastar: **los 60 son `clear_all`**, no hay ni un `rescue`
+pese a que el objetivo está implementado y el GDD lo pide desde el capítulo 1. Y la curva de
+tiros es muy holgada (el nivel 10 da 84 tiros para 141 burbujas).
 
 ### Acceptance criteria
-- [ ] 30 niveles más (capítulos 4, 5 y 6 en `Resources/Levels/`)
-- [ ] Capítulos según GDD 2.1: Cala Apagada (1-10, ✅), Jardín de Anémonas (11-20, ✅), Bosque de Algas (21-30, ✅), Cueva de Cristales (31-40), Profundidades de Coral (41-50), Ciudad de las Perlas (51-60)
+- [ ] Cada uno jugado hasta el final al menos una vez
+- [ ] `max_shots` ajustado: un jugador con oficio debería ganar en el 60-70% de los intentos
+- [ ] Capítulos según GDD 2.1: Cala Apagada (1-10), Jardín de Anémonas (11-20), Bosque de Algas (21-30), Cueva de Cristales (31-40), Profundidades de Coral (41-50), Ciudad de las Perlas (51-60)
 - [ ] Curva difícil con walls de pago en 35, 45, 55
-- [ ] Variedad de objetivos (rescue, clear_all, color_count, drop_creature, multi_rescue)
+- [ ] Variedad de objetivos — hoy **todos** son `clear_all`; falta repartir `rescue` y los demás
 - [ ] Obstáculos progresivos (hielo, jaulas, pegajosas, generadores, bombas)
+- [ ] `allowed_boosters` coherente con el issue del reparto de tutoriales
 - [ ] Solver script que valida solubilidad de cada nivel
 
 ### Referencias

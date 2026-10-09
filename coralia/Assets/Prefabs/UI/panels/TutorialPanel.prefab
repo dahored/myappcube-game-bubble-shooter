@@ -1195,6 +1195,41 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   popSound: {fileID: 0}
+--- !u!1 &7676310694796035754
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 505140162048760022}
+  m_Layer: 0
+  m_Name: TutorialElectricRayDemo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &505140162048760022
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7676310694796035754}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3588830722398191144}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &8443132305376686780
 GameObject:
   m_ObjectHideFlags: 0
@@ -1537,6 +1572,12 @@ MonoBehaviour:
     image: {fileID: 0}
     animation: {fileID: 5513800614660147185}
     once: 0
+  - id: electricray
+    titleKey: ui.tutorial.rainbow.title
+    bodyKey: ui.tutorial.rainbow.body
+    image: {fileID: 0}
+    animation: {fileID: 7676310694796035754}
+    once: 0
   titleText: {fileID: 6506105488765496103}
   bodyText: {fileID: 5104394503919540149}
   imageSlot: {fileID: 0}
@@ -1579,6 +1620,7 @@ RectTransform:
   - {fileID: 4242304146641464697}
   - {fileID: 2722127346295865928}
   - {fileID: 3463041811256645354}
+  - {fileID: 505140162048760022}
   m_Father: {fileID: 8911775597314945009}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}

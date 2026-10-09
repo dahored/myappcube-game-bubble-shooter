@@ -70,7 +70,10 @@ que el gameplay, y "una sola vez en la vida" por id.
 - Transiciones de escena con fade y burbujas
 - Háptica nativa Android/iOS
 - Resolución dinámica adaptativa
-- Niveles en JSON (`Resources/Levels/Chapter_1..3`), 30 escritos de los 60 del MVP
+- Niveles en JSON. ⚠️ **La carpeta no es el capítulo narrativo**: `Chapter_1/` tiene los **60 del
+  MVP** (001 a 060, de "Tu primer disparo" a "El corazón de Coralia"), y los seis capítulos del
+  GDD §2.1 caben dentro de esos 60. `Chapter_2..5/` suman otros 150 ya escritos, que son contenido
+  posterior al MVP
 
 ---
 
@@ -85,7 +88,7 @@ el panel de recarga se agota solo. Ver el issue de recalibración de la economí
 
 1. **Fuentes de monedas** — santuario, dailies, misiones o logros. Cualquiera desbloquea la economía
 2. **Los siete power-ups restantes** — cuatro de inicio y tres de gameplay (GDD 3.2)
-3. **30 niveles más** — de 30 a los 60 del MVP
+3. **Revisar y balancear los 60 del MVP** — están escritos, falta jugarlos
 4. **Audio real** — la infraestructura está, faltan clips
 5. **Santuario** — decidir si `HomeGame` se expande o es pantalla nueva
 
