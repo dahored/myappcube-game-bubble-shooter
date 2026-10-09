@@ -10,11 +10,19 @@ public static class BoosterDebugMenu
 {
     const int GRANT = 5;
 
-    [MenuItem("Coralia/Debug — Regalar 5 bombas")]
-    static void GrantBombs()
+    // Los da TODOS, no uno: con una entrada de menú por booster habría que acordarse de añadir la
+    // suya cada vez que nace uno, y el que falta es justo el que se está probando.
+    [MenuItem("Coralia/Debug — Regalar 5 de cada booster")]
+    static void GrantAll()
     {
-        SaveManager.GrantBooster(Booster.Bomb, GRANT);
-        Debug.Log($"[Coralia] Bombas disponibles: {SaveManager.BoosterCount(Booster.Bomb)}");
+        foreach (Booster booster in System.Enum.GetValues(typeof(Booster)))
+        {
+            if (booster == Booster.None) continue;
+
+            SaveManager.GrantBooster(booster, GRANT);
+        }
+
+        Debug.Log($"[Coralia] +{GRANT} de cada booster. Todos quedan desbloqueados.");
     }
 
     // Qué ve cada pantalla de boosters y por qué. Los tres datos viven en sitios distintos

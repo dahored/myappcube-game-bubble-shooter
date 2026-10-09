@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // Las reglas de los boosters, en un solo lugar. Mismo criterio que ScoreRules.
@@ -42,6 +43,31 @@ public static class BoosterRules
     // — que es cuando de verdad se aprende para qué sirve. Con uno solo, el único uso sería el
     // que el juego le puso en la mano.
     public const int TUTORIAL_GRANT = 2;
+
+    // Qué celdas se lleva un poder al impactar en 'cell'. Lista vacía = no revienta nada por área.
+    //
+    // Es UN solo sitio y no un radio porque no todos los poderes tienen forma de disco: la Raya Eléctrica
+    // barre una fila y no hay radio que la describa. Lo consultan la marca de la mira y la
+    // explosión de verdad, así que lo que se promete al apuntar y lo que pasa al disparar no
+    // pueden separarse — si se separan, el jugador deja de confiar en la mira.
+    //
+    // Las celdas se filtran contra el tablero en HexGridMath, así que contra la pared el efecto se
+    // recorta solo en vez de devolver celdas que no existen.
+    // 'struck' es la burbuja CONTRA la que chocó el disparo, que no es donde acaba posado: la
+    // burbuja se pega en el hueco de al lado, casi siempre una fila más abajo. Los poderes que
+    // afectan a una zona alrededor del impacto ignoran el dato; la Raya Eléctrica no puede, porque esa
+    // fila de abajo suele estar vacía y barrerla no hacía nada (reportado por Diego). Tampoco
+    // sirve deducirla del tablero: una sola burbuja suelta en la fila de abajo bastaba para que
+    // la heurística se quedara ahí en vez de subir a la hilera a la que el jugador apuntaba.
+    //
+    // Nulo = no se golpeó ninguna burbuja (el techo, o un tutorial que no tiene tablero): se
+    // resuelve sobre la celda de aterrizaje, que es lo correcto en los dos casos.
+    public static List<Vector2Int> CellsHitBy(Booster booster, Vector2Int cell, Vector2Int? struck = null) => booster switch
+    {
+        Booster.Bomb    => HexGridMath.CellsWithinRadius(cell, BOMB_RADIUS),
+        Booster.ElectricRay => HexGridMath.CellsInRowFrom((struck ?? cell).y, (struck ?? cell).x),
+        _               => new List<Vector2Int>(),
+    };
 
     // Qué booster explica cada tutorial. El id del tutorial que presenta un poder ES el nombre
     // del poder, así que no hay tabla que mantener: dos nombres para la misma cosa en el mismo
@@ -104,6 +130,7 @@ public static class BoosterRules
     {
         (Booster.Rainbow, "rainbow"),
         (Booster.Bomb,    "bomb"),
+        (Booster.ElectricRay, "electric_ray"),
     };
 
     public static string NameOf(Booster booster)

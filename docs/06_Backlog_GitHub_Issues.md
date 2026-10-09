@@ -525,6 +525,7 @@ Antes del soft launch necesitás cuentas de developer y backend configuradas. Si
 Lanzar Coralia en 2-3 países pequeños (Filipinas, Colombia, México por ejemplo) para iterar con data real antes del lanzamiento global. 6-8 semanas de tracking de KPIs.
 
 ### Acceptance criteria
+- [ ] **Interruptores de desarrollo apagados** — `TutorialPanel` con `Remember Seen` y todos los `Once` marcados, y `TempActions` fuera de `SettingsPanel`. Con `Remember Seen` apagado, cada entrada al nivel de un tutorial vuelve a regalar dos power-ups: es una fuente infinita. Ver el issue del reparto de tutoriales
 - [ ] Build production firmado con keystore propio
 - [ ] Submission a Google Play Open Beta en países seleccionados
 - [ ] Submission a Apple App Store en países seleccionados
@@ -753,20 +754,144 @@ supuestos rompe y además es el primero que ve el jugador.
 
 ---
 
-## [Feature] Power-ups de inicio (5) — se aplican solos al empezar el nivel
+## [Design] Dónde se desbloquea cada power-up — reparto TENTATIVO
+
+**Labels:** `design`, `gameplay`, `levels`, `priority-medium`, `size-S`
+
+### Descripción
+
+Un power-up queda disponible cuando el jugador ha visto su tutorial (`BoosterRules.IsUnlocked`), y
+eso se decide poniendo su id en el `tutorials` del JSON de ese nivel. Hoy hay cuatro repartidos a
+ojo y siete sin sitio. Este issue fija el reparto.
+
+**Todo lo de la columna "Nivel" es tentativo**: son los números con los que arrancar, no una
+decisión cerrada. Se mueven en cuanto haya una partida de verdad que diga dónde hace falta cada
+ayuda.
+
+**El reparto va sobre `Resources/Levels/Chapter_1/`, que tiene los 60 niveles del MVP** (001 a 060,
+de "Tu primer disparo" a "El corazón de Coralia"). La carpeta no es el capítulo narrativo 1: los
+seis capítulos del GDD §2.1 caben dentro de esos 60.
+
+| Nivel | Tutorial | Familia | Por qué ahí |
+|---|---|---|---|
+| 1 ✅ | `first_steps`, `cancel` | — | Lo básico, antes de nada |
+| 2 ✅ | `bomb`, `swap` | gameplay | La bomba primero porque es la que se entiende sola: apuntas y revienta alrededor |
+| 4 ✅ | `rainbow` (Perla Arcoíris) | inicio | El primer poder que NO se apunta. Separado de la bomba para que la diferencia entre familias se note |
+| 6 ✅ | `electric_ray` (Raya Eléctrica) | gameplay | Segundo poder de área, ya sabiendo apuntar uno |
+| 9 | `oxygen` (Reserva de Oxígeno) | inicio | El más simple de todos: +5 disparos. Cae cuando el margen de tiros empieza a apretar |
+| 13 | `scout` (Pez Explorador) | gameplay | Ataca el color disperso, que es el problema que aparece al subir a cuatro colores |
+| 18 | `lowtide` (Marea Baja) | inicio | Cuando los tableros empiezan a abrir cargados |
+| 24 | `ink` (Tinta de Pulpo) | gameplay | El más difícil de los que se cargan: tiñe del color que VUELVE, así que pide dominar la cola |
+| 30 | `clearwater` (Agua Clara) | inicio | Mitad del recorrido, con cinco colores en el tablero: ahí es donde sobra uno |
+| 38 | `current` (Corriente Favorable) | inicio | Un sesgo sutil. Solo se aprecia habiendo sufrido la mala suerte de colores |
+| 45 | `claw` (Pinza de Langosta) | gameplay | El último: es el único que pide una forma de activación nueva (tocar el tablero) |
+
+Del 46 al 60 no entra ninguno nuevo: el tramo final se juega con todo lo aprendido.
+
+### Las reglas que generan esa tabla
+
+Si hay que recolocar uno, estas son las restricciones a respetar:
+
+1. **Nunca dos tutoriales de power-up en el mismo nivel.** El del nivel 2 es la excepción aparente:
+   `swap` es una mecánica, no un poder.
+2. **Separación creciente**: 2, 2, 4, 5, 6, 6, 7, 8. Al principio todo es nuevo y el jugador está
+   receptivo; más adelante, un tutorial cada pocos niveles interrumpe una partida que ya fluye.
+3. **Alternar familias.** Dos de inicio seguidos se confunden entre sí, porque ninguno pide una
+   decisión y los dos "pasan solos" al empezar.
+4. **El que pide interfaz nueva, el último.** La Pinza no se apunta: se toca una burbuja del
+   tablero. Enseñar un gesto nuevo cuando el resto ya es automático cuesta menos.
+5. **Por complejidad, no por potencia.** El criterio no es cuánto ayuda sino cuánto hay que
+   entender para usarlo: la Tinta llega tarde por difícil de explicar, no por fuerte.
+
+### Cómo funciona el desbloqueo (importante para leer la tabla)
+
+El nivel de la tabla **no es "a partir de aquí"**: es dónde se ve el tutorial. Lo que desbloquea
+el poder es haberlo visto, no haber llegado a cierto nivel.
+
+- **El desbloqueo es global y permanente.** `BoosterRules.IsUnlocked` consulta un bit guardado, no
+  el nivel en que estás. Visto el tutorial, el poder está disponible **también en los niveles
+  anteriores**: si vuelves al 3 después de ver el de la Raya en el 6, ahí la tienes.
+- **Y permanente de verdad**: gastar la última unidad no vuelve a bloquearlo. El ícono se queda con
+  su `+` para reponerlo, que es el camino a la compra.
+- **Pero solo si se vio.** Un jugador que de alguna forma llegue al 20 sin pasar por el 6 no tiene
+  la Raya, aunque los niveles del 7 al 20 la ofrezcan. El tutorial es la única llave.
+
+**El nivel decide si lo OFRECE, el tutorial decide si EXISTE.** Son dos filtros encadenados: el
+poder aparece en la pantalla previa solo si el nivel lo lista en su `allowed_boosters` **y** está
+desbloqueado. Un nivel que no diga nada usa el trío por defecto, que hoy es solo la bomba
+(`BoosterRules.DEFAULT_ALLOWED`) — así que un jugador con los diez desbloqueados sigue viendo uno
+solo en un nivel sin `allowed_boosters`. Al repartir la tabla hay que repasar también qué niveles
+ofrecen qué.
+
+### ⚠️ Qué hay que apagar antes de shippear
+
+Hoy `TutorialPanel.prefab` está en **modo pruebas**, y no es un detalle cosmético:
+
+| Dónde | Está | Para producción |
+|---|---|---|
+| `TutorialPanel` → **Remember Seen** | apagado | **marcado** |
+| Cada entrada → **Once** | apagadas (las 6) | **marcadas** |
+| `SettingsPanel` → `TempActions` (botón de monedas y de borrar progreso) | en el prefab | **fuera** |
+
+**El motivo no es que los tutoriales se repitan, es que REGALAN.** `GameplayController.Explain`
+pregunta `tutorialPanel.Pending(id)` antes de conceder las dos unidades, y con `Remember Seen`
+apagado `Pending` devuelve `true` siempre. O sea: **cada vez que se entra al nivel 2 caen dos
+bombas más**, sin límite. Shippear así es una fuente infinita de power-ups gratis.
+
+El menú `Coralia/Debug` no hace falta tocarlo: vive en `Assets/Editor/` y no entra en la build.
+
+### Lo que esto implica para la economía
+
+Cada tutorial regala **dos** unidades del poder que presenta (`BoosterRules.TUTORIAL_GRANT`). Con
+once tutoriales, el jugador recibe **22 power-ups gratis** a lo largo del capítulo. Es mucho, y es
+a propósito mientras no haya ninguna fuente de monedas — pero hay que volver sobre ello al
+recalibrar precios, porque regalar de más mata la primera compra.
+
+### Acceptance criteria
+- [ ] Cada id de la tabla, en el `tutorials` del JSON de su nivel
+- [ ] Ese mismo id en el `allowed_boosters` de ese nivel y de los siguientes que lo quieran ofrecer
+- [ ] Una entrada por id en el `TutorialPanel` de `Gameplay.unity`, con su demo
+- [ ] `ui.tutorial.X.title` y `.body` en los 6 idiomas
+- [ ] Ningún nivel con dos tutoriales de power-up
+- [ ] Repasado qué `allowed_boosters` ofrece cada nivel después de cada desbloqueo
+- [ ] **Antes de shippear**: `Remember Seen` y todos los `Once` marcados, `TempActions` fuera
+
+### Dependencias y orden
+
+**Primero los niveles, después esta tabla.** El reparto se revisa entero cuando los 60 estén
+balanceados, y en la misma pasada que los `rescue`: dónde conviene presentar un poder depende de
+en qué nivel aparece el problema que ese poder resuelve, y eso no se sabe hasta jugarlos. De ahí
+que la tabla sea tentativa — son los números con los que arrancar, no el resultado.
+
+Los dos van juntos y en este orden:
+
+1. *Revisar y balancear los 60 niveles del MVP* — hoy todos son `clear_all` y la curva de tiros
+   es holgada
+2. **Este issue** — recolocar tutoriales y repartir los `rescue` sobre esos niveles ya ajustados
+
+Aparte, implementar los poderes son los dos issues de power-ups. Esta tabla solo decide DÓNDE va
+cada uno, así que puede cerrarse aunque falten por construir.
+
+---
+
+## [Feature] Power-ups de inicio (4 restantes) — se aplican solos al empezar el nivel
 
 **Labels:** `feature`, `gameplay`, `economy`, `priority-medium`, `size-L`
 
 ### Descripción
 
-Los cinco de la familia "de inicio" (GDD §3.2). Se eligen en la pantalla previa —que ya existe y
-funciona, `StartGamePanel` + `BoosterItemView`— y se aplican al abrir el nivel, sin pedir ninguna
-decisión durante la partida. Cada uno toca una palanca distinta.
+Los cuatro que faltan de la familia "de inicio" (GDD §3.2). Se eligen en la pantalla previa —que
+ya existe y funciona, `StartGamePanel` + `BoosterItemView`— y se aplican al abrir el nivel, sin
+pedir ninguna decisión durante la partida. Cada uno toca una palanca distinta.
+
+La **Perla Arcoíris** ya está implementada y es la plantilla: `GameplayController.ApplyStartBoosters`
+recorre lo equipado, consume el que sea de inicio y lo aplica. Un poder nuevo de esta familia solo
+añade su caso a ese `switch`.
 
 | Power-up | Efecto | Dónde se engancha |
 |---|---|---|
 | **Reserva de Oxígeno** | +5 al límite de disparos del nivel | `GameplayController._shotsRemaining`, antes del primer tiro |
-| **Perla Arcoíris** | La primera burbuja del cañón es comodín | `CannonController.Init`; `LinksWith` ya trata el arcoíris como comodín |
+| ~~**Perla Arcoíris**~~ ✅ | Al menos 3 comodines repartidos por el nivel, el primero al empezar | Hecho — `CannonController.MakeCurrentRainbow` + el reparto en `RollColor` |
 | **Marea Baja** | Al empezar, borra la fila más baja del tablero | `GridController` + `CollapseFloating` y la animación de pop que ya existen |
 | **Agua Clara** | El color con menos burbujas se CONVIERTE al color con más, y deja de salir del cañón | `ColorsOnGrid` + `BubbleView.SetColor` (ya existe para la arcoíris) |
 | **Corriente Favorable** | Durante todo el nivel, el cañón favorece los colores que más abundan | sesgar `CannonController.RollColor` |
@@ -776,40 +901,66 @@ burbujas, un efecto que nadie previó al balancear el nivel, y resolvería parte
 Convirtiendo, el racimo grande lo revienta el jugador con su disparo.
 
 ### Acceptance criteria
-- [ ] Los cinco en `BubbleSpecial` y en `BoosterRules.NAMES`
-- [ ] Entrada en `BoosterCatalog` con icono, packs y clip
+- [ ] Los cuatro en el enum `Booster` (con valor explícito, añadidos AL FINAL) y en `BoosterRules.NAMES`
+- [ ] Entrada en `BoosterCatalog` con `Family = Start`, icono, packs y clip
 - [ ] `ui.booster.X.name` y `.description` en los 6 idiomas
 - [ ] Un tutorial por cada uno, con su id = el nombre del booster
-- [ ] Aplicados al abrir el nivel, leyendo `BoosterLoadout.Equipped`
+- [ ] Su caso en el `switch` de `GameplayController.ApplyStartBoosters`
 - [ ] El cap de 3 equipados se respeta en la pantalla previa
 
 ### Dependencias
-`BoosterLoadout` ya guarda lo equipado y `StartGamePanel` ya lo reparte. Falta que
-`GameplayController` lea `BoosterLoadout.Equipped` al abrir el nivel y aplique los de esta familia
-— hoy solo se consumen los de gameplay.
+Ninguna: el camino entero está abierto desde la Perla. `BoosterLoadout` guarda lo equipado,
+`StartGamePanel` lo reparte y `ApplyStartBoosters` lo consume al abrir el nivel.
 
 ---
 
-## [Feature] Power-ups de gameplay (4 restantes) — se activan durante la partida
+## [Feature] Power-ups de gameplay (3 restantes) — se activan durante la partida
 
 **Labels:** `feature`, `gameplay`, `priority-medium`, `size-L`
 
 ### Descripción
 
-Los cuatro que faltan de la familia "de gameplay" (GDD §3.2). La **Bomba de Coral** ya está
-implementada y sirve de plantilla: `BubbleSpecial`, `SpecialBubbleSkin`, la marca de zona en
-`TrajectoryLine`, el `BoosterButton` del HUD y el consumo en `CannonController.Fire`.
+Los tres que faltan de la familia "de gameplay" (GDD §3.2). Hay **dos** implementados que sirven
+de plantilla, y entre los dos cubren casi todo lo que un poder nuevo puede necesitar:
+
+- **Bomba de Coral** — el camino base: enum `Booster`, `SpecialBubbleSkin`, la marca de zona en
+  `TrajectoryLine`, el `BoosterButton` del HUD y el consumo en `CannonController.Fire`.
+- **Raya Eléctrica** — el poder que probó que el camino aguanta uno nuevo sin tocarse. Entró sin
+  modificar `BoosterHudList`, `SpecialBubbleSkin`, `BoosterButton`, `BoosterItemView` ni
+  `RefillBoosterPanel`.
 
 | Power-up | Efecto | Qué reusa |
 |---|---|---|
-| **Torpedo** | Barre entera la fila horizontal donde impacte | El camino de la bomba cambiando qué celdas marca |
-| **Pez Explorador** | Al impactar se divide en tres: revienta la burbuja tocada y las dos de ese color **con menos vecinos del mismo color** | Igual que la bomba + una búsqueda por el grid |
+| ~~**Raya Eléctrica**~~ ✅ | Barre entera la fila horizontal que golpea | Hecho |
+| **Pez Explorador** | Al impactar se divide en tres: revienta la burbuja tocada y las dos de ese color **con menos vecinos del mismo color** | `CellsHitBy` + una búsqueda por el grid |
 | **Tinta de Pulpo** | El pulpo salpica 4 burbujas al azar dentro del radio, tiñéndolas del **color que vuelve a la recámara** | `HexGridMath.CellsWithinRadius` + `BubbleView.SetColor` |
 | **Pinza de Langosta** | Tocas una burbuja del tablero y la destruye. No gasta disparo | **Nada: necesita una pieza nueva** |
 
-**Tres de los cuatro son variaciones del mismo camino** — se cargan en el cañón, se apuntan, y lo
+**Dos de los tres son variaciones del mismo camino** — se cargan en el cañón, se apuntan, y lo
 único que cambia es qué le pasa al grid al impactar. La Pinza es la única que pide un modo de
 selección sobre el tablero, que no existe.
+
+### Lo que la Raya Eléctrica dejó montado
+
+Cambios transversales que un poder nuevo hereda gratis. Están aquí para que no se reimplementen:
+
+- **`BoosterRules.CellsHitBy(booster, landed, struck)`** — un poder declara QUÉ CELDAS se lleva, y
+  de ahí salen a la vez la marca de la mira, el orden de los pops y la explosión. No hay forma de
+  que la mira prometa una cosa y pase otra.
+- **`struck` es la burbuja golpeada, que no es donde se posa.** Disparando desde abajo la burbuja
+  se pega una fila por debajo de la que tocó. Todo poder cuya zona dependa de a qué apuntaba el
+  jugador tiene que resolver sobre `struck`, no sobre la celda de aterrizaje.
+- **La burbuja del propio poder siempre se va con él** (`hit.Insert(0, center)`), aunque caiga
+  fuera de la zona que afecta. Sin eso se quedaba colgando y caía al fondo en vez de estallar.
+- **`HexGridMath.CellsInRowFrom(row, fromCol)`** — una fila ordenada desde el impacto hacia los dos
+  lados. Quien escalone por el índice obtiene el efecto en abanico sin pedirlo.
+- **`Entry.burstPerBubble`** — en vez de una onda desde el centro, cada burbuja pone la suya al
+  ritmo de su propio pop. Para cualquier poder que barra en línea.
+- **`Lightning`** — una descarga que recorre una fila, tramo a tramo, con texturas procedurales.
+- **`SpecialBubbleSkin.Spark`** — el chisporroteo de dentro de la burbuja, también procedural: dos
+  brazos independientes y un destello con su propio latido. Sin arte que exportar.
+- **`BombBlast.Settings.waveCount` llega a 0** — para un poder que ya trae su efecto y al que los
+  aros solo le estorban.
 
 Dos detalles que no son opcionales:
 
@@ -822,8 +973,9 @@ Dos detalles que no son opcionales:
   el mismo hueco que la bomba tiene hoy.
 
 ### Acceptance criteria
-- [ ] Los cuatro en `BubbleSpecial` y en `BoosterRules.NAMES`
-- [ ] Entrada en `BoosterCatalog` con icono, frames, packs y clip
+- [ ] Los tres en el enum `Booster` (con valor explícito, añadidos AL FINAL) y en `BoosterRules.NAMES`
+- [ ] Entrada en `BoosterCatalog` con `Family = In Game`, icono, frames, packs y clips
+- [ ] Un `BoosterButton` por poder en `Gameplay.unity` — el HUD no los instancia, los enciende
 - [ ] `ui.booster.X.name` y `.description` en los 6 idiomas
 - [ ] Un tutorial por cada uno, con su id = el nombre del booster
 - [ ] La marca de zona de la mira refleja el efecto real de cada uno
@@ -832,19 +984,32 @@ Dos detalles que no son opcionales:
 
 ---
 
-## [Backlog] 60 niveles totales (de 30 a 60) para MVP
+## [Backlog] Revisar y balancear los 60 niveles del MVP
 
 **Labels:** `backlog`, `feat`, `levels`, `priority-medium`, `size-XL`
 
 ### Descripción
-Completar los 60 niveles del MVP siguiendo la curva del GDD sección 2.4. Estos son los 6 capítulos × 10 niveles — hoy hay 30 (capítulos 1-3). Estrategia híbrida hand + AI.
+
+Los 60 del MVP **ya están escritos** — `Resources/Levels/Chapter_1/`, de 001 a 060. Lo que falta
+no es escribirlos sino jugarlos: hoy ninguno se ha validado contra la curva del GDD §2.4.
+
+⚠️ **La carpeta no es el capítulo narrativo.** `Chapter_1/` tiene los 60 del MVP enteros y los
+seis capítulos del GDD §2.1 caben dentro. `Chapter_2..5/` suman otros 150 niveles ya escritos
+(061 a 210), que son contenido posterior y quedan fuera de este issue.
+
+Lo que se ve de entrada y hay que contrastar: **los 60 son `clear_all`**, no hay ni un `rescue`
+pese a que el objetivo está implementado y el GDD lo pide desde el capítulo 1. Y la curva de
+tiros es muy holgada (el nivel 10 da 84 tiros para 141 burbujas).
 
 ### Acceptance criteria
-- [ ] 30 niveles más (capítulos 4, 5 y 6 en `Resources/Levels/`)
-- [ ] Capítulos según GDD 2.1: Cala Apagada (1-10, ✅), Jardín de Anémonas (11-20, ✅), Bosque de Algas (21-30, ✅), Cueva de Cristales (31-40), Profundidades de Coral (41-50), Ciudad de las Perlas (51-60)
+- [ ] Cada uno jugado hasta el final al menos una vez
+- [ ] `max_shots` ajustado: un jugador con oficio debería ganar en el 60-70% de los intentos
+- [ ] Capítulos según GDD 2.1: Cala Apagada (1-10), Jardín de Anémonas (11-20), Bosque de Algas (21-30), Cueva de Cristales (31-40), Profundidades de Coral (41-50), Ciudad de las Perlas (51-60)
 - [ ] Curva difícil con walls de pago en 35, 45, 55
-- [ ] Variedad de objetivos (rescue, clear_all, color_count, drop_creature, multi_rescue)
+- [ ] Variedad de objetivos — hoy **todos** son `clear_all`; falta repartir `rescue` y los demás
 - [ ] Obstáculos progresivos (hielo, jaulas, pegajosas, generadores, bombas)
+- [ ] `allowed_boosters` coherente con el issue del reparto de tutoriales
+- [ ] Al cerrarlo, **revisar ese reparto**: tutoriales y `rescue` se recolocan sobre los niveles ya balanceados, no antes
 - [ ] Solver script que valida solubilidad de cada nivel
 
 ### Referencias

@@ -89,6 +89,42 @@ public static class HexGridMath
         return result;
     }
 
+    // Toda la fila de esa celda. Las filas pares e impares no miden lo mismo —la impar va
+    // desplazada media burbuja y tiene una columna menos— así que el ancho sale de ColsInRow y no
+    // de un número fijo.
+    public static List<Vector2Int> CellsInRow(int row) => CellsInRowFrom(row, -1);
+
+    // La misma fila, pero ordenada DESDE 'fromCol' hacia los dos lados a la vez: el impacto
+    // primero, luego sus dos vecinas, luego las siguientes. Quien recorra la lista y escalone por
+    // el índice obtiene gratis una descarga que se abre en abanico desde donde pegó, en vez de un
+    // barrido que empieza en el borde izquierdo porque así se numeran las columnas.
+    //
+    // fromCol fuera de la fila (o -1) devuelve el orden natural, de un extremo al otro.
+    public static List<Vector2Int> CellsInRowFrom(int row, int fromCol)
+    {
+        var result = new List<Vector2Int>();
+
+        if (row < 0) return result;
+
+        int cols = ColsInRow(row);
+
+        if (fromCol < 0 || fromCol >= cols)
+        {
+            for (int col = 0; col < cols; col++) result.Add(new Vector2Int(col, row));
+            return result;
+        }
+
+        result.Add(new Vector2Int(fromCol, row));
+
+        for (int d = 1; d < cols; d++)
+        {
+            if (fromCol - d >= 0)   result.Add(new Vector2Int(fromCol - d, row));
+            if (fromCol + d < cols) result.Add(new Vector2Int(fromCol + d, row));
+        }
+
+        return result;
+    }
+
     public static Vector2Int[] GetNeighbors(Vector2Int cell)
     {
         var offsets = IsOddRow(cell.y) ? OddRowNeighborOffsets : EvenRowNeighborOffsets;

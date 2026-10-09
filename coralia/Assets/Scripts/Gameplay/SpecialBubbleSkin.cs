@@ -19,9 +19,50 @@ using UnityEngine.UI;
 // (el cañón, por ejemplo, la enciende y apaga durante el disparo) sin pelearse con esto.
 public class SpecialBubbleSkin : MonoBehaviour
 {
+    // El chisporroteo de una burbuja eléctrica. Va en el catálogo como el resto del arte del
+    // poder, y apagado no cuesta nada: sin 'enabled' la capa ni se crea.
+    [System.Serializable]
+    public class Spark
+    {
+        [Tooltip("Marcado: la burbuja chisporrotea por dentro — dos rayos horizontales saliendo de un destello central. Para un poder eléctrico que barre en línea.")]
+        public bool enabled;
+
+        [Tooltip("El color del chisporroteo. Un cian claro o un blanco azulado es lo que se lee como electricidad; un tono saturado se lee como pintura.")]
+        public Color color = new(0.8f, 0.95f, 1f, 0.9f);
+
+        [Tooltip("Cuántas veces por segundo cambia de forma el rayo. Es lo único que lo hace parecer vivo: por debajo de ocho se ve una calcomanía temblando.")]
+        [Range(2f, 30f)]
+        public float fps = 14f;
+
+        [Tooltip("Tamaño de los rayos respecto a la burbuja. Por debajo de uno mueren antes del borde, que es lo que hace que se vean DENTRO del cristal y no encima.")]
+        [Range(0.3f, 1.2f)]
+        public float scale = 0.9f;
+
+        [Tooltip("Tamaño del destello del centro, respecto a la burbuja. Es el corazón de la descarga: tiene que iluminar, no ser un punto.")]
+        [Range(0.1f, 1.2f)]
+        public float coreScale = 0.62f;
+
+        [Tooltip("Latidos por segundo del destello. Va MUY por encima del cambio de forma a propósito: la luz tiembla mientras los rayos todavía no se han movido, y eso es lo que se lee como corriente en vez de como una animación en bucle.")]
+        [Range(2f, 40f)]
+        public float pulseHz = 17f;
+    }
+
     Image   _back;
+    Image   _sparkR;
+    Image   _sparkL;
+    Image   _core;
     Image   _glow;
     Graphic _host;   // la Image sobre la que se montaron las capas
+
+    Spark    _sparkCfg;
+    int      _sparkFrame;
+    float    _sparkTime;
+    float    _pulseTime;
+
+    // Lo que SetAlpha pidió para las capas del chisporroteo. Hace falta guardarlo porque el
+    // latido reescribe el color del destello cada frame: sin esto, una burbuja reventando se
+    // desvanecía entera menos su luz, que seguía encendida hasta que el objeto moría.
+    float    _sparkFade = 1f;
 
     Sprite[] _frames;
     float    _spin;
@@ -57,8 +98,45 @@ public class SpecialBubbleSkin : MonoBehaviour
         skin._frame     = 0;
         skin._frameTime = 0f;
 
-        skin._back = skin.Layer(skin._back, "SpecialBack", art.bubbleFrames[0]);
-        skin._glow = skin.Layer(skin._glow, "SpecialGlow", BoosterRules.GlowFor(booster));
+        skin._sparkCfg  = art.bubbleSpark != null && art.bubbleSpark.enabled ? art.bubbleSpark : null;
+        skin._sparkFrame = 0;
+        skin._sparkTime  = 0f;
+
+        bool spark = skin._sparkCfg != null;
+
+        skin._back   = skin.Layer(skin._back,   "SpecialBack",   art.bubbleFrames[0]);
+        skin._core   = skin.Layer(skin._core,   "SpecialCore",   spark ? SparkleTextures.Glow : null);
+        skin._sparkR = skin.Layer(skin._sparkR, "SpecialSparkR", spark ? SparkleTextures.SparkArm(0) : null);
+        skin._sparkL = skin.Layer(skin._sparkL, "SpecialSparkL", spark ? SparkleTextures.SparkArm(1) : null);
+        skin._glow   = skin.Layer(skin._glow,   "SpecialGlow",   BoosterRules.GlowFor(booster));
+
+        if (spark)
+        {
+            skin._pulseTime = 0f;
+
+            // Las escalas se ponen con la escala y no con los márgenes: la capa se estira al
+            // host, que mide distinto en el grid (92px) que en el ícono del cañón.
+            //
+            // El brazo izquierdo es el mismo dibujo con la X al revés. Lo que impide que se vea
+            // un espejo no es la forma sino la VARIANTE: cada lado va por su propio número, y
+            // además desfasados, así que nunca coinciden.
+            float k = skin._sparkCfg.scale;
+            skin._sparkR.transform.localScale = new Vector3( k, k, 1f);
+            skin._sparkL.transform.localScale = new Vector3(-k, k, 1f);
+            skin._core.transform.localScale   = Vector3.one * skin._sparkCfg.coreScale;
+
+            skin._sparkR.color = skin._sparkL.color = skin._sparkCfg.color;
+            skin._core.color   = skin._sparkCfg.color;
+            skin._sparkFade    = 1f;
+
+            // Entre el arte y el brillo, siempre, y el destello por debajo de los rayos: creadas
+            // en otro orden quedarían encima del reflejo y la burbuja dejaría de parecer cristal.
+            skin._back.transform.SetAsLastSibling();
+            skin._core.transform.SetAsLastSibling();
+            skin._sparkR.transform.SetAsLastSibling();
+            skin._sparkL.transform.SetAsLastSibling();
+            if (skin._glow) skin._glow.transform.SetAsLastSibling();
+        }
 
         // Se reinicia en cada Apply: una burbuja que vuelve a ser especial arranca derecha, no
         // en el ángulo donde quedó la anterior que usó este mismo objeto.
@@ -72,8 +150,11 @@ public class SpecialBubbleSkin : MonoBehaviour
 
         skin._on = false;
 
-        if (skin._back) skin._back.gameObject.SetActive(false);
-        if (skin._glow) skin._glow.gameObject.SetActive(false);
+        if (skin._back)   skin._back.gameObject.SetActive(false);
+        if (skin._core)   skin._core.gameObject.SetActive(false);
+        if (skin._sparkR) skin._sparkR.gameObject.SetActive(false);
+        if (skin._sparkL) skin._sparkL.gameObject.SetActive(false);
+        if (skin._glow)   skin._glow.gameObject.SetActive(false);
     }
 
     // Las capas acompañan el desvanecido de la burbuja (pop, caída). Sin esto la bomba se
@@ -83,8 +164,15 @@ public class SpecialBubbleSkin : MonoBehaviour
         var skin = host == null ? null : host.GetComponent<SpecialBubbleSkin>();
         if (skin == null) return;
 
-        Fade(skin._back, alpha);
-        Fade(skin._glow, alpha);
+        skin._sparkFade = alpha;
+
+        float sparkAlpha = alpha * (skin._sparkCfg?.color.a ?? 1f);
+
+        Fade(skin._back,   alpha);
+        Fade(skin._core,   sparkAlpha);
+        Fade(skin._sparkR, sparkAlpha);
+        Fade(skin._sparkL, sparkAlpha);
+        Fade(skin._glow,   alpha);
     }
 
     static void Fade(Image image, float alpha)
@@ -145,8 +233,15 @@ public class SpecialBubbleSkin : MonoBehaviour
         // que esto existe.
         bool visible = _on && (_host == null || _host.enabled);
 
-        if (_back != null && _back.gameObject.activeSelf != visible) _back.gameObject.SetActive(visible);
-        if (_glow != null && _glow.gameObject.activeSelf != visible) _glow.gameObject.SetActive(visible);
+        bool sparkVisible = visible && _sparkCfg != null;
+
+        if (_back   != null && _back.gameObject.activeSelf   != visible)      _back.gameObject.SetActive(visible);
+        if (_core   != null && _core.gameObject.activeSelf   != sparkVisible) _core.gameObject.SetActive(sparkVisible);
+        if (_sparkR != null && _sparkR.gameObject.activeSelf != sparkVisible) _sparkR.gameObject.SetActive(sparkVisible);
+        if (_sparkL != null && _sparkL.gameObject.activeSelf != sparkVisible) _sparkL.gameObject.SetActive(sparkVisible);
+        if (_glow   != null && _glow.gameObject.activeSelf   != visible)      _glow.gameObject.SetActive(visible);
+
+        if (sparkVisible) TickSpark();
 
         if (!visible || _back == null) return;
 
@@ -168,5 +263,53 @@ public class SpecialBubbleSkin : MonoBehaviour
         _frame      = (_frame + 1) % _frames.Length;
 
         _back.sprite = _frames[_frame];
+    }
+
+    // Dos relojes distintos a propósito: la forma de los rayos cambia despacio y la luz del
+    // centro tiembla deprisa. Al mismo ritmo todo late a la vez y se ve un bucle; desacoplados,
+    // la burbuja no repite nunca la misma imagen y eso es lo que se lee como corriente.
+    void TickSpark()
+    {
+        PulseCore();
+
+        _sparkTime += Time.deltaTime;
+
+        float step = 1f / Mathf.Max(0.01f, _sparkCfg.fps);
+        if (_sparkTime < step) return;
+
+        // Se descuenta en vez de ponerse a cero: con un fps alto y un frame largo pueden tocar
+        // dos saltos, y poniéndolo a cero la animación se arrastraría respecto al reloj.
+        _sparkTime -= step;
+
+        // El rayo SALTA de una forma a la siguiente, no se interpola: interpolar entre dos
+        // quebradas da una cinta que se retuerce, justo lo contrario de lo que hace una chispa.
+        //
+        // Los dos lados avanzan a la par pero separados por un número IMPAR de variantes sobre un
+        // total par: así nunca se alcanzan y ningún par se repite en toda la vuelta.
+        _sparkFrame = (_sparkFrame + 1) % SparkleTextures.SPARK_VARIANTS;
+
+        if (_sparkR) _sparkR.sprite = SparkleTextures.SparkArm(_sparkFrame);
+        if (_sparkL) _sparkL.sprite = SparkleTextures.SparkArm(_sparkFrame + 3);
+    }
+
+    // Dos ondas de frecuencias que no son múltiplo una de otra. Con una sola el destello sube y
+    // baja como un metrónomo; sumadas nunca repiten el mismo pico y el temblor sale irregular,
+    // que es como late algo eléctrico.
+    void PulseCore()
+    {
+        if (_core == null) return;
+
+        _pulseTime += Time.deltaTime;
+
+        float w     = _pulseTime * _sparkCfg.pulseHz * Mathf.PI * 2f;
+        float beat  = Mathf.Abs(Mathf.Sin(w)) * 0.65f + Mathf.Abs(Mathf.Sin(w * 2.7f)) * 0.35f;
+
+        _core.color = new Color(_sparkCfg.color.r, _sparkCfg.color.g, _sparkCfg.color.b,
+                                _sparkCfg.color.a * _sparkFade * (0.45f + 0.55f * beat));
+
+        // Y crece con la luz: un destello que solo cambia de alfa se lee como un parpadeo de
+        // pantalla, uno que además respira se lee como una lámpara forzada.
+        float k = _sparkCfg.coreScale * (0.88f + 0.12f * beat);
+        _core.transform.localScale = Vector3.one * k;
     }
 }

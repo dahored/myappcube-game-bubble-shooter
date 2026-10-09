@@ -1,6 +1,6 @@
 # Coralia — Status y Roadmap
 
-**Última actualización:** 2026-10-03
+**Última actualización:** 2026-10-09
 
 Documento maestro de estado del proyecto. Si abres uno solo de los docs, **abre este**.
 
@@ -12,7 +12,7 @@ Documento maestro de estado del proyecto. Si abres uno solo de los docs, **abre 
 |---|---|---|
 | **Fase 0** — Pre-producción | ✅ Completada | Concept, GDD, wireframes, setup técnico |
 | **Fase 1** — Prototipo jugable | ✅ Completada | Mecánicas core validadas |
-| **Fase 2** — MVP | 🔄 En progreso | El loop de juego está completo de punta a punta. Falta economía real, nueve power-ups y los servicios externos |
+| **Fase 2** — MVP | 🔄 En progreso | El loop de juego está completo de punta a punta. Falta economía real, siete power-ups y los servicios externos |
 | **Fase 3** — Soft Launch | ⏳ Pendiente | Tras MVP completo |
 | **Fase 4** — Global Launch | ⏳ Pendiente | Tras soft launch validado |
 
@@ -41,13 +41,17 @@ Se entra desde el mapa, se juega el nivel, se gana o se pierde y se vuelve. Incl
 - **Progreso**: nivel máximo, estrellas, récords, tutoriales vistos, inventario y desbloqueo de boosters
 - **Cerrar la app a mitad de nivel cuesta una vida**; minimizarla no
 
-### Boosters ✅ el sistema, 1 de 10 implementado
+### Boosters ✅ el sistema, 3 de 10 implementados
 
 - `BoosterCatalog` en `Resources` concentra el arte de cada poder
-- `BoosterRules` concentra radio, nombres y desbloqueo — que va por tutorial visto
+- `BoosterRules` concentra nombres, desbloqueo —que va por tutorial visto— y **qué celdas se lleva
+  cada poder**: de ahí salen a la vez la marca de la mira, el orden de los pops y la explosión
 - `LevelData.allowed_boosters` decide qué ofrece cada nivel
 - Selección pre-nivel, HUD de gameplay, panel de recarga con packs y descuentos
-- **Bomba de Coral** completa: carga de luz, destello, onda expansiva, sonido y vibración
+- **Bomba de Coral**: carga de luz, destello, onda expansiva, sonido y vibración
+- **Perla Arcoíris** (de inicio): al menos 3 comodines repartidos entre los disparos que quedan
+- **Raya Eléctrica**: barre la fila que golpea, con descarga procedural tramo a tramo. Entró sin
+  tocar el HUD, la selección pre-nivel ni el panel de recarga — el sistema aguanta uno nuevo
 
 ### Pantallas ✅
 
@@ -66,7 +70,10 @@ que el gameplay, y "una sola vez en la vida" por id.
 - Transiciones de escena con fade y burbujas
 - Háptica nativa Android/iOS
 - Resolución dinámica adaptativa
-- Niveles en JSON (`Resources/Levels/Chapter_1..3`), 30 escritos de los 60 del MVP
+- Niveles en JSON. ⚠️ **La carpeta no es el capítulo narrativo**: `Chapter_1/` tiene los **60 del
+  MVP** (001 a 060, de "Tu primer disparo" a "El corazón de Coralia"), y los seis capítulos del
+  GDD §2.1 caben dentro de esos 60. `Chapter_2..5/` suman otros 150 ya escritos, que son contenido
+  posterior al MVP
 
 ---
 
@@ -80,8 +87,8 @@ el panel de recarga se agota solo. Ver el issue de recalibración de la economí
 ### Top 5 por valor
 
 1. **Fuentes de monedas** — santuario, dailies, misiones o logros. Cualquiera desbloquea la economía
-2. **Los nueve power-ups restantes** — cinco de inicio y cuatro de gameplay (GDD 3.2)
-3. **30 niveles más** — de 30 a los 60 del MVP
+2. **Los siete power-ups restantes** — cuatro de inicio y tres de gameplay (GDD 3.2)
+3. **Revisar y balancear los 60 del MVP** — están escritos, falta jugarlos
 4. **Audio real** — la infraestructura está, faltan clips
 5. **Santuario** — decidir si `HomeGame` se expande o es pantalla nueva
 

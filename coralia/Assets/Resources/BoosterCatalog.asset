@@ -22,6 +22,13 @@ MonoBehaviour:
     - {fileID: 8661716057833069622, guid: 5d25dcddc5c2b4ea4a2c7c2c52714122, type: 3}
     spin: 0
     framesPerSecond: 8
+    bubbleSpark:
+      enabled: 0
+      color: {r: 0.8, g: 0.95, b: 1, a: 0.9}
+      fps: 14
+      scale: 0.82
+      coreScale: 0.62
+      pulseHz: 17
     loadedLoopClip: {fileID: 8300000, guid: 3a6108d9e4a794136b761ba8e98e561f, type: 3}
     loadedLoopVolume: 0.5
     burstClip: {fileID: 8300000, guid: 2bc19cb1498714ed7a9d0606323ba591, type: 3}
@@ -44,7 +51,7 @@ MonoBehaviour:
       stagger: 0.22
       rainbowMotes: 0
     burstBlast:
-      chargeTime: 1.2
+      chargeTime: 0.2
       chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
       chargeSize: 300
       chargePulse: 9
@@ -60,6 +67,13 @@ MonoBehaviour:
       waveCount: 2
       waveStagger: 0.08
       rainbowWaves: 0
+    burstPerBubble: 0
+    burstLightning:
+      enabled: 0
+      color: {r: 0.65, g: 0.9, b: 1, a: 1}
+      thickness: 46
+      duration: 0.22
+      flickerHz: 28
     claimStep: 0.06
     claimFade: 0.16
     claimHold: 0.12
@@ -82,6 +96,13 @@ MonoBehaviour:
     - {fileID: 7416691928268232256, guid: cd4e4136d804f443b88d74e25ee17f0f, type: 3}
     spin: -1440
     framesPerSecond: 12
+    bubbleSpark:
+      enabled: 0
+      color: {r: 0.8, g: 0.95, b: 1, a: 0.9}
+      fps: 14
+      scale: 0.82
+      coreScale: 0.62
+      pulseHz: 17
     loadedLoopClip: {fileID: 8300000, guid: 354feb70d2e104569919dc3f945eb62f, type: 3}
     loadedLoopVolume: 0.5
     burstClip: {fileID: 8300000, guid: 354feb70d2e104569919dc3f945eb62f, type: 3}
@@ -120,6 +141,87 @@ MonoBehaviour:
       waveCount: 1
       waveStagger: 0.08
       rainbowWaves: 1
+    burstPerBubble: 0
+    burstLightning:
+      enabled: 0
+      color: {r: 0.65, g: 0.9, b: 1, a: 1}
+      thickness: 46
+      duration: 0.22
+      flickerHz: 28
+    claimStep: 0.06
+    claimFade: 0.16
+    claimHold: 0.12
+    claimMaxTotal: 0.8
+    packs:
+    - amount: 1
+      price: 3
+      discountPercent: 0
+    - amount: 5
+      price: 15
+      discountPercent: 20
+    - amount: 15
+      price: 40
+      discountPercent: 30
+    glowOverride: {fileID: 0}
+  - booster: 3
+    family: 0
+    icon: {fileID: -6290130234613533394, guid: 89c030c9acc42442982059f279296a2d, type: 3}
+    bubbleFrames:
+    - {fileID: -1032720602377991539, guid: 915236230473b41e39179f0aea8474ae, type: 3}
+    spin: 0
+    framesPerSecond: 1
+    bubbleSpark:
+      enabled: 1
+      color: {r: 1, g: 1, b: 1, a: 0.9}
+      fps: 14
+      scale: 1
+      coreScale: 1.2
+      pulseHz: 17
+    loadedLoopClip: {fileID: 8300000, guid: 96e70155ecd7d451aa6bae224faf7214, type: 3}
+    loadedLoopVolume: 0.5
+    burstClip: {fileID: 8300000, guid: bab5e120469c4479bad03e480d40082b, type: 3}
+    chargeClip: {fileID: 0}
+    clipLead: 0
+    vibrate: 1
+    shake: 1
+    burstSparkle:
+      glowColor: {r: 1, g: 0.93, b: 0.72, a: 0.85}
+      glowSize: 300
+      glowFrom: 1.93
+      glowTo: 1.6
+      glowDuration: 0.5
+      moteCount: 10
+      moteColor: {r: 1, g: 1, b: 1, a: 0.95}
+      moteSize: 64
+      spawnRadius: 34
+      travel: 95
+      moteDuration: 0.55
+      stagger: 0.22
+      rainbowMotes: 0
+    burstBlast:
+      chargeTime: 0
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 1, b: 1, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 140
+      waveDuration: 0.7
+      waveEdge: 0.18
+      waveCount: 0
+      waveStagger: 0.08
+      rainbowWaves: 0
+    burstPerBubble: 1
+    burstLightning:
+      enabled: 1
+      color: {r: 1, g: 0.98883486, b: 0.3915094, a: 1}
+      thickness: 80
+      duration: 0.4
+      flickerHz: 28
     claimStep: 0.06
     claimFade: 0.16
     claimHold: 0.12

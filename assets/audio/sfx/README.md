@@ -11,3 +11,5 @@ virtual_vibes-simple-pop-noise-383737 -> swap
 bryansantosbreton-christmas-vibes-windy-whoosh-magical-chimes-180863 -> bubble_bomb
 freesound_community-sparkler_fuse_nmwav-14738 -> fuse
 koiroylers-magic-spell-353606 -> rainbow
+freesound_community-electric-sparks-6130 -> electric_ray
+freesound_community-corto-circuito-102517 (mp3cut.net) -> electric_ray_explosion

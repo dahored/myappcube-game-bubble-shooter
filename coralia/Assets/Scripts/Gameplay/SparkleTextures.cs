@@ -130,6 +130,153 @@ public static class SparkleTextures
         });
     }
 
+    // Un arco eléctrico horizontal, para unir dos puntos del tablero.
+    //
+    // Se guardan VARIAS y se pide una al azar por tramo: un rayo es irrepetible, y repetir la
+    // misma quebrada a lo largo de una fila entera la delata como un patrón en cuanto hay más de
+    // tres tramos. Con cuatro ya no se reconoce ninguna.
+    //
+    // La quebrada es una polilínea con vértices sorteados, no una suma de senos: un rayo cambia
+    // de dirección de golpe, y lo que se dibuja con curvas suaves se lee como una serpiente.
+    const int BOLT_W = 256;
+    const int BOLT_H = 64;
+    const int BOLT_VARIANTS = 4;
+    const int BOLT_KINKS = 7;    // vértices de la quebrada, extremos incluidos
+
+    static readonly Sprite[] _bolts = new Sprite[BOLT_VARIANTS];
+
+    public static Sprite Bolt(int variant)
+    {
+        int i = ((variant % BOLT_VARIANTS) + BOLT_VARIANTS) % BOLT_VARIANTS;
+
+        if (_bolts[i] != null) return _bolts[i];
+
+        // Semilla fija por variante: las mismas cuatro formas en cada sesión y en cada aparato,
+        // así lo que se afina mirando la pantalla es lo que se ve siempre.
+        var random = new System.Random(1000 + i);
+        var kinks  = new float[BOLT_KINKS];
+
+        // Los extremos van centrados para que los tramos encadenados se encuentren sin escalón.
+        for (int k = 1; k < BOLT_KINKS - 1; k++) kinks[k] = (float)(random.NextDouble() * 2.0 - 1.0) * 0.55f;
+
+        return _bolts[i] = BuildRect(BOLT_W, BOLT_H, (x, y) =>
+        {
+            const float CORE = 0.10f;  // el filamento blanco del medio
+            const float HALO = 0.42f;  // el resplandor alrededor
+
+            // Dónde pasa la quebrada a esta altura de x, interpolando entre sus dos vértices.
+            float t     = Mathf.Clamp01((x + 1f) * 0.5f) * (BOLT_KINKS - 1);
+            int   seg   = Mathf.Min((int)t, BOLT_KINKS - 2);
+            float path  = Mathf.Lerp(kinks[seg], kinks[seg + 1], t - seg);
+
+            float d = Mathf.Abs(y - path);
+
+            float core = Mathf.Exp(-(d * d) / (CORE * CORE));
+            float halo = Mathf.Exp(-(d * d) / (HALO * HALO)) * 0.35f;
+
+            // Las puntas se apagan: encadenados, los tramos se funden en vez de marcar la junta.
+            float ends = Mathf.Pow(Mathf.Clamp01(1f - Mathf.Abs(x)), 0.35f);
+
+            return Mathf.Clamp01((core + halo) * ends);
+        });
+    }
+
+    // UN brazo del chisporroteo de una burbuja eléctrica: una quebrada que sale del centro hacia
+    // la derecha y se deshace antes del borde. El brazo izquierdo es este mismo espejado por
+    // quien lo use, pero pidiendo OTRA variante — si los dos lados salieran de la misma, la
+    // burbuja se vería como una mancha de Rorschach en vez de como una descarga.
+    //
+    // Cada variante sortea su propio número de quiebres, su propio grosor y su propio desvío, así
+    // que un lado sale fino y nervioso mientras el otro sale grueso y recto. Ahí está todo el
+    // efecto: en que los dos lados nunca se parezcan.
+    //
+    // El destello del medio NO va aquí. Late a su propio ritmo, mucho más rápido que el cambio de
+    // forma, y metido en la textura latiría al mismo paso que los rayos.
+    const int SPARK_SIZE = 128;
+    public const int SPARK_VARIANTS = 8;
+
+    static readonly Sprite[] _sparkArms = new Sprite[SPARK_VARIANTS];
+
+    public static Sprite SparkArm(int variant)
+    {
+        int i = ((variant % SPARK_VARIANTS) + SPARK_VARIANTS) % SPARK_VARIANTS;
+
+        if (_sparkArms[i] != null) return _sparkArms[i];
+
+        // Semilla fija por variante: las mismas ocho formas en cada sesión y en cada aparato, que
+        // es lo que permite afinar el efecto mirándolo.
+        var random = new System.Random(3000 + i);
+
+        double Next() => random.NextDouble();
+
+        int   kinks = 4 + (int)(Next() * 4);                      // 4..7 vértices, o sea 3..6 quiebres
+        float thin  = Mathf.Lerp(0.030f, 0.075f, (float)Next());  // de filamento a rayo gordo
+        float sway  = Mathf.Lerp(0.18f,  0.42f,  (float)Next());  // cuánto se desvía de la horizontal
+
+        var path = new float[kinks];
+        path[0] = 0f;   // nace pegado al destello
+
+        for (int k = 1; k < kinks; k++)
+        {
+            // Cada quiebre se aleja del anterior, no del eje: así la quebrada deriva en vez de
+            // oscilar alrededor de una línea, que es lo que la hacía parecer una onda.
+            float step = (float)(Next() * 2.0 - 1.0) * sway;
+            path[k] = Mathf.Clamp(path[k - 1] + step, -0.62f, 0.62f);
+        }
+
+        return _sparkArms[i] = Build(SPARK_SIZE, (x, y) =>
+        {
+            if (x < 0f) return 0f;   // solo la mitad derecha: el otro brazo es otra variante espejada
+
+            float t    = Mathf.Clamp01(x) * (kinks - 1);
+            int   seg  = Mathf.Min((int)t, kinks - 2);
+            float line = Mathf.Lerp(path[seg], path[seg + 1], t - seg);
+
+            float dy  = Mathf.Abs(y - line);
+            float arm = Mathf.Exp(-(dy * dy) / (thin * thin));
+
+            // Se deshace antes del borde para que el rayo muera DENTRO del cristal, y nace ancho
+            // en el centro para engancharse con el destello sin que se vea la junta.
+            arm *= Mathf.Pow(Mathf.Clamp01(1f - x / 0.90f), 0.5f);
+            arm += Mathf.Exp(-(x * x) / (0.05f * 0.05f)) * Mathf.Exp(-(y * y) / (0.09f * 0.09f)) * 0.8f;
+
+            return Mathf.Clamp01(arm);
+        });
+    }
+
+    // Build para una textura que no es cuadrada. Misma convención: x e y en -1..1, el color en
+    // blanco y la forma en el alfa.
+    static Sprite BuildRect(int width, int height, System.Func<float, float, float> alphaAt)
+    {
+        var texture = new Texture2D(width, height, TextureFormat.RGBA32, mipChain: false)
+        {
+            name       = "BoltTexture",
+            filterMode = FilterMode.Bilinear,
+            wrapMode   = TextureWrapMode.Clamp,
+            hideFlags  = HideFlags.HideAndDontSave
+        };
+
+        var pixels = new Color32[width * height];
+
+        for (int py = 0; py < height; py++)
+        for (int px = 0; px < width; px++)
+        {
+            float x = (px + 0.5f) / width  * 2f - 1f;
+            float y = (py + 0.5f) / height * 2f - 1f;
+
+            byte a = (byte)(Mathf.Clamp01(alphaAt(x, y)) * 255f);
+            pixels[py * width + px] = new Color32(255, 255, 255, a);
+        }
+
+        texture.SetPixels32(pixels);
+        texture.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+
+        var sprite = Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f));
+        sprite.name      = "Bolt";
+        sprite.hideFlags = HideFlags.HideAndDontSave;
+        return sprite;
+    }
+
     // Igual que Build pero el color lo decide cada píxel, no solo su alfa.
     static Sprite BuildColored(int size, System.Func<float, float, Color> colorAt)
     {

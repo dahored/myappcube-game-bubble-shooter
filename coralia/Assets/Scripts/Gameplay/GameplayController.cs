@@ -478,7 +478,7 @@ public class GameplayController : MonoBehaviour
         else Debug.LogWarning("[GameplayController] LosePanel no está asignado.");
     }
 
-    void OnBubbleLanded(Vector2Int landedCell, Booster special)
+    void OnBubbleLanded(Vector2Int landedCell, Vector2Int? struckCell, Booster special)
     {
         if (_levelEnded) return;
 
@@ -493,19 +493,29 @@ public class GameplayController : MonoBehaviour
         // de "llegada" (reportado por Diego).
         cannon.UpdateShotsRemainingSilently(_shotsRemaining);
 
-        // La bomba no revienta al tocar: se queda encendiéndose un momento. Todo lo que viene
+        // Un poder de área no revienta al tocar: se queda cargando un momento. Todo lo que viene
         // después del estallido tiene que esperar a que ocurra, así que se va por una corrutina.
-        if (special == Booster.Bomb) { StartCoroutine(ArmAndBlast(landedCell)); return; }
+        //
+        // Quién tiene área lo decide BoosterRules y no una lista de casos acá: así un poder nuevo
+        // entra sin tocar este archivo.
+        if (BoosterRules.CellsHitBy(special, landedCell, struckCell).Count > 0)
+        {
+            StartCoroutine(ArmAndBlast(special, landedCell, struckCell));
+            return;
+        }
 
         AfterRemoval(ResolveMatchAndDrop(landedCell));
     }
 
-    // La bomba se pega, se enciende, y recién entonces estalla.
+    // El poder se pega, carga, y recién entonces estalla.
     //
-    // La espera no es decoración: sin ella la bomba cae y revienta en el mismo frame, y no se
+    // La espera no es decoración: sin ella la burbuja cae y revienta en el mismo frame, y no se
     // llega a ver que fue ELLA la que explotó —se lee como un match enorme y raro—. Con la carga,
     // el jugador ve la bola que acaba de colocar encenderse, y la explosión es su consecuencia.
-    IEnumerator ArmAndBlast(Vector2Int center)
+    //
+    // El tiempo de carga sale del catálogo de cada poder: la bomba tiene mecha, la raya apenas
+    // un instante. En cero, estalla en cuanto toca.
+    IEnumerator ArmAndBlast(Booster booster, Vector2Int center, Vector2Int? struck)
     {
         // Sin input ni pausa mientras carga. Otro disparo aterrizando a mitad de la cuenta
         // cambiaría el tablero sobre el que se calculó la zona que el jugador acaba de ver
@@ -514,15 +524,16 @@ public class GameplayController : MonoBehaviour
         cannon.SetInputEnabled(false);
         if (openPausedButton) openPausedButton.interactable = false;
 
-        if (grid.TryGetBubble(center, out var bomb))
-            BombBlast.Charge((RectTransform)bomb.transform, bombBlast);
+        var art   = BoosterRules.ArtFor(booster);
+        var blast = art?.burstBlast ?? bombBlast;
+
+        if (grid.TryGetBubble(center, out var armed))
+            BombBlast.Charge((RectTransform)armed.transform, blast);
 
         // Arranca con la luz, no con la explosión: es el sonido de la mecha.
-        var art = BoosterRules.ArtFor(Booster.Bomb);
-
         AudioManager.Instance?.PlaySfx(art?.chargeClip);
 
-        float charge = Mathf.Max(0f, bombBlast.chargeTime);
+        float charge = Mathf.Max(0f, blast.chargeTime);
         float lead   = Mathf.Clamp(art?.clipLead ?? 0f, 0f, charge);
 
         if (charge > lead) yield return new WaitForSeconds(charge - lead);
@@ -531,7 +542,7 @@ public class GameplayController : MonoBehaviour
 
         if (_levelEnded) yield break;   // el nivel se acabó por otro lado mientras cargaba
 
-        AfterRemoval(ResolveBombBlast(center));
+        AfterRemoval(ResolveBoosterBlast(booster, center, struck));
 
         // Solo si el nivel sigue: con el panel de victoria o derrota ya abierto, devolver el
         // control sería dejar disparar por detrás de él.
@@ -683,36 +694,61 @@ public class GameplayController : MonoBehaviour
     // La bomba no busca color: revienta un disco hexagonal alrededor de donde cayó, y después
     // el tablero se desmorona igual que tras un match.
     //
-    // La bomba CUENTA para la racha de combo, igual que un match: la sube y sus burbujas valen lo
-    // que valga la racha en ese momento (decisión de Diego). Tratarla como un disparo neutro hacía
-    // que una racha de 20 volviera a mostrar 10 al explotar, y se leía como si la bomba la hubiera
-    // roto — que es exactamente lo contrario de lo que un poder debería hacer.
-    HashSet<Vector2Int> ResolveBombBlast(Vector2Int center)
+    // Un poder de área CUENTA para la racha de combo, igual que un match: la sube y sus burbujas
+    // valen lo que valga la racha en ese momento (decisión de Diego). Tratarlo como un disparo
+    // neutro hacía que una racha de 20 volviera a mostrar 10 al explotar, y se leía como si la
+    // bomba la hubiera roto — que es exactamente lo contrario de lo que un poder debería hacer.
+    HashSet<Vector2Int> ResolveBoosterBlast(Booster booster, Vector2Int center, Vector2Int? struck)
     {
         var removed = new HashSet<Vector2Int>();
+        var art     = BoosterRules.ArtFor(booster);
 
-        // CellsWithinRadius devuelve las celdas en orden de anillo (es un BFS desde el centro),
-        // así que el índice ya es "qué tan lejos del impacto" y alcanza para que la explosión
-        // se abra hacia afuera en vez de reventar todo en el mismo frame.
-        var hit = HexGridMath.CellsWithinRadius(center, BoosterRules.BOMB_RADIUS)
-                             .Where(grid.IsOccupied)
-                             .ToList();
+        // Las mismas celdas que la mira acaba de marcar. El orden lo da CellsHitBy —anillos para
+        // la bomba, de un extremo al otro para la raya— y el índice ya sirve para escalonar la
+        // explosión en vez de reventar todo en el mismo frame.
+        var hit = BoosterRules.CellsHitBy(booster, center, struck)
+                              .Where(grid.IsOccupied)
+                              .ToList();
 
-        // Antes de los pops, mientras la burbuja-bomba todavía existe para marcar el lugar.
-        if (grid.TryGetBubble(center, out var bomb))
-            Sparkle.Burst((RectTransform)bomb.transform, bombSparkle);
+        // La burbuja del propio poder SIEMPRE se va con él, esté o no en la zona que afecta. La
+        // bomba se incluye sola porque su radio sale de donde está parada, pero un poder que
+        // golpea en una fila y acaba posado en otra —la Raya Eléctrica— se quedaba fuera: la fila
+        // de la que colgaba desaparecía y ella caía al fondo como una burbuja cualquiera, en vez
+        // de estallar (reportado por Diego).
+        //
+        // Va la PRIMERA porque es el origen: lo demás revienta porque ella lo hizo.
+        if (grid.IsOccupied(center) && !hit.Contains(center)) hit.Insert(0, center);
+
+        // Antes de los pops, mientras la burbuja del poder todavía existe para marcar el lugar.
+        if (grid.TryGetBubble(center, out var armed))
+            Sparkle.Burst((RectTransform)armed.transform, art?.burstSparkle ?? bombSparkle);
+
+        var blast     = art?.burstBlast ?? bombBlast;
+        bool perBubble = art?.burstPerBubble ?? false;
 
         // El fogonazo y la onda salen del centro del impacto, en coordenadas del tablero: así la
         // onda acompaña al tablero si este se desplaza mientras se está abriendo.
-        BombBlast.Play((RectTransform)grid.transform, HexGridMath.CellToLocalPos(center), bombBlast);
+        //
+        // Salvo que el poder estalle burbuja por burbuja: ahí no hay un centro que mirar —una
+        // fila de once no explota desde el medio— y cada celda pone su onda más abajo, al ritmo
+        // de su propio pop.
+        if (!perBubble)
+            BombBlast.Play((RectTransform)grid.transform, HexGridMath.CellToLocalPos(center), blast);
 
         // HeavyImpact, no el LightImpact del resto del juego: cada burbuja que revienta ya da su
         // propio toque ligero, así que la cadena de diecinueve suena a escombros. El golpe fuerte
         // va UNA vez y antes que todos ellos — es la explosión, y lo que viene después es su
         // consecuencia. Con la misma intensidad que los pops, el estallido se perdería entre ellos.
-        Vibrate(Booster.Bomb);
+        Vibrate(booster);
 
         float popStep = ChainStep(hit.Count, POP_CHAIN_DELAY);
+
+        // La descarga va por la fila ENTERA y no por 'hit', que solo trae las celdas ocupadas:
+        // la corriente no se salta los huecos. Va al mismo paso que los pops, así cada burbuja
+        // revienta cuando el arco llega hasta ella y no antes.
+        if (art != null && art.burstLightning.enabled)
+            Lightning.Sweep((RectTransform)grid.transform, (struck ?? center).y, (struck ?? center).x,
+                            art.burstLightning, popStep);
 
         _comboStreak++;
 
@@ -726,6 +762,11 @@ public class GameplayController : MonoBehaviour
             var cell = hit[i];
             if (grid.TryGetBubble(cell, out var view))
                 view.PlayPopAnimation(i * popStep, popClip);
+
+            // En el mismo instante que su pop, no antes: la onda y el sonido de esa burbuja son
+            // la misma cosa vista de dos maneras, y separarlos se oye como un eco.
+            if (perBubble)
+                BombBlast.Ripple((RectTransform)grid.transform, HexGridMath.CellToLocalPos(cell), blast, i * popStep);
             grid.SpawnScorePopup(cell, popValue, i * popStep, ScorePopup.POP_LIFETIME);
             grid.RemoveBubble(cell);
             removed.Add(cell);

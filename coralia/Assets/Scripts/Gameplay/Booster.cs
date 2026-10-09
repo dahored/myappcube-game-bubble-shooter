@@ -16,7 +16,8 @@
 // romper nada.
 public enum Booster
 {
-    None    = 0,
-    Bomb    = 1,
-    Rainbow = 2,
+    None        = 0,
+    Bomb        = 1,
+    Rainbow     = 2,
+    ElectricRay = 3,
 }
