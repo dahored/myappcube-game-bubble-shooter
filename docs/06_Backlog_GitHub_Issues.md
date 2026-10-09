@@ -856,9 +856,21 @@ recalibrar precios, porque regalar de más mata la primera compra.
 - [ ] Repasado qué `allowed_boosters` ofrece cada nivel después de cada desbloqueo
 - [ ] **Antes de shippear**: `Remember Seen` y todos los `Once` marcados, `TempActions` fuera
 
-### Dependencias
-Los siete power-ups que faltan. Este issue solo decide DÓNDE va cada uno; implementarlos son los
-dos issues de power-ups.
+### Dependencias y orden
+
+**Primero los niveles, después esta tabla.** El reparto se revisa entero cuando los 60 estén
+balanceados, y en la misma pasada que los `rescue`: dónde conviene presentar un poder depende de
+en qué nivel aparece el problema que ese poder resuelve, y eso no se sabe hasta jugarlos. De ahí
+que la tabla sea tentativa — son los números con los que arrancar, no el resultado.
+
+Los dos van juntos y en este orden:
+
+1. *Revisar y balancear los 60 niveles del MVP* — hoy todos son `clear_all` y la curva de tiros
+   es holgada
+2. **Este issue** — recolocar tutoriales y repartir los `rescue` sobre esos niveles ya ajustados
+
+Aparte, implementar los poderes son los dos issues de power-ups. Esta tabla solo decide DÓNDE va
+cada uno, así que puede cerrarse aunque falten por construir.
 
 ---
 
@@ -997,6 +1009,7 @@ tiros es muy holgada (el nivel 10 da 84 tiros para 141 burbujas).
 - [ ] Variedad de objetivos — hoy **todos** son `clear_all`; falta repartir `rescue` y los demás
 - [ ] Obstáculos progresivos (hielo, jaulas, pegajosas, generadores, bombas)
 - [ ] `allowed_boosters` coherente con el issue del reparto de tutoriales
+- [ ] Al cerrarlo, **revisar ese reparto**: tutoriales y `rescue` se recolocan sobre los niveles ya balanceados, no antes
 - [ ] Solver script que valida solubilidad de cada nivel
 
 ### Referencias
