@@ -59,9 +59,13 @@ public class SpecialBubbleSkin : MonoBehaviour
         [Tooltip("Las burbujas que van dentro. Una capa por sprite: tres sprites son tres hijas girando. Vacío = ninguna.")]
         public Sprite[] sprites;
 
-        [Tooltip("A qué distancia del centro giran, en tanto por uno del ancho de la burbuja. 0.5 sería el borde exacto.")]
+        [Tooltip("A qué distancia del centro giran, en tanto por uno del ancho de la burbuja. 0.5 sería el borde exacto.\n\nEs el MÍNIMO: cada hija sortea el suyo entre este y 'Radius Max'.")]
         [Range(0f, 0.45f)]
         public float radius = 0.17f;
+
+        [Tooltip("El máximo de ese sorteo. Por debajo del mínimo se ignora y las tres giran a la misma distancia.\n\nUn par de centésimas de diferencia basta: las órbitas dejan de ser concéntricas y el conjunto se mueve como algo vivo en vez de como una pieza rígida.")]
+        [Range(0f, 0.45f)]
+        public float radiusMax = 0.19f;
 
         [Tooltip("Qué mide cada hija respecto a la burbuja que las lleva.")]
         [Range(0.05f, 0.6f)]
@@ -75,9 +79,10 @@ public class SpecialBubbleSkin : MonoBehaviour
     }
 
     Image   _back;
-    Image[] _orbit;
-    Orbit   _orbitCfg;
-    float   _orbitAngle;
+    Image[]  _orbit;
+    float[]  _orbitRadius;   // el suyo, sorteado al montarla
+    Orbit    _orbitCfg;
+    float    _orbitAngle;
     Image   _sparkR;
     Image   _sparkL;
     Image   _core;
@@ -374,6 +379,15 @@ public class SpecialBubbleSkin : MonoBehaviour
         if (want == 0) return;
 
         if (_orbit == null || _orbit.Length < want) System.Array.Resize(ref _orbit, want);
+        if (_orbitRadius == null || _orbitRadius.Length < want) System.Array.Resize(ref _orbitRadius, want);
+
+        // Cada hija gira a SU distancia, sorteada aquí y no en cada fotograma: sorteándola al
+        // vuelo temblarían en vez de orbitar. Se vuelve a sortear en cada Apply, así que dos
+        // burbujas del mismo poder tampoco se mueven igual.
+        float low  = _orbitCfg.radius;
+        float high = Mathf.Max(low, _orbitCfg.radiusMax);
+
+        for (int i = 0; i < want; i++) _orbitRadius[i] = Random.Range(low, high);
 
         for (int i = 0; i < want; i++)
         {
@@ -427,8 +441,10 @@ public class SpecialBubbleSkin : MonoBehaviour
             // apuntando hacia arriba, que es como se dibujaría a mano.
             float angle = (_orbitAngle + 90f + i * 360f / count) * Mathf.Deg2Rad;
 
-            var center = new Vector2(0.5f + Mathf.Cos(angle) * _orbitCfg.radius,
-                                     0.5f + Mathf.Sin(angle) * _orbitCfg.radius);
+            float radius = _orbitRadius != null && _orbitRadius.Length > i ? _orbitRadius[i] : _orbitCfg.radius;
+
+            var center = new Vector2(0.5f + Mathf.Cos(angle) * radius,
+                                     0.5f + Mathf.Sin(angle) * radius);
 
             var rt = (RectTransform)_orbit[i].transform;
             rt.anchorMin = center - new Vector2(half, half);
