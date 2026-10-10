@@ -129,7 +129,7 @@ public class TrajectoryLine : MonoBehaviour
 
         if (booster != Booster.None && LandingCell.HasValue)
         {
-            foreach (var cell in BoosterRules.CellsHitBy(booster, LandingCell.Value, StruckCell))
+            foreach (var cell in BoosterRules.CellsHitBy(booster, LandingCell.Value, StruckCell, gridController))
             {
                 var mark = MarkAt(used++);
                 mark.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);

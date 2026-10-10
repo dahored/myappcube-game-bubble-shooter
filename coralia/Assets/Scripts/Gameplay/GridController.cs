@@ -3,7 +3,7 @@ using UnityEngine;
 
 // Única fuente de verdad del estado del grid. Nadie más toca el diccionario de celdas
 // directamente — CannonController y GameplayController leen/piden cambios vía esta API.
-public class GridController : MonoBehaviour
+public class GridController : MonoBehaviour, IBoardView
 {
     [SerializeField] GameObject bubblePrefab;
 
@@ -497,6 +497,18 @@ public class GridController : MonoBehaviour
     public bool IsOccupied(Vector2Int cell) => _cells.ContainsKey(cell);
 
     public bool TryGetBubble(Vector2Int cell, out BubbleView view) => _cells.TryGetValue(cell, out view);
+
+    // --- IBoardView: lo que los poderes preguntan del tablero ---
+
+    public IEnumerable<Vector2Int> Occupied => _cells.Keys;
+
+    public bool TryGetColor(Vector2Int cell, out BubbleColor color)
+    {
+        if (_cells.TryGetValue(cell, out var view)) { color = view.ColorType; return true; }
+
+        color = default;
+        return false;
+    }
 
     public void RemoveBubble(Vector2Int cell) => _cells.Remove(cell);
 

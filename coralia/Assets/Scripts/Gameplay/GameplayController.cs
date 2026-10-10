@@ -498,7 +498,7 @@ public class GameplayController : MonoBehaviour
         //
         // Quién tiene área lo decide BoosterRules y no una lista de casos acá: así un poder nuevo
         // entra sin tocar este archivo.
-        if (BoosterRules.CellsHitBy(special, landedCell, struckCell).Count > 0)
+        if (BoosterRules.CellsHitBy(special, landedCell, struckCell, grid).Count > 0)
         {
             StartCoroutine(ArmAndBlast(special, landedCell, struckCell));
             return;
@@ -706,7 +706,7 @@ public class GameplayController : MonoBehaviour
         // Las mismas celdas que la mira acaba de marcar. El orden lo da CellsHitBy —anillos para
         // la bomba, de un extremo al otro para la raya— y el índice ya sirve para escalonar la
         // explosión en vez de reventar todo en el mismo frame.
-        var hit = BoosterRules.CellsHitBy(booster, center, struck)
+        var hit = BoosterRules.CellsHitBy(booster, center, struck, grid)
                               .Where(grid.IsOccupied)
                               .ToList();
 

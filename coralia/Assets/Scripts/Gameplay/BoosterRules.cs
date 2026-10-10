@@ -62,12 +62,86 @@ public static class BoosterRules
     //
     // Nulo = no se golpeó ninguna burbuja (el techo, o un tutorial que no tiene tablero): se
     // resuelve sobre la celda de aterrizaje, que es lo correcto en los dos casos.
-    public static List<Vector2Int> CellsHitBy(Booster booster, Vector2Int cell, Vector2Int? struck = null) => booster switch
+    // 'board' solo lo miran los poderes cuya forma depende de lo que HAY en el tablero y no solo
+    // de dónde pegaron. Sin él devuelven lo que puedan: la bomba y la raya, su forma entera; el
+    // la Madre, la burbuja que tocó y nada más.
+    public static List<Vector2Int> CellsHitBy(Booster booster, Vector2Int cell, Vector2Int? struck = null, IBoardView board = null) => booster switch
     {
-        Booster.Bomb    => HexGridMath.CellsWithinRadius(cell, BOMB_RADIUS),
+        Booster.Bomb        => HexGridMath.CellsWithinRadius(cell, BOMB_RADIUS),
         Booster.ElectricRay => HexGridMath.CellsInRowFrom((struck ?? cell).y, (struck ?? cell).x),
-        _               => new List<Vector2Int>(),
+        Booster.Mother      => MotherCells(struck ?? cell, board),
+        _                   => new List<Vector2Int>(),
     };
+
+    // Cuántas burbujas sueltas sale a buscar la Madre, además de la que toca.
+    public const int MOTHER_TARGETS = 2;
+
+    // La Burbuja Madre lleva tres dentro y al impactar las suelta: una revienta la que tocó y las
+    // otras dos salen a por las burbujas MÁS AISLADAS de ese mismo color.
+    //
+    // Aisladas y no cercanas, que es lo que la salva de ser un poder malo: yendo a las próximas
+    // sería una bomba pequeña, y la bomba ya se lleva diecinueve. Yendo a las que menos compañía
+    // de su color tienen, ataca justo lo que el jugador no puede resolver por su cuenta —esas
+    // tres sueltas en esquinas distintas que nunca va a juntar— y no necesita entender la regla:
+    // ve que las hijas van a buscar las sueltas.
+    static List<Vector2Int> MotherCells(Vector2Int struck, IBoardView board)
+    {
+        var result = new List<Vector2Int> { struck };
+
+        if (board == null || !board.TryGetColor(struck, out var color)) return result;
+
+        // Un comodín no tiene "su color", así que no hay a qué salir: la Madre se queda con la que
+        // tocó. Mandarla a por dos cualesquiera sería inventarle un criterio que el jugador no
+        // puede prever mirando el tablero.
+        if (color == BubbleColor.Rainbow) return result;
+
+        var ranked = new List<(Vector2Int cell, int friends, int far)>();
+
+        foreach (var other in board.Occupied)
+        {
+            if (other == struck) continue;
+            if (!board.TryGetColor(other, out var otherColor)) continue;
+
+            // Exactamente ese color, no LinksWith: el comodín enlaza con todo y entraría en
+            // cualquier búsqueda, pero no es "ese color disperso" que la Madre viene a resolver.
+            if (otherColor != color) continue;
+
+            ranked.Add((other, FriendsOf(other, board, color), (other - struck).sqrMagnitude));
+        }
+
+        // Menos compañía primero. A igualdad, la más LEJOS: entre dos burbujas igual de solas, la
+        // del otro extremo es la que el jugador no iba a alcanzar nunca, y además se ve viajar.
+        ranked.Sort((a, b) =>
+        {
+            int byFriends = a.friends.CompareTo(b.friends);
+            if (byFriends != 0) return byFriends;
+
+            int byFar = b.far.CompareTo(a.far);
+            if (byFar != 0) return byFar;
+
+            // Desempate por posición. No decide nada de juego, pero hace la elección REPETIBLE:
+            // la mira y la explosión son dos llamadas distintas, y si el orden dependiera del
+            // recorrido del diccionario podrían señalar burbujas diferentes.
+            return a.cell.y != b.cell.y ? a.cell.y.CompareTo(b.cell.y) : a.cell.x.CompareTo(b.cell.x);
+        });
+
+        for (int i = 0; i < ranked.Count && result.Count <= MOTHER_TARGETS; i++) result.Add(ranked[i].cell);
+
+        return result;
+    }
+
+    // Cuántos vecinos de su mismo color tiene. Es la medida de "qué tan sola está": cero vecinos
+    // es una burbuja que no se puede juntar con nada desde donde está. Aquí sí vale LinksWith —
+    // un comodín al lado la acompaña de verdad, porque con él SÍ puede hacer match.
+    static int FriendsOf(Vector2Int cell, IBoardView board, BubbleColor color)
+    {
+        int count = 0;
+
+        foreach (var neighbor in HexGridMath.GetNeighbors(cell))
+            if (board.TryGetColor(neighbor, out var other) && other.LinksWith(color)) count++;
+
+        return count;
+    }
 
     // Qué booster explica cada tutorial. El id del tutorial que presenta un poder ES el nombre
     // del poder, así que no hay tabla que mantener: dos nombres para la misma cosa en el mismo
@@ -128,9 +202,10 @@ public static class BoosterRules
     // nombre en C#: renombrar el enum no debería obligar a reescribir 60 niveles.
     static readonly (Booster booster, string name)[] NAMES =
     {
-        (Booster.Rainbow, "rainbow"),
-        (Booster.Bomb,    "bomb"),
+        (Booster.Rainbow,     "rainbow"),
+        (Booster.Bomb,        "bomb"),
         (Booster.ElectricRay, "electric_ray"),
+        (Booster.Mother,      "mother"),
     };
 
     public static string NameOf(Booster booster)

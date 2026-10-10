@@ -253,13 +253,18 @@ Viven en el HUD. Ninguno sirve sin elegir dónde o cuándo.
 |---|---|---|---|
 | **Bomba de Coral** | Revienta un hexágono de radio 2 alrededor del impacto (19 burbujas) | Racimo denso sin match posible | Se carga en el cañón |
 | **Raya Eléctrica** | Barre entera la fila horizontal que golpea | El grid se me vino encima | Se carga en el cañón |
-| **Pez Explorador** | Al impactar se divide en tres: uno revienta la burbuja tocada y los otros dos van a por las dos burbujas **más aisladas** de ese mismo color | Un color disperso que no junto | Se carga en el cañón |
+| **Burbuja Madre** | Lleva tres burbujas dentro girando. Al impactar las suelta: una revienta la que tocó y las otras dos van a por las **más aisladas** de ese mismo color | Un color disperso que no junto | Se carga en el cañón |
 | **Tinta de Pulpo** | Al impactar, el pulpo se suelta y salpica 4 burbujas al azar dentro del radio, tiñéndolas del color que vuelve a la recámara | Tengo este color y ningún sitio donde pegarlo | Se carga en el cañón |
 | **Pinza de Langosta** | Tocas una burbuja del tablero y la destruye. No gasta disparo | *Esa* burbuja que sostiene todo | Selección sobre el tablero |
 
-**El Pez caza las aisladas, no las cercanas.** Si fuera a las más próximas al impacto sería una
+**La Madre va a las aisladas, no a las cercanas.** Si fuera a las más próximas al impacto sería una
 bomba pequeña y peor. Yendo a las que menos vecinos de su color tienen, ataca justo lo que el
-jugador no puede resolver por su cuenta — y no necesita entender la regla: ve que caza las sueltas.
+jugador no puede resolver por su cuenta — y no necesita entender la regla: ve que sus hijas salen
+a por las sueltas.
+
+**Lo que se divide son burbujas y no un animal.** Era un pez que se partía en tres, y un pez que
+estalla con el tablero no encaja en un juego cuyo objetivo es rescatar criaturas. Tres burbujas
+girando despacio dentro de una grande dicen lo mismo —esto se va a abrir— sin esa contradicción.
 
 **La Tinta tiñe del color que VUELVE, no del que disparas.** La bomba no consume la cola: al
 dispararla, el color que estaba en la recámara vuelve tal cual, y la Tinta funciona igual. Teñir

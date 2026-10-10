@@ -792,7 +792,7 @@ aporta nada especial.
 | Obstáculo | Qué lo defiende | Poder con sinergia | Por qué |
 |---|---|---|---|
 | **Hielo** (nivel 11) | Pide dos impactos | Bomba ✅ · Raya ✅ | Un poder de área se lleva hielo y burbuja en el mismo golpe |
-| **Jaula de coral** (16) | Se rompe con un match adyacente | Perla ✅ · Pez Explorador ✅ | Los dos fuerzan un match donde no lo había, que es justo lo que la jaula pide |
+| **Jaula de coral** (16) | Se rompe con un match adyacente | Perla ✅ · Burbuja Madre ✅ | Los dos fuerzan un match donde no lo había, que es justo lo que la jaula pide |
 | **Pegajosa / crustáceo** (21) | No cae nunca; solo muere por match directo | **Pinza de Langosta** ✅ | Es LA respuesta: destruye una celda concreta sin necesitar match. El resto ➖ |
 | **Generador de algas** (26) | Produce una burbuja cada 5 disparos | Raya ✅ · Agua Clara ✅ | La Raya barre su fila entera; Agua Clara le quita el color con el que alimenta |
 | **Burbuja-bomba** (36) | sin definir en el GDD | — | Depende de qué haga; decidirlo en su propio issue |
@@ -825,7 +825,7 @@ Cruzando esta matriz con el reparto tentativo sale un choque que hay que resolve
 |---|---|---|---|
 | Pegajosa | **21** | Pinza de Langosta | **45** ❌ |
 | Generador | 26 | Agua Clara | 30 ❌ |
-| Jaula | 16 | Pez Explorador | 13 ✅ |
+| Jaula | 16 | Burbuja Madre | 13 ✅ |
 | Hielo | 11 | Bomba | 2 ✅ |
 
 **La pegajosa aparece 24 niveles antes que el poder pensado para ella.** La Pinza está al final del
@@ -894,7 +894,7 @@ seis capítulos del GDD §2.1 caben dentro de esos 60.
 | 4 ✅ | `rainbow` (Perla Arcoíris) | inicio | El primer poder que NO se apunta. Separado de la bomba para que la diferencia entre familias se note |
 | 6 ✅ | `electric_ray` (Raya Eléctrica) | gameplay | Segundo poder de área, ya sabiendo apuntar uno |
 | 9 | `oxygen` (Reserva de Oxígeno) | inicio | El más simple de todos: +5 disparos. Cae cuando el margen de tiros empieza a apretar |
-| 13 | `scout` (Pez Explorador) | gameplay | Ataca el color disperso, que es el problema que aparece al subir a cuatro colores |
+| 13 | `mother` (Burbuja Madre) | gameplay | Ataca el color disperso, que es el problema que aparece al subir a cuatro colores |
 | 18 | `lowtide` (Marea Baja) | inicio | Cuando los tableros empiezan a abrir cargados |
 | 24 | `ink` (Tinta de Pulpo) | gameplay | El más difícil de los que se cargan: tiñe del color que VUELVE, así que pide dominar la cola |
 | 30 | `clearwater` (Agua Clara) | inicio | Mitad del recorrido, con cinco colores en el tablero: ahí es donde sobra uno |
@@ -1030,13 +1030,13 @@ Ninguna: el camino entero está abierto desde la Perla. `BoosterLoadout` guarda 
 
 ---
 
-## [Feature] Power-ups de gameplay (3 restantes) — se activan durante la partida
+## [Feature] Power-ups de gameplay (2 restantes) — se activan durante la partida
 
 **Labels:** `feature`, `gameplay`, `priority-medium`, `size-L`
 
 ### Descripción
 
-Los tres que faltan de la familia "de gameplay" (GDD §3.2). Hay **dos** implementados que sirven
+Los dos que faltan de la familia "de gameplay" (GDD §3.2). Hay **dos** implementados que sirven
 de plantilla, y entre los dos cubren casi todo lo que un poder nuevo puede necesitar:
 
 - **Bomba de Coral** — el camino base: enum `Booster`, `SpecialBubbleSkin`, la marca de zona en
@@ -1048,11 +1048,11 @@ de plantilla, y entre los dos cubren casi todo lo que un poder nuevo puede neces
 | Power-up | Efecto | Qué reusa |
 |---|---|---|
 | ~~**Raya Eléctrica**~~ ✅ | Barre entera la fila horizontal que golpea | Hecho |
-| **Pez Explorador** | Al impactar se divide en tres: revienta la burbuja tocada y las dos de ese color **con menos vecinos del mismo color** | `CellsHitBy` + una búsqueda por el grid |
+| ~~**Burbuja Madre**~~ ✅ | Suelta tres: revienta la que tocó y las dos de ese color **con menos vecinos del mismo color** | Hecho |
 | **Tinta de Pulpo** | El pulpo salpica 4 burbujas al azar dentro del radio, tiñéndolas del **color que vuelve a la recámara** | `HexGridMath.CellsWithinRadius` + `BubbleView.SetColor` |
 | **Pinza de Langosta** | Tocas una burbuja del tablero y la destruye. No gasta disparo | **Nada: necesita una pieza nueva** |
 
-**Dos de los tres son variaciones del mismo camino** — se cargan en el cañón, se apuntan, y lo
+**Uno de los dos es una variación del mismo camino** — se cargan en el cañón, se apuntan, y lo
 único que cambia es qué le pasa al grid al impactar. La Pinza es la única que pide un modo de
 selección sobre el tablero, que no existe.
 
@@ -1089,7 +1089,7 @@ Dos detalles que no son opcionales:
   el mismo hueco que la bomba tiene hoy.
 
 ### Acceptance criteria
-- [ ] Los tres en el enum `Booster` (con valor explícito, añadidos AL FINAL) y en `BoosterRules.NAMES`
+- [ ] Los dos en el enum `Booster` (con valor explícito, añadidos AL FINAL) y en `BoosterRules.NAMES`
 - [ ] Entrada en `BoosterCatalog` con `Family = In Game`, icono, frames, packs y clips
 - [ ] Un `BoosterButton` por poder en `Gameplay.unity` — el HUD no los instancia, los enciende
 - [ ] `ui.booster.X.name` y `.description` en los 6 idiomas
