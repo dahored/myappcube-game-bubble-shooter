@@ -47,7 +47,37 @@ public class SpecialBubbleSkin : MonoBehaviour
         public float pulseHz = 17f;
     }
 
+    // Burbujas pequeñas girando DENTRO de la grande. El fondo se queda quieto y solo orbitan
+    // ellas, que es lo que distingue "una burbuja que lleva tres dentro" de "un dibujo girando".
+    //
+    // Se compone por código en vez de pedir un sprite animado: las hijas son burbujas normales
+    // del juego, así que el jugador reconoce lo que va a salir antes de dispararlo — y cambiar
+    // cuántas son o de qué color es arrastrar sprites en vez de exportar frames.
+    [System.Serializable]
+    public class Orbit
+    {
+        [Tooltip("Las burbujas que van dentro. Una capa por sprite: tres sprites son tres hijas girando. Vacío = ninguna.")]
+        public Sprite[] sprites;
+
+        [Tooltip("A qué distancia del centro giran, en tanto por uno del ancho de la burbuja. 0.5 sería el borde exacto.")]
+        [Range(0f, 0.45f)]
+        public float radius = 0.17f;
+
+        [Tooltip("Qué mide cada hija respecto a la burbuja que las lleva.")]
+        [Range(0.05f, 0.6f)]
+        public float size = 0.3f;
+
+        [Tooltip("Grados por segundo. Despacio es lo que se lee como flotar; rápido parece una ruleta. Negativo gira al revés.")]
+        [Range(-360f, 360f)]
+        public float speed = 35f;
+
+        public bool Enabled => sprites != null && sprites.Length > 0;
+    }
+
     Image   _back;
+    Image[] _orbit;
+    Orbit   _orbitCfg;
+    float   _orbitAngle;
     Image   _sparkR;
     Image   _sparkL;
     Image   _core;
@@ -105,6 +135,7 @@ public class SpecialBubbleSkin : MonoBehaviour
         bool spark = skin._sparkCfg != null;
 
         skin._back   = skin.Layer(skin._back,   "SpecialBack",   art.bubbleFrames[0]);
+        skin.BuildOrbit(art.bubbleOrbit);
         skin._core   = skin.Layer(skin._core,   "SpecialCore",   spark ? SparkleTextures.Glow : null);
         skin._sparkR = skin.Layer(skin._sparkR, "SpecialSparkR", spark ? SparkleTextures.SparkArm(0) : null);
         skin._sparkL = skin.Layer(skin._sparkL, "SpecialSparkL", spark ? SparkleTextures.SparkArm(1) : null);
@@ -151,6 +182,7 @@ public class SpecialBubbleSkin : MonoBehaviour
         skin._on = false;
 
         if (skin._back)   skin._back.gameObject.SetActive(false);
+        if (skin._orbit != null) foreach (var child in skin._orbit) if (child) child.gameObject.SetActive(false);
         if (skin._core)   skin._core.gameObject.SetActive(false);
         if (skin._sparkR) skin._sparkR.gameObject.SetActive(false);
         if (skin._sparkL) skin._sparkL.gameObject.SetActive(false);
@@ -169,6 +201,7 @@ public class SpecialBubbleSkin : MonoBehaviour
         float sparkAlpha = alpha * (skin._sparkCfg?.color.a ?? 1f);
 
         Fade(skin._back,   alpha);
+        if (skin._orbit != null) foreach (var child in skin._orbit) Fade(child, alpha);
         Fade(skin._core,   sparkAlpha);
         Fade(skin._sparkR, sparkAlpha);
         Fade(skin._sparkL, sparkAlpha);
@@ -236,6 +269,15 @@ public class SpecialBubbleSkin : MonoBehaviour
         bool sparkVisible = visible && _sparkCfg != null;
 
         if (_back   != null && _back.gameObject.activeSelf   != visible)      _back.gameObject.SetActive(visible);
+
+        if (_orbit != null)
+        {
+            foreach (var child in _orbit)
+                if (child != null && child.gameObject.activeSelf != visible) child.gameObject.SetActive(visible);
+
+            if (visible) TickOrbit();
+        }
+
         if (_core   != null && _core.gameObject.activeSelf   != sparkVisible) _core.gameObject.SetActive(sparkVisible);
         if (_sparkR != null && _sparkR.gameObject.activeSelf != sparkVisible) _sparkR.gameObject.SetActive(sparkVisible);
         if (_sparkL != null && _sparkL.gameObject.activeSelf != sparkVisible) _sparkL.gameObject.SetActive(sparkVisible);
@@ -311,5 +353,87 @@ public class SpecialBubbleSkin : MonoBehaviour
         // pantalla, uno que además respira se lee como una lámpara forzada.
         float k = _sparkCfg.coreScale * (0.88f + 0.12f * beat);
         _core.transform.localScale = Vector3.one * k;
+    }
+
+    // Las hijas se colocan con ANCLAS y no con posiciones: ancladas en fracciones del padre, la
+    // órbita escala sola con la burbuja. Así el mismo ajuste vale para la del tablero (92 px) y
+    // para el ícono del cañón, sin medir nada ni enterarse de cuándo cambia de tamaño.
+    void BuildOrbit(Orbit cfg)
+    {
+        _orbitCfg   = cfg != null && cfg.Enabled ? cfg : null;
+        _orbitAngle = 0f;
+
+        int want = _orbitCfg?.sprites.Length ?? 0;
+
+        // Se reusan las que ya hay: el cañón pasa de especial a normal y de vuelta en cada
+        // disparo, y recrearlas sería tres GameObject nuevos por turno.
+        if (_orbit != null)
+            for (int i = 0; i < _orbit.Length; i++)
+                if (_orbit[i] != null && i >= want) _orbit[i].gameObject.SetActive(false);
+
+        if (want == 0) return;
+
+        if (_orbit == null || _orbit.Length < want) System.Array.Resize(ref _orbit, want);
+
+        for (int i = 0; i < want; i++)
+        {
+            if (_orbit[i] == null)
+            {
+                var go = new GameObject($"OrbitBubble{i}", typeof(RectTransform), typeof(Image))
+                {
+                    hideFlags = HideFlags.DontSave,
+                };
+
+                var rt = (RectTransform)go.transform;
+                rt.SetParent(transform, false);
+                rt.offsetMin = rt.offsetMax = Vector2.zero;   // el tamaño sale de las anclas
+
+                _orbit[i] = go.GetComponent<Image>();
+                _orbit[i].raycastTarget  = false;
+                _orbit[i].preserveAspect = true;
+            }
+
+            _orbit[i].sprite = _orbitCfg.sprites[i];
+            _orbit[i].color  = Color.white;
+            _orbit[i].gameObject.SetActive(true);
+
+            // Entre el fondo y lo que venga después, en el orden en que se montan.
+            _orbit[i].transform.SetAsLastSibling();
+        }
+
+        PlaceOrbit();
+    }
+
+    void TickOrbit()
+    {
+        if (_orbitCfg == null) return;
+
+        _orbitAngle += _orbitCfg.speed * Time.deltaTime;
+        PlaceOrbit();
+    }
+
+    void PlaceOrbit()
+    {
+        if (_orbitCfg == null || _orbit == null) return;
+
+        int count = _orbitCfg.sprites.Length;
+        float half = _orbitCfg.size * 0.5f;
+
+        for (int i = 0; i < count; i++)
+        {
+            if (_orbit[i] == null) continue;
+
+            // Repartidas en el círculo. Arrancan desde arriba para que con tres quede el triángulo
+            // apuntando hacia arriba, que es como se dibujaría a mano.
+            float angle = (_orbitAngle + 90f + i * 360f / count) * Mathf.Deg2Rad;
+
+            var center = new Vector2(0.5f + Mathf.Cos(angle) * _orbitCfg.radius,
+                                     0.5f + Mathf.Sin(angle) * _orbitCfg.radius);
+
+            var rt = (RectTransform)_orbit[i].transform;
+            rt.anchorMin = center - new Vector2(half, half);
+            rt.anchorMax = center + new Vector2(half, half);
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+        }
     }
 }

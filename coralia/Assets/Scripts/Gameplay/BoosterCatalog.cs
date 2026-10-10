@@ -84,6 +84,9 @@ public class BoosterCatalog : ScriptableObject
         [Range(1f, 30f)]
         public float framesPerSecond = 8f;
 
+        [Tooltip("Burbujas pequeñas girando DENTRO de la grande. Arrastra un sprite por cada hija: tres sprites son tres burbujas orbitando. El fondo lo pone 'Bubble Frames' y se queda quieto.")]
+        public SpecialBubbleSkin.Orbit bubbleOrbit = new();
+
         [Tooltip("El chisporroteo de DENTRO de la burbuja: dos rayos horizontales saliendo de un destello en el medio. Se dibuja por código, así que no hace falta arte ni frames.")]
         public SpecialBubbleSkin.Spark bubbleSpark = new();
 
