@@ -836,6 +836,32 @@ Esto no significa que el obstáculo sea injugable antes: la regla de arriba gara
 sin el poder. Significa que el jugador se come el obstáculo en su peor versión durante 24 niveles
 y luego descubre que había una herramienta. El descubrimiento llega tarde para que sea un premio.
 
+### Una burbuja que lleva algo dentro
+
+Idea de Diego (2026-10-09): que una burbuja pueda **contener** algo —una mascota, un objeto— y se
+vea, con capas encima como las que ya llevan las especiales.
+
+Encaja aquí y no en un refactor suelto porque es justo lo que varias piezas de este issue
+necesitan, y hacerlo por separado significaría rehacerlo:
+
+- La **jaula de coral** del GDD es literalmente una burbuja con una criatura dentro
+- El **rescate** ya tiene un marcador de criatura, pero es un caso especial del objetivo del nivel,
+  no una propiedad de la burbuja
+- Un **obstáculo** necesita decir qué aspecto tiene en cada estado (el hielo entero, el hielo roto)
+
+Lo que ya existe y no hay que construir:
+
+- `SpecialBubbleSkin` monta capas sobre **cualquier** `RectTransform`, no solo sobre las
+  especiales. El fondo, lo que orbita dentro, el brillo esférico: todo eso ya funciona
+- `sharedGlow` en `BoosterCatalog`, que es el aro que marca una burbuja como distinta
+- `BubbleView.SetCreatureMarker`, el marcador del rescate
+
+**Lo que hay que decidir al abordarlo**: si los colores normales se mueven a un catálogo propio
+—como el de boosters, un `.asset` con sprite y adornos por color— o se quedan donde están, en los
+campos de `GridController`. Hoy `GridController.SpriteFor(color)` es el único sitio donde vive el
+arte de cada color, y eso ya funciona; moverlo solo vale la pena si una burbuja va a tener más
+cosas que un sprite.
+
 ### Cómo implementarlo sin reescribir diez poderes
 
 **Que cada obstáculo declare de qué se defiende, no que cada poder declare qué rompe.** Es la misma
@@ -857,6 +883,7 @@ el poder sepa de obstáculos. Los poderes siguen sin saber que existen.
 - [ ] Decidido qué tipos de daño existen (área, match, directo, teñido) antes de escribir el primero
 - [ ] Al menos un nivel por pareja obstáculo + rescate, empezando por jaula + criatura
 - [ ] El GDD §2.3 recoge la matriz
+- [ ] Decidido si una burbuja puede llevar contenido (mascota, objeto) y cómo se declara
 
 ### Dependencias
 
