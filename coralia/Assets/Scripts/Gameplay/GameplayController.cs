@@ -698,11 +698,6 @@ public class GameplayController : MonoBehaviour
     // valen lo que valga la racha en ese momento (decisión de Diego). Tratarlo como un disparo
     // neutro hacía que una racha de 20 volviera a mostrar 10 al explotar, y se leía como si la
     // bomba la hubiera roto — que es exactamente lo contrario de lo que un poder debería hacer.
-    // A cuántos diámetros tiene que estar una celda para que el poder le mande una hija en vez de
-    // reventarla con el impacto. Por debajo de dos, el viaje es más corto que la propia burbuja y
-    // el remolino de salida se come el recorrido entero.
-    const float TRAVEL_REACH = 2f;
-
     HashSet<Vector2Int> ResolveBoosterBlast(Booster booster, Vector2Int center, Vector2Int? struck)
     {
         var removed = new HashSet<Vector2Int>();
@@ -770,23 +765,18 @@ public class GameplayController : MonoBehaviour
         bool travels = travel != null && travel.enabled;
         var children = art?.bubbleOrbit?.sprites;
 
-        Vector2 origin = HexGridMath.CellToLocalPos(hit[0]);
-        int     sent   = 0;
+        // Las últimas de la lista son las que el poder alcanza a distancia. Lo dice BoosterRules
+        // y no una medida de "está lejos": el racimo que la Madre revienta puede estirarse varias
+        // burbujas, y midiendo le salía una hija a la otra punta de su propio racimo.
+        int firstTraveler = hit.Count - BoosterRules.TravelersOf(booster);
+        int sent          = 0;
 
         for (int i = 0; i < hit.Count; i++)
         {
             var cell = hit[i];
 
-            // Viaja lo que está LEJOS, no todo lo que no sea la primera. La Madre se lleva cuatro
-            // celdas —donde se posa, la que golpeó y sus dos objetivos— y a la que golpeó le
-            // salía una hija para recorrer medio diámetro: tres saliendo en vez de dos, con una
-            // dando una vuelta sobre sí misma para llegar a la de al lado (reportado por Diego).
-            //
-            // Por distancia y no por índice porque el índice no significa lo mismo en cada poder;
-            // "está lejos" sí vale para cualquiera que llegue a dar este salto.
-            bool goes = travels && Vector2.Distance(HexGridMath.CellToLocalPos(cell), origin) > TRAVEL_REACH * HexGridMath.BubbleDiameter;
-
-            float at = goes ? travel.Total : i * popStep;
+            bool goes = travels && i >= firstTraveler;
+            float at  = goes ? travel.Total : i * popStep;
 
             if (goes)
             {

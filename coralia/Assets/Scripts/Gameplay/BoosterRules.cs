@@ -128,9 +128,21 @@ public static class BoosterRules
     // ve que las hijas van a buscar las sueltas.
     static List<Vector2Int> MotherCells(Vector2Int struck, IBoardView board)
     {
-        var result = new List<Vector2Int> { struck };
+        var result = new List<Vector2Int>();
 
-        if (board == null || !board.TryGetColor(struck, out var color)) return result;
+        if (board == null || !board.TryGetColor(struck, out var color))
+        {
+            result.Add(struck);
+            return result;
+        }
+
+        // La burbuja que toca revienta CON SU RACIMO, como un match normal. Llevarse solo esa
+        // dejaba al poder en cuatro burbujas por el precio de una bomba que se lleva diecinueve
+        // — y además contradecía lo que el poder dice que hace: si viene a juntar un color
+        // disperso, tiene que llevarse también el montón que sí estaba junto (pedido de Diego).
+        //
+        // Sin mínimo de tres: lo que el jugador compró es que esto reviente, no un match.
+        result.AddRange(GroupAt(struck, board));
 
         // Un comodín no tiene "su color", así que no hay a qué salir: la Madre se queda con la que
         // tocó. Mandarla a por dos cualesquiera sería inventarle un criterio que el jugador no
@@ -141,7 +153,7 @@ public static class BoosterRules
 
         foreach (var other in board.Occupied)
         {
-            if (other == struck) continue;
+            if (result.Contains(other)) continue;
             if (!board.TryGetColor(other, out var otherColor)) continue;
 
             // Exactamente ese color, no LinksWith: el comodín enlaza con todo y entraría en
@@ -202,6 +214,39 @@ public static class BoosterRules
 
         return true;
     }
+
+    // El racimo entero al que pertenece esa celda, por color. Mismo criterio que el match del
+    // tablero —LinksWith, con el comodín enlazando en las dos direcciones— para que lo que la
+    // Madre se lleva sea exactamente lo que el jugador habría reventado con un disparo normal.
+    static List<Vector2Int> GroupAt(Vector2Int start, IBoardView board)
+    {
+        var group   = new List<Vector2Int> { start };
+        var visited = new HashSet<Vector2Int> { start };
+        var queue   = new Queue<Vector2Int>();
+
+        queue.Enqueue(start);
+        board.TryGetColor(start, out var color);
+
+        while (queue.Count > 0)
+            foreach (var neighbor in HexGridMath.GetNeighbors(queue.Dequeue()))
+            {
+                if (!visited.Add(neighbor)) continue;
+                if (!board.TryGetColor(neighbor, out var other) || !other.LinksWith(color)) continue;
+
+                group.Add(neighbor);
+                queue.Enqueue(neighbor);
+            }
+
+        return group;
+    }
+
+    // Cuántas de las celdas que devuelve CellsHitBy se alcanzan A DISTANCIA, o sea cuántas hijas
+    // salen a buscarlas. Van al FINAL de la lista, que es lo que permite decirlo con un número.
+    //
+    // Hace falta un dato y no una medida de "está lejos": el racimo de la Madre puede estirarse
+    // varias burbujas, y por distancia a secas le habría salido una hija a la otra punta de su
+    // propio racimo.
+    public static int TravelersOf(Booster booster) => booster == Booster.Mother ? MOTHER_TARGETS : 0;
 
     // Cuántos vecinos de su mismo color tiene. Es la medida de "qué tan sola está": cero vecinos
     // es una burbuja que no se puede juntar con nada desde donde está. Aquí sí vale LinksWith —
