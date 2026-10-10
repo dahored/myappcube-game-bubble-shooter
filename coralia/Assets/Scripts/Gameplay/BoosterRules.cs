@@ -130,7 +130,7 @@ public static class BoosterRules
     {
         var result = new List<Vector2Int>();
 
-        if (board == null || !board.TryGetColor(struck, out var color))
+        if (board == null || !board.TryGetColor(struck, out _))
         {
             result.Add(struck);
             return result;
@@ -138,29 +138,34 @@ public static class BoosterRules
 
         // La burbuja que toca revienta CON SU RACIMO, como un match normal. Llevarse solo esa
         // dejaba al poder en cuatro burbujas por el precio de una bomba que se lleva diecinueve
-        // — y además contradecía lo que el poder dice que hace: si viene a juntar un color
-        // disperso, tiene que llevarse también el montón que sí estaba junto (pedido de Diego).
+        // — y además contradecía lo que dice que hace: si viene a juntar un color disperso, tiene
+        // que llevarse también el montón que sí estaba junto (pedido de Diego).
         //
         // Sin mínimo de tres: lo que el jugador compró es que esto reviente, no un match.
         result.AddRange(GroupAt(struck, board));
 
-        // Un comodín no tiene "su color", así que no hay a qué salir: la Madre se queda con la que
-        // tocó. Mandarla a por dos cualesquiera sería inventarle un criterio que el jugador no
-        // puede prever mirando el tablero.
-        if (color == BubbleColor.Rainbow) return result;
+        // Y las hijas van a las más solas DEL TABLERO, de cualquier color (pedido de Diego).
+        //
+        // Atarlas al color que se tocó las dejaba sin nada que hacer justo cuando más falta
+        // hacen: al final del nivel lo que queda son restos sueltos de varios colores, y con el
+        // filtro por color el poder era débil exactamente ahí. Que la hija salga del color de su
+        // objetivo ya mantiene legible a dónde va cada una, así que no se pierde nada.
+        // Solo valen las que van a SEGUIR AHÍ cuando la hija llegue. El racimo que la Madre
+        // revienta puede desprender lo que colgaba de él, y una hija mandada a una de esas
+        // aterriza en el hueco donde ya no hay nada (reportado por Diego).
+        var standing = StandingWithout(board, result);
 
         var ranked = new List<(Vector2Int cell, int friends, int far)>();
 
-        foreach (var other in board.Occupied)
+        foreach (var other in standing)
         {
-            if (result.Contains(other)) continue;
             if (!board.TryGetColor(other, out var otherColor)) continue;
 
-            // Exactamente ese color, no LinksWith: el comodín enlaza con todo y entraría en
-            // cualquier búsqueda, pero no es "ese color disperso" que la Madre viene a resolver.
-            if (otherColor != color) continue;
+            // Un comodín suelto no es un resto que estorbe: es la pieza que desatasca el tablero,
+            // y gastar una hija en él sería quitarle al jugador su mejor carta.
+            if (otherColor == BubbleColor.Rainbow) continue;
 
-            ranked.Add((other, FriendsOf(other, board, color), (other - struck).sqrMagnitude));
+            ranked.Add((other, FriendsOf(other, board, otherColor), (other - struck).sqrMagnitude));
         }
 
         // Menos compañía primero. A igualdad, la más LEJOS: entre dos burbujas igual de solas, la
@@ -179,23 +184,29 @@ public static class BoosterRules
             return a.cell.y != b.cell.y ? a.cell.y.CompareTo(b.cell.y) : a.cell.x.CompareTo(b.cell.x);
         });
 
+        // Se cuentan las ELEGIDAS, no el tamaño de la lista: con el racimo dentro, 'result' ya
+        // pasa de dos antes de empezar y las hijas no salían nunca.
+        var chosen = new List<Vector2Int>();
+
         // Dos objetivos pegados son el MISMO problema, no dos: la Madre acabaría haciendo de bomba
-        // pequeña en un rincón, que es justo lo que no tiene que ser. Primera pasada exigiendo
-        // que cada uno esté lejos de todo lo ya elegido, el impacto incluido.
+        // pequeña en un rincón, que es justo lo que no tiene que ser. Primera pasada exigiendo que
+        // cada uno esté lejos de los otros y del racimo que ya revienta.
         foreach (var (cell, _, _) in ranked)
         {
-            if (result.Count > MOTHER_TARGETS) break;
-            if (FarFromAll(cell, result)) result.Add(cell);
+            if (chosen.Count == MOTHER_TARGETS) break;
+            if (FarFromAll(cell, result) && FarFromAll(cell, chosen)) chosen.Add(cell);
         }
 
-        // Y si el tablero no da para tanto —quedan cuatro burbujas de ese color y están todas
-        // juntas— se completa con las mejores que queden. Media ayuda es mejor que ninguna, y
-        // dejar hijas sin salir se vería como que el poder falló.
+        // Y si el tablero no da para tanto, se completa con las mejores que queden. Media ayuda
+        // es mejor que ninguna, y dejar hijas sin salir se vería como que el poder falló.
         foreach (var (cell, _, _) in ranked)
         {
-            if (result.Count > MOTHER_TARGETS) break;
-            if (!result.Contains(cell)) result.Add(cell);
+            if (chosen.Count == MOTHER_TARGETS) break;
+            if (!chosen.Contains(cell)) chosen.Add(cell);
         }
+
+        // Al final, que es de donde TravelersOf las saca.
+        result.AddRange(chosen);
 
         return result;
     }
@@ -213,6 +224,36 @@ public static class BoosterRules
             if (Vector2.Distance(at, HexGridMath.CellToLocalPos(other)) < apart) return false;
 
         return true;
+    }
+
+    // Qué sigue colgando del techo si se quitan esas celdas. Mismo criterio que la caída del
+    // tablero —una burbuja se sostiene por su cadena de vecinos hasta la fila 0— calculado aquí
+    // porque hay que saberlo ANTES de reventar nada, para no elegir un objetivo que se va a caer
+    // solo por el camino.
+    static List<Vector2Int> StandingWithout(IBoardView board, List<Vector2Int> removed)
+    {
+        var gone    = new HashSet<Vector2Int>(removed);
+        var visited = new HashSet<Vector2Int>();
+        var queue   = new Queue<Vector2Int>();
+
+        foreach (var cell in board.Occupied)
+            if (cell.y == 0 && !gone.Contains(cell) && visited.Add(cell)) queue.Enqueue(cell);
+
+        var standing = new List<Vector2Int>();
+
+        while (queue.Count > 0)
+        {
+            var cell = queue.Dequeue();
+            standing.Add(cell);
+
+            foreach (var neighbor in HexGridMath.GetNeighbors(cell))
+            {
+                if (gone.Contains(neighbor) || !board.TryGetColor(neighbor, out _)) continue;
+                if (visited.Add(neighbor)) queue.Enqueue(neighbor);
+            }
+        }
+
+        return standing;
     }
 
     // El racimo entero al que pertenece esa celda, por color. Mismo criterio que el match del

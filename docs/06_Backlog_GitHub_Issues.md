@@ -1075,7 +1075,7 @@ de plantilla, y entre los dos cubren casi todo lo que un poder nuevo puede neces
 | Power-up | Efecto | Qué reusa |
 |---|---|---|
 | ~~**Raya Eléctrica**~~ ✅ | Barre entera la fila horizontal que golpea | Hecho |
-| ~~**Burbuja Madre**~~ ✅ | Suelta tres: revienta la que tocó y las dos de ese color **con menos vecinos del mismo color** | Hecho |
+| ~~**Burbuja Madre**~~ ✅ | Suelta tres: revienta el racimo que tocó y las dos burbujas **más solas del tablero** | Hecho |
 | **Tinta de Pulpo** | El pulpo salpica 4 burbujas al azar dentro del radio, tiñéndolas del **color que vuelve a la recámara** | `HexGridMath.CellsWithinRadius` + `BubbleView.SetColor` |
 | **Pinza de Langosta** | Tocas una burbuja del tablero y la destruye. No gasta disparo | **Nada: necesita una pieza nueva** |
 
