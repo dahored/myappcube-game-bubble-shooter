@@ -63,7 +63,7 @@ public class SpecialBubbleSkin : MonoBehaviour
         [Range(0f, 0.45f)]
         public float radius = 0.17f;
 
-        [Tooltip("El máximo de ese sorteo. Por debajo del mínimo se ignora y las tres giran a la misma distancia.\n\nUn par de centésimas de diferencia basta: las órbitas dejan de ser concéntricas y el conjunto se mueve como algo vivo en vez de como una pieza rígida.")]
+        [Tooltip("El máximo. Cada hija se acerca y se aleja entre los dos valores mientras gira. Por debajo del mínimo se ignora y las tres orbitan a distancia fija.\n\nUn par de centésimas bastan: las órbitas dejan de ser concéntricas y el conjunto se mueve como algo vivo en vez de como una pieza rígida.")]
         [Range(0f, 0.45f)]
         public float radiusMax = 0.19f;
 
@@ -80,7 +80,7 @@ public class SpecialBubbleSkin : MonoBehaviour
 
     Image   _back;
     Image[]  _orbit;
-    float[]  _orbitRadius;   // el suyo, sorteado al montarla
+    float[]  _orbitPhase;    // por dónde va su respiración, para que no respiren todas a la vez
     Orbit    _orbitCfg;
     float    _orbitAngle;
     Image   _sparkR;
@@ -379,15 +379,13 @@ public class SpecialBubbleSkin : MonoBehaviour
         if (want == 0) return;
 
         if (_orbit == null || _orbit.Length < want) System.Array.Resize(ref _orbit, want);
-        if (_orbitRadius == null || _orbitRadius.Length < want) System.Array.Resize(ref _orbitRadius, want);
+        if (_orbitPhase == null || _orbitPhase.Length < want) System.Array.Resize(ref _orbitPhase, want);
 
-        // Cada hija gira a SU distancia, sorteada aquí y no en cada fotograma: sorteándola al
-        // vuelo temblarían en vez de orbitar. Se vuelve a sortear en cada Apply, así que dos
-        // burbujas del mismo poder tampoco se mueven igual.
-        float low  = _orbitCfg.radius;
-        float high = Mathf.Max(low, _orbitCfg.radiusMax);
-
-        for (int i = 0; i < want; i++) _orbitRadius[i] = Random.Range(low, high);
+        // Dónde empieza la respiración de cada una. Sorteada aquí y no en cada fotograma, que es
+        // lo único que hace falta guardar: el radio sale del ángulo, así que con la fase basta
+        // para que ninguna esté en el mismo punto del ciclo. Se vuelve a sortear en cada Apply,
+        // así que dos burbujas del mismo poder tampoco se mueven igual.
+        for (int i = 0; i < want; i++) _orbitPhase[i] = Random.Range(0f, Mathf.PI * 2f);
 
         for (int i = 0; i < want; i++)
         {
@@ -418,6 +416,28 @@ public class SpecialBubbleSkin : MonoBehaviour
         PlaceOrbit();
     }
 
+    // A qué distancia del centro está esa hija ahora mismo. Se acerca y se aleja entre el mínimo
+    // y el máximo mientras da la vuelta, en vez de quedarse en un valor: con la distancia fija
+    // las tres describen circunferencias y el conjunto se lee como un engranaje.
+    //
+    // El vaivén va con el ÁNGULO y no con el reloj, así que acompaña al giro por rápido o lento
+    // que esté puesto. Y a un ciclo y pico por vuelta —no a uno exacto— para que el recorrido no
+    // cierre sobre sí mismo: con un número redondo cada hija repite siempre la misma elipse.
+    float RadiusOf(int index, float angle)
+    {
+        const float CYCLES = 1.3f;
+
+        float low  = _orbitCfg.radius;
+        float high = Mathf.Max(low, _orbitCfg.radiusMax);
+
+        if (high - low < 0.0001f) return low;
+
+        float phase = _orbitPhase != null && _orbitPhase.Length > index ? _orbitPhase[index] : 0f;
+        float wave  = 0.5f + 0.5f * Mathf.Sin(angle * CYCLES + phase);
+
+        return Mathf.Lerp(low, high, wave);
+    }
+
     void TickOrbit()
     {
         if (_orbitCfg == null) return;
@@ -441,7 +461,7 @@ public class SpecialBubbleSkin : MonoBehaviour
             // apuntando hacia arriba, que es como se dibujaría a mano.
             float angle = (_orbitAngle + 90f + i * 360f / count) * Mathf.Deg2Rad;
 
-            float radius = _orbitRadius != null && _orbitRadius.Length > i ? _orbitRadius[i] : _orbitCfg.radius;
+            float radius = RadiusOf(i, angle);
 
             var center = new Vector2(0.5f + Mathf.Cos(angle) * radius,
                                      0.5f + Mathf.Sin(angle) * radius);
