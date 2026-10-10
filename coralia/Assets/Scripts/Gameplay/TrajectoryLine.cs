@@ -7,6 +7,10 @@ using UnityEngine.UI;
 public class TrajectoryLine : MonoBehaviour
 {
     [SerializeField] GameObject     dotPrefab;
+
+    [Tooltip("Tamaño de los puntos respecto al del prefab. Uno los deja como están.\n\nVive aquí y no en el prefab porque es de lo que se afina mirando la pantalla: con la mira encendida se mueve el valor y se ve el efecto, sin abrir nada.")]
+    [Range(0.2f, 2f)]
+    [SerializeField] float          dotScale = 1f;
     [SerializeField] GridController gridController;
     [SerializeField] RectTransform  gridContainer;
     [SerializeField] int            maxDots  = 40;
@@ -81,6 +85,10 @@ public class TrajectoryLine : MonoBehaviour
 
             _pool[used].gameObject.SetActive(true);
             _pool[used].anchoredPosition = pos;
+
+            // Cada vez que se enciende, no una vez al crear: así mover el valor con la mira
+            // abierta se ve en el acto, que es para lo que está en el Inspector.
+            _pool[used].localScale = Vector3.one * dotScale;
             if (_poolImage[used])
             {
                 _poolImage[used].sprite = sprite;
