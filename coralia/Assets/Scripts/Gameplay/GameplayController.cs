@@ -801,6 +801,11 @@ public class GameplayController : MonoBehaviour
             if (grid.TryGetBubble(cell, out var view))
                 view.PlayPopAnimation(at, popClip);
 
+            // Y la que la hija alcanza suena además como el poder: es un segundo estallido suyo,
+            // no una burbuja que revienta de paso. Con el pop a secas, el final del viaje se oía
+            // igual que una del montón y no se entendía que lo había causado la hija.
+            if (goes) StartCoroutine(PlayClipAfter(art?.burstClip, at));
+
             // En el mismo instante que su pop, no antes: la onda y el sonido de esa burbuja son
             // la misma cosa vista de dos maneras, y separarlos se oye como un eco.
             if (perBubble)
@@ -849,7 +854,19 @@ public class GameplayController : MonoBehaviour
         yield return new WaitForSeconds(delay);
 
         Sparkle.BurstAt((RectTransform)grid.transform, at, art?.burstSparkle ?? bombSparkle);
-        AudioManager.Instance?.PlaySfx(popClip);
+        AudioManager.Instance?.PlaySfx(art?.burstClip);
+    }
+
+    // Un clip suelto más tarde. Lo piden los poderes cuyo efecto no ocurre todo en el mismo
+    // instante: sin esto, el sonido del estallido de una hija habría que colgarlo de la burbuja
+    // de destino, que es de quien MENOS depende — ella solo recibe.
+    IEnumerator PlayClipAfter(AudioClip clip, float delay)
+    {
+        if (clip == null) yield break;
+
+        yield return new WaitForSeconds(delay);
+
+        AudioManager.Instance?.PlaySfx(clip);
     }
 
     // Todo lo que quedó colgando sin camino al techo se desprende, de abajo hacia arriba y
