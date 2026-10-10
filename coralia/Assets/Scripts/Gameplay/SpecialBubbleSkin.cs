@@ -75,12 +75,18 @@ public class SpecialBubbleSkin : MonoBehaviour
         [Range(-360f, 360f)]
         public float speed = 35f;
 
+        [Tooltip("Cuántas veces por segundo se acerca y se aleja cada hija, entre 'Radius' y 'Radius Max'.\n\nMuy por debajo del giro: es un vaivén de fondo, y en cuanto se acerca al ritmo de la vuelta deja de leerse como respirar y parece que la órbita va a tirones. Cada hija lo hace a su propio ritmo alrededor de este valor.")]
+        [Range(0.02f, 2f)]
+        public float breathPerSecond = 0.22f;
+
         public bool Enabled => sprites != null && sprites.Length > 0;
     }
 
     Image   _back;
     Image[]  _orbit;
-    float[]  _orbitPhase;    // por dónde va su respiración, para que no respiren todas a la vez
+    float[]  _orbitPhase;    // por dónde va su respiración
+    float[]  _orbitBreath;   // y a qué ritmo, el suyo
+    float    _orbitClock;
     Orbit    _orbitCfg;
     float    _orbitAngle;
     Image   _sparkR;
@@ -379,13 +385,22 @@ public class SpecialBubbleSkin : MonoBehaviour
         if (want == 0) return;
 
         if (_orbit == null || _orbit.Length < want) System.Array.Resize(ref _orbit, want);
-        if (_orbitPhase == null || _orbitPhase.Length < want) System.Array.Resize(ref _orbitPhase, want);
+        if (_orbitPhase  == null || _orbitPhase.Length  < want) System.Array.Resize(ref _orbitPhase,  want);
+        if (_orbitBreath == null || _orbitBreath.Length < want) System.Array.Resize(ref _orbitBreath, want);
 
-        // Dónde empieza la respiración de cada una. Sorteada aquí y no en cada fotograma, que es
-        // lo único que hace falta guardar: el radio sale del ángulo, así que con la fase basta
-        // para que ninguna esté en el mismo punto del ciclo. Se vuelve a sortear en cada Apply,
-        // así que dos burbujas del mismo poder tampoco se mueven igual.
-        for (int i = 0; i < want; i++) _orbitPhase[i] = Random.Range(0f, Mathf.PI * 2f);
+        // Dónde empieza la respiración de cada una y a qué ritmo. Las dos cosas sorteadas, no
+        // solo la fase: con el mismo ritmo acaban sincronizándose a la vista aunque arranquen
+        // separadas, porque la distancia entre ellas se repite cada ciclo. Con ritmos distintos
+        // no vuelven a coincidir nunca.
+        //
+        // Se sortea en cada Apply, así que dos burbujas del mismo poder tampoco se mueven igual.
+        for (int i = 0; i < want; i++)
+        {
+            _orbitPhase[i]  = Random.Range(0f, Mathf.PI * 2f);
+            _orbitBreath[i] = Random.Range(0.7f, 1.35f);
+        }
+
+        _orbitClock = 0f;
 
         for (int i = 0; i < want; i++)
         {
@@ -417,23 +432,23 @@ public class SpecialBubbleSkin : MonoBehaviour
     }
 
     // A qué distancia del centro está esa hija ahora mismo. Se acerca y se aleja entre el mínimo
-    // y el máximo mientras da la vuelta, en vez de quedarse en un valor: con la distancia fija
-    // las tres describen circunferencias y el conjunto se lee como un engranaje.
+    // y el máximo, en vez de quedarse en un valor: con la distancia fija las tres describen
+    // circunferencias y el conjunto se lee como un engranaje.
     //
-    // El vaivén va con el ÁNGULO y no con el reloj, así que acompaña al giro por rápido o lento
-    // que esté puesto. Y a un ciclo y pico por vuelta —no a uno exacto— para que el recorrido no
-    // cierre sobre sí mismo: con un número redondo cada hija repite siempre la misma elipse.
-    float RadiusOf(int index, float angle)
+    // El vaivén va con su propio RELOJ y no con el ángulo. Atado al ángulo iba al ritmo del giro,
+    // así que subir la velocidad de la órbita aceleraba también la respiración y dejaba de
+    // parecer respirar. Separados, una puede girar deprisa mientras late despacio.
+    float RadiusOf(int index)
     {
-        const float CYCLES = 1.3f;
-
         float low  = _orbitCfg.radius;
         float high = Mathf.Max(low, _orbitCfg.radiusMax);
 
         if (high - low < 0.0001f) return low;
 
-        float phase = _orbitPhase != null && _orbitPhase.Length > index ? _orbitPhase[index] : 0f;
-        float wave  = 0.5f + 0.5f * Mathf.Sin(angle * CYCLES + phase);
+        float phase = _orbitPhase  != null && _orbitPhase.Length  > index ? _orbitPhase[index]  : 0f;
+        float rate  = _orbitBreath != null && _orbitBreath.Length > index ? _orbitBreath[index] : 1f;
+
+        float wave = 0.5f + 0.5f * Mathf.Sin(_orbitClock * _orbitCfg.breathPerSecond * rate * Mathf.PI * 2f + phase);
 
         return Mathf.Lerp(low, high, wave);
     }
@@ -443,6 +458,7 @@ public class SpecialBubbleSkin : MonoBehaviour
         if (_orbitCfg == null) return;
 
         _orbitAngle += _orbitCfg.speed * Time.deltaTime;
+        _orbitClock += Time.deltaTime;
         PlaceOrbit();
     }
 
@@ -461,7 +477,7 @@ public class SpecialBubbleSkin : MonoBehaviour
             // apuntando hacia arriba, que es como se dibujaría a mano.
             float angle = (_orbitAngle + 90f + i * 360f / count) * Mathf.Deg2Rad;
 
-            float radius = RadiusOf(i, angle);
+            float radius = RadiusOf(i);
 
             var center = new Vector2(0.5f + Mathf.Cos(angle) * radius,
                                      0.5f + Mathf.Sin(angle) * radius);
