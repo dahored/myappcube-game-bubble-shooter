@@ -801,10 +801,10 @@ public class GameplayController : MonoBehaviour
             if (grid.TryGetBubble(cell, out var view))
                 view.PlayPopAnimation(at, popClip);
 
-            // Y la que la hija alcanza suena además como el poder: es un segundo estallido suyo,
+            // Y la que la hija alcanza suena con el clip de llegada: es un estallido del poder,
             // no una burbuja que revienta de paso. Con el pop a secas, el final del viaje se oía
             // igual que una del montón y no se entendía que lo había causado la hija.
-            if (goes) StartCoroutine(PlayClipAfter(art?.burstClip, at));
+            if (goes) StartCoroutine(PlayClipAfter(ArriveClip(art), at));
 
             // En el mismo instante que su pop, no antes: la onda y el sonido de esa burbuja son
             // la misma cosa vista de dos maneras, y separarlos se oye como un eco.
@@ -854,8 +854,13 @@ public class GameplayController : MonoBehaviour
         yield return new WaitForSeconds(delay);
 
         Sparkle.BurstAt((RectTransform)grid.transform, at, art?.burstSparkle ?? bombSparkle);
-        AudioManager.Instance?.PlaySfx(art?.burstClip);
+        AudioManager.Instance?.PlaySfx(ArriveClip(art));
     }
+
+    // Lo que suena cuando una hija termina su viaje. Cae en el estallido del poder si no se le
+    // puso uno propio: quedarse mudo se lee como que el efecto falló, y es peor que repetir.
+    static AudioClip ArriveClip(BoosterCatalog.Entry art) =>
+        art?.burstTravel?.arriveClip != null ? art.burstTravel.arriveClip : art?.burstClip;
 
     // Un clip suelto más tarde. Lo piden los poderes cuyo efecto no ocurre todo en el mismo
     // instante: sin esto, el sonido del estallido de una hija habría que colgarlo de la burbuja

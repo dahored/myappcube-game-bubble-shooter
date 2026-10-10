@@ -44,6 +44,9 @@ public class TravelingBubble : MonoBehaviour
         [Tooltip("El sonido de la salida: lo que se oye cuando las hijas se desprenden y arrancan. Suena UNA vez aunque salgan varias — una por hija se oiría como un eco, porque salen todas en el mismo instante.")]
         public AudioClip travelClip;
 
+        [Tooltip("El sonido de la LLEGADA: lo que se oye cuando una hija alcanza su objetivo y lo revienta, y también cuando se deshace en el agua sin haber encontrado ninguno.\n\nAparte del 'Burst Clip' del poder a propósito: el estallido del impacto y el de una hija son dos cosas distintas, y con el mismo sonido el segundo se confunde con un eco del primero. Vacío usa el del poder.")]
+        public AudioClip arriveClip;
+
         [Tooltip("Qué mide la hija mientras viaja, respecto a una burbuja del tablero.")]
         [Range(0.2f, 1f)]
         public float size = 0.55f;
