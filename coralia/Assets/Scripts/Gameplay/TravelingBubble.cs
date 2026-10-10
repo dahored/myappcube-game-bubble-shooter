@@ -7,8 +7,14 @@ using UnityEngine.UI;
 // burbujas que pueden estar en la otra punta. Sin verlas ir, dos burbujas lejanas desaparecen a
 // la vez que la del impacto y se lee como un fallo del juego, no como un poder.
 //
-// El camino es una CURVA y no una recta. Una recta entre dos celdas es el trazo de un proyectil;
-// un arco se lee como algo vivo que va nadando a buscar, que es lo que la Madre suelta.
+// El viaje son TRES tiempos y no uno, porque cada uno cuenta algo distinto:
+//
+//   1. el remolino — sale de la burbuja que estalló y se coloca mirando a su objetivo
+//   2. la pausa    — el instante en que se la ve apuntada, que es lo que hace legible lo que va a pasar
+//   3. la carrera  — recta y con ease, hasta la burbuja que le toca
+//
+// Mezclados en un solo movimiento curvo todo ocurría a la vez y no se entendía ninguno de los
+// tres. Separados, la secuencia se lee aunque dure medio segundo.
 public class TravelingBubble : MonoBehaviour
 {
     [System.Serializable]
@@ -21,25 +27,34 @@ public class TravelingBubble : MonoBehaviour
         [Range(0f, 1f)]
         public float delay = 0.18f;
 
-        [Tooltip("Cuánto tarda el viaje. Es también lo que espera cada objetivo antes de reventar: lo que se ve y lo que pasa van juntos.")]
-        [Range(0.1f, 2.5f)]
-        public float duration = 0.7f;
+        [Tooltip("Lo que dura el remolino de salida. La hija gira sobre el sitio y acaba encarada a su objetivo.")]
+        [Range(0.05f, 1.5f)]
+        public float spiralTime = 0.45f;
 
-        [Tooltip("Vueltas que da sobre sí misma al salir. El remolino se abre al principio y se deshace según coge camino, así que se ve de dónde salió sin que el viaje entero parezca un tirabuzón.")]
-        [Range(0f, 5f)]
-        public float spiralTurns = 2.2f;
+        [Tooltip("Vueltas de ese remolino.")]
+        [Range(0.25f, 5f)]
+        public float spiralTurns = 1.5f;
 
-        [Tooltip("Lo ancho que llega a ser ese remolino, en burbujas.")]
-        [Range(0f, 3f)]
-        public float spiralRadius = 1.1f;
+        [Tooltip("Lo lejos del centro que acaba el remolino, en burbujas. Es también lo que la hija se adelanta hacia su objetivo antes de salir corriendo.")]
+        [Range(0.1f, 3f)]
+        public float spiralRadius = 0.9f;
 
-        [Tooltip("Cuánto se arquea el camino, en tanto por uno de la distancia. En cero va derecho y parece un disparo.")]
+        [Tooltip("El instante quieta entre el remolino y la carrera. Corto: es una respiración antes de salir disparada y lo que deja ver hacia dónde apunta.")]
         [Range(0f, 0.8f)]
-        public float arc = 0.3f;
+        public float pause = 0.12f;
+
+        [Tooltip("Lo que dura la carrera hasta el objetivo. Es también lo que esa burbuja espera antes de reventar: lo que se ve y lo que pasa van juntos.")]
+        [Range(0.1f, 2f)]
+        public float duration = 0.4f;
 
         [Tooltip("Qué mide la hija mientras viaja, respecto a una burbuja del tablero.")]
         [Range(0.2f, 1f)]
         public float size = 0.55f;
+
+        // Lo que tarda desde que estalla el impacto hasta que la hija llega. Quien lance el viaje
+        // lo necesita para retrasar el pop de la burbuja de destino, y vive acá para que no haya
+        // dos sitios sumando los mismos tramos.
+        public float Total => delay + spiralTime + pause + duration;
     }
 
     // from/to en coordenadas del TABLERO, no del canvas: así el viaje acompaña al tablero si este
@@ -72,11 +87,12 @@ public class TravelingBubble : MonoBehaviour
 
     RectTransform _rt;
     Image         _image;
-    Vector2       _from, _to, _control;
     Settings      _settings;
-    float         _elapsed;
-    float         _spin;    // hacia qué lado da las vueltas
-    Vector2       _last;    // dónde estaba el frame anterior, para saber hacia dónde mira
+
+    Vector2 _from, _to, _launch;
+    float   _aim;      // ángulo hacia el objetivo
+    float   _spin;     // hacia qué lado da las vueltas
+    float   _elapsed;
 
     void Init(Vector2 from, Vector2 to, Settings s, int index)
     {
@@ -85,81 +101,92 @@ public class TravelingBubble : MonoBehaviour
         _from     = from;
         _to       = to;
         _settings = s;
-        _spin     = index % 2 == 0 ? 1f : -1f;
-        _last     = from;
 
-        // Escondida hasta que le toque salir: durante la espera la escena es el estallido de la
-        // burbuja del impacto, y una hija quieta encima lo ensucia.
-        var c = _image.color;
-        _image.color = new Color(c.r, c.g, c.b, 0f);
+        // Las dos hijas giran hacia lados contrarios. Girando igual salen en paralelo y parecen
+        // una sola cosa partida en dos en vez de dos que van a sitios distintos.
+        _spin = index % 2 == 0 ? 1f : -1f;
 
-        // El punto de control del arco sale PERPENDICULAR al camino, y hacia un lado distinto
-        // según el índice: con las dos hijas curvándose igual, salen en paralelo y parecen una
-        // sola cosa partida en dos. Abriéndose hacia lados contrarios se ve que van a sitios
-        // distintos desde el primer fotograma.
-        Vector2 mid  = (from + to) * 0.5f;
         Vector2 path = to - from;
-        var perpendicular = new Vector2(-path.y, path.x).normalized;
+        _aim = Mathf.Atan2(path.y, path.x);
 
-        _control = mid + perpendicular * path.magnitude * s.arc * _spin;
+        // Donde acaba el remolino: adelantada hacia su objetivo. De ahí arranca la carrera, así
+        // que la recta final sale de un punto que ya estaba encarado.
+        _launch = from + new Vector2(Mathf.Cos(_aim), Mathf.Sin(_aim)) * s.spiralRadius * HexGridMath.BubbleDiameter;
+
+        Show(false);
     }
 
     void Update()
     {
         _elapsed += Time.deltaTime;
 
-        if (_elapsed < _settings.delay) return;
+        float t = _elapsed - _settings.delay;
 
-        float t = Mathf.Clamp01((_elapsed - _settings.delay) / _settings.duration);
+        // 1. Esperando a que reviente la burbuja del impacto.
+        if (t < 0f) return;
 
-        // El AVANCE va con ease in-out: sale despacio, coge velocidad y frena al llegar. Es lo
-        // que deja ver el remolino — arrancando a velocidad de crucero, las vueltas quedan
-        // estiradas por el camino y no se leen como vueltas.
-        float move = t * t * (3f - 2f * t);
-        float u    = 1f - move;
+        Show(true);
 
-        // Bézier cuadrática: el arco entero con tres puntos y sin curva que configurar.
-        Vector2 at = u * u * _from + 2f * u * move * _control + move * move * _to;
-
-        // Y encima, un remolino. Va SUMADO al camino en vez de ser una fase aparte: en dos fases
-        // la burbuja gira quieta y luego arranca, y el tirón entre una y otra se ve.
-        //
-        // Se abre desde CERO, no desde su ancho máximo: naciendo ya desplazada, la hija aparece
-        // separada de la burbuja que la soltó y se pierde de dónde salió. La campana sube rápido
-        // —pico alrededor de un quinto del viaje— y se deshace despacio.
-        float bell  = Mathf.Sin(Mathf.Pow(t, 0.45f) * Mathf.PI);
-        float swirl = bell * _settings.spiralRadius * HexGridMath.BubbleDiameter;
-
-        if (swirl > 0.01f)
+        // 2. El remolino. El ángulo TERMINA mirando al objetivo y empieza las vueltas que haga
+        // falta por detrás, así que el giro no es un adorno: es la hija colocándose.
+        if (t < _settings.spiralTime)
         {
-            // El ángulo va con t LINEAL, no con el avance: girando también con ease, el remolino
-            // se abriría y cerraría al ritmo del viaje y dejaría de leerse como un giro.
-            float angle = t * _settings.spiralTurns * 360f * Mathf.Deg2Rad * _spin;
-            at += new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * swirl;
+            float p = Ease(t / _settings.spiralTime);
+
+            float from  = _aim - _settings.spiralTurns * Mathf.PI * 2f * _spin;
+            float angle = Mathf.Lerp(from, _aim, p);
+
+            // El radio se abre desde CERO: naciendo ya desplazada, la hija aparece separada de la
+            // burbuja que la soltó y se pierde de dónde salió.
+            float radius = p * _settings.spiralRadius * HexGridMath.BubbleDiameter;
+
+            Place(_from + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
+            return;
         }
 
-        _rt.anchoredPosition = at;
+        t -= _settings.spiralTime;
 
-        var color = _image.color;
-        _image.color = new Color(color.r, color.g, color.b, 1f);
+        // 3. La respiración. Quieta y ya encarada, que es lo que anuncia lo que viene.
+        if (t < _settings.pause) { Place(_launch); return; }
 
-        // Mira hacia donde va de verdad, remolino incluido: calculada sobre la curva a secas,
-        // la hija apuntaría recta mientras da vueltas, que es lo que delata que el giro está
-        // pegado encima en vez de ser su camino.
-        Vector2 heading = at - _last;
-        _last = at;
+        t -= _settings.pause;
 
-        if (heading.sqrMagnitude > 0.01f)
-            _rt.localEulerAngles = new Vector3(0f, 0f, Mathf.Atan2(heading.y, heading.x) * Mathf.Rad2Deg - 90f);
+        // 4. La carrera. Recta y con ease: arranca de golpe y frena al llegar.
+        float run = Mathf.Clamp01(t / _settings.duration);
+        Place(Vector2.Lerp(_launch, _to, Ease(run)));
 
         // Se apaga justo al final, no durante: tiene que llegar entera para que el pop de la
         // burbuja de destino se lea como consecuencia suya.
-        if (t > 0.85f)
+        if (run > 0.85f)
         {
             var c = _image.color;
-            _image.color = new Color(c.r, c.g, c.b, Mathf.InverseLerp(1f, 0.85f, t));
+            _image.color = new Color(c.r, c.g, c.b, Mathf.InverseLerp(1f, 0.85f, run));
         }
 
-        if (t >= 1f) Destroy(gameObject);
+        if (run >= 1f) Destroy(gameObject);
+    }
+
+    // Mira hacia donde se mueve de verdad, remolino incluido: calculado sobre la recta final, la
+    // hija apuntaría al objetivo mientras todavía está dando vueltas.
+    void Place(Vector2 at)
+    {
+        Vector2 heading = at - _rt.anchoredPosition;
+
+        _rt.anchoredPosition = at;
+
+        if (heading.sqrMagnitude > 0.01f)
+            _rt.localEulerAngles = new Vector3(0f, 0f, Mathf.Atan2(heading.y, heading.x) * Mathf.Rad2Deg - 90f);
+    }
+
+    void Show(bool on)
+    {
+        var c = _image.color;
+        _image.color = new Color(c.r, c.g, c.b, on ? 1f : 0f);
+    }
+
+    static float Ease(float t)
+    {
+        t = Mathf.Clamp01(t);
+        return t * t * (3f - 2f * t);
     }
 }
