@@ -11,6 +11,13 @@ public class TrajectoryLine : MonoBehaviour
     [Tooltip("Tamaño de los puntos respecto al del prefab. Uno los deja como están.\n\nVive aquí y no en el prefab porque es de lo que se afina mirando la pantalla: con la mira encendida se mueve el valor y se ve el efecto, sin abrir nada.")]
     [Range(0.2f, 2f)]
     [SerializeField] float          dotScale = 1f;
+
+    [Tooltip("El punto que se dibuja cuando hay un PODER cargado, en lugar de la miniatura de la burbuja.\n\nVacío usa la miniatura, como con un color normal. Un dibujo aparte —una chispa, un rombo— dice 'esto no es un tiro cualquiera' sin que haga falta mirar la recámara.")]
+    [SerializeField] Sprite         specialDotSprite;
+
+    [Tooltip("Tamaño de ese punto respecto a los demás. Un arte de poder suele pedir menos sitio que una burbuja para leerse igual.")]
+    [Range(0.2f, 2f)]
+    [SerializeField] float          specialDotScale = 1f;
     [SerializeField] GridController gridController;
     [SerializeField] RectTransform  gridContainer;
     [SerializeField] int            maxDots  = 40;
@@ -78,6 +85,12 @@ public class TrajectoryLine : MonoBehaviour
         int     used      = 0;
         bool    landed    = false;
 
+        // Lo decide la mira y no quien la llama: el cañón ya le dice qué poder va cargado, y
+        // mandarle además con qué dibujarlo sería contarle lo mismo dos veces.
+        bool   special = booster != Booster.None && specialDotSprite != null;
+        Sprite dot     = special ? specialDotSprite : sprite;
+        float  scale   = dotScale * (special ? specialDotScale : 1f);
+
         while (used < maxDots)
         {
             pos += direction * stepSize;
@@ -88,10 +101,10 @@ public class TrajectoryLine : MonoBehaviour
 
             // Cada vez que se enciende, no una vez al crear: así mover el valor con la mira
             // abierta se ve en el acto, que es para lo que está en el Inspector.
-            _pool[used].localScale = Vector3.one * dotScale;
+            _pool[used].localScale = Vector3.one * scale;
             if (_poolImage[used])
             {
-                _poolImage[used].sprite = sprite;
+                _poolImage[used].sprite = dot;
                 _poolImage[used].color  = new Color(1f, 1f, 1f, alpha);
             }
             used++;
