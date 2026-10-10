@@ -20,4 +20,5 @@ public enum Booster
     Bomb        = 1,
     Rainbow     = 2,
     ElectricRay = 3,
+    Mother      = 4,
 }

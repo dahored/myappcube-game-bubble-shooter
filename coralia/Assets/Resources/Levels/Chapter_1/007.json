@@ -4,6 +4,8 @@
     "name": "Reflejos de coral",
     "max_shots": 34,
     "min_shots_to_clear": 13,
+    "allowed_boosters": ["mother", "rainbow", "electric_ray"],
+    "tutorials": ["mother"],
     "rainbow_chance": 0.0,
     "available_colors": [
         "red",

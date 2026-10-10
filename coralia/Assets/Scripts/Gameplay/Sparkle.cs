@@ -54,6 +54,26 @@ public class Sparkle : MonoBehaviour
     float         _peakScale, _lifetime, _delay, _spin, _t;
     bool          _twinkle;
 
+    // El mismo brillo pero en un PUNTO del tablero, sin nada debajo a lo que ponerse al lado. Lo
+    // necesita un poder cuya hija se deshace en campo abierto.
+    public static void BurstAt(RectTransform parent, Vector2 localPos, Settings s)
+    {
+        if (parent == null || s == null) return;
+
+        // Un ancla que vive un instante: Burst le copia el anclaje y la posición, y las piezas
+        // que crea cuelgan del PADRE, no de ella, así que puede irse en cuanto haya servido.
+        var anchor = new GameObject("SparkleAnchor", typeof(RectTransform)) { hideFlags = HideFlags.DontSave };
+        var rt     = (RectTransform)anchor.transform;
+
+        rt.SetParent(parent, false);
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = localPos;
+
+        Burst(rt, s);
+
+        Destroy(anchor);
+    }
+
     // Lanza el brillo entero al lado de `beside`, con su mismo anclaje y justo DETRÁS en la
     // jerarquía: enmarca a la burbuja en vez de taparla.
     public static void Burst(RectTransform beside, Settings s)

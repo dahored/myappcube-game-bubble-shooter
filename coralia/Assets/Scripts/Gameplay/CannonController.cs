@@ -1275,11 +1275,13 @@ public class CannonController : MonoBehaviour
         _currentSpecial == Booster.None ? grid.SpriteFor(_current)
                                               : BoosterRules.BubbleSpriteFor(_currentSpecial);
 
-    // Los puntos de la mira llevan el color de lo que se va a disparar, que para un booster es
-    // BLANCO y no su propio arte: una fila de bombitas en miniatura se lee como si fueran a salir
-    // muchas. Blanco dice "esta es la trayectoria" sin prometer nada más.
-    Sprite DotSprite =>
-        _currentSpecial == Booster.None ? grid.SpriteFor(_current) : SparkleTextures.Glow;
+    // Los puntos de la mira son la miniatura de lo que se va a disparar, sea un color o un poder.
+    //
+    // Antes un booster los ponía blancos, por miedo a que una fila de bombitas se leyera como si
+    // fueran a salir muchas. A tamaño de punto ese miedo no se cumple, y el precio sí se veía:
+    // la mira cambiaba de aspecto al cargar un poder, que es justo cuando el jugador está
+    // mirándola (reportado por Diego).
+    Sprite DotSprite => CurrentSprite;
 
     void RefreshPreview()
     {

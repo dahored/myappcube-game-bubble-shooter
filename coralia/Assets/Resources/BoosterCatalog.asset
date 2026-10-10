@@ -22,6 +22,13 @@ MonoBehaviour:
     - {fileID: 8661716057833069622, guid: 5d25dcddc5c2b4ea4a2c7c2c52714122, type: 3}
     spin: 0
     framesPerSecond: 8
+    bubbleOrbit:
+      sprites: []
+      radius: 0.17
+      radiusMax: 0.19
+      size: 0.3
+      speed: 35
+      breathPerSecond: 0.22
     bubbleSpark:
       enabled: 0
       color: {r: 0.8, g: 0.95, b: 1, a: 0.9}
@@ -68,6 +75,17 @@ MonoBehaviour:
       waveStagger: 0.08
       rainbowWaves: 0
     burstPerBubble: 0
+    burstTravel:
+      enabled: 0
+      delay: 0.18
+      stagger: 0.14
+      duration: 0.45
+      loopAt: 0.12
+      loopSpan: 0.34
+      loopSize: 0.95
+      travelClip: {fileID: 0}
+      arriveClip: {fileID: 0}
+      size: 0.55
     burstLightning:
       enabled: 0
       color: {r: 0.65, g: 0.9, b: 1, a: 1}
@@ -96,6 +114,13 @@ MonoBehaviour:
     - {fileID: 7416691928268232256, guid: cd4e4136d804f443b88d74e25ee17f0f, type: 3}
     spin: -1440
     framesPerSecond: 12
+    bubbleOrbit:
+      sprites: []
+      radius: 0.17
+      radiusMax: 0.19
+      size: 0.3
+      speed: 35
+      breathPerSecond: 0.22
     bubbleSpark:
       enabled: 0
       color: {r: 0.8, g: 0.95, b: 1, a: 0.9}
@@ -142,6 +167,17 @@ MonoBehaviour:
       waveStagger: 0.08
       rainbowWaves: 1
     burstPerBubble: 0
+    burstTravel:
+      enabled: 0
+      delay: 0.18
+      stagger: 0.14
+      duration: 0.45
+      loopAt: 0.12
+      loopSpan: 0.34
+      loopSize: 0.95
+      travelClip: {fileID: 0}
+      arriveClip: {fileID: 0}
+      size: 0.55
     burstLightning:
       enabled: 0
       color: {r: 0.65, g: 0.9, b: 1, a: 1}
@@ -170,6 +206,13 @@ MonoBehaviour:
     - {fileID: -1032720602377991539, guid: 915236230473b41e39179f0aea8474ae, type: 3}
     spin: 0
     framesPerSecond: 1
+    bubbleOrbit:
+      sprites: []
+      radius: 0.17
+      radiusMax: 0.19
+      size: 0.3
+      speed: 35
+      breathPerSecond: 0.22
     bubbleSpark:
       enabled: 1
       color: {r: 1, g: 1, b: 1, a: 0.9}
@@ -216,8 +259,114 @@ MonoBehaviour:
       waveStagger: 0.08
       rainbowWaves: 0
     burstPerBubble: 1
+    burstTravel:
+      enabled: 0
+      delay: 0.18
+      stagger: 0.14
+      duration: 0.45
+      loopAt: 0.12
+      loopSpan: 0.34
+      loopSize: 0.95
+      travelClip: {fileID: 0}
+      arriveClip: {fileID: 0}
+      size: 0.55
     burstLightning:
       enabled: 1
+      color: {r: 1, g: 0.98883486, b: 0.3915094, a: 1}
+      thickness: 80
+      duration: 0.4
+      flickerHz: 28
+    claimStep: 0.06
+    claimFade: 0.16
+    claimHold: 0.12
+    claimMaxTotal: 0.8
+    packs:
+    - amount: 1
+      price: 3
+      discountPercent: 0
+    - amount: 5
+      price: 15
+      discountPercent: 20
+    - amount: 15
+      price: 40
+      discountPercent: 30
+    glowOverride: {fileID: 0}
+  - booster: 4
+    family: 0
+    icon: {fileID: 2678159376878377252, guid: 2a2462ecce93c441f92f3278165bb4ee, type: 3}
+    bubbleFrames:
+    - {fileID: 3825108340541979968, guid: 10d02dd5f5b824196a1e3e6ff89afa6f, type: 3}
+    spin: 0
+    framesPerSecond: 1
+    bubbleOrbit:
+      sprites:
+      - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
+      - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
+      - {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
+      radius: 0.17
+      radiusMax: 0.25
+      size: 0.3
+      speed: -150
+      breathPerSecond: 0.22
+    bubbleSpark:
+      enabled: 0
+      color: {r: 1, g: 1, b: 1, a: 0.9}
+      fps: 14
+      scale: 1
+      coreScale: 1.2
+      pulseHz: 17
+    loadedLoopClip: {fileID: 8300000, guid: d1643082d0377484094a0209b2f35975, type: 3}
+    loadedLoopVolume: 0.05
+    burstClip: {fileID: 8300000, guid: 2bc19cb1498714ed7a9d0606323ba591, type: 3}
+    chargeClip: {fileID: 0}
+    clipLead: 0
+    vibrate: 1
+    shake: 1
+    burstSparkle:
+      glowColor: {r: 1, g: 0.93, b: 0.72, a: 0.85}
+      glowSize: 300
+      glowFrom: 1.93
+      glowTo: 1.6
+      glowDuration: 0.5
+      moteCount: 10
+      moteColor: {r: 1, g: 1, b: 1, a: 0.95}
+      moteSize: 64
+      spawnRadius: 34
+      travel: 95
+      moteDuration: 0.55
+      stagger: 0.22
+      rainbowMotes: 0
+    burstBlast:
+      chargeTime: 0
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 1, b: 1, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 400
+      waveDuration: 0.7
+      waveEdge: 0.18
+      waveCount: 1
+      waveStagger: 0.08
+      rainbowWaves: 0
+    burstPerBubble: 1
+    burstTravel:
+      enabled: 1
+      delay: 0.18
+      stagger: 0.25
+      duration: 1
+      loopAt: 0.34
+      loopSpan: 0.34
+      loopSize: 0.95
+      travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
+      arriveClip: {fileID: 8300000, guid: ecb599ab0eb4c4715bf2e619901c42ea, type: 3}
+      size: 0.7
+    burstLightning:
+      enabled: 0
       color: {r: 1, g: 0.98883486, b: 0.3915094, a: 1}
       thickness: 80
       duration: 0.4

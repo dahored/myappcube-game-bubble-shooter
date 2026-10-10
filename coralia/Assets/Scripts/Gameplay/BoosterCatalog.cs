@@ -62,6 +62,8 @@ public class BoosterCatalog : ScriptableObject
     public enum Family { InGame, Start }
 
     [System.Serializable]
+    // Los títulos de sección NO van como [Header]: los pone BoosterEntryDrawer, que es quien sabe
+    // qué secciones tocan para cada poder. Con los dos, cada encabezado salía por duplicado.
     public class Entry
     {
         public Booster booster;
@@ -72,7 +74,6 @@ public class BoosterCatalog : ScriptableObject
         [Tooltip("El ícono que se ve en la pantalla previa, en el HUD y en la tienda.")]
         public Sprite icon;
 
-        [Header("La burbuja en el tablero")]
         [Tooltip("El arte de la burbuja que este poder produce. Lo usan el tablero, la recámara del cañón y el tutorial, así que con ponerlo acá se ve igual en los tres.\n\nUNO solo: un dibujo fijo, que puede girar o no según 'Spin'.\nVARIOS: se van alternando a 'Frames Per Second' — para un poder que late, parpadea o cambia de forma en vez de girar.\n\nEn un poder de INICIO es simplemente el sprite de la burbuja con la que arrancas: no se monta ninguna capa encima, porque esos nunca pasan por la recámara.")]
         public Sprite[] bubbleFrames;
 
@@ -84,10 +85,12 @@ public class BoosterCatalog : ScriptableObject
         [Range(1f, 30f)]
         public float framesPerSecond = 8f;
 
+        [Tooltip("Burbujas pequeñas girando DENTRO de la grande. Arrastra un sprite por cada hija: tres sprites son tres burbujas orbitando. El fondo lo pone 'Bubble Frames' y se queda quieto.")]
+        public SpecialBubbleSkin.Orbit bubbleOrbit = new();
+
         [Tooltip("El chisporroteo de DENTRO de la burbuja: dos rayos horizontales saliendo de un destello en el medio. Se dibuja por código, así que no hace falta arte ni frames.")]
         public SpecialBubbleSkin.Spark bubbleSpark = new();
 
-        [Header("Mientras está cargado en el cañón")]
         [Tooltip("Sonido EN BUCLE que suena mientras el poder está puesto en la recámara — la mecha encendida de la bomba, por ejemplo. Se corta al descargarlo o al dispararlo.\n\nOpcional: sin clip no suena nada y el poder funciona igual.")]
         public AudioClip loadedLoopClip;
 
@@ -95,7 +98,6 @@ public class BoosterCatalog : ScriptableObject
         [Tooltip("Cuánto se baja ese bucle respecto al volumen de efectos. Un sonido que está sonando todo el rato quiere estar más abajo que un golpe.")]
         public float loadedLoopVolume = 0.5f;
 
-        [Header("Al estallar")]
         [Tooltip("El golpe sonoro del efecto. Va aparte del pop de las burbujas: lo que suena es el poder haciendo lo suyo, no las burbujas muriendo.")]
         public AudioClip burstClip;
 
@@ -123,10 +125,12 @@ public class BoosterCatalog : ScriptableObject
         [Tooltip("Marcado: no hay una explosión en el centro, sino que cada burbuja alcanzada estalla con su propia onda, una detrás de otra. Para un poder que barre en línea, donde un solo estallido central deja los extremos sin nada que mirar.\n\nLas ondas se configuran igual, en 'Burst Blast' — conviene bajarles el tamaño, porque ahora se ven una por burbuja.")]
         public bool burstPerBubble;
 
+        [Tooltip("Las hijas que salen del impacto a buscar sus objetivos. Usa los mismos sprites que 'Bubble Orbit': son las que estaban girando dentro y ahora salen.")]
+        public TravelingBubble.Settings burstTravel = new();
+
         [Tooltip("La descarga eléctrica que recorre la fila desde el impacto hacia los dos lados. Solo tiene sentido en un poder que barra en línea: marca 'Enabled' aquí dentro para encenderla.")]
         public Lightning.Settings burstLightning = new();
 
-        [Header("Contagio (poderes que tiñen antes de estallar)")]
         [Range(0.02f, 0.3f)]
         [Tooltip("Cuánto tarda el color en saltar de una burbuja a la siguiente.")]
         public float claimStep = 0.06f;
@@ -143,7 +147,6 @@ public class BoosterCatalog : ScriptableObject
         [Tooltip("Tope de lo que puede durar el contagio entero. En racimos grandes el paso se comprime para no pasarse de acá — igual que la cadena de pops.")]
         public float claimMaxTotal = 0.8f;
 
-        [Header("Panel de recarga")]
         [Tooltip("Las ofertas que se muestran al tocar el '+' de este booster, en orden. Vacío deja el panel sin nada que vender.")]
         public Pack[] packs;
 

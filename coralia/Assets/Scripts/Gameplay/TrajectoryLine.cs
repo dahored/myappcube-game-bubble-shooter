@@ -7,6 +7,17 @@ using UnityEngine.UI;
 public class TrajectoryLine : MonoBehaviour
 {
     [SerializeField] GameObject     dotPrefab;
+
+    [Tooltip("Tamaño de los puntos respecto al del prefab. Uno los deja como están.\n\nVive aquí y no en el prefab porque es de lo que se afina mirando la pantalla: con la mira encendida se mueve el valor y se ve el efecto, sin abrir nada.")]
+    [Range(0.2f, 2f)]
+    [SerializeField] float          dotScale = 1f;
+
+    [Tooltip("El punto que se dibuja cuando hay un PODER cargado, en lugar de la miniatura de la burbuja.\n\nVacío usa la miniatura, como con un color normal. Un dibujo aparte —una chispa, un rombo— dice 'esto no es un tiro cualquiera' sin que haga falta mirar la recámara.")]
+    [SerializeField] Sprite         specialDotSprite;
+
+    [Tooltip("Tamaño de ese punto respecto a los demás. Un arte de poder suele pedir menos sitio que una burbuja para leerse igual.")]
+    [Range(0.2f, 2f)]
+    [SerializeField] float          specialDotScale = 1f;
     [SerializeField] GridController gridController;
     [SerializeField] RectTransform  gridContainer;
     [SerializeField] int            maxDots  = 40;
@@ -47,6 +58,10 @@ public class TrajectoryLine : MonoBehaviour
     // Contra cuál chocó, que no es lo mismo que dónde se posa. Nulo si fue el techo.
     public Vector2Int? StruckCell { get; private set; }
 
+    // Cuál va cargado en este recorrido. Lo guarda ShowPath porque el preview de aterrizaje se
+    // dibuja varias llamadas más abajo, y arrastrarlo por la firma de todas sería peor.
+    Booster _booster;
+
     void Awake()
     {
         for (int i = 0; i < maxDots; i++)
@@ -74,6 +89,14 @@ public class TrajectoryLine : MonoBehaviour
         int     used      = 0;
         bool    landed    = false;
 
+        // Lo decide la mira y no quien la llama: el cañón ya le dice qué poder va cargado, y
+        // mandarle además con qué dibujarlo sería contarle lo mismo dos veces.
+        _booster = booster;
+
+        bool   special = booster != Booster.None && specialDotSprite != null;
+        Sprite dot     = special ? specialDotSprite : sprite;
+        float  scale   = dotScale * (special ? specialDotScale : 1f);
+
         while (used < maxDots)
         {
             pos += direction * stepSize;
@@ -81,9 +104,13 @@ public class TrajectoryLine : MonoBehaviour
 
             _pool[used].gameObject.SetActive(true);
             _pool[used].anchoredPosition = pos;
+
+            // Cada vez que se enciende, no una vez al crear: así mover el valor con la mira
+            // abierta se ve en el acto, que es para lo que está en el Inspector.
+            _pool[used].localScale = Vector3.one * scale;
             if (_poolImage[used])
             {
-                _poolImage[used].sprite = sprite;
+                _poolImage[used].sprite = dot;
                 _poolImage[used].color  = new Color(1f, 1f, 1f, alpha);
             }
             used++;
@@ -129,7 +156,7 @@ public class TrajectoryLine : MonoBehaviour
 
         if (booster != Booster.None && LandingCell.HasValue)
         {
-            foreach (var cell in BoosterRules.CellsHitBy(booster, LandingCell.Value, StruckCell))
+            foreach (var cell in BoosterRules.CellsAimedBy(booster, LandingCell.Value, StruckCell, gridController))
             {
                 var mark = MarkAt(used++);
                 mark.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);
@@ -199,6 +226,14 @@ public class TrajectoryLine : MonoBehaviour
         StruckCell  = hitCeiling ? null : struckCell;
 
         if (!landingPreview) return;
+
+        // Hay poderes que no prometen nada en el hueco donde se posan, así que señalarlo sería
+        // apuntar al único sitio donde no va a pasar nada.
+        if (!BoosterRules.ShowsLandingSpot(_booster))
+        {
+            landingPreview.gameObject.SetActive(false);
+            return;
+        }
 
         landingPreview.gameObject.SetActive(true);
         landingPreview.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);

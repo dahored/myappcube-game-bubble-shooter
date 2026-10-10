@@ -498,7 +498,7 @@ public class GameplayController : MonoBehaviour
         //
         // Quién tiene área lo decide BoosterRules y no una lista de casos acá: así un poder nuevo
         // entra sin tocar este archivo.
-        if (BoosterRules.CellsHitBy(special, landedCell, struckCell).Count > 0)
+        if (BoosterRules.CellsHitBy(special, landedCell, struckCell, grid).Count > 0)
         {
             StartCoroutine(ArmAndBlast(special, landedCell, struckCell));
             return;
@@ -706,7 +706,7 @@ public class GameplayController : MonoBehaviour
         // Las mismas celdas que la mira acaba de marcar. El orden lo da CellsHitBy —anillos para
         // la bomba, de un extremo al otro para la raya— y el índice ya sirve para escalonar la
         // explosión en vez de reventar todo en el mismo frame.
-        var hit = BoosterRules.CellsHitBy(booster, center, struck)
+        var hit = BoosterRules.CellsHitBy(booster, center, struck, grid)
                               .Where(grid.IsOccupied)
                               .ToList();
 
@@ -757,30 +757,122 @@ public class GameplayController : MonoBehaviour
         // exactamente lo que se vio en pantalla.
         int popValue = ScoreRules.PopValue(_comboStreak);
 
+        // Las que el poder alcanza LEJOS no estallan a la vez que el impacto: sale una hija desde
+        // ahí y revienta al llegar. El retraso es el viaje, así que lo que se ve y lo que pasa
+        // van juntos — sin esto, dos burbujas del otro extremo del tablero desaparecen solas y se
+        // lee como un fallo del juego, no como un poder.
+        var travel   = art?.burstTravel;
+        bool travels = travel != null && travel.enabled;
+        var children = art?.bubbleOrbit?.sprites;
+
+        // Las últimas de la lista son las que el poder alcanza a distancia. Lo dice BoosterRules
+        // y no una medida de "está lejos": el racimo que la Madre revienta puede estirarse varias
+        // burbujas, y midiendo le salía una hija a la otra punta de su propio racimo.
+        int firstTraveler = hit.Count - BoosterRules.TravelersOf(booster);
+        int sent          = 0;
+
         for (int i = 0; i < hit.Count; i++)
         {
             var cell = hit[i];
+
+            bool goes = travels && i >= firstTraveler;
+            float at  = goes ? travel.TotalFor(sent) : i * popStep;
+
+            if (goes)
+            {
+                // La hija sale DEL COLOR de la burbuja que va a buscar, no de un color fijo del
+                // catálogo. Es lo que explica el viaje sin una sola palabra: sale una amarilla,
+                // va derecha a una amarilla. Con un color cualquiera, dónde acaba cada una
+                // parecería arbitrario.
+                //
+                // El sprite sale del grid, que ya es el único sitio donde vive el arte de cada
+                // color. Repetirlo en el catálogo del poder sería tener dos listas que mantener
+                // iguales a mano.
+                var sprite = grid.TryGetColor(cell, out var targetColor)
+                    ? grid.SpriteFor(targetColor)
+                    : (children != null && children.Length > sent ? children[sent] : null);
+
+                TravelingBubble.Send((RectTransform)grid.transform,
+                                     HexGridMath.CellToLocalPos(hit[0]),
+                                     HexGridMath.CellToLocalPos(cell),
+                                     sprite, travel, sent++);
+            }
+
             if (grid.TryGetBubble(cell, out var view))
-                view.PlayPopAnimation(i * popStep, popClip);
+                view.PlayPopAnimation(at, popClip);
+
+            // Y la que la hija alcanza suena con el clip de llegada: es un estallido del poder,
+            // no una burbuja que revienta de paso. Con el pop a secas, el final del viaje se oía
+            // igual que una del montón y no se entendía que lo había causado la hija.
+            if (goes) StartCoroutine(PlayClipAfter(ArriveClip(art), at));
 
             // En el mismo instante que su pop, no antes: la onda y el sonido de esa burbuja son
             // la misma cosa vista de dos maneras, y separarlos se oye como un eco.
             if (perBubble)
-                BombBlast.Ripple((RectTransform)grid.transform, HexGridMath.CellToLocalPos(cell), blast, i * popStep);
-            grid.SpawnScorePopup(cell, popValue, i * popStep, ScorePopup.POP_LIFETIME);
+                BombBlast.Ripple((RectTransform)grid.transform, HexGridMath.CellToLocalPos(cell), blast, at);
+
+            grid.SpawnScorePopup(cell, popValue, at, ScorePopup.POP_LIFETIME);
             grid.RemoveBubble(cell);
             removed.Add(cell);
+        }
+
+        // Las hijas que no encontraron a quién ir salen IGUAL y revientan en el agua. No sacarlas
+        // deja al poder a medias sin decir por qué —el jugador ve una sola cuando esperaba dos—
+        // y parece que falló en vez de que el tablero ya no daba para más.
+        for (int extra = sent; travels && extra < BoosterRules.TravelersOf(booster); extra++)
+        {
+            // Hacia abajo y a un lado, que es donde está el océano vacío: reventar en un hueco
+            // entre burbujas se leería como que apuntó mal, no como que no había a dónde ir.
+            var away = HexGridMath.CellToLocalPos(hit[0])
+                     + new Vector2(extra % 2 == 0 ? 0.6f : -0.6f, -0.8f).normalized
+                     * HexGridMath.BubbleDiameter * 3.5f;
+
+            var spare = children != null && children.Length > extra ? children[extra] : null;
+
+            TravelingBubble.Send((RectTransform)grid.transform, HexGridMath.CellToLocalPos(hit[0]), away, spare, travel, extra);
+            StartCoroutine(PopInOpenWater(away, travel.TotalFor(extra), art));
         }
 
         _bubblesPopped += hit.Count;
         _popScore      += hit.Count * popValue;
 
-        var collapsed = CollapseFloating(removed);
+        // Esperando el viaje más largo: lo que colgaba de una burbuja que todavía no ha estallado
+        // no puede empezar a caerse.
+        // Esperando a la ÚLTIMA en llegar, que con el escalonado ya no es la misma que la primera.
+        var collapsed = CollapseFloating(removed, sent > 0 ? travel.TotalFor(sent - 1) : 0f);
 
         if ((BoosterRules.ArtFor(Booster.Bomb)?.shake ?? false) || grid.ShakeWorthIt(hit.Count + collapsed.count))
             StartCoroutine(ShakeAlongChain(hit.Count, popStep, collapsed.count, collapsed.step));
 
         return removed;
+    }
+
+    // La hija que no tenía objetivo se deshace donde llegó. Sin burbuja a la que pegarse, lo
+    // único que queda es el chispazo y el sonido — y con eso basta: lo que había que evitar era
+    // que desapareciera sin más a mitad del agua.
+    IEnumerator PopInOpenWater(Vector2 at, float delay, BoosterCatalog.Entry art)
+    {
+        yield return new WaitForSeconds(delay);
+
+        Sparkle.BurstAt((RectTransform)grid.transform, at, art?.burstSparkle ?? bombSparkle);
+        AudioManager.Instance?.PlaySfx(ArriveClip(art));
+    }
+
+    // Lo que suena cuando una hija termina su viaje. Cae en el estallido del poder si no se le
+    // puso uno propio: quedarse mudo se lee como que el efecto falló, y es peor que repetir.
+    static AudioClip ArriveClip(BoosterCatalog.Entry art) =>
+        art?.burstTravel?.arriveClip != null ? art.burstTravel.arriveClip : art?.burstClip;
+
+    // Un clip suelto más tarde. Lo piden los poderes cuyo efecto no ocurre todo en el mismo
+    // instante: sin esto, el sonido del estallido de una hija habría que colgarlo de la burbuja
+    // de destino, que es de quien MENOS depende — ella solo recibe.
+    IEnumerator PlayClipAfter(AudioClip clip, float delay)
+    {
+        if (clip == null) yield break;
+
+        yield return new WaitForSeconds(delay);
+
+        AudioManager.Instance?.PlaySfx(clip);
     }
 
     // Todo lo que quedó colgando sin camino al techo se desprende, de abajo hacia arriba y
