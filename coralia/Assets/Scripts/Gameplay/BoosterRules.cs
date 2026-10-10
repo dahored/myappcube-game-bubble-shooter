@@ -73,6 +73,37 @@ public static class BoosterRules
         _                   => new List<Vector2Int>(),
     };
 
+    // De qué partes del catálogo tira cada poder. Sirve para que el Inspector no enseñe ajustes
+    // que ese poder no va a mirar nunca — el contagio en la bomba, el zumbido de recámara en uno
+    // que no se carga.
+    //
+    // Vive AQUÍ y no en el editor porque aquí ya está todo lo que hay que escribir para un poder
+    // nuevo: su nombre, sus celdas, su familia. Un archivo de editor aparte sería un cuarto sitio
+    // que recordar, y el que se olvidaría.
+    //
+    // El default es TODO lo normal a propósito: olvidarse de añadir un poder a esta tabla enseña
+    // ajustes de más, que se ve y se arregla. Esconder uno que sí hacía falta no se ve.
+    [System.Flags]
+    public enum Uses
+    {
+        None   = 0,
+        Bubble = 1 << 0,   // aparece dibujado en el tablero
+        Loaded = 1 << 1,   // se queda cargado en la recámara esperando el disparo
+        Burst  = 1 << 2,   // estalla al impactar
+        Claim  = 1 << 3,   // tiñe las burbujas antes de que estallen
+    }
+
+    const Uses CANNON = Uses.Bubble | Uses.Loaded | Uses.Burst;
+
+    public static Uses UsesOf(Booster booster) => booster switch
+    {
+        // Reparte comodines por el nivel: se dibujan en el tablero y contagian su color al
+        // estallar, pero nunca se queda cargado esperando — se aplica solo al abrir.
+        Booster.Rainbow => Uses.Bubble | Uses.Burst | Uses.Claim,
+
+        _ => CANNON,
+    };
+
     // Cuántas burbujas sueltas sale a buscar la Madre, además de la que toca.
     public const int MOTHER_TARGETS = 2;
 

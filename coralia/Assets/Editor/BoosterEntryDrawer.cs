@@ -90,7 +90,14 @@ public class BoosterEntryDrawer : PropertyDrawer
     {
         SerializedProperty Get(string field) => p.FindPropertyRelative(field);
 
-        yield return new Row(Get("booster"));
+        var booster = p.FindPropertyRelative("booster");
+
+        // De qué tira este poder, según BoosterRules. Ahí está porque es donde ya vive todo lo
+        // que hay que escribir para uno nuevo; una tabla en el editor sería un sitio más que
+        // recordar, y el que se olvidaría.
+        var uses = BoosterRules.UsesOf((Booster)booster.intValue);
+
+        yield return new Row(booster);
         yield return new Row(Get("family"));
         yield return new Row(Get("icon"));
 
@@ -101,59 +108,68 @@ public class BoosterEntryDrawer : PropertyDrawer
         // poder, no si llega al tablero.
         var frames = Get("bubbleFrames");
 
-        yield return new Row("La burbuja en el tablero");
-        yield return new Row(frames);
-
-        if (frames.arraySize > 0)
+        if (uses.HasFlag(BoosterRules.Uses.Bubble))
         {
-            // Girar y pasar frames son excluyentes, así que con un solo dibujo el ritmo no pinta
-            // nada y con varios el giro se lee como un error. Se ofrece el que tiene sentido.
-            if (frames.arraySize > 1) yield return new Row(Get("framesPerSecond"));
-            else                      yield return new Row(Get("spin"));
+            yield return new Row("La burbuja en el tablero");
+            yield return new Row(frames);
 
-            yield return new Row(Get("bubbleOrbit"));
-            yield return new Row(Get("bubbleSpark"));
-            yield return new Row(Get("glowOverride"));
+            if (frames.arraySize > 0)
+            {
+                // Girar y pasar frames son excluyentes: con un solo dibujo el ritmo no pinta
+                // nada y con varios el giro se lee como un error. Sale el que tiene sentido.
+                if (frames.arraySize > 1) yield return new Row(Get("framesPerSecond"));
+                else                      yield return new Row(Get("spin"));
+
+                yield return new Row(Get("bubbleOrbit"));
+                yield return new Row(Get("bubbleSpark"));
+                yield return new Row(Get("glowOverride"));
+            }
         }
 
         // --- Mientras está cargado ---
-        var loop = Get("loadedLoopClip");
-
-        yield return new Row("Mientras está cargado en el cañón");
-        yield return new Row(loop);
-        if (loop.objectReferenceValue != null) yield return new Row(Get("loadedLoopVolume"));
-
-        // --- Al estallar ---
-        var blast  = Get("burstBlast");
-        var charge = blast.FindPropertyRelative("chargeTime");
-
-        yield return new Row("Al estallar");
-        yield return new Row(Get("burstClip"));
-        yield return new Row(blast);
-
-        // El adelanto solo existe mientras el poder carga: su tooltip ya lo dice, y enseñarlo con
-        // la carga en cero es ofrecer un ajuste que no hace nada.
-        if (charge.floatValue > 0f)
+        if (uses.HasFlag(BoosterRules.Uses.Loaded))
         {
-            yield return new Row(Get("chargeClip"));
-            yield return new Row(Get("clipLead"));
+            var loop = Get("loadedLoopClip");
+
+            yield return new Row("Mientras está cargado en el cañón");
+            yield return new Row(loop);
+            if (loop.objectReferenceValue != null) yield return new Row(Get("loadedLoopVolume"));
         }
 
-        yield return new Row(Get("burstSparkle"));
-        yield return new Row(Get("burstPerBubble"));
-        yield return new Row(Get("burstLightning"));
-        yield return new Row(Get("vibrate"));
-        yield return new Row(Get("shake"));
+        // --- Al estallar ---
+        if (uses.HasFlag(BoosterRules.Uses.Burst))
+        {
+            var blast  = Get("burstBlast");
+            var charge = blast.FindPropertyRelative("chargeTime");
+
+            yield return new Row("Al estallar");
+            yield return new Row(Get("burstClip"));
+            yield return new Row(blast);
+
+            // El adelanto solo existe mientras el poder carga: enseñarlo con la carga en cero es
+            // ofrecer un ajuste que no hace nada.
+            if (charge.floatValue > 0f)
+            {
+                yield return new Row(Get("chargeClip"));
+                yield return new Row(Get("clipLead"));
+            }
+
+            yield return new Row(Get("burstSparkle"));
+            yield return new Row(Get("burstPerBubble"));
+            yield return new Row(Get("burstLightning"));
+            yield return new Row(Get("vibrate"));
+            yield return new Row(Get("shake"));
+        }
 
         // --- Contagio ---
-        //
-        // Lo usa el poder que tiñe antes de estallar. No hay forma de deducir cuál es desde el
-        // asset, así que va plegado detrás de su encabezado y se abre quien lo necesite.
-        yield return new Row("Contagio (poderes que tiñen antes de estallar)");
-        yield return new Row(Get("claimStep"));
-        yield return new Row(Get("claimFade"));
-        yield return new Row(Get("claimHold"));
-        yield return new Row(Get("claimMaxTotal"));
+        if (uses.HasFlag(BoosterRules.Uses.Claim))
+        {
+            yield return new Row("Contagio: tiñe antes de estallar");
+            yield return new Row(Get("claimStep"));
+            yield return new Row(Get("claimFade"));
+            yield return new Row(Get("claimHold"));
+            yield return new Row(Get("claimMaxTotal"));
+        }
 
         // --- Tienda ---
         yield return new Row("Panel de recarga");
