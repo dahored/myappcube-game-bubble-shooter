@@ -104,6 +104,17 @@ public static class BoosterRules
         _ => CANNON,
     };
 
+    // Qué marca la MIRA, que no siempre es todo lo que el poder se va a llevar.
+    //
+    // La Madre elige sus dos objetivos sola. Enseñarlos antes de disparar convierte el poder en
+    // un cálculo —el jugador comprueba si le conviene el reparto y si no, apunta a otro sitio— y
+    // lo que tiene que ser es una sorpresa que se entiende al verla ocurrir. Lo que sí se promete
+    // es dónde va a pegar, que es lo único que el jugador decide.
+    public static List<Vector2Int> CellsAimedBy(Booster booster, Vector2Int cell, Vector2Int? struck = null, IBoardView board = null) =>
+        booster == Booster.Mother
+            ? new List<Vector2Int> { struck ?? cell }
+            : CellsHitBy(booster, cell, struck, board);
+
     // Cuántas burbujas sueltas sale a buscar la Madre, además de la que toca.
     public const int MOTHER_TARGETS = 2;
 

@@ -768,7 +768,7 @@ public class GameplayController : MonoBehaviour
         for (int i = 0; i < hit.Count; i++)
         {
             var cell  = hit[i];
-            float at  = travels && i > 0 ? travel.duration : i * popStep;
+            float at  = travels && i > 0 ? travel.delay + travel.duration : i * popStep;
 
             if (travels && i > 0)
             {
@@ -801,7 +801,7 @@ public class GameplayController : MonoBehaviour
 
         // Esperando el viaje más largo: lo que colgaba de una burbuja que todavía no ha estallado
         // no puede empezar a caerse.
-        var collapsed = CollapseFloating(removed, travels && hit.Count > 1 ? travel.duration : 0f);
+        var collapsed = CollapseFloating(removed, travels && hit.Count > 1 ? travel.delay + travel.duration : 0f);
 
         if ((BoosterRules.ArtFor(Booster.Bomb)?.shake ?? false) || grid.ShakeWorthIt(hit.Count + collapsed.count))
             StartCoroutine(ShakeAlongChain(hit.Count, popStep, collapsed.count, collapsed.step));
