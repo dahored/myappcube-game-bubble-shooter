@@ -21,9 +21,13 @@ public class TravelingBubble : MonoBehaviour
         [Tooltip("Marcado: las burbujas que el poder alcanza lejos no estallan solas — sale una hija desde el impacto y revienta al llegar. Para un poder que elige objetivos repartidos por el tablero.")]
         public bool enabled;
 
-        [Tooltip("Cuánto espera antes de salir, desde que estalla la burbuja del impacto. Es el hueco donde se ve la división: sin él las hijas salen dentro de la propia explosión y no se llega a entender que salieron de ahí.")]
+        [Tooltip("Cuánto espera la PRIMERA antes de salir, desde que estalla la burbuja del impacto. Es el hueco donde se ve la división: sin él las hijas salen dentro de la propia explosión y no se llega a entender que salieron de ahí.")]
         [Range(0f, 1f)]
         public float delay = 0.18f;
+
+        [Tooltip("Lo que cada hija espera respecto a la anterior. Saliendo a la vez llegan a la vez, y dos estallidos en el mismo instante se oyen como uno solo mal grabado — además de que una tapa a la otra al mirar.")]
+        [Range(0f, 0.6f)]
+        public float stagger = 0.14f;
 
         [Tooltip("Lo que dura el viaje entero. Es también lo que esa burbuja espera antes de reventar: lo que se ve y lo que pasa van juntos.")]
         [Range(0.2f, 3f)]
@@ -41,7 +45,7 @@ public class TravelingBubble : MonoBehaviour
         [Range(0.2f, 3f)]
         public float loopSize = 0.95f;
 
-        [Tooltip("El sonido de la salida: lo que se oye cuando las hijas se desprenden y arrancan. Suena UNA vez aunque salgan varias — una por hija se oiría como un eco, porque salen todas en el mismo instante.")]
+        [Tooltip("El sonido de la salida: lo que se oye cuando una hija se desprende y arranca. Suena una vez por hija, que es legible porque salen escalonadas.")]
         public AudioClip travelClip;
 
         [Tooltip("El sonido de la LLEGADA: lo que se oye cuando una hija alcanza su objetivo y lo revienta, y también cuando se deshace en el agua sin haber encontrado ninguno.\n\nAparte del 'Burst Clip' del poder a propósito: el estallido del impacto y el de una hija son dos cosas distintas, y con el mismo sonido el segundo se confunde con un eco del primero. Vacío usa el del poder.")]
@@ -51,10 +55,10 @@ public class TravelingBubble : MonoBehaviour
         [Range(0.2f, 1f)]
         public float size = 0.55f;
 
-        // Desde que estalla el impacto hasta que la hija llega. Quien lance el viaje lo necesita
-        // para retrasar el pop de la burbuja de destino, y vive acá para que no haya dos sitios
-        // sumando los mismos tramos.
-        public float Total => delay + duration;
+        // Desde que estalla el impacto hasta que llega la hija número 'index'. Quien lance el
+        // viaje lo necesita para retrasar el pop de la burbuja de destino, y vive acá para que no
+        // haya dos sitios sumando los mismos tramos.
+        public float TotalFor(int index) => delay + index * stagger + duration;
     }
 
     // from/to en coordenadas del TABLERO, no del canvas: así el viaje acompaña al tablero si este
@@ -94,7 +98,7 @@ public class TravelingBubble : MonoBehaviour
     float   _spin;           // hacia qué lado se abre el rizo
     float   _elapsed;
     bool    _started;        // si ya arrancó, para sonar en el primer fotograma de vuelo y no en todos
-    bool    _leads;          // si es la que lleva el sonido de la salida
+    float   _wait;           // lo que le toca esperar a ESTA, con su turno incluido
 
     void Init(Vector2 from, Vector2 to, Settings s, int index)
     {
@@ -108,9 +112,8 @@ public class TravelingBubble : MonoBehaviour
         // una sola cosa partida en dos en vez de dos que van a sitios distintos.
         _spin = index % 2 == 0 ? 1f : -1f;
 
-        // Solo la primera suena. Todas salen en el mismo instante, así que un clip por hija se
-        // oye como un eco del mismo sonido en vez de como dos burbujas.
-        _leads = index == 0;
+        // Su turno: cada una sale un poco después que la anterior.
+        _wait = s.delay + index * s.stagger;
 
         _along = (to - from).normalized;
         _side  = new Vector2(-_along.y, _along.x) * _spin;
@@ -122,7 +125,7 @@ public class TravelingBubble : MonoBehaviour
     {
         _elapsed += Time.deltaTime;
 
-        float t = _elapsed - _settings.delay;
+        float t = _elapsed - _wait;
         if (t < 0f) return;
 
         Show(true);
@@ -130,7 +133,7 @@ public class TravelingBubble : MonoBehaviour
         if (!_started)
         {
             _started = true;
-            if (_leads) AudioManager.Instance?.PlaySfx(_settings.travelClip);
+            AudioManager.Instance?.PlaySfx(_settings.travelClip);
         }
 
         t = Mathf.Clamp01(t / _settings.duration);

@@ -776,7 +776,7 @@ public class GameplayController : MonoBehaviour
             var cell = hit[i];
 
             bool goes = travels && i >= firstTraveler;
-            float at  = goes ? travel.Total : i * popStep;
+            float at  = goes ? travel.TotalFor(sent) : i * popStep;
 
             if (goes)
             {
@@ -830,7 +830,7 @@ public class GameplayController : MonoBehaviour
             var spare = children != null && children.Length > extra ? children[extra] : null;
 
             TravelingBubble.Send((RectTransform)grid.transform, HexGridMath.CellToLocalPos(hit[0]), away, spare, travel, extra);
-            StartCoroutine(PopInOpenWater(away, travel.Total, art));
+            StartCoroutine(PopInOpenWater(away, travel.TotalFor(extra), art));
         }
 
         _bubblesPopped += hit.Count;
@@ -838,7 +838,8 @@ public class GameplayController : MonoBehaviour
 
         // Esperando el viaje más largo: lo que colgaba de una burbuja que todavía no ha estallado
         // no puede empezar a caerse.
-        var collapsed = CollapseFloating(removed, sent > 0 ? travel.Total : 0f);
+        // Esperando a la ÚLTIMA en llegar, que con el escalonado ya no es la misma que la primera.
+        var collapsed = CollapseFloating(removed, sent > 0 ? travel.TotalFor(sent - 1) : 0f);
 
         if ((BoosterRules.ArtFor(Booster.Bomb)?.shake ?? false) || grid.ShakeWorthIt(hit.Count + collapsed.count))
             StartCoroutine(ShakeAlongChain(hit.Count, popStep, collapsed.count, collapsed.step));
