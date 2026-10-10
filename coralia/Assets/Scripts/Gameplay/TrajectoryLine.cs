@@ -58,6 +58,10 @@ public class TrajectoryLine : MonoBehaviour
     // Contra cuál chocó, que no es lo mismo que dónde se posa. Nulo si fue el techo.
     public Vector2Int? StruckCell { get; private set; }
 
+    // Cuál va cargado en este recorrido. Lo guarda ShowPath porque el preview de aterrizaje se
+    // dibuja varias llamadas más abajo, y arrastrarlo por la firma de todas sería peor.
+    Booster _booster;
+
     void Awake()
     {
         for (int i = 0; i < maxDots; i++)
@@ -87,6 +91,8 @@ public class TrajectoryLine : MonoBehaviour
 
         // Lo decide la mira y no quien la llama: el cañón ya le dice qué poder va cargado, y
         // mandarle además con qué dibujarlo sería contarle lo mismo dos veces.
+        _booster = booster;
+
         bool   special = booster != Booster.None && specialDotSprite != null;
         Sprite dot     = special ? specialDotSprite : sprite;
         float  scale   = dotScale * (special ? specialDotScale : 1f);
@@ -220,6 +226,14 @@ public class TrajectoryLine : MonoBehaviour
         StruckCell  = hitCeiling ? null : struckCell;
 
         if (!landingPreview) return;
+
+        // Hay poderes que no prometen nada en el hueco donde se posan, así que señalarlo sería
+        // apuntar al único sitio donde no va a pasar nada.
+        if (!BoosterRules.ShowsLandingSpot(_booster))
+        {
+            landingPreview.gameObject.SetActive(false);
+            return;
+        }
 
         landingPreview.gameObject.SetActive(true);
         landingPreview.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);

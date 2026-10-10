@@ -115,6 +115,13 @@ public static class BoosterRules
             ? new List<Vector2Int> { struck ?? cell }
             : CellsHitBy(booster, cell, struck, board);
 
+    // Si la mira señala el hueco donde la burbuja va a quedar pegada.
+    //
+    // La Madre no lo señala: lo suyo no pasa donde se posa sino en el racimo que GOLPEA y en dos
+    // sitios más del tablero. Marcar el hueco promete el sitio equivocado, y encima es el único
+    // de los tres donde no va a ocurrir nada.
+    public static bool ShowsLandingSpot(Booster booster) => booster != Booster.Mother;
+
     // Cuántas burbujas sueltas sale a buscar la Madre, además de la que toca.
     public const int MOTHER_TARGETS = 2;
 
