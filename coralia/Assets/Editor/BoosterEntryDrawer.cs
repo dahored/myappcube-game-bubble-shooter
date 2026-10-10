@@ -86,7 +86,43 @@ public class BoosterEntryDrawer : PropertyDrawer
 
     // La única lista, compartida por el dibujo y el alto. Separarlas sería tener dos veces las
     // mismas condiciones, y en cuanto una se quedara atrás los campos se pisarían entre sí.
+    //
+    // Al final se barren los campos que NINGUNA sección nombró y se dibujan aparte. Es la red
+    // contra el único fallo grave que este drawer puede tener: añadir un campo al catálogo y que
+    // no aparezca en ningún sitio, que es media tarde buscándolo. Así el olvido se convierte en
+    // "está mal colocado", que se ve solo y se arregla en un minuto.
     static IEnumerable<Row> Rows(SerializedProperty p)
+    {
+        var shown = new HashSet<string>();
+        var rows  = new List<Row>();
+
+        foreach (var row in Sections(p))
+        {
+            if (!row.IsHead) shown.Add(row.prop.name);
+            rows.Add(row);
+        }
+
+        bool orphans = false;
+
+        var walker = p.Copy();
+        var end    = p.GetEndProperty();
+
+        if (walker.NextVisible(enterChildren: true))
+            do
+            {
+                if (SerializedProperty.EqualContents(walker, end)) break;
+                if (shown.Contains(walker.name)) continue;
+
+                if (!orphans) { rows.Add(new Row("Sin sitio todavía (campo nuevo)")); orphans = true; }
+
+                rows.Add(new Row(walker.Copy()));
+            }
+            while (walker.NextVisible(enterChildren: false));
+
+        return rows;
+    }
+
+    static IEnumerable<Row> Sections(SerializedProperty p)
     {
         SerializedProperty Get(string field) => p.FindPropertyRelative(field);
 
@@ -155,6 +191,7 @@ public class BoosterEntryDrawer : PropertyDrawer
             }
 
             yield return new Row(Get("burstSparkle"));
+            yield return new Row(Get("burstTravel"));
             yield return new Row(Get("burstPerBubble"));
             yield return new Row(Get("burstLightning"));
             yield return new Row(Get("vibrate"));
