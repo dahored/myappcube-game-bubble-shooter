@@ -7,14 +7,12 @@ using UnityEngine.UI;
 // burbujas que pueden estar en la otra punta. Sin verlas ir, dos burbujas lejanas desaparecen a
 // la vez que la del impacto y se lee como un fallo del juego, no como un poder.
 //
-// El viaje son TRES tiempos y no uno, porque cada uno cuenta algo distinto:
+// El camino es una recta con UN RIZO cerca de la salida: sale, da la vuelta sobre sí misma y
+// sigue. Es un solo movimiento continuo y no tres tiempos encadenados —girar, parar, correr—,
+// porque el tirón entre fase y fase se ve, y lo que tiene que parecer es algo vivo que arranca.
 //
-//   1. el remolino — sale de la burbuja que estalló y se coloca mirando a su objetivo
-//   2. la pausa    — el instante en que se la ve apuntada, que es lo que hace legible lo que va a pasar
-//   3. la carrera  — recta y con ease, hasta la burbuja que le toca
-//
-// Mezclados en un solo movimiento curvo todo ocurría a la vez y no se entendía ninguno de los
-// tres. Separados, la secuencia se lee aunque dure medio segundo.
+// El rizo se cierra de verdad, cruzando su propio trazo, porque mientras lo da avanza menos de lo
+// que mide la vuelta. Si avanzara más, saldría una ondulación y no un bucle.
 public class TravelingBubble : MonoBehaviour
 {
     [System.Serializable]
@@ -27,34 +25,30 @@ public class TravelingBubble : MonoBehaviour
         [Range(0f, 1f)]
         public float delay = 0.18f;
 
-        [Tooltip("Lo que dura el remolino de salida. La hija gira sobre el sitio y acaba encarada a su objetivo.")]
-        [Range(0.05f, 1.5f)]
-        public float spiralTime = 0.45f;
+        [Tooltip("Lo que dura el viaje entero. Es también lo que esa burbuja espera antes de reventar: lo que se ve y lo que pasa van juntos.")]
+        [Range(0.2f, 3f)]
+        public float duration = 0.85f;
 
-        [Tooltip("Vueltas de ese remolino.")]
-        [Range(0.25f, 5f)]
-        public float spiralTurns = 1.5f;
+        [Tooltip("En qué momento del viaje empieza el rizo, de 0 a 1. Pronto es lo que se lee como 'arrancó dando una vuelta'; pasada la mitad parece que se lo pensó dos veces.")]
+        [Range(0f, 0.7f)]
+        public float loopAt = 0.12f;
 
-        [Tooltip("Lo lejos del centro que acaba el remolino, en burbujas. Es también lo que la hija se adelanta hacia su objetivo antes de salir corriendo.")]
-        [Range(0.1f, 3f)]
-        public float spiralRadius = 0.9f;
+        [Tooltip("Qué parte del viaje ocupa el rizo. Mientras lo da casi no avanza, así que esto es sobre todo cuánto se para a girar.")]
+        [Range(0.1f, 0.7f)]
+        public float loopSpan = 0.34f;
 
-        [Tooltip("El instante quieta entre el remolino y la carrera. Corto: es una respiración antes de salir disparada y lo que deja ver hacia dónde apunta.")]
-        [Range(0f, 0.8f)]
-        public float pause = 0.12f;
-
-        [Tooltip("Lo que dura la carrera hasta el objetivo. Es también lo que esa burbuja espera antes de reventar: lo que se ve y lo que pasa van juntos.")]
-        [Range(0.1f, 2f)]
-        public float duration = 0.4f;
+        [Tooltip("Lo grande que es el rizo, en burbujas.")]
+        [Range(0.2f, 3f)]
+        public float loopSize = 0.95f;
 
         [Tooltip("Qué mide la hija mientras viaja, respecto a una burbuja del tablero.")]
         [Range(0.2f, 1f)]
         public float size = 0.55f;
 
-        // Lo que tarda desde que estalla el impacto hasta que la hija llega. Quien lance el viaje
-        // lo necesita para retrasar el pop de la burbuja de destino, y vive acá para que no haya
-        // dos sitios sumando los mismos tramos.
-        public float Total => delay + spiralTime + pause + duration;
+        // Desde que estalla el impacto hasta que la hija llega. Quien lance el viaje lo necesita
+        // para retrasar el pop de la burbuja de destino, y vive acá para que no haya dos sitios
+        // sumando los mismos tramos.
+        public float Total => delay + duration;
     }
 
     // from/to en coordenadas del TABLERO, no del canvas: así el viaje acompaña al tablero si este
@@ -89,9 +83,9 @@ public class TravelingBubble : MonoBehaviour
     Image         _image;
     Settings      _settings;
 
-    Vector2 _from, _to, _launch;
-    float   _aim;      // ángulo hacia el objetivo
-    float   _spin;     // hacia qué lado da las vueltas
+    Vector2 _from, _to;
+    Vector2 _along, _side;   // el marco del camino: hacia dónde va y qué es "a un lado"
+    float   _spin;           // hacia qué lado se abre el rizo
     float   _elapsed;
 
     void Init(Vector2 from, Vector2 to, Settings s, int index)
@@ -102,16 +96,12 @@ public class TravelingBubble : MonoBehaviour
         _to       = to;
         _settings = s;
 
-        // Las dos hijas giran hacia lados contrarios. Girando igual salen en paralelo y parecen
+        // Las dos hijas rizan hacia lados contrarios. Rizando igual salen en paralelo y parecen
         // una sola cosa partida en dos en vez de dos que van a sitios distintos.
         _spin = index % 2 == 0 ? 1f : -1f;
 
-        Vector2 path = to - from;
-        _aim = Mathf.Atan2(path.y, path.x);
-
-        // Donde acaba el remolino: adelantada hacia su objetivo. De ahí arranca la carrera, así
-        // que la recta final sale de un punto que ya estaba encarado.
-        _launch = from + new Vector2(Mathf.Cos(_aim), Mathf.Sin(_aim)) * s.spiralRadius * HexGridMath.BubbleDiameter;
+        _along = (to - from).normalized;
+        _side  = new Vector2(-_along.y, _along.x) * _spin;
 
         Show(false);
     }
@@ -121,53 +111,66 @@ public class TravelingBubble : MonoBehaviour
         _elapsed += Time.deltaTime;
 
         float t = _elapsed - _settings.delay;
-
-        // 1. Esperando a que reviente la burbuja del impacto.
         if (t < 0f) return;
 
         Show(true);
 
-        // 2. El remolino. El ángulo TERMINA mirando al objetivo y empieza las vueltas que haga
-        // falta por detrás, así que el giro no es un adorno: es la hija colocándose.
-        if (t < _settings.spiralTime)
-        {
-            float p = Ease(t / _settings.spiralTime);
+        t = Mathf.Clamp01(t / _settings.duration);
 
-            float from  = _aim - _settings.spiralTurns * Mathf.PI * 2f * _spin;
-            float angle = Mathf.Lerp(from, _aim, p);
-
-            // El radio se abre desde CERO: naciendo ya desplazada, la hija aparece separada de la
-            // burbuja que la soltó y se pierde de dónde salió.
-            float radius = p * _settings.spiralRadius * HexGridMath.BubbleDiameter;
-
-            Place(_from + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
-            return;
-        }
-
-        t -= _settings.spiralTime;
-
-        // 3. La respiración. Quieta y ya encarada, que es lo que anuncia lo que viene.
-        if (t < _settings.pause) { Place(_launch); return; }
-
-        t -= _settings.pause;
-
-        // 4. La carrera. Recta y con ease: arranca de golpe y frena al llegar.
-        float run = Mathf.Clamp01(t / _settings.duration);
-        Place(Vector2.Lerp(_launch, _to, Ease(run)));
+        Place(At(t));
 
         // Se apaga justo al final, no durante: tiene que llegar entera para que el pop de la
         // burbuja de destino se lea como consecuencia suya.
-        if (run > 0.85f)
+        if (t > 0.9f)
         {
             var c = _image.color;
-            _image.color = new Color(c.r, c.g, c.b, Mathf.InverseLerp(1f, 0.85f, run));
+            _image.color = new Color(c.r, c.g, c.b, Mathf.InverseLerp(1f, 0.9f, t));
         }
 
-        if (run >= 1f) Destroy(gameObject);
+        if (t >= 1f) Destroy(gameObject);
     }
 
-    // Mira hacia donde se mueve de verdad, remolino incluido: calculado sobre la recta final, la
-    // hija apuntaría al objetivo mientras todavía está dando vueltas.
+    // Dónde está la hija en el instante t del viaje.
+    Vector2 At(float t)
+    {
+        Vector2 at = Vector2.Lerp(_from, _to, Advance(t));
+
+        float loop = Mathf.InverseLerp(_settings.loopAt, _settings.loopAt + _settings.loopSpan, t);
+        if (loop <= 0f || loop >= 1f) return at;
+
+        // El rizo es un círculo apoyado EN el camino: su centro está a un radio hacia el lado, y
+        // la vuelta empieza y acaba justo sobre la línea. Así entra y sale del trazo sin salto,
+        // que es lo que lo hace parecer un bucle del propio camino y no un adorno encima.
+        float   radius = _settings.loopSize * HexGridMath.BubbleDiameter;
+        float   turn   = loop * Mathf.PI * 2f;
+        Vector2 center = at + _side * radius;
+
+        return center + _along * Mathf.Sin(turn) * radius - _side * Mathf.Cos(turn) * radius;
+    }
+
+    // Cuánto ha avanzado por la recta. Se FRENA durante el rizo: con avance constante la vuelta
+    // se estira y sale una ondulación en vez de un bucle cerrado. El resto del camino se reparte
+    // lo que el rizo no usa, con ease a la entrada y a la salida.
+    float Advance(float t)
+    {
+        const float DURING_LOOP = 0.12f;   // qué parte del recorrido se gasta mientras riza
+
+        float a = _settings.loopAt;
+        float b = Mathf.Min(1f, a + _settings.loopSpan);
+
+        if (t <= a) return Ease(t / Mathf.Max(0.0001f, a)) * a * (1f - DURING_LOOP);
+
+        float before = a * (1f - DURING_LOOP);
+
+        if (t < b) return before + (t - a) / (b - a) * DURING_LOOP;
+
+        float after = before + DURING_LOOP;
+
+        return Mathf.Lerp(after, 1f, Ease((t - b) / Mathf.Max(0.0001f, 1f - b)));
+    }
+
+    // Mira hacia donde se mueve de verdad, rizo incluido: calculado sobre la recta, la hija
+    // apuntaría al objetivo mientras todavía está dando la vuelta.
     void Place(Vector2 at)
     {
         Vector2 heading = at - _rt.anchoredPosition;
