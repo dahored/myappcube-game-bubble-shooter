@@ -41,6 +41,9 @@ public class TravelingBubble : MonoBehaviour
         [Range(0.2f, 3f)]
         public float loopSize = 0.95f;
 
+        [Tooltip("El sonido de la salida: lo que se oye cuando las hijas se desprenden y arrancan. Suena UNA vez aunque salgan varias — una por hija se oiría como un eco, porque salen todas en el mismo instante.")]
+        public AudioClip travelClip;
+
         [Tooltip("Qué mide la hija mientras viaja, respecto a una burbuja del tablero.")]
         [Range(0.2f, 1f)]
         public float size = 0.55f;
@@ -87,6 +90,8 @@ public class TravelingBubble : MonoBehaviour
     Vector2 _along, _side;   // el marco del camino: hacia dónde va y qué es "a un lado"
     float   _spin;           // hacia qué lado se abre el rizo
     float   _elapsed;
+    bool    _started;        // si ya arrancó, para sonar en el primer fotograma de vuelo y no en todos
+    bool    _leads;          // si es la que lleva el sonido de la salida
 
     void Init(Vector2 from, Vector2 to, Settings s, int index)
     {
@@ -99,6 +104,10 @@ public class TravelingBubble : MonoBehaviour
         // Las dos hijas rizan hacia lados contrarios. Rizando igual salen en paralelo y parecen
         // una sola cosa partida en dos en vez de dos que van a sitios distintos.
         _spin = index % 2 == 0 ? 1f : -1f;
+
+        // Solo la primera suena. Todas salen en el mismo instante, así que un clip por hija se
+        // oye como un eco del mismo sonido en vez de como dos burbujas.
+        _leads = index == 0;
 
         _along = (to - from).normalized;
         _side  = new Vector2(-_along.y, _along.x) * _spin;
@@ -114,6 +123,12 @@ public class TravelingBubble : MonoBehaviour
         if (t < 0f) return;
 
         Show(true);
+
+        if (!_started)
+        {
+            _started = true;
+            if (_leads) AudioManager.Instance?.PlaySfx(_settings.travelClip);
+        }
 
         t = Mathf.Clamp01(t / _settings.duration);
 
