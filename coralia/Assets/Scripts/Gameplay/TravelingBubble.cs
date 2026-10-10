@@ -26,12 +26,12 @@ public class TravelingBubble : MonoBehaviour
         public float duration = 0.7f;
 
         [Tooltip("Vueltas que da sobre sí misma al salir. El remolino se abre al principio y se deshace según coge camino, así que se ve de dónde salió sin que el viaje entero parezca un tirabuzón.")]
-        [Range(0f, 4f)]
-        public float spiralTurns = 1.4f;
+        [Range(0f, 5f)]
+        public float spiralTurns = 2.2f;
 
-        [Tooltip("Lo ancho que es ese remolino al empezar, en burbujas.")]
-        [Range(0f, 2f)]
-        public float spiralRadius = 0.55f;
+        [Tooltip("Lo ancho que llega a ser ese remolino, en burbujas.")]
+        [Range(0f, 3f)]
+        public float spiralRadius = 1.1f;
 
         [Tooltip("Cuánto se arquea el camino, en tanto por uno de la distancia. En cero va derecho y parece un disparo.")]
         [Range(0f, 0.8f)]
@@ -76,6 +76,7 @@ public class TravelingBubble : MonoBehaviour
     Settings      _settings;
     float         _elapsed;
     float         _spin;    // hacia qué lado da las vueltas
+    Vector2       _last;    // dónde estaba el frame anterior, para saber hacia dónde mira
 
     void Init(Vector2 from, Vector2 to, Settings s, int index)
     {
@@ -85,6 +86,7 @@ public class TravelingBubble : MonoBehaviour
         _to       = to;
         _settings = s;
         _spin     = index % 2 == 0 ? 1f : -1f;
+        _last     = from;
 
         // Escondida hasta que le toque salir: durante la espera la escena es el estallido de la
         // burbuja del impacto, y una hija quieta encima lo ensucia.
@@ -110,17 +112,28 @@ public class TravelingBubble : MonoBehaviour
 
         float t = Mathf.Clamp01((_elapsed - _settings.delay) / _settings.duration);
 
-        // Bézier cuadrática: el arco entero con tres puntos y sin curva que configurar.
-        float u = 1f - t;
-        Vector2 at = u * u * _from + 2f * u * t * _control + t * t * _to;
+        // El AVANCE va con ease in-out: sale despacio, coge velocidad y frena al llegar. Es lo
+        // que deja ver el remolino — arrancando a velocidad de crucero, las vueltas quedan
+        // estiradas por el camino y no se leen como vueltas.
+        float move = t * t * (3f - 2f * t);
+        float u    = 1f - move;
 
-        // Y encima, un remolino que se deshace. Va SUMADO al camino en vez de ser una fase
-        // aparte: en dos fases la burbuja gira quieta y luego arranca, y el tirón entre una y
-        // otra se ve. Decayendo al cuadrado sale girando y se endereza sola.
-        float swirl = (1f - t) * (1f - t) * _settings.spiralRadius * HexGridMath.BubbleDiameter;
+        // Bézier cuadrática: el arco entero con tres puntos y sin curva que configurar.
+        Vector2 at = u * u * _from + 2f * u * move * _control + move * move * _to;
+
+        // Y encima, un remolino. Va SUMADO al camino en vez de ser una fase aparte: en dos fases
+        // la burbuja gira quieta y luego arranca, y el tirón entre una y otra se ve.
+        //
+        // Se abre desde CERO, no desde su ancho máximo: naciendo ya desplazada, la hija aparece
+        // separada de la burbuja que la soltó y se pierde de dónde salió. La campana sube rápido
+        // —pico alrededor de un quinto del viaje— y se deshace despacio.
+        float bell  = Mathf.Sin(Mathf.Pow(t, 0.45f) * Mathf.PI);
+        float swirl = bell * _settings.spiralRadius * HexGridMath.BubbleDiameter;
 
         if (swirl > 0.01f)
         {
+            // El ángulo va con t LINEAL, no con el avance: girando también con ease, el remolino
+            // se abriría y cerraría al ritmo del viaje y dejaría de leerse como un giro.
             float angle = t * _settings.spiralTurns * 360f * Mathf.Deg2Rad * _spin;
             at += new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * swirl;
         }
@@ -130,10 +143,13 @@ public class TravelingBubble : MonoBehaviour
         var color = _image.color;
         _image.color = new Color(color.r, color.g, color.b, 1f);
 
-        // Mira hacia donde va. Es lo que la convierte en algo que NADA en vez de en un sprite
-        // que se desliza, y con el arco la inclinación cambia sola durante el viaje.
-        Vector2 heading = 2f * u * (_control - _from) + 2f * t * (_to - _control);
-        if (heading.sqrMagnitude > 0.001f)
+        // Mira hacia donde va de verdad, remolino incluido: calculada sobre la curva a secas,
+        // la hija apuntaría recta mientras da vueltas, que es lo que delata que el giro está
+        // pegado encima en vez de ser su camino.
+        Vector2 heading = at - _last;
+        _last = at;
+
+        if (heading.sqrMagnitude > 0.01f)
             _rt.localEulerAngles = new Vector3(0f, 0f, Mathf.Atan2(heading.y, heading.x) * Mathf.Rad2Deg - 90f);
 
         // Se apaga justo al final, no durante: tiene que llegar entera para que el pop de la
