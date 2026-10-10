@@ -339,7 +339,16 @@ public class TutorialMotherDemo : MonoBehaviour, IBoardView
         }
 
         foreach (var mark in _marks) { mark.enabled = false; mark.color = markColor; }
-        foreach (var kid in _kids)   kid.enabled = false;
+
+        // Las hijas vuelven ENTERAS, no solo apagadas: terminan el viaje desvanecidas, y
+        // encenderlas sin devolverles el color las dejaba medio transparentes en la segunda
+        // vuelta del bucle y en todas las siguientes (reportado por Diego).
+        foreach (var kid in _kids)
+        {
+            kid.enabled              = false;
+            kid.color                = Color.white;
+            kid.transform.localScale = Vector3.one;
+        }
 
         _mother.enabled              = true;
         _mother.transform.localScale = Vector3.one;
@@ -469,6 +478,7 @@ public class TutorialMotherDemo : MonoBehaviour, IBoardView
             int color = _colors.TryGetValue(targets[i], out int c) ? c : 0;
 
             _kids[i].sprite  = bubbleSprites[color % bubbleSprites.Length];
+            _kids[i].color   = Color.white;
             _kids[i].enabled = true;
             Place(_kids[i], from);
         }
