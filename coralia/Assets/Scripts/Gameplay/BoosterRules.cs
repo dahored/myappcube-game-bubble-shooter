@@ -156,9 +156,40 @@ public static class BoosterRules
             return a.cell.y != b.cell.y ? a.cell.y.CompareTo(b.cell.y) : a.cell.x.CompareTo(b.cell.x);
         });
 
-        for (int i = 0; i < ranked.Count && result.Count <= MOTHER_TARGETS; i++) result.Add(ranked[i].cell);
+        // Dos objetivos pegados son el MISMO problema, no dos: la Madre acabaría haciendo de bomba
+        // pequeña en un rincón, que es justo lo que no tiene que ser. Primera pasada exigiendo
+        // que cada uno esté lejos de todo lo ya elegido, el impacto incluido.
+        foreach (var (cell, _, _) in ranked)
+        {
+            if (result.Count > MOTHER_TARGETS) break;
+            if (FarFromAll(cell, result)) result.Add(cell);
+        }
+
+        // Y si el tablero no da para tanto —quedan cuatro burbujas de ese color y están todas
+        // juntas— se completa con las mejores que queden. Media ayuda es mejor que ninguna, y
+        // dejar hijas sin salir se vería como que el poder falló.
+        foreach (var (cell, _, _) in ranked)
+        {
+            if (result.Count > MOTHER_TARGETS) break;
+            if (!result.Contains(cell)) result.Add(cell);
+        }
 
         return result;
+    }
+
+    // A cuántos diámetros de burbuja tienen que estar los objetivos entre sí. Dos y pico es lo
+    // justo para que no compartan vecinos: por debajo, reventar uno ya deja al otro suelto.
+    const float MOTHER_SPREAD = 2.5f;
+
+    static bool FarFromAll(Vector2Int cell, List<Vector2Int> chosen)
+    {
+        Vector2 at    = HexGridMath.CellToLocalPos(cell);
+        float   apart = HexGridMath.BubbleDiameter * MOTHER_SPREAD;
+
+        foreach (var other in chosen)
+            if (Vector2.Distance(at, HexGridMath.CellToLocalPos(other)) < apart) return false;
+
+        return true;
     }
 
     // Cuántos vecinos de su mismo color tiene. Es la medida de "qué tan sola está": cero vecinos

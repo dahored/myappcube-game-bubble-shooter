@@ -757,17 +757,41 @@ public class GameplayController : MonoBehaviour
         // exactamente lo que se vio en pantalla.
         int popValue = ScoreRules.PopValue(_comboStreak);
 
+        // Las que el poder alcanza LEJOS no estallan a la vez que el impacto: sale una hija desde
+        // ahí y revienta al llegar. El retraso es el viaje, así que lo que se ve y lo que pasa
+        // van juntos — sin esto, dos burbujas del otro extremo del tablero desaparecen solas y se
+        // lee como un fallo del juego, no como un poder.
+        var travel  = art?.burstTravel;
+        bool travels = travel != null && travel.enabled;
+        var children = art?.bubbleOrbit?.sprites;
+
         for (int i = 0; i < hit.Count; i++)
         {
-            var cell = hit[i];
+            var cell  = hit[i];
+            float at  = travels && i > 0 ? travel.duration : i * popStep;
+
+            if (travels && i > 0)
+            {
+                // La hija que sale es la MISMA que estaba girando dentro, en orden. Que se vean
+                // tres dentro y salgan otras sería romper lo único que el jugador ya sabía del
+                // poder antes de dispararlo.
+                var sprite = children != null && children.Length > i ? children[i] : null;
+
+                TravelingBubble.Send((RectTransform)grid.transform,
+                                     HexGridMath.CellToLocalPos(hit[0]),
+                                     HexGridMath.CellToLocalPos(cell),
+                                     sprite, travel, i);
+            }
+
             if (grid.TryGetBubble(cell, out var view))
-                view.PlayPopAnimation(i * popStep, popClip);
+                view.PlayPopAnimation(at, popClip);
 
             // En el mismo instante que su pop, no antes: la onda y el sonido de esa burbuja son
             // la misma cosa vista de dos maneras, y separarlos se oye como un eco.
             if (perBubble)
-                BombBlast.Ripple((RectTransform)grid.transform, HexGridMath.CellToLocalPos(cell), blast, i * popStep);
-            grid.SpawnScorePopup(cell, popValue, i * popStep, ScorePopup.POP_LIFETIME);
+                BombBlast.Ripple((RectTransform)grid.transform, HexGridMath.CellToLocalPos(cell), blast, at);
+
+            grid.SpawnScorePopup(cell, popValue, at, ScorePopup.POP_LIFETIME);
             grid.RemoveBubble(cell);
             removed.Add(cell);
         }
@@ -775,7 +799,9 @@ public class GameplayController : MonoBehaviour
         _bubblesPopped += hit.Count;
         _popScore      += hit.Count * popValue;
 
-        var collapsed = CollapseFloating(removed);
+        // Esperando el viaje más largo: lo que colgaba de una burbuja que todavía no ha estallado
+        // no puede empezar a caerse.
+        var collapsed = CollapseFloating(removed, travels && hit.Count > 1 ? travel.duration : 0f);
 
         if ((BoosterRules.ArtFor(Booster.Bomb)?.shake ?? false) || grid.ShakeWorthIt(hit.Count + collapsed.count))
             StartCoroutine(ShakeAlongChain(hit.Count, popStep, collapsed.count, collapsed.step));

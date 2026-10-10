@@ -125,6 +125,9 @@ public class BoosterCatalog : ScriptableObject
         [Tooltip("Marcado: no hay una explosión en el centro, sino que cada burbuja alcanzada estalla con su propia onda, una detrás de otra. Para un poder que barre en línea, donde un solo estallido central deja los extremos sin nada que mirar.\n\nLas ondas se configuran igual, en 'Burst Blast' — conviene bajarles el tamaño, porque ahora se ven una por burbuja.")]
         public bool burstPerBubble;
 
+        [Tooltip("Las hijas que salen del impacto a buscar sus objetivos. Usa los mismos sprites que 'Bubble Orbit': son las que estaban girando dentro y ahora salen.")]
+        public TravelingBubble.Settings burstTravel = new();
+
         [Tooltip("La descarga eléctrica que recorre la fila desde el impacto hacia los dos lados. Solo tiene sentido en un poder que barra en línea: marca 'Enabled' aquí dentro para encenderla.")]
         public Lightning.Settings burstLightning = new();
 
