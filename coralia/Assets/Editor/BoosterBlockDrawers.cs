@@ -58,22 +58,8 @@ public class ToggledBlockDrawer : PropertyDrawer
     }
 
     // Todos los campos del bloque menos el propio interruptor, que ya se dibujó en la cabecera.
-    static System.Collections.Generic.IEnumerable<SerializedProperty> Children(SerializedProperty property)
-    {
-        var walker = property.Copy();
-        var end    = property.GetEndProperty();
-
-        if (!walker.NextVisible(enterChildren: true)) yield break;
-
-        do
-        {
-            if (SerializedProperty.EqualContents(walker, end)) yield break;
-            if (walker.name == FLAG) continue;
-
-            yield return walker.Copy();
-        }
-        while (walker.NextVisible(enterChildren: false));
-    }
+    static System.Collections.Generic.IEnumerable<SerializedProperty> Children(SerializedProperty property) =>
+        BlockFields.Of(property, FLAG);
 }
 
 // La órbita no tiene interruptor: lo que la enciende es tener sprites que girar. Sin ninguno, el
@@ -81,15 +67,14 @@ public class ToggledBlockDrawer : PropertyDrawer
 [CustomPropertyDrawer(typeof(SpecialBubbleSkin.Orbit))]
 public class OrbitDrawer : PropertyDrawer
 {
-    const float GAP = 2f;
-
-    static readonly string[] REST = { "radius", "size", "speed" };
+    const float GAP  = 2f;
+    const string HEAD = "sprites";
 
     public override void OnGUI(Rect area, SerializedProperty property, GUIContent label)
     {
         EditorGUI.BeginProperty(area, label, property);
 
-        var sprites = property.FindPropertyRelative("sprites");
+        var sprites = property.FindPropertyRelative(HEAD);
 
         float h = EditorGUI.GetPropertyHeight(sprites, true);
         EditorGUI.PropertyField(new Rect(area.x, area.y, area.width, h), sprites, label, true);
@@ -100,10 +85,9 @@ public class OrbitDrawer : PropertyDrawer
         {
             EditorGUI.indentLevel++;
 
-            foreach (string field in REST)
+            foreach (var child in BlockFields.Of(property, HEAD))
             {
-                var child = property.FindPropertyRelative(field);
-                float ch  = EditorGUI.GetPropertyHeight(child, true);
+                float ch = EditorGUI.GetPropertyHeight(child, true);
 
                 EditorGUI.PropertyField(new Rect(area.x, y, area.width, ch), child, true);
                 y += ch + GAP;
@@ -117,14 +101,39 @@ public class OrbitDrawer : PropertyDrawer
 
     public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
     {
-        var sprites = property.FindPropertyRelative("sprites");
+        var sprites = property.FindPropertyRelative(HEAD);
         float h = EditorGUI.GetPropertyHeight(sprites, true) + GAP;
 
         if (sprites.arraySize == 0) return h;
 
-        foreach (string field in REST)
-            h += EditorGUI.GetPropertyHeight(property.FindPropertyRelative(field), true) + GAP;
+        foreach (var child in BlockFields.Of(property, HEAD)) h += EditorGUI.GetPropertyHeight(child, true) + GAP;
 
         return h;
+    }
+}
+
+// Los campos de un bloque, recorridos del propio objeto serializado y nunca de una lista de
+// nombres escrita a mano.
+//
+// Las listas a mano ya se quedaron atrás dos veces —'Burst Travel' y 'Radius Max'— y las dos
+// con el mismo síntoma: el campo existe, está guardado, y no aparece por ningún sitio. No hay
+// aviso posible para eso, así que la única salida es no tener la lista.
+static class BlockFields
+{
+    public static System.Collections.Generic.IEnumerable<SerializedProperty> Of(SerializedProperty block, string skip)
+    {
+        var walker = block.Copy();
+        var end    = block.GetEndProperty();
+
+        if (!walker.NextVisible(enterChildren: true)) yield break;
+
+        do
+        {
+            if (SerializedProperty.EqualContents(walker, end)) yield break;
+            if (walker.name == skip) continue;
+
+            yield return walker.Copy();
+        }
+        while (walker.NextVisible(enterChildren: false));
     }
 }
