@@ -811,6 +811,23 @@ public class GameplayController : MonoBehaviour
             removed.Add(cell);
         }
 
+        // Las hijas que no encontraron a quién ir salen IGUAL y revientan en el agua. No sacarlas
+        // deja al poder a medias sin decir por qué —el jugador ve una sola cuando esperaba dos—
+        // y parece que falló en vez de que el tablero ya no daba para más.
+        for (int extra = sent; travels && extra < BoosterRules.TravelersOf(booster); extra++)
+        {
+            // Hacia abajo y a un lado, que es donde está el océano vacío: reventar en un hueco
+            // entre burbujas se leería como que apuntó mal, no como que no había a dónde ir.
+            var away = HexGridMath.CellToLocalPos(hit[0])
+                     + new Vector2(extra % 2 == 0 ? 0.6f : -0.6f, -0.8f).normalized
+                     * HexGridMath.BubbleDiameter * 3.5f;
+
+            var spare = children != null && children.Length > extra ? children[extra] : null;
+
+            TravelingBubble.Send((RectTransform)grid.transform, HexGridMath.CellToLocalPos(hit[0]), away, spare, travel, extra);
+            StartCoroutine(PopInOpenWater(away, travel.Total, art));
+        }
+
         _bubblesPopped += hit.Count;
         _popScore      += hit.Count * popValue;
 
@@ -822,6 +839,17 @@ public class GameplayController : MonoBehaviour
             StartCoroutine(ShakeAlongChain(hit.Count, popStep, collapsed.count, collapsed.step));
 
         return removed;
+    }
+
+    // La hija que no tenía objetivo se deshace donde llegó. Sin burbuja a la que pegarse, lo
+    // único que queda es el chispazo y el sonido — y con eso basta: lo que había que evitar era
+    // que desapareciera sin más a mitad del agua.
+    IEnumerator PopInOpenWater(Vector2 at, float delay, BoosterCatalog.Entry art)
+    {
+        yield return new WaitForSeconds(delay);
+
+        Sparkle.BurstAt((RectTransform)grid.transform, at, art?.burstSparkle ?? bombSparkle);
+        AudioManager.Instance?.PlaySfx(popClip);
     }
 
     // Todo lo que quedó colgando sin camino al techo se desprende, de abajo hacia arriba y
