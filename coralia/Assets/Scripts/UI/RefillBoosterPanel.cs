@@ -47,8 +47,8 @@ public class RefillBoosterPanel : UIPanel
     {
         _booster = booster;
 
-        if (nameText)        nameText.text        = LocaleManager.Get(BoosterRules.NameKeyFor(booster));
-        if (descriptionText) descriptionText.text = LocaleManager.Get(BoosterRules.DescriptionKeyFor(booster));
+        if (nameText)        nameText.text        = BoosterRules.NameFor(booster);
+        if (descriptionText) descriptionText.text = BoosterRules.DescriptionFor(booster);
 
         var art = BoosterRules.IconFor(booster);
         if (boosterIcon != null && art != null) boosterIcon.sprite = art;

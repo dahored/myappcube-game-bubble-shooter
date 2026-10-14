@@ -78,6 +78,12 @@ public class TutorialPanel : UIPanel
         OnClosed += Dismissed;
     }
 
+    // Los números los pone el poder que explica esta entrada, no el CSV: el id de un tutorial ES
+    // el nombre del booster, así que no hay tabla que mantener. Una frase con "{0}" dice siempre
+    // lo que el catálogo tenga puesto, y cambiar las filas de la Marea no obliga a reescribirla
+    // en seis idiomas.
+    string Fill(string key) => BoosterRules.TextFor(key, BoosterRules.BoosterForTutorial(_showing.id));
+
     void OnDestroy() => OnClosed -= Dismissed;
 
     // Muestra el tutorial de esa mecánica, si toca.
@@ -137,8 +143,8 @@ public class TutorialPanel : UIPanel
 
         (_showing, _onDismissed) = _pending.Dequeue();
 
-        if (titleText) titleText.text = LocaleManager.Get(_showing.titleKey);
-        if (bodyText)  bodyText.text  = LocaleManager.Get(_showing.bodyKey);
+        if (titleText) titleText.text = Fill(_showing.titleKey);
+        if (bodyText)  bodyText.text  = Fill(_showing.bodyKey);
         if (okText)    okText.text    = LocaleManager.Get("ui.tutorial.ok");
 
         ShowVisual(_showing);
