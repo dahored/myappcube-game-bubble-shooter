@@ -44,6 +44,10 @@ public class GridController : MonoBehaviour, IBoardView
     [SerializeField] float maxScrollOffset    = 6f * HexGridMath.BubbleDiameter; // tope de seguridad, no se retira más que esto
     [SerializeField] float scrollSpeed        = 900f; // px/seg de la animación de scroll
 
+    [Header("Zona visible")]
+    [Tooltip("El panel de arriba del HUD, que flota ENCIMA del tablero y tapa sus primeras filas. Lo que queda por debajo de su borde inferior es lo que el jugador ve de verdad. Vacío: se busca solo, y si no hay ninguno se mide contra el borde de la pantalla.")]
+    [SerializeField] RectTransform visibleTopEdge;
+
     [Header("Shake — combos grandes (referencia: Candy Crush)")]
     [SerializeField] int   shakeThreshold = 8;   // match.Count + drop.Count a partir del cual tiembla
     [SerializeField] float shakeDuration  = 0.25f; // cuánto tarda en apagarse desde el tope
@@ -86,16 +90,53 @@ public class GridController : MonoBehaviour, IBoardView
         set { _introOffsetY = value; ApplyOffsets(); }
     }
 
-    // Cuánto del tablero queda fuera de cuadro por ARRIBA en la posición de juego.
+    // Cuánto del tablero se sale de cuadro por ARRIBA por efecto del RETIRO.
     //
     // Sale del retiro, que es lo único que sube el tablero, menos el aire que ya había entre el
     // borde de la pantalla y la primera fila: el contenedor está anclado arriba con el pivote en
     // su borde superior, así que su anchoredPosition.y negativa ES esa distancia. Mientras el
     // retiro no se come ese colchón no hay nada tapado, por más que el grid se haya movido.
     //
+    // No cuenta lo que tape el HUD, y eso es a propósito: quien pregunta esto es la vista previa
+    // de entrada, y lo que ella decide es cuánto DESTAPARÍA bajar el tablero. El panel del HUD no
+    // baja con él, así que de lo suyo no devuelve ni un píxel — meterlo en esta cuenta haría que
+    // la vista previa saliera en niveles cortos a enseñar algo que no se puede enseñar.
+    //
+    // Si una celda SE VE es otra pregunta, y la contesta IsVisible.
+    //
     // No mide la pantalla ni depende del dispositivo: son dos valores que el propio contenedor ya
     // tiene. Un nivel más largo o un teléfono más alto lo cambian solos.
     public float HiddenAbove => Mathf.Max(0f, _scrollOffsetY - Mathf.Max(0f, -_baseAnchoredPos.y));
+
+    // Desde qué altura (en coordenadas del contenedor, donde 0 es su borde superior y hacia abajo
+    // es negativo) empieza lo que el jugador ve de verdad.
+    //
+    // Son dos cosas, y durante un tiempo solo se contó la primera: el tablero se retira hacia
+    // arriba y se sale de cuadro, y además el panel del HUD está DIBUJADO ENCIMA de él. El panel
+    // no es hijo del tablero ni de su contenedor —cuelga del Canvas, por fuera del SafeArea— así
+    // que ninguna cuenta hecha con la posición del contenedor lo ve venir, y las filas que tapa
+    // pasaban por visibles estando debajo de la puntuación.
+    //
+    // Medido contra el borde de verdad las dos salen juntas y gratis: al retirarse el tablero su
+    // espacio local sube, el borde del panel queda relativamente más abajo, y el corte se mueve
+    // solo. No hay que sumar el retiro ni enterarse de que existe.
+    float VisibleTopLocalY
+    {
+        get
+        {
+            // Sin panel al que medirse, el borde es la pantalla: el retiro menos el aire que ya
+            // había entre el techo y la primera fila. El contenedor está anclado arriba con el
+            // pivote en su borde superior, así que su anchoredPosition.y negativa ES ese aire.
+            if (!visibleTopEdge || !_rt) return Mathf.Max(0f, -_baseAnchoredPos.y) - _scrollOffsetY;
+
+            visibleTopEdge.GetWorldCorners(_corners);
+
+            // La esquina 0 es la de abajo a la izquierda — su altura es el borde inferior del
+            // panel. Se descuenta el temblor para que el corte no vibre con él: el contenedor se
+            // sacude, pero lo que se ve y lo que no es la misma frontera todo el rato.
+            return _rt.InverseTransformPoint(_corners[0]).y + _shakeOffset.y;
+        }
+    }
 
     // Un único lugar que escribe la posición del contenedor. Los tres desplazamientos se suman en
     // vez de pisarse: el retiro, el temblor y la vista previa pueden coincidir en el mismo frame.
@@ -118,10 +159,25 @@ public class GridController : MonoBehaviour, IBoardView
     public event System.Action<Vector2> OnBubbleDragMove;
     public event System.Action<Vector2> OnBubbleDragEnd;
 
+    // Reusado en cada consulta de VisibleTopLocalY — GetWorldCorners pide el array hecho, y se
+    // pregunta una vez por celda candidata cada vez que un poder elige objetivos.
+    readonly Vector3[] _corners = new Vector3[4];
+
     void Awake()
     {
         _rt = (RectTransform)transform;
         _baseAnchoredPos = _rt.anchoredPosition;
+
+        // Igual que el resto de referencias de escena del proyecto: si nadie la asignó, se busca
+        // sola. Sin panel el juego funciona igual —el corte pasa a ser el borde de la pantalla—
+        // así que esto avisa en vez de romper, pero avisa: significa que los poderes van a creer
+        // visibles las filas que estén debajo del HUD.
+        if (visibleTopEdge == null)
+        {
+            var top = FindAnyObjectByType<TopPanelController>();
+            if (top) visibleTopEdge = (RectTransform)top.transform;
+            else Debug.LogWarning("[GridController] No hay 'Visible Top Edge' ni TopPanel en la escena — lo que tape el HUD va a contar como visible para los poderes.", this);
+        }
     }
 
     void Update()
@@ -508,6 +564,22 @@ public class GridController : MonoBehaviour, IBoardView
 
         color = default;
         return false;
+    }
+
+    // Una celda cuenta como visible cuando entra ENTERA bajo el corte. Media burbuja asomando no
+    // es un sitio al que mandar nada: el jugador no ve llegar a la hija de la Madre, ve que se
+    // escapa por arriba.
+    public bool IsVisible(Vector2Int cell) =>
+        HexGridMath.CellToLocalPos(cell).y + HexGridMath.BubbleRadius <= VisibleTopLocalY;
+
+    // Convierte una burbuja del tablero en comodín, para la siembra de la Perla. El sprite sale
+    // de acá y no de quien llama: los sprites por color viven en este Inspector, y pedírselos a
+    // GameplayController sería repartir el mismo dato en dos sitios.
+    public void TurnIntoRainbow(Vector2Int cell, float delay, float fade)
+    {
+        if (!_cells.TryGetValue(cell, out var view) || view == null) return;
+
+        view.TurnIntoRainbow(SpriteFor(BubbleColor.Rainbow), delay, fade);
     }
 
     public void RemoveBubble(Vector2Int cell) => _cells.Remove(cell);

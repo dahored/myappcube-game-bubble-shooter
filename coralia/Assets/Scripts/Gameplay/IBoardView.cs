@@ -17,4 +17,12 @@ public interface IBoardView
     // False si esa celda está vacía. Con una sola pregunta se resuelven las dos cosas que hacen
     // falta —si hay algo y de qué color es— en vez de obligar a preguntar dos veces por celda.
     bool TryGetColor(Vector2Int cell, out BubbleColor color);
+
+    // Si esa celda se ve en pantalla ahora mismo.
+    //
+    // Viene con respuesta puesta —todo se ve— porque es verdad en cualquier tablero que no se
+    // mueva, que son todos menos el de la partida: una demostración de tutorial dibuja su racimo
+    // a medida y nunca lo retira. Así el que quiera enseñar un poder sigue teniendo dos miembros
+    // que implementar, y solo el grid de verdad contesta otra cosa.
+    bool IsVisible(Vector2Int cell) => true;
 }
