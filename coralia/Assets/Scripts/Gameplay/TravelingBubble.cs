@@ -33,13 +33,13 @@ public class TravelingBubble : MonoBehaviour
         [Range(0.2f, 3f)]
         public float duration = 0.85f;
 
-        [Tooltip("En qué momento del viaje empieza el rizo, de 0 a 1. Pronto es lo que se lee como 'arrancó dando una vuelta'; pasada la mitad parece que se lo pensó dos veces.")]
+        [Tooltip("Qué parte del CAMINO recorre antes de ponerse a rizar, de 0 a 1 — en 0.45 riza pasada casi la mitad. Es distancia y no tiempo: hasta ahí va disparada y frenando, así que llega antes de lo que el número sugiere.\n\nPronto se lee como 'arrancó dando una vuelta'; pasada la mitad, como que se lo pensó dos veces.")]
         [Range(0f, 0.7f)]
-        public float loopAt = 0.12f;
+        public float loopAt = 0.45f;
 
-        [Tooltip("Qué parte del viaje ocupa el rizo. Mientras lo da casi no avanza, así que esto es sobre todo cuánto se para a girar.")]
+        [Tooltip("Qué parte del TIEMPO del viaje se va en el rizo. Mientras lo da casi no avanza, así que subirlo es que la vuelta se dé más despacio, no que el viaje dure más.")]
         [Range(0.1f, 0.7f)]
-        public float loopSpan = 0.34f;
+        public float loopSpan = 0.4f;
 
         [Tooltip("Lo grande que es el rizo, en burbujas.")]
         [Range(0.2f, 3f)]
@@ -100,6 +100,13 @@ public class TravelingBubble : MonoBehaviour
     bool    _started;        // si ya arrancó, para sonar en el primer fotograma de vuelo y no en todos
     float   _wait;           // lo que le toca esperar a ESTA, con su turno incluido
 
+    // Qué parte del CAMINO se gasta mientras riza. Es poco a propósito: con avance normal la
+    // vuelta se estira y sale una ondulación en vez de un bucle cerrado.
+    const float DURING_LOOP = 0.12f;
+
+    float _loopFrom, _loopTo;    // el rizo, en camino recorrido
+    float _timeBefore, _timeLoop; // y en tiempo: cuándo empieza y cuánto dura
+
     void Init(Vector2 from, Vector2 to, Settings s, int index)
     {
         _rt       = (RectTransform)transform;
@@ -117,6 +124,19 @@ public class TravelingBubble : MonoBehaviour
 
         _along = (to - from).normalized;
         _side  = new Vector2(-_along.y, _along.x) * _spin;
+
+        // El reparto del viaje, resuelto una sola vez: no depende del instante y lo necesitan
+        // tanto Advance (cuánto llevo recorrido) como At (si estoy rizando ahora).
+        _loopFrom = Mathf.Clamp(s.loopAt, 0f, 1f - DURING_LOOP);   // camino hecho antes del rizo
+        _loopTo   = _loopFrom + DURING_LOOP;                        // y con el rizo ya dado
+
+        _timeLoop  = Mathf.Clamp01(s.loopSpan);
+
+        // Lo que el rizo no usa se reparte entre los dos tramos rectos EN PROPORCIÓN A SU LARGO,
+        // no a partes iguales: si no, el tramo corto se recorrería despacio y el largo volando,
+        // y el viaje cambiaría de ritmo sin que nada lo justifique.
+        float straight = _loopFrom + (1f - _loopTo);
+        _timeBefore = straight > 0f ? (1f - _timeLoop) * _loopFrom / straight : (1f - _timeLoop) * 0.5f;
 
         Show(false);
     }
@@ -156,7 +176,7 @@ public class TravelingBubble : MonoBehaviour
     {
         Vector2 at = Vector2.Lerp(_from, _to, Advance(t));
 
-        float loop = Mathf.InverseLerp(_settings.loopAt, _settings.loopAt + _settings.loopSpan, t);
+        float loop = Mathf.InverseLerp(_timeBefore, _timeBefore + _timeLoop, t);
         if (loop <= 0f || loop >= 1f) return at;
 
         // El rizo es un círculo apoyado EN el camino: su centro está a un radio hacia el lado, y
@@ -169,25 +189,34 @@ public class TravelingBubble : MonoBehaviour
         return center + _along * Mathf.Sin(turn) * radius - _side * Mathf.Cos(turn) * radius;
     }
 
-    // Cuánto ha avanzado por la recta. Se FRENA durante el rizo: con avance constante la vuelta
-    // se estira y sale una ondulación en vez de un bucle cerrado. El resto del camino se reparte
-    // lo que el rizo no usa, con ease a la entrada y a la salida.
+    // Cuánto lleva recorrido del camino en el instante t, y con qué ritmo (pedido de Diego):
+    //
+    //   sale DISPARADA y va frenando hasta el rizo  → arranca con ganas y se pone a tiro
+    //   da la vuelta despacio y pareja              → el rizo es lo que hay que mirar
+    //   sale despacio y ACELERA hasta el final      → termina como un impacto, no como un roce
+    //
+    // Es lo contrario del smoothstep que había en cada tramo: aquel arrancaba lento y terminaba
+    // lento tres veces seguidas, y el viaje entero se leía como un empujón flojo repetido.
+    //
+    // La velocidad casa en las dos costuras, que es lo que lo hace un solo gesto: el primer tramo
+    // llega al rizo ya frenado y el último sale de él igual de lento.
     float Advance(float t)
     {
-        const float DURING_LOOP = 0.12f;   // qué parte del recorrido se gasta mientras riza
+        if (t <= _timeBefore)
+        {
+            float x = t / Mathf.Max(0.0001f, _timeBefore);
+            return EaseOut(x) * _loopFrom;
+        }
 
-        float a = _settings.loopAt;
-        float b = Mathf.Min(1f, a + _settings.loopSpan);
+        if (t < _timeBefore + _timeLoop)
+        {
+            float x = (t - _timeBefore) / Mathf.Max(0.0001f, _timeLoop);
+            return Mathf.Lerp(_loopFrom, _loopTo, x);   // pareja: el giro ya pone el movimiento
+        }
 
-        if (t <= a) return Ease(t / Mathf.Max(0.0001f, a)) * a * (1f - DURING_LOOP);
+        float after = (t - _timeBefore - _timeLoop) / Mathf.Max(0.0001f, 1f - _timeBefore - _timeLoop);
 
-        float before = a * (1f - DURING_LOOP);
-
-        if (t < b) return before + (t - a) / (b - a) * DURING_LOOP;
-
-        float after = before + DURING_LOOP;
-
-        return Mathf.Lerp(after, 1f, Ease((t - b) / Mathf.Max(0.0001f, 1f - b)));
+        return Mathf.Lerp(_loopTo, 1f, EaseIn(after));
     }
 
     // Mira hacia donde se mueve de verdad, rizo incluido: calculado sobre la recta, la hija
@@ -208,9 +237,17 @@ public class TravelingBubble : MonoBehaviour
         _image.color = new Color(c.r, c.g, c.b, on ? 1f : 0f);
     }
 
-    static float Ease(float t)
+    // Rápido al principio, frenando al final.
+    static float EaseOut(float t)
     {
         t = Mathf.Clamp01(t);
-        return t * t * (3f - 2f * t);
+        return 1f - (1f - t) * (1f - t);
+    }
+
+    // Y al revés: lento al principio, disparado al final.
+    static float EaseIn(float t)
+    {
+        t = Mathf.Clamp01(t);
+        return t * t;
     }
 }
