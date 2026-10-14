@@ -22,6 +22,11 @@ public class AudioManager : MonoBehaviour
 
     [Tooltip("Canal de efectos EN BUCLE (la mecha de un booster cargado, por ejemplo). Opcional: si se deja vacío se crea solo al arrancar. Sigue el volumen y el mute de los efectos de juego, porque para el jugador es un efecto más — que se repita es cosa del clip, no un canal distinto que quiera regular aparte.")]
     [SerializeField] AudioSource sfxLoopSource;
+
+    // Canal propio para los sonidos que suben de tono, como el contador de disparos. Propio y no
+    // compartido porque el tono se cambia en el canal entero: metido en sfxSource, cada paso de
+    // la cuenta desafinaría el pop o el disparo que estuviera sonando a la vez.
+    AudioSource countSource;
     [SerializeField] AudioClip   lobbyMusic;     // Música del menú principal (Home + Level Map)
     [SerializeField] AudioClip[] gameplayMusic;  // Música in-game — distinta y más calma que la del lobby, varias pistas elegidas al azar por nivel (pedido de Diego)
     [SerializeField, Range(0f, 1f)] float gameplayMusicVolumeScale = 0.5f; // multiplicador propio sobre MusicVolume — los clips de gameplay vienen masterizados más fuerte que el de lobby y sonaban "muy alto" (reportado por Diego), sin esto solo se podía bajar con el slider general (que también afecta el lobby)
@@ -54,6 +59,13 @@ public class AudioManager : MonoBehaviour
         }
         sfxLoopSource.loop = true;
 
+        // Mismo criterio para el canal de las cuentas: se crea solo si falta.
+        if (countSource == null)
+        {
+            countSource = gameObject.AddComponent<AudioSource>();
+            countSource.playOnAwake = false;
+        }
+
         ApplyAllVolumes(); // Aplica volúmenes guardados al arrancar
     }
 
@@ -64,6 +76,9 @@ public class AudioManager : MonoBehaviour
         if (sfxSource)   { sfxSource.volume   = SaveManager.SfxVolume;   sfxSource.mute   = !SaveManager.SoundEnabled; }
         if (uiSource)    { uiSource.volume     = SaveManager.UiVolume;    uiSource.mute    = !SaveManager.SoundEnabled; }
         if (popSource)   { popSource.volume    = SaveManager.PopVolume;   popSource.mute   = !SaveManager.SoundEnabled; }
+
+        // El canal de las cuentas va con los efectos de juego: es uno más, solo que afinable.
+        if (countSource) { countSource.volume  = SaveManager.SfxVolume;   countSource.mute = !SaveManager.SoundEnabled; }
     }
 
     // Reproduce la música del lobby (Home + LevelMap)
@@ -148,6 +163,20 @@ public class AudioManager : MonoBehaviour
     public void PlaySfx(AudioClip clip, float volumeScale = 1f) => PlayOn(sfxSource, clip, volumeScale);
     public void PlayUi(AudioClip clip, float volumeScale = 1f)  => PlayOn(uiSource,  clip, volumeScale);
     public void PlayPop(AudioClip clip, float volumeScale = 1f) => PlayOn(popSource, clip, volumeScale);
+
+    // Un golpe de una CUENTA: el mismo clip repetido deprisa, cada vez un poco más agudo.
+    //
+    // El tono subiendo no es un adorno: repetido al mismo tono y solapándose consigo mismo, el
+    // ataque de cada golpe queda tapado por la cola del anterior y se oye como si el volumen
+    // fuera bajando (reportado por Diego). Separados en tono, cada uno se distingue — y además
+    // una cuenta que sube de tono se lee como que suma, que es lo que está pasando.
+    public void PlayCount(AudioClip clip, float pitch, float volumeScale = 1f)
+    {
+        if (countSource == null || clip == null) return;
+
+        countSource.pitch = Mathf.Max(0.1f, pitch);
+        countSource.PlayOneShot(clip, volumeScale);
+    }
 
     // Un efecto que suena mientras dura un estado, no un golpe. Llamarlo con el mismo clip que ya
     // está sonando no lo reinicia: quien lo pida no tiene que llevar la cuenta de si ya lo pidió.

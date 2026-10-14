@@ -252,22 +252,18 @@ public class GameplayController : MonoBehaviour
         yield return cannon.RevealCurrent();
         yield return ExplainMechanics();
 
+        // Y ahora sí, lo que cada poder de inicio tiene que ENSEÑAR, uno detrás de otro.
+        //
+        // Acá y no al consumirlos, que es donde estaba: ahí no se había dibujado ni el primer
+        // frame, la vista previa movía el tablero por encima y el modal del tutorial tapaba la
+        // pantalla. El efecto ocurría de verdad, pero a nadie — y un poder que se paga y no se ve
+        // pasar se lee como que no funcionó (reportado por Diego).
+        //
+        // Antes de soltar el control a propósito: mientras se ve lo que uno compró no se dispara.
+        yield return PlayStartEffects();
+
         if (openPausedButton) openPausedButton.interactable = true;
         cannon.SetInputEnabled(true);
-
-        // La siembra de la Perla, recién acá. Se consumió al abrir el nivel, pero mostrarla ahí
-        // era regalarla a nadie: todavía no se había dibujado el primer frame, y encima la vista
-        // previa mueve el tablero entero justo encima. Acá el tablero está quieto, en su sitio y
-        // con el jugador mirándolo.
-        //
-        // Sirve igual para el nivel que PRESENTA la Perla: ese la consume dentro de
-        // ExplainMechanics, que termina unas líneas más arriba, así que el destello sale al
-        // cerrarse el modal — que es exactamente cuando el jugador quiere ver de qué le hablaron.
-        if (_seedRainbows)
-        {
-            _seedRainbows = false;
-            SeedRainbows();
-        }
 
         // El booster recién presentado llega puesto en la recámara: el jugador acaba de leer qué
         // hace y lo primero que ve al cerrar el modal es la bomba lista para disparar. Dejarlo en
@@ -296,13 +292,29 @@ public class GameplayController : MonoBehaviour
             if (!BoosterRules.IsStart(booster)) continue;
             if (!SaveManager.ConsumeBooster(booster)) continue;
 
-            switch (booster)
-            {
-                case Booster.Rainbow: cannon.MakeCurrentRainbow(); _seedRainbows = true; break;
-            }
+            // Lo que tiene que estar listo YA, antes del primer frame: la perla va en la
+            // recámara desde que el nivel abre, porque es la burbuja con la que se juega.
+            if (booster == Booster.Rainbow) cannon.MakeCurrentRainbow();
+
+            // Y a la cola de lo que hay que ENSEÑAR. Lo demás —sembrar el tablero, subir el
+            // contador— espera su turno: pasa al abrir, pero el jugador todavía no está mirando.
+            _startEffects.Add(booster);
 
             BoosterLoadout.Toggle(booster);
         }
+    }
+
+    // Sumar tiros al límite del nivel. El conteo vive en dos sitios —acá, que es quien decide
+    // cuándo se acabó el nivel, y en el cañón, que lo usa para saber si todavía hay 'next' que
+    // enseñar— así que los dos tienen que enterarse o la recámara se queda vacía con tiros de
+    // sobra. Mismo camino que usa comprar disparos extra con gemas.
+    void AddShots(int extra)
+    {
+        if (extra <= 0) return;
+
+        _shotsRemaining += extra;
+        RefreshShotsLabel();
+        cannon.SetShotsRemaining(_shotsRemaining);
     }
 
     // La otra mitad de la Perla: convierte burbujas YA PUESTAS en comodines, escalonadas y con su
@@ -311,9 +323,249 @@ public class GameplayController : MonoBehaviour
     // Las de la cola (CannonController._rainbowsLeft) llegan de a una a lo largo de la partida y
     // no se anuncian; estas se ven todas al abrir y se pueden planear, que es lo que las hace
     // valer. Las dos cosas a la vez son el poder entero (pedido de Diego).
-    bool _seedRainbows;
+    // Los de inicio que se aplicaron en este nivel, en el orden en que se aplicaron.
+    readonly List<Booster> _startEffects = new();
 
-    void SeedRainbows()
+    [Header("Poderes de inicio — cómo se enseñan al abrir")]
+    [Tooltip("La pausa antes de enseñar CADA poder de inicio. La primera separa el regalo del modal del tutorial, que si no arranca encima de él y parece parte del mismo golpe; las siguientes separan un poder del anterior.\n\nEn CERO usa el valor por defecto, no 'sin pausa'.")]
+    [Range(0f, 2f)]
+    [SerializeField] float startEffectDelay = DEFAULT_START_DELAY;
+
+    [Tooltip("Lo que tarda el contador de disparos en subir del todo, sume 5 o sume 20. Es un tiempo FIJO y no un paso por unidad: lo que el jugador tiene que leer es 'me están dando disparos', y con un paso fijo un regalo grande se haría eterno.\n\nEn CERO usa el valor por defecto, no 'instantáneo'.")]
+    [SerializeField] float shotsGainDuration = DEFAULT_SHOTS_GAIN;
+
+    [Tooltip("El sonido de CADA disparo que entra. Suena una vez por unidad, así que es el que convierte el número en una cuenta. Opcional.")]
+    [SerializeField] AudioClip shotsGainClip;
+
+    [Tooltip("Cuánto crece el número en cada golpe, de 0 a 1. Es lo que lo despega del HUD mientras sube: sin esto el número cambia pero no mira nadie.\n\nEn CERO usa el valor por defecto, no 'sin golpe'.")]
+    [Range(0f, 1f)]
+    [SerializeField] float shotsGainPulse = 0.35f;
+
+    [Tooltip("Lo grande que sale el '+5' en medio de la pantalla, respecto al número del HUD. Es un clon del propio contador, así que hereda su fuente y su contorno sin arte nuevo.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 8f)]
+    [SerializeField] float shotsGainPopupScale = DEFAULT_POPUP_SCALE;
+
+    [Tooltip("Lo que tarda el '+5' en aparecer: crece de nada, se pasa un poco de su tamaño y vuelve. El rebote es lo que lo hace aterrizar en vez de encenderse.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 1.5f)]
+    [SerializeField] float shotsGainPopupPop = DEFAULT_POPUP_POP;
+
+    [Tooltip("El sonido del '+5' al aparecer en el centro. Es el golpe que anuncia el regalo; el de la cuenta ('Shots Gain Clip') es otro, y suena después una vez por disparo. Opcional.")]
+    [SerializeField] AudioClip shotsGainPopupClip;
+
+    [Tooltip("El resplandor y las chispas que acompañan al '+5' al aparecer. Mismo bloque que usan los poderes al estallar.\n\nCon 'Glow Size' en CERO usa un juego de valores por defecto, para que el efecto no nazca invisible.")]
+    [SerializeField] Sparkle.Settings shotsGainSparkle = new();
+
+    [Tooltip("Lo que el '+5' se queda quieto en el centro antes de salir hacia el contador. Es el tiempo de LEERLO: sin esta pausa el número cruza la pantalla y nadie sabe qué decía.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 2f)]
+    [SerializeField] float shotsGainPopupHold = DEFAULT_POPUP_HOLD;
+
+    [Tooltip("Lo que tarda en viajar del centro al contador, encogiéndose por el camino.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 2f)]
+    [SerializeField] float shotsGainPopupTravel = DEFAULT_POPUP_TRAVEL;
+
+    [Tooltip("Cuánto sube de tono el sonido entre el primer disparo que entra y el último. Es el rango COMPLETO, no el paso: la cuenta recorre siempre el mismo trecho sume 5 o sume 20.\n\nEn CERO usa el valor por defecto, no 'todos al mismo tono'.")]
+    [Range(0f, 1f)]
+    [SerializeField] float shotsGainPitchRise = 0.45f;
+
+    // Los valores con los que nace el efecto cuando el componente de la escena todavía no tiene
+    // los campos. Unity rellena un campo NUEVO en algo ya guardado con el cero del tipo, no con
+    // su inicializador, así que sin esto el efecto nace apagado: sin tiempo, sin golpe de tamaño
+    // y sin subir de tono — justo los tres síntomas de "no hace nada" (reportado por Diego).
+    //
+    // Quien quiera de verdad apagar uno pone un valor mínimo, no cero.
+    const float DEFAULT_POPUP_POP    = 0.35f;
+    const float DEFAULT_POPUP_SCALE  = 3f;
+
+    // Los valores del inicializador de la clase, que es lo que un campo nuevo NO hereda cuando
+    // Unity lo rellena en un componente ya guardado. Creado en código sí los trae.
+    static readonly Sparkle.Settings DEFAULT_GAIN_SPARKLE = new();
+    const float DEFAULT_POPUP_HOLD   = 0.45f;
+    const float DEFAULT_POPUP_TRAVEL = 0.5f;
+    const float DEFAULT_START_DELAY = 0.6f;
+    const float DEFAULT_SHOTS_GAIN  = 1.2f;
+    const float DEFAULT_SHOTS_PULSE = 0.35f;
+    const float DEFAULT_SHOTS_PITCH = 0.45f;
+
+    // Cada poder de inicio, enseñado por turno y esperando a que termine el anterior.
+    //
+    // En secuencia y no a la vez porque son regalos distintos: dos cosas ocurriendo juntas se
+    // leen como una sola que no se entiende, y el jugador acaba de pagar por las dos.
+    IEnumerator PlayStartEffects()
+    {
+        float wait = startEffectDelay > 0f ? startEffectDelay : DEFAULT_START_DELAY;
+
+        foreach (var booster in _startEffects)
+        {
+            // Un respiro antes de cada uno. El jugador acaba de cerrar un modal y la vista todavía
+            // se está asentando: el regalo que sale en ese mismo instante se lee como la última
+            // parte del tutorial y no como algo que le están dando.
+            yield return new WaitForSeconds(wait);
+
+            switch (booster)
+            {
+                case Booster.Rainbow: yield return SeedRainbows();                               break;
+                case Booster.Oxygen:
+                    yield return FlyShotsGain(BoosterRules.OXYGEN_SHOTS);
+                    yield return GainShots(BoosterRules.OXYGEN_SHOTS);
+                    break;
+            }
+        }
+
+        _startEffects.Clear();
+    }
+
+    // El "+5" sale grande en medio de la pantalla, se deja leer y se va al contador.
+    //
+    // Y la suma ocurre DESPUÉS, cuando el número ya llegó: así el contador no cambia por su
+    // cuenta en una esquina —que es lo que no se veía— sino porque algo acaba de entrar en él.
+    // El regalo se entiende antes de ocurrir, que es lo que lo convierte en un regalo.
+    //
+    // Clonando el propio contador y no con un prefab aparte: hereda su fuente, su contorno y su
+    // color, así que no hay un segundo sitio donde el estilo se pueda quedar atrás.
+    IEnumerator FlyShotsGain(int extra)
+    {
+        if (extra <= 0 || shotsLabel == null) yield break;
+
+        var canvas = shotsLabel.canvas;
+        if (canvas == null) yield break;
+
+        float scale  = shotsGainPopupScale  > 0f ? shotsGainPopupScale  : DEFAULT_POPUP_SCALE;
+        float pop    = shotsGainPopupPop    > 0f ? shotsGainPopupPop    : DEFAULT_POPUP_POP;
+        float hold   = shotsGainPopupHold   > 0f ? shotsGainPopupHold   : DEFAULT_POPUP_HOLD;
+        float travel = shotsGainPopupTravel > 0f ? shotsGainPopupTravel : DEFAULT_POPUP_TRAVEL;
+
+        var root  = (RectTransform)canvas.rootCanvas.transform;
+        var popup = Instantiate(shotsLabel, root);
+
+        // Un clon del HUD puede traerse componentes que le reescriban el texto o lo recoloquen
+        // solos. Acá es un cartel de usar y tirar: manda lo que diga este método.
+        foreach (var extraComponent in popup.GetComponents<MonoBehaviour>())
+            if (extraComponent != null && !(extraComponent is TMP_Text)) Destroy(extraComponent);
+
+        popup.text = $"+{extra}";
+        popup.raycastTarget = false;
+        popup.enableAutoSizing = false;
+        popup.alignment = TMPro.TextAlignmentOptions.Center;
+
+        var rt = popup.rectTransform;
+        rt.SetAsLastSibling();                 // por encima del tablero y del HUD
+        rt.localScale = shotsLabel.transform.localScale * scale;
+
+        Vector3 from = root.TransformPoint(Vector3.zero);   // el centro de la pantalla
+        Vector3 to   = shotsLabel.transform.position;
+
+        rt.position = from;
+
+        Vector3 full = rt.localScale;
+        rt.localScale = Vector3.zero;
+
+        // El resplandor sale con él, no antes: lo que tiene que mirarse es el número, y un
+        // destello que se abre en una pantalla vacía se lee como que va a pasar otra cosa.
+        var sparkle = shotsGainSparkle != null && shotsGainSparkle.glowSize > 0f
+            ? shotsGainSparkle
+            : DEFAULT_GAIN_SPARKLE;
+
+        Sparkle.Burst(rt, sparkle);
+
+        // Con el destello y no antes: el golpe de sonido y el de luz son el mismo momento, y
+        // separados se oyen como dos cosas.
+        if (shotsGainPopupClip) AudioManager.Instance?.PlaySfx(shotsGainPopupClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.MediumImpact);
+
+        // Crece de nada, se pasa un 20% y vuelve. Pasarse y volver es lo que lo hace ATERRIZAR:
+        // creciendo hasta su tamaño y parando, el número se enciende en vez de llegar.
+        float popUp = pop * 0.6f;
+
+        for (float t = 0f; t < pop; t += Time.deltaTime)
+        {
+            float k = t < popUp
+                ? Mathf.Lerp(0f,    1.2f, Ease(t / popUp))
+                : Mathf.Lerp(1.2f,  1f,   Ease((t - popUp) / Mathf.Max(0.0001f, pop - popUp)));
+
+            rt.localScale = full * k;
+            yield return null;
+        }
+
+        rt.localScale = full;
+
+        yield return new WaitForSeconds(hold);
+
+        Vector3 big   = rt.localScale;
+        Vector3 small = shotsLabel.transform.localScale;
+
+        for (float t = 0f; t < travel; t += Time.deltaTime)
+        {
+            float p = Mathf.Clamp01(t / travel);
+
+            // Arranca despacio y se dispara hacia el contador: la salida lenta deja ver de dónde
+            // sale y la llegada rápida se lee como que ENTRA, no como que pasa por ahí.
+            float ease = p * p;
+
+            rt.position   = Vector3.Lerp(from, to, ease);
+            rt.localScale = Vector3.Lerp(big, small, ease);
+
+            // El desvanecido va al final y no todo el camino: un número que se apaga desde que
+            // sale llega invisible y no se ve entrar en ningún sitio.
+            popup.alpha = 1f - Mathf.InverseLerp(0.75f, 1f, p);
+
+            yield return null;
+        }
+
+        Destroy(popup.gameObject);
+    }
+
+    // Suave a la entrada y a la salida. Lo usa el rebote del '+5': con tramos lineales el número
+    // cambia de velocidad de golpe en el pico y el gesto se ve mecánico.
+    static float Ease(float t)
+    {
+        t = Mathf.Clamp01(t);
+        return t * t * (3f - 2f * t);
+    }
+
+    // El contador sube de uno en uno, con su sonido y su golpe de tamaño.
+    //
+    // De uno en uno y no de un salto porque lo que se compró son CINCO disparos, no un número
+    // distinto: contándolos se ve lo que entró. Y en un tiempo fijo, así que cuantos más entren
+    // más rápido caen — un regalo grande se siente generoso en vez de lento.
+    IEnumerator GainShots(int extra)
+    {
+        if (extra <= 0) yield break;
+
+        // Cero significa "el valor por defecto" y no "de golpe": el campo es nuevo, y Unity rellena
+        // un campo nuevo en un componente ya guardado con el cero del TIPO, no con lo que diga el
+        // inicializador. Sin esto el efecto nacería apagado en la única escena que lo usa.
+        float total = shotsGainDuration   > 0f ? shotsGainDuration   : DEFAULT_SHOTS_GAIN;
+        float pulse = shotsGainPulse      > 0f ? shotsGainPulse      : DEFAULT_SHOTS_PULSE;
+        float rise  = shotsGainPitchRise  > 0f ? shotsGainPitchRise  : DEFAULT_SHOTS_PITCH;
+        float step  = total / extra;
+        Vector3 size = shotsLabel != null ? shotsLabel.transform.localScale : Vector3.one;
+
+        for (int i = 0; i < extra; i++)
+        {
+            AddShots(1);
+
+            // El tono sube repartido entre todos los que entran, así que el recorrido es el mismo
+            // con 5 que con 20 — igual que la duración.
+            float climb = extra > 1 ? i / (float)(extra - 1) : 0f;
+
+            if (shotsGainClip) AudioManager.Instance?.PlayCount(shotsGainClip, 1f + rise * climb);
+            if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
+
+            // El golpe entero dentro del paso: cada unidad tiene que tener el suyo, y uno que
+            // durara más que el paso se comería al siguiente justo cuando caen rápido.
+            for (float t = 0f; t < step; t += Time.deltaTime)
+            {
+                if (shotsLabel)
+                    shotsLabel.transform.localScale = size * (1f + pulse * Mathf.Sin(Mathf.Clamp01(t / step) * Mathf.PI));
+
+                yield return null;
+            }
+        }
+
+        if (shotsLabel) shotsLabel.transform.localScale = size;
+    }
+
+    IEnumerator SeedRainbows()
     {
         var art    = BoosterRules.ArtFor(Booster.Rainbow);
         var travel = art?.seedTravel;
@@ -350,6 +602,12 @@ public class GameplayController : MonoBehaviour
             grid.TurnIntoRainbow(seeds[i], at, fade);
             StartCoroutine(PlayClipAfter(travel?.arriveClip, at));
         }
+
+        // Se espera a que la última llegue y acabe de teñirse: lo que venga detrás es otro regalo
+        // y tiene que empezar cuando este haya terminado de contarse.
+        float last = seeds.Count > 0 ? (travels ? travel.TotalFor(seeds.Count - 1) : (seeds.Count - 1) * step) : 0f;
+
+        yield return new WaitForSeconds(last + fade);
     }
 
     // Lo que haya que explicar de este nivel, antes de soltar el control.
