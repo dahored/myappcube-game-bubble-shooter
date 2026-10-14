@@ -46,7 +46,7 @@ Se entra desde el mapa, se juega el nivel, se gana o se pierde y se vuelve. Incl
 - `BoosterCatalog` en `Resources` concentra el arte de cada poder
 - `BoosterRules` concentra nombres, desbloqueo —que va por tutorial visto— y **qué celdas se lleva
   cada poder**: de ahí salen a la vez la marca de la mira, el orden de los pops y la explosión
-- `LevelData.allowed_boosters` decide qué ofrece cada nivel
+- `LevelData.allowed_boosters_start` decide qué power-ups DE INICIO ofrece cada nivel. Los de gameplay no se limitan por nivel (GDD §3.5): están todos en el HUD, con candado hasta que su tutorial los presente
 - Selección pre-nivel, HUD de gameplay, panel de recarga con packs y descuentos
 - **Bomba de Coral**: carga de luz, destello, onda expansiva, sonido y vibración
 - **Perla Arcoíris** (de inicio): al menos 3 comodines repartidos entre los disparos que quedan
