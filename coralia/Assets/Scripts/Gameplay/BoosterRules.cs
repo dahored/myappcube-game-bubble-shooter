@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 // Las reglas de los boosters, en un solo lugar. Mismo criterio que ScoreRules.
@@ -97,6 +98,72 @@ public static class BoosterRules
     // nivel largo por el mismo precio, y además no se puede anunciar en una línea.
     public const int OXYGEN_SHOTS = 5;
 
+    // Las filas de abajo del todo, que es lo que se lleva la Marea Baja (GDD §3.2).
+    //
+    // Las más bajas OCUPADAS, no las últimas del tablero: un nivel que no llega abajo no tiene por
+    // qué gastar el poder en aire. Y se cuentan hacia arriba desde ahí, así que un tablero con
+    // huecos no se come una fila de regalo.
+    //
+    // Ordenadas de abajo hacia arriba y, dentro de cada fila, por columna: ese es el orden en el
+    // que el barrido las recorre, y es lo que lo hace leerse como una ola que se retira.
+    //
+    // Se lleva FILAS y no un número de burbujas porque lo que el jugador compra es ESPACIO contra
+    // el cañón: lo que aprieta es cuánto ha bajado el tablero, no cuántas burbujas hay.
+    public static List<Vector2Int> LowTideCells(IBoardView board, int rows)
+    {
+        var cells = new List<Vector2Int>();
+
+        if (board == null || rows <= 0) return cells;
+
+        int lowest = -1;
+        foreach (var cell in board.Occupied) if (cell.y > lowest) lowest = cell.y;
+
+        if (lowest < 0) return cells;
+
+        // Las filas ocupadas de abajo hacia arriba, saltándose las vacías: contar a secas
+        // 'lowest-1, lowest-2' regalaría filas en un tablero con huecos.
+        var occupiedRows = new SortedSet<int>();
+        foreach (var cell in board.Occupied) occupiedRows.Add(cell.y);
+
+        var taken = new HashSet<int>();
+        foreach (int row in occupiedRows.Reverse())
+        {
+            if (taken.Count == rows) break;
+            taken.Add(row);
+        }
+
+        foreach (var cell in board.Occupied) if (taken.Contains(cell.y)) cells.Add(cell);
+
+        cells.Sort((a, b) => a.y != b.y ? b.y.CompareTo(a.y) : a.x.CompareTo(b.x));
+
+        return cells;
+    }
+
+    // En qué orden se aplican los poderes de inicio cuando el jugador trae varios.
+    //
+    // No es el orden en que los equipó: el orden CAMBIA el resultado, y hay uno que es el justo.
+    //
+    // El caso que lo destapó: con la Perla y la Marea Baja juntas, si la Perla sembraba primero,
+    // la Marea se llevaba por delante los comodines recién puestos en las filas de abajo. El
+    // jugador pagaba dos poderes y recibía uno y medio (reportado por Diego).
+    //
+    // La regla es que cada uno trabaje sobre el tablero DEFINITIVO:
+    //
+    //   1. los que QUITAN burbujas     — dejan el tablero con el que van a jugar los demás
+    //   2. los que CONVIERTEN colores  — sobre lo que de verdad se queda
+    //   3. los que SIEMBRAN            — lo último, para que nada se lleve lo recién puesto
+    //   4. los que no tocan el tablero — da igual cuándo, van al final
+    //
+    // Un poder nuevo que no se nombre acá cae en el grupo 3, que es el más seguro: como mucho
+    // siembra sobre un tablero que ya nadie va a tocar.
+    public static int StartOrder(Booster booster) => booster switch
+    {
+        Booster.LowTide => 0,
+        Booster.Rainbow => 2,
+        Booster.Oxygen  => 3,
+        _               => 2,
+    };
+
     // Cuántos se regalan al presentar un booster por primera vez. DOS y no uno: el primero se
     // carga solo en el cañón para que el jugador lo dispare sin tener que descubrir el ícono del
     // HUD, y el segundo queda en el inventario para que pueda volver a usarlo cuando ÉL quiera
@@ -152,6 +219,7 @@ public static class BoosterRules
         Burst  = 1 << 2,   // estalla al impactar
         Claim  = 1 << 3,   // tiñe las burbujas antes de que estallen
         Seed   = 1 << 4,   // convierte burbujas del tablero al abrir el nivel
+        Tide   = 1 << 5,   // se lleva filas enteras por abajo al abrir el nivel
     }
 
     const Uses CANNON = Uses.Bubble | Uses.Loaded | Uses.Burst;
@@ -165,6 +233,10 @@ public static class BoosterRules
         // No dibuja ninguna burbuja ni estalla en ningún sitio: solo sube el contador de tiros al
         // abrir. Todo lo que el Inspector enseñaría de él serían campos que no lee nadie.
         Booster.Oxygen => Uses.None,
+
+        // Tampoco se carga ni produce burbuja, pero SÍ estalla: se lleva varias filas enteras y
+        // eso necesita su sonido, su destello y su temblor, además de lo suyo propio.
+        Booster.LowTide => Uses.Burst | Uses.Tide,
 
         _ => CANNON,
     };
@@ -415,6 +487,30 @@ public static class BoosterRules
         return IsUnlocked(booster) ? booster : Booster.None;
     }
 
+    // En qué nivel se presenta este poder, o 0 si no lo presenta ninguno.
+    //
+    // Sale del índice de niveles y no de un campo del catálogo: el desbloqueo lo decide el JSON
+    // del nivel que lo explica (GDD §3.3), y un número escrito aparte sería la segunda fuente que
+    // se desincroniza el día que se mueva un tutorial — que es justo lo que pasa todo el rato
+    // mientras se reparten.
+    //
+    // El id del tutorial ES el nombre del poder, así que no hay tabla que mantener.
+    public static int UnlockLevelFor(Booster booster)
+    {
+        string id = NameOf(booster);
+        if (id.Length == 0) return 0;
+
+        foreach (var entry in LevelLoader.Entries)
+        {
+            if (entry?.tutorials == null) continue;
+
+            foreach (string tutorial in entry.tutorials)
+                if (tutorial == id) return entry.id;
+        }
+
+        return 0;
+    }
+
     // El trío que se ofrece cuando el JSON del nivel no dice nada. Existe para que los niveles ya
     // escritos sigan funcionando sin editarlos uno por uno; un nivel que quiera otra cosa lo pone
     // en su 'allowed_boosters_start'.
@@ -461,6 +557,7 @@ public static class BoosterRules
         (Booster.ElectricRay, "electric_ray"),
         (Booster.Mother,      "mother"),
         (Booster.Oxygen,      "oxygen"),
+        (Booster.LowTide,     "low_tide"),
     };
 
     public static string NameOf(Booster booster)
@@ -511,8 +608,50 @@ public static class BoosterRules
     // Las claves de i18n se DERIVAN del nombre en vez de guardarse en el catálogo, igual que
     // LevelData.NameKey: son siempre la misma fórmula, y un campo por texto es un campo donde
     // escribir mal una clave y quedarse con el texto en crudo en pantalla.
+    // Los números que el texto de un poder deja en hueco, para que digan lo que el poder HACE de
+    // verdad y no lo que decía cuando se escribió la frase.
+    //
+    // Un tutorial que promete "tres filas" mientras el catálogo está en cinco es peor que uno sin
+    // número: el jugador no se entera de que le dieron más, y en seis idiomas el desajuste se
+    // arregla seis veces. Los valores salen de donde se configuran.
+    //
+    // Devuelve vacío para el que no use ninguno: string.Format no se queja de que sobren.
+    public static object[] TextArgs(Booster booster) => booster switch
+    {
+        Booster.Oxygen  => new object[] { OXYGEN_SHOTS },
+        Booster.LowTide => new object[] { ArtFor(booster)?.tideRows > 0 ? ArtFor(booster).tideRows : 3 },
+        Booster.Rainbow => new object[] { RAINBOW_SEEDS, RAINBOW_COUNT },
+        _               => System.Array.Empty<object>(),
+    };
+
     public static string NameKeyFor(Booster booster)        => $"ui.booster.{NameOf(booster)}.name";
     public static string DescriptionKeyFor(Booster booster) => $"ui.booster.{NameOf(booster)}.description";
+
+    // El texto traducido con sus huecos ya rellenos, que es como tiene que salir a pantalla.
+    //
+    // Acá y no en cada pantalla porque son varias —el tutorial, el panel de recarga, la previa—
+    // y la que se olvide enseña un "{0}" en crudo en seis idiomas.
+    //
+    // Si la frase no tiene huecos vuelve igual. Y si los tiene mal escritos se queda en crudo con
+    // un aviso, en vez de tirar la pantalla abajo: un texto feo se ve y se arregla; una excepción
+    // en mitad de un tutorial corta el nivel.
+    public static string TextFor(string key, Booster booster)
+    {
+        string raw  = LocaleManager.Get(key);
+        var    args = TextArgs(booster);
+
+        if (args.Length == 0) return raw;
+
+        try { return string.Format(raw, args); }
+        catch (System.FormatException)
+        {
+            Debug.LogWarning($"[BoosterRules] '{key}' tiene los huecos mal escritos — se muestra sin rellenar.");
+            return raw;
+        }
+    }
+
+    public static string NameFor(Booster booster)        => TextFor(NameKeyFor(booster), booster);
+    public static string DescriptionFor(Booster booster) => TextFor(DescriptionKeyFor(booster), booster);
 
     public static Sprite IconFor(Booster booster)         => Catalog != null ? Catalog.IconFor(booster)         : null;
     public static Sprite BubbleSpriteFor(Booster booster) => Catalog != null ? Catalog.BubbleSpriteFor(booster) : null;

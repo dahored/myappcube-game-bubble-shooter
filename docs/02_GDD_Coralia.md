@@ -222,7 +222,7 @@ partida. Cada uno toca una palanca distinta del nivel.
 |---|---|---|---|
 | **Reserva de Oxígeno** | +5 al límite de disparos | Me quedé corto por poco | Cuántos disparos tengo |
 | **Perla Arcoíris** | **3 burbujas del tablero** se convierten en comodín al empezar, y **al menos 3 más** repartidas entre los disparos | No tengo con qué encajar lo que me toca | Cómo abro y qué me toca |
-| **Marea Baja** | Al empezar, borra la fila más baja del tablero | El nivel abre demasiado apretado | Cuántas burbujas hay |
+| **Marea Baja** | Al empezar, la marea se retira y se lleva las **3 filas de abajo** (`tideRows`) | El nivel abre demasiado apretado | Cuántas burbujas hay |
 | **Agua Clara** | El color con menos burbujas se convierte al color con más, y deja de salir del cañón | Ese color del que quedan tres sueltas e imposibles de juntar | Cuántos colores hay |
 | **Corriente Favorable** | Durante todo el nivel, el cañón favorece los colores que más abundan en el tablero | Me sale justo el color que no necesito | Qué color me toca |
 
@@ -251,6 +251,22 @@ Se eligen al azar entre las que se ven, salteando las que ya eran comodín y pro
 Esto recupera `LevelData.rainbow_chance`, que llevaba meses sin uso. Se había retirado porque una
 arcoíris de semilla del flood-fill se llevaba el tablero entero, y eso ya lo resuelve
 `GridController.ResolveRainbow`: al aterrizar adopta el color mayoritario de sus vecinos.
+
+**Con varios de inicio a la vez, el orden lo decide el juego y no el jugador.** El orden cambia el
+resultado: si la Perla siembra antes de que pase la Marea, la Marea se lleva los comodines recién
+puestos y el jugador paga dos poderes para recibir uno y medio. La regla es que cada uno trabaje
+sobre el tablero definitivo — primero los que **quitan** burbujas, después los que **convierten**
+colores, luego los que **siembran**, y al final los que no tocan el tablero
+(`BoosterRules.StartOrder`).
+
+**La Marea avisa antes de llevarse nada.** Un barrido recorre las burbujas condenadas fila por
+fila, con su sonido, y recién después revientan. Sin ese repaso las filas desaparecen en el primer
+frame y el jugador ve un hueco sin saber de dónde salió. Tampoco puntúa: las estrellas salen del
+score, así que una fila que suma puntos es comprar estrellas con monedas. Lo que se compra es aire
+contra el cañón.
+
+Las filas se cuentan desde la más baja que TENGA burbujas, no desde el fondo del tablero: un nivel
+corto no gasta el poder en aire, y uno con huecos no se lleva filas de regalo.
 
 **Agua Clara convierte, no elimina.** Borrar esas burbujas resolvería parte del objetivo solo
 —y dispararía la caída de todo lo que colgara de ellas, que es un efecto que nadie previó al

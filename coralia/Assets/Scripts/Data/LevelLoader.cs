@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 // Acceso a los niveles. Dos caminos distintos a propósito:
@@ -81,6 +82,7 @@ public static class LevelLoader
                 chapter = level.chapter,
                 name    = level.name,
                 path    = $"Levels/Chapter_{level.chapter}/{level.id:000}",
+                tutorials = level.tutorials != null ? level.tutorials.ToArray() : new string[0],
             });
         }
 

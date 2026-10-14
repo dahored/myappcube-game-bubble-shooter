@@ -66,6 +66,7 @@ public static class LevelIndexBuilder
                 chapter = level.chapter,
                 name    = level.name,
                 path    = path,
+                tutorials = level.tutorials != null ? level.tutorials.ToArray() : new string[0],
             });
         }
 

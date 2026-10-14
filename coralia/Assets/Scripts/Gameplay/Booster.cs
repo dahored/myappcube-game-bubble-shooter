@@ -22,4 +22,5 @@ public enum Booster
     ElectricRay = 3,
     Mother      = 4,
     Oxygen      = 5,
+    LowTide     = 6,
 }

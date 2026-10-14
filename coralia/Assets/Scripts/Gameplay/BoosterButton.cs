@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,11 +39,24 @@ public class BoosterButton : MonoBehaviour
     [Tooltip("El candado. Se enciende mientras el poder todavía no está desbloqueado (BoosterRules.IsUnlocked): el ícono sigue viéndose detrás, para que el jugador sepa qué hay por venir.")]
     [SerializeField] GameObject lockedState;
 
+    [Tooltip("El globo que explica POR QUÉ está bloqueado, al tocarlo. Se enciende solo mientras el poder no está desbloqueado y se apaga solo. Opcional: sin esto, tocar un poder bloqueado no hace nada.")]
+    [SerializeField] GameObject lockedTooltip;
+
+    [Tooltip("El texto de ese globo. El número de nivel lo pone el código, leyendo el índice de niveles — no hay que escribirlo a mano en ningún sitio.")]
+    [SerializeField] TMP_Text lockedTooltipText;
+
+    [Tooltip("Cuánto se queda el globo en pantalla antes de cerrarse solo.")]
+    [Range(0.5f, 6f)]
+    [SerializeField] float lockedTooltipTime = 2.5f;
+
     [Tooltip("El modal de compra. Sin esto, tocar un booster que está en cero no hace nada.\n\nSi el '+' tiene su propio Button, quítaselo o nunca se llega acá: se come el toque antes de que llegue a este botón.")]
     [SerializeField] RefillBoosterPanel refillPanel;
 
     [SerializeField] Color loadedTint = new(1f, 0.85f, 0.35f, 1f);
     [SerializeField] Color idleTint   = Color.white;
+
+    [Tooltip("Con qué color se pinta el ícono mientras está bloqueado. Más claro y lavado que el normal: el candado dice que no se puede, y el color apagado lo dice desde lejos sin tener que mirarlo.")]
+    [SerializeField] Color lockedTint = new(1f, 1f, 1f, 0.45f);
 
     // El jugador todavía no vio la explicación de este poder. Se pregunta al catálogo y no se
     // guarda: un tutorial puede desbloquearlo a mitad del nivel, y el botón se entera en el
@@ -80,11 +94,12 @@ public class BoosterButton : MonoBehaviour
     {
         if (cannon == null) return;
 
-        // Un poder que todavía no se presentó no se carga ni se vende: el botón está ahí para
-        // que el jugador vea que existe, no para empujarlo a comprar algo que no sabe qué hace.
-        // Refresh ya lo deja sin interactable, así que esto es el cinturón del tirante — vale lo
-        // que cuesta, porque quien llame a esto a mano se saltaría el Button entero.
-        if (Locked) return;
+        // Un poder que todavía no se presentó no se carga ni se vende: el botón está ahí para que
+        // el jugador vea que existe, no para empujarlo a comprar algo que no sabe qué hace.
+        //
+        // Pero el toque SÍ hace algo: cuenta cuándo se consigue. Un botón que no responde se lee
+        // como roto, y la pregunta que el jugador se hace al ver un candado es exactamente esa.
+        if (Locked) { ShowLockedTooltip(); return; }
 
         if (cannon.LoadedBooster == booster) { cannon.UnloadBooster(); return; }
 
@@ -104,6 +119,42 @@ public class BoosterButton : MonoBehaviour
     // Público porque la lista del HUD tiene que poder pedirlo: ella decide qué botones se ven, y
     // encenderlos no basta para que se pinten — un botón que ya estaba activo nunca recibe un
     // OnEnable nuevo, y se quedaba con el número de relleno del prefab hasta que lo tocaran.
+    // El globo que dice en qué nivel se desbloquea, y se cierra solo.
+    //
+    // El número sale del índice de niveles (BoosterRules.UnlockLevelFor), que lo saca del JSON del
+    // nivel que explica el poder. Escrito a mano en el prefab sería la segunda fuente que se
+    // queda atrás en cuanto se mueva un tutorial, y eso pasa todo el rato mientras se reparten.
+    void ShowLockedTooltip()
+    {
+        if (lockedTooltip == null) return;
+
+        if (lockedTooltipText != null)
+        {
+            int level = BoosterRules.UnlockLevelFor(booster);
+
+            // Sin nivel asignado todavía, se dice lo que se sabe en vez de un "nivel 0": ese
+            // poder existe y el jugador lo va a tener, pero el reparto aún no decidió cuándo.
+            lockedTooltipText.text = level > 0
+                ? string.Format(LocaleManager.Get("ui.booster.locked"), level)
+                : LocaleManager.Get("ui.booster.locked_soon");
+        }
+
+        if (_tooltipRoutine != null) StopCoroutine(_tooltipRoutine);
+        _tooltipRoutine = StartCoroutine(TooltipRoutine());
+    }
+
+    Coroutine _tooltipRoutine;
+
+    IEnumerator TooltipRoutine()
+    {
+        lockedTooltip.SetActive(true);
+
+        yield return new WaitForSeconds(lockedTooltipTime);
+
+        if (lockedTooltip) lockedTooltip.SetActive(false);
+        _tooltipRoutine = null;
+    }
+
     public void Refresh()
     {
         // Bloqueado gana a todo lo demás: sin existencias que mostrar, sin '+' que lleve a la
@@ -115,9 +166,13 @@ public class BoosterButton : MonoBehaviour
 
         if (lockedState != null && lockedState.activeSelf != locked) lockedState.SetActive(locked);
 
+        // El globo nunca arranca abierto, y se cierra si el poder se desbloquea mientras está en
+        // pantalla — que pasa en el nivel que lo presenta.
+        if (!locked && lockedTooltip != null && lockedTooltip.activeSelf) lockedTooltip.SetActive(false);
+
         if (icon != null)
         {
-            icon.color = loaded ? loadedTint : idleTint;
+            icon.color = locked ? lockedTint : loaded ? loadedTint : idleTint;
 
             // Solo si el catálogo lo tiene: así un booster sin arte todavía se queda con el
             // sprite del prefab en vez de aparecer en blanco.
@@ -140,9 +195,10 @@ public class BoosterButton : MonoBehaviour
         // que reviente con el ícono ya pintado — lo que el jugador ve no puede depender de que una
         // llamada ajena no falle.
         //
-        // Activo salvo bloqueado: con uno cargado es la única forma de descargarlo, y sin
-        // existencias es la forma de comprar más —apagarlo en cero dejaría el '+' visible y
-        // muerto—. Bloqueado sí se apaga: ahí no hay nada que el toque pueda hacer.
-        if (button != null) button.interactable = !locked;
+        // Siempre activo: con uno cargado es la única forma de descargarlo, sin existencias es la
+        // forma de comprar más —apagarlo en cero dejaría el '+' visible y muerto— y bloqueado es
+        // la forma de preguntar cuándo se consigue. Lo que cambia es lo que hace el toque, no si
+        // se puede tocar.
+        if (button != null) button.interactable = true;
     }
 }

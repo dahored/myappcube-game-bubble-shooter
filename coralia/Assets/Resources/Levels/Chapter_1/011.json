@@ -16,6 +16,8 @@
         1680
     ],
     "obstacles": [],
+    "tutorials": ["low_tide"],
+    "allowed_boosters_start": ["rainbow", "oxygen", "low_tide"],
     "objective": {
         "type": "clear_all",
         "creature_id": "",

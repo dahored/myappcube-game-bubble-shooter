@@ -292,12 +292,14 @@ public class GameplayController : MonoBehaviour
             if (!BoosterRules.IsStart(booster)) continue;
             if (!SaveManager.ConsumeBooster(booster)) continue;
 
-            // Lo que tiene que estar listo YA, antes del primer frame: la perla va en la
-            // recámara desde que el nivel abre, porque es la burbuja con la que se juega.
-            if (booster == Booster.Rainbow) cannon.MakeCurrentRainbow();
-
-            // Y a la cola de lo que hay que ENSEÑAR. Lo demás —sembrar el tablero, subir el
-            // contador— espera su turno: pasa al abrir, pero el jugador todavía no está mirando.
+            // A la cola de lo que hay que enseñar, y NADA se aplica todavía.
+            //
+            // Ni siquiera la perla de la recámara, que antes se convertía acá mismo: el jugador
+            // veía la burbuja ya arcoíris mientras leía el tutorial, y cuando por fin salía el
+            // icono anunciando el poder, lo que anunciaba ya había pasado (reportado por Diego).
+            //
+            // Un poder de inicio se consume al abrir el nivel, pero OCURRE cuando su icono llega
+            // a donde va a actuar. Lo de antes es esperar.
             _startEffects.Add(booster);
 
             BoosterLoadout.Toggle(booster);
@@ -341,27 +343,61 @@ public class GameplayController : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] float shotsGainPulse = 0.35f;
 
-    [Tooltip("Lo grande que sale el '+5' en medio de la pantalla, respecto al número del HUD. Es un clon del propio contador, así que hereda su fuente y su contorno sin arte nuevo.\n\nEn CERO usa el valor por defecto.")]
-    [Range(0f, 8f)]
-    [SerializeField] float shotsGainPopupScale = DEFAULT_POPUP_SCALE;
+    [Tooltip("Lo grande que sale el icono del poder en medio de la pantalla, en píxeles.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 600f)]
+    [SerializeField] float startIntroScale = DEFAULT_INTRO_SIZE;
 
-    [Tooltip("Lo que tarda el '+5' en aparecer: crece de nada, se pasa un poco de su tamaño y vuelve. El rebote es lo que lo hace aterrizar en vez de encenderse.\n\nEn CERO usa el valor por defecto.")]
+    [Tooltip("Lo que tarda el icono en aparecer: crece de nada, se pasa un poco de su tamaño y vuelve. El rebote es lo que lo hace aterrizar en vez de encenderse.\n\nEn CERO usa el valor por defecto.")]
     [Range(0f, 1.5f)]
-    [SerializeField] float shotsGainPopupPop = DEFAULT_POPUP_POP;
+    [SerializeField] float startIntroPop = DEFAULT_INTRO_POP;
 
-    [Tooltip("El sonido del '+5' al aparecer en el centro. Es el golpe que anuncia el regalo; el de la cuenta ('Shots Gain Clip') es otro, y suena después una vez por disparo. Opcional.")]
-    [SerializeField] AudioClip shotsGainPopupClip;
+    [Tooltip("El sonido del icono al aparecer en el centro. Es el golpe que anuncia el regalo, igual para todos los poderes de inicio; lo que cada uno hace después tiene sus propios sonidos. Opcional.")]
+    [SerializeField] AudioClip startIntroClip;
 
-    [Tooltip("El resplandor y las chispas que acompañan al '+5' al aparecer. Mismo bloque que usan los poderes al estallar.\n\nCon 'Glow Size' en CERO usa un juego de valores por defecto, para que el efecto no nazca invisible.")]
-    [SerializeField] Sparkle.Settings shotsGainSparkle = new();
+    [Tooltip("Marcado: cuando el jugador trae varios poderes de inicio, salen TODOS a la vez en el centro —uno solo centrado, dos lado a lado, tres en triángulo— y se aplican juntos.\n\nDesmarcado: se presentan de a uno, cada uno con su entrada y su efecto antes de pasar al siguiente. Se entiende mejor pero con tres equipados se hace largo.")]
+    [SerializeField] bool startIntroTogether;
 
-    [Tooltip("Lo que el '+5' se queda quieto en el centro antes de salir hacia el contador. Es el tiempo de LEERLO: sin esta pausa el número cruza la pantalla y nadie sabe qué decía.\n\nEn CERO usa el valor por defecto.")]
+    [Tooltip("Lo separados que salen los iconos entre sí en el modo 'todos a la vez', en proporción a su tamaño.")]
+    [Range(0.5f, 2f)]
+    [SerializeField] float startIntroSpread = 0.72f;
+
+    [Tooltip("Lo grandes que salen los iconos en el modo 'todos a la vez', respecto a 'Start Intro Scale'. Tres a tamaño completo no caben sin pisarse, así que acá se achican sin tocar el tamaño del modo de a uno.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0.3f, 1f)]
+    [SerializeField] float startIntroTogetherScale = 0.75f;
+
+    [Tooltip("Lo que se separan entre sí los efectos en el modo 'todos a la vez'. No es solo ritmo: van en el orden de BoosterRules.StartOrder, así que esta pausa es lo que garantiza que el poder que QUITA burbujas termine antes de que el que las siembra ponga nada.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 1.5f)]
+    [SerializeField] float startIntroTogetherStagger = DEFAULT_TOGETHER_STAGGER;
+
+    [Tooltip("Marcado: debajo del icono sale el nombre del poder. Con cinco poderes de inicio, tres de ellos son objetos azules submarinos y el icono solo no los distingue — y el nombre es con el que el jugador los va a pedir después en la tienda.\n\nSe desvanece cuando el icono arranca hacia su destino: el nombre acompaña, no viaja.")]
+    [SerializeField] bool startIntroShowName = true;
+
+    [Tooltip("La separación entre el icono y su nombre, en píxeles.")]
+    [Range(0f, 300f)]
+    [SerializeField] float startIntroNameGap = 36f;
+
+    [Tooltip("La fuente del nombre. Vacío usa la que el proyecto tenga por defecto en TextMeshPro.")]
+    [SerializeField] TMP_FontAsset startIntroNameFont;
+
+    [Tooltip("El cuerpo del nombre, en píxeles.")]
+    [Range(10f, 160f)]
+    [SerializeField] float startIntroNameSize = 52f;
+
+    [SerializeField] Color startIntroNameColor = Color.white;
+
+    [Tooltip("El velo que se pone detrás del icono para que destaque sobre el tablero. Se abre y se cierra con él.\n\nCon alfa en CERO usa el valor por defecto; para quitarlo de verdad, pon el color totalmente transparente con alfa mínimo.")]
+    [SerializeField] Color startIntroVeil = new(0f, 0.05f, 0.12f, 0.55f);
+
+    [Tooltip("El resplandor y las chispas que acompañan al icono al aparecer. Mismo bloque que usan los poderes al estallar.\n\nCon 'Glow Size' en CERO usa un juego de valores por defecto, para que el efecto no nazca invisible.")]
+    [SerializeField] Sparkle.Settings startIntroSparkle = new();
+
+    [Tooltip("Lo que el icono se queda quieto en el centro antes de salir hacia donde actúa el poder. Es el tiempo de RECONOCERLO: sin esta pausa cruza la pantalla y nadie sabe qué era.\n\nEn CERO usa el valor por defecto.")]
     [Range(0f, 2f)]
-    [SerializeField] float shotsGainPopupHold = DEFAULT_POPUP_HOLD;
+    [SerializeField] float startIntroHold = DEFAULT_INTRO_HOLD;
 
-    [Tooltip("Lo que tarda en viajar del centro al contador, encogiéndose por el camino.\n\nEn CERO usa el valor por defecto.")]
+    [Tooltip("Lo que tarda en viajar del centro a su destino, encogiéndose por el camino.\n\nEn CERO usa el valor por defecto.")]
     [Range(0f, 2f)]
-    [SerializeField] float shotsGainPopupTravel = DEFAULT_POPUP_TRAVEL;
+    [SerializeField] float startIntroTravel = DEFAULT_INTRO_TRAVEL;
 
     [Tooltip("Cuánto sube de tono el sonido entre el primer disparo que entra y el último. Es el rango COMPLETO, no el paso: la cuenta recorre siempre el mismo trecho sume 5 o sume 20.\n\nEn CERO usa el valor por defecto, no 'todos al mismo tono'.")]
     [Range(0f, 1f)]
@@ -373,14 +409,60 @@ public class GameplayController : MonoBehaviour
     // y sin subir de tono — justo los tres síntomas de "no hace nada" (reportado por Diego).
     //
     // Quien quiera de verdad apagar uno pone un valor mínimo, no cero.
-    const float DEFAULT_POPUP_POP    = 0.35f;
-    const float DEFAULT_POPUP_SCALE  = 3f;
+    // Cuánto crece una burbuja cuando la ola pasa por ella. No es configurable: es el tamaño del
+    // gesto, no una decisión de diseño, y un campo más por esto sería ruido en el Inspector.
+    // Lo ancha que se dibuja la cresta con su estela, en burbujas, y cada cuántas burbujas suena
+    // un pop. No son decisiones de diseño sino el tamaño del gesto: un campo más por cada una
+    // sería ruido en una ficha que ya tiene cinco.
+    const int   TIDE_POP_EVERY       = 4;
+
+    // Lo pequeña que acaba la última burbuja de la estela y lo separadas que van entre sí. Son el
+    // tamaño del gesto, no decisiones de diseño: un campo más por cada una sería ruido en una
+    // ficha que ya tiene cinco.
+    const float TIDE_TAIL_SCALE      = 0.2f;
+    const float TIDE_TAIL_GAP        = 0.45f;
+
+    // Cuántas burbujas por hueco de la cola, cuánto se transparenta la espuma, y lo que una
+    // burbuja del tablero tarda en reventar desde que el filo la pasa.
+    // Una burbuja de la espuma: dónde va respecto al filo y cómo se mueve por su cuenta. Struct
+    // y no tupla porque son siete datos y leerlos por nombre es la diferencia entre entender el
+    // movimiento y descifrarlo.
+    struct Foam
+    {
+        public RectTransform rt;
+        public float back;    // cuánto va por detrás del filo, en píxeles
+        public float baseY;   // su altura de partida dentro de la franja
+        public float rise;    // cuánto asciende durante la travesía
+        public float amp;     // lo que ondula
+        public float freq;    // a qué ritmo
+        public float phase;   // y por dónde empieza esa ondulación
+    }
+
+    const int   TIDE_FOAM_PER_STEP   = 2;
+    const float TIDE_FOAM_ALPHA      = 0.75f;
+    const float TIDE_POP_LAG         = 0.1f;
+
+    const int   DEFAULT_TIDE_ROWS    = 3;
+    const float DEFAULT_TIDE_CROSS   = 0.6f;
+    const int   DEFAULT_TIDE_TRAIL   = 12;
+    static readonly Color DEFAULT_INTRO_VEIL = new(0f, 0.05f, 0.12f, 0.55f);
+    static readonly Color DEFAULT_TIDE_COLOR = new(0.72f, 0.95f, 1f, 0.95f);
+    const float DEFAULT_INTRO_POP    = 0.35f;
+    const float DEFAULT_INTRO_SIZE   = 240f;
 
     // Los valores del inicializador de la clase, que es lo que un campo nuevo NO hereda cuando
     // Unity lo rellena en un componente ya guardado. Creado en código sí los trae.
-    static readonly Sparkle.Settings DEFAULT_GAIN_SPARKLE = new();
-    const float DEFAULT_POPUP_HOLD   = 0.45f;
-    const float DEFAULT_POPUP_TRAVEL = 0.5f;
+    static readonly Sparkle.Settings DEFAULT_INTRO_SPARKLE = new();
+    const float DEFAULT_INTRO_HOLD   = 0.45f;
+    const float DEFAULT_INTRO_TRAVEL = 0.5f;
+
+    // A qué tamaño llega el icono a su destino. Pequeño pero no cero: desaparecer en un punto se
+    // lee como que se perdió, y lo que tiene que decir es que ENTRÓ ahí.
+    const float INTRO_ARRIVAL_SCALE  = 0.3f;
+    const float DEFAULT_INTRO_NAME_SIZE = 52f;
+
+    const float DEFAULT_TOGETHER_STAGGER = 0.3f;
+    const float DEFAULT_TOGETHER_SCALE   = 0.75f;
     const float DEFAULT_START_DELAY = 0.6f;
     const float DEFAULT_SHOTS_GAIN  = 1.2f;
     const float DEFAULT_SHOTS_PULSE = 0.35f;
@@ -394,124 +476,554 @@ public class GameplayController : MonoBehaviour
     {
         float wait = startEffectDelay > 0f ? startEffectDelay : DEFAULT_START_DELAY;
 
-        foreach (var booster in _startEffects)
+        // Ordenados por lo que le hacen al tablero, no por cómo los equipó el jugador: el que
+        // quita burbujas tiene que pasar antes que el que las siembra, o se lleva por delante lo
+        // que el otro acaba de poner. OrderBy es estable, así que entre iguales se respeta el
+        // orden del loadout.
+        var ordered = _startEffects.OrderBy(BoosterRules.StartOrder).ToList();
+
+        // Todos a la vez, si está encendido y hay más de uno: una sola entrada en vez de tres
+        // seguidas. Con tres poderes equipados, verlos de a uno son casi diez segundos antes de
+        // poder jugar.
+        if (startIntroTogether && ordered.Count > 1)
+        {
+            yield return new WaitForSeconds(wait);
+            yield return PresentStartBoostersTogether(ordered);
+
+            _startEffects.Clear();
+            yield break;
+        }
+
+        foreach (var booster in ordered)
         {
             // Un respiro antes de cada uno. El jugador acaba de cerrar un modal y la vista todavía
             // se está asentando: el regalo que sale en ese mismo instante se lee como la última
             // parte del tutorial y no como algo que le están dando.
             yield return new WaitForSeconds(wait);
 
-            switch (booster)
-            {
-                case Booster.Rainbow: yield return SeedRainbows();                               break;
-                case Booster.Oxygen:
-                    yield return FlyShotsGain(BoosterRules.OXYGEN_SHOTS);
-                    yield return GainShots(BoosterRules.OXYGEN_SHOTS);
-                    break;
-            }
+            // Y la misma entrada para todos: el icono dice QUÉ se activó y a dónde va. Lo que
+            // viene detrás es el efecto propio de cada uno.
+            yield return PresentStartBooster(booster, StartBoosterTarget(booster));
+
+            yield return StartBoosterEffect(booster);
         }
 
         _startEffects.Clear();
     }
 
-    // El "+5" sale grande en medio de la pantalla, se deja leer y se va al contador.
-    //
-    // Y la suma ocurre DESPUÉS, cuando el número ya llegó: así el contador no cambia por su
-    // cuenta en una esquina —que es lo que no se veía— sino porque algo acaba de entrar en él.
-    // El regalo se entiende antes de ocurrir, que es lo que lo convierte en un regalo.
-    //
-    // Clonando el propio contador y no con un prefab aparte: hereda su fuente, su contorno y su
-    // color, así que no hay un segundo sitio donde el estilo se pueda quedar atrás.
-    IEnumerator FlyShotsGain(int extra)
+    // Lo que hace cada poder de inicio cuando su icono llega. En un solo sitio porque los dos
+    // modos de presentación —de a uno o todos juntos— lo necesitan igual, y el que se quedara
+    // atrás sería un poder que funciona en un modo y no en el otro.
+    IEnumerator StartBoosterEffect(Booster booster)
     {
-        if (extra <= 0 || shotsLabel == null) yield break;
+        switch (booster)
+        {
+            // La perla se convierte justo cuando el icono aterriza en la recámara, y recién
+            // entonces salen las luces a sembrar el tablero.
+            case Booster.Rainbow:
+                cannon.MakeCurrentRainbow();
+                yield return SeedRainbows();
+                break;
+
+            case Booster.Oxygen:  yield return GainShots(BoosterRules.OXYGEN_SHOTS); break;
+            case Booster.LowTide: yield return SweepLowTide(); break;
+        }
+    }
+
+    // La marea se retira y deja al descubierto las filas de abajo (GDD §3.2).
+    //
+    // Dos tiempos, y el primero es el que hace que se entienda: un barrido recorre las burbujas
+    // condenadas antes de tocarlas, fila por fila y de izquierda a derecha, con su sonido. Sin
+    // ese repaso las filas desaparecen de golpe y el jugador ve un hueco sin saber de dónde salió
+    // (pedido de Diego). Recién después revientan, en cadena, como un match grande.
+    //
+    // NO puntúa, a diferencia de un match: las estrellas salen del score, así que una fila que
+    // suma puntos es comprar estrellas con monedas. Lo que se compra es aire contra el cañón, y
+    // los puntos siguen siendo del jugador — mismo criterio que el Agua Clara, que convierte en
+    // vez de borrar justo para que el racimo lo reviente él.
+    IEnumerator SweepLowTide()
+    {
+        var art  = BoosterRules.ArtFor(Booster.LowTide);
+        int rows = art != null && art.tideRows > 0 ? art.tideRows : DEFAULT_TIDE_ROWS;
+
+        var doomed = BoosterRules.LowTideCells(grid, rows);
+        if (doomed.Count == 0) yield break;
+
+        float cross = art != null && art.tideSweepDuration > 0f ? art.tideSweepDuration : DEFAULT_TIDE_CROSS;
+        int   trail = art != null && art.tideTrail         > 0  ? art.tideTrail         : DEFAULT_TIDE_TRAIL;
+        Color tint  = art != null && art.tideSweepColor.a  > 0f ? art.tideSweepColor    : DEFAULT_TIDE_COLOR;
+
+        Sprite bubble = art != null && art.tideBubble != null ? art.tideBubble : BoosterRules.GlowFor(Booster.LowTide);
+        if (bubble == null) yield break;
+
+        // La franja que la ola tiene que cubrir: de la fila más alta que se lleva a la más baja.
+        float bandTop    = doomed.Min(c => HexGridMath.CellToLocalPos(c).y);
+        float bandBottom = doomed.Max(c => HexGridMath.CellToLocalPos(c).y);
+
+        var container = (RectTransform)grid.transform;
+        var foam      = new List<Foam>();
+
+        // La espuma se reparte por TODA la franja, no una burbuja por fila.
+        //
+        // Atada a las filas se leían tres carriles rectos por mucho que cada burbuja se saliera un
+        // poco de su sitio: el ojo encuentra la rejilla igual (reportado por Diego). Repartiéndola
+        // a lo ancho y a lo alto sin rejilla de por medio, lo que se ve es agua.
+        //
+        // Y cada una se mueve por su cuenta mientras cruza: sube despacio y ondula a su ritmo. Es
+        // lo que separa una nube de puntos trasladándose de algo que fluye.
+        // La densidad sale de la longitud de la cola y de lo alta que es la franja: una marea de
+        // cinco filas necesita más espuma que una de una para verse igual de llena.
+        int rowsHit  = doomed.Select(c => c.y).Distinct().Count();
+        int count    = Mathf.Max(1, trail) * rowsHit * TIDE_FOAM_PER_STEP;
+        float  tailPx = trail * TIDE_TAIL_GAP * HexGridMath.BubbleDiameter;
+        float  reach  = HexGridMath.BubbleRadius;   // cuánto se sale de la franja por arriba y por abajo
+
+        for (int i = 0; i < count; i++)
+        {
+            // Al cuadrado: así se amontonan cerca de la cabeza y se van soltando hacia la cola,
+            // que es como se deshace la espuma de verdad. Repartidas parejo parecen un enjambre.
+            float back = Mathf.Pow(Random.value, 2f);
+
+            float shrink = Mathf.Lerp(1f, TIDE_TAIL_SCALE, back) * Random.Range(0.7f, 1.2f);
+
+            var go = new GameObject("TideFoam", typeof(RectTransform), typeof(Image)) { hideFlags = HideFlags.DontSave };
+            var rt = (RectTransform)go.transform;
+
+            rt.SetParent(container, false);
+            rt.SetAsLastSibling();
+            rt.sizeDelta  = Vector2.one * HexGridMath.BubbleDiameter;
+            rt.localScale = Vector3.one * shrink;
+
+            var image = go.GetComponent<Image>();
+            image.sprite        = bubble;
+            image.raycastTarget = false;
+
+            // Translúcida a propósito: por debajo están reventando burbujas, y una espuma opaca
+            // se las comería justo cuando hay que verlas irse. Las de atrás, más tenues.
+            image.color = new Color(tint.r, tint.g, tint.b, tint.a * Mathf.Lerp(1f, 0.35f, back) * TIDE_FOAM_ALPHA);
+
+            foam.Add(new Foam
+            {
+                rt    = rt,
+                back  = back * tailPx,
+                baseY = Random.Range(bandTop - reach, bandBottom + reach),
+                rise  = Random.Range(0.2f, 1f) * HexGridMath.BubbleRadius,   // sube mientras cruza
+                amp   = Random.Range(0.1f, 0.45f) * HexGridMath.BubbleDiameter,
+                freq  = Random.Range(1.5f, 4f),
+                phase = Random.Range(0f, Mathf.PI * 2f),
+            });
+        }
+
+        // De fuera del tablero a fuera del otro lado, contando la cola: entrando y saliendo por
+        // el borde, nadie la ve aparecer ni desvanecerse en medio del agua.
+        float tail = trail * TIDE_TAIL_GAP * HexGridMath.BubbleDiameter;
+        float from = -HexGridMath.DesignWidth / 2f - HexGridMath.BubbleDiameter;
+        float to   =  HexGridMath.DesignWidth / 2f + HexGridMath.BubbleDiameter + tail;
+
+        if (art?.tideSweepClip) AudioManager.Instance?.PlaySfx(art.tideSweepClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.MediumImpact);
+
+        // Quién queda por reventar, ordenado por columna: la ola se lleva lo que ya ha pasado.
+        var pending = new List<Vector2Int>(doomed);
+        pending.Sort((a, b) => HexGridMath.CellToLocalPos(a).x.CompareTo(HexGridMath.CellToLocalPos(b).x));
+
+        int next    = 0;
+        var removed = new HashSet<Vector2Int>();
+
+        for (float t = 0f; t < cross; t += Time.deltaTime)
+        {
+            float edge = Mathf.Lerp(from, to, Mathf.Clamp01(t / cross));
+
+            foreach (var bit in foam)
+            {
+                if (!bit.rt) continue;
+
+                // Lo que ESTA burbuja lleva de travesía: las de la cola entran más tarde, así que
+                // su ondulación y su subida arrancan cuando a ellas les toca, no todas a la vez.
+                float own = Mathf.Max(0f, (edge - bit.back - from) / Mathf.Max(1f, to - from));
+
+                float y = bit.baseY
+                        - bit.rise * own                                  // la espuma asciende
+                        + bit.amp  * Mathf.Sin(bit.phase + own * bit.freq * Mathf.PI * 2f);
+
+                bit.rt.anchoredPosition = new Vector2(edge - bit.back, y);
+            }
+
+            // Todo lo que la primera burbuja ya dejó atrás revienta. Sin cadena ni escalonado: lo
+            // que marca el ritmo es la ola, y un retraso encima la separaría de lo que destruye.
+            while (next < pending.Count && HexGridMath.CellToLocalPos(pending[next]).x <= edge)
+            {
+                var cell = pending[next++];
+
+                // Revienta un instante DESPUÉS de que el filo la pase, no justo encima: así el
+                // estallido ocurre con la espuma ya cubriéndola, que es lo que se pidió — las
+                // burbujas se van deshaciendo a lo largo del rastro y no en una línea de corte.
+                //
+                // Una de cada tantas suena: treinta pops seguidos son ruido, y lo que tiene que
+                // oírse es la ola cruzando.
+                if (grid.TryGetBubble(cell, out var view))
+                    view.PlayPopAnimation(TIDE_POP_LAG, removed.Count % TIDE_POP_EVERY == 0 ? art?.burstClip : null);
+
+                grid.RemoveBubble(cell);
+                removed.Add(cell);
+            }
+
+            yield return null;
+        }
+
+        // Lo que quedara por redondeo, cuando la ola ya salió por el otro lado.
+        while (next < pending.Count)
+        {
+            var cell = pending[next++];
+            if (grid.TryGetBubble(cell, out var view)) view.PlayPopAnimation(0f, null);
+            grid.RemoveBubble(cell);
+            removed.Add(cell);
+        }
+
+        foreach (var bit in foam) if (bit.rt) Destroy(bit.rt.gameObject);
+
+        _bubblesPopped += doomed.Count;
+
+        // Por si acaso: las filas de abajo no sostienen a nadie POR DEBAJO, pero en un tablero con
+        // huecos una burbuja de más arriba puede estar colgando por un camino que baja hasta acá y
+        // vuelve a subir. Sale gratis preguntarlo.
+        var collapsed = CollapseFloating(removed);
+
+        yield return new WaitForSeconds(collapsed.count * collapsed.step);
+    }
+
+    // La entrada de un poder de inicio: su icono sale en medio de la pantalla, se deja reconocer
+    // y se va hacia donde el poder va a actuar.
+    //
+    // La misma para todos a propósito. Son regalos que ocurren solos, sin que el jugador toque
+    // nada, y lo que los hace legibles es que siempre se cuenten igual: esto es lo que compraste,
+    // y esto es lo que va a tocar. Lo que cada uno haga al llegar ya es cosa suya.
+    //
+    // El destino va en coordenadas de MUNDO porque cada poder actúa en un sitio distinto —el
+    // contador del HUD, un borde del tablero, la recámara— y son jerarquías distintas. En mundo
+    // se piden todos igual.
+    IEnumerator PresentStartBooster(Booster booster, Vector3 target)
+    {
+        if (shotsLabel == null) yield break;
 
         var canvas = shotsLabel.canvas;
         if (canvas == null) yield break;
 
-        float scale  = shotsGainPopupScale  > 0f ? shotsGainPopupScale  : DEFAULT_POPUP_SCALE;
-        float pop    = shotsGainPopupPop    > 0f ? shotsGainPopupPop    : DEFAULT_POPUP_POP;
-        float hold   = shotsGainPopupHold   > 0f ? shotsGainPopupHold   : DEFAULT_POPUP_HOLD;
-        float travel = shotsGainPopupTravel > 0f ? shotsGainPopupTravel : DEFAULT_POPUP_TRAVEL;
+        float size   = startIntroScale  > 0f ? startIntroScale  : DEFAULT_INTRO_SIZE;
+        float pop    = startIntroPop    > 0f ? startIntroPop    : DEFAULT_INTRO_POP;
+        float hold   = startIntroHold   > 0f ? startIntroHold   : DEFAULT_INTRO_HOLD;
+        float travel = startIntroTravel > 0f ? startIntroTravel : DEFAULT_INTRO_TRAVEL;
+        Color veil   = startIntroVeil.a > 0f ? startIntroVeil   : DEFAULT_INTRO_VEIL;
 
-        var root  = (RectTransform)canvas.rootCanvas.transform;
-        var popup = Instantiate(shotsLabel, root);
+        var root = (RectTransform)canvas.rootCanvas.transform;
 
-        // Un clon del HUD puede traerse componentes que le reescriban el texto o lo recoloquen
-        // solos. Acá es un cartel de usar y tirar: manda lo que diga este método.
-        foreach (var extraComponent in popup.GetComponents<MonoBehaviour>())
-            if (extraComponent != null && !(extraComponent is TMP_Text)) Destroy(extraComponent);
+        var veilImage = MakeVeil(root, veil);
 
-        popup.text = $"+{extra}";
-        popup.raycastTarget = false;
-        popup.enableAutoSizing = false;
-        popup.alignment = TMPro.TextAlignmentOptions.Center;
+        var made = MakeIntroIcon(booster, root, size);
+        if (made.rt == null) { Destroy(veilImage.gameObject); yield break; }
 
-        var rt = popup.rectTransform;
-        rt.SetAsLastSibling();                 // por encima del tablero y del HUD
-        rt.localScale = shotsLabel.transform.localScale * scale;
+        var rt        = made.rt;
+        var iconImage = made.image;
+        var label     = made.label;
 
         Vector3 from = root.TransformPoint(Vector3.zero);   // el centro de la pantalla
-        Vector3 to   = shotsLabel.transform.position;
+        rt.position  = from;
 
-        rt.position = from;
-
-        Vector3 full = rt.localScale;
-        rt.localScale = Vector3.zero;
-
-        // El resplandor sale con él, no antes: lo que tiene que mirarse es el número, y un
-        // destello que se abre en una pantalla vacía se lee como que va a pasar otra cosa.
-        var sparkle = shotsGainSparkle != null && shotsGainSparkle.glowSize > 0f
-            ? shotsGainSparkle
-            : DEFAULT_GAIN_SPARKLE;
+        var sparkle = startIntroSparkle != null && startIntroSparkle.glowSize > 0f
+            ? startIntroSparkle
+            : DEFAULT_INTRO_SPARKLE;
 
         Sparkle.Burst(rt, sparkle);
 
-        // Con el destello y no antes: el golpe de sonido y el de luz son el mismo momento, y
-        // separados se oyen como dos cosas.
-        if (shotsGainPopupClip) AudioManager.Instance?.PlaySfx(shotsGainPopupClip);
+        if (startIntroClip) AudioManager.Instance?.PlaySfx(startIntroClip);
         if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.MediumImpact);
 
         // Crece de nada, se pasa un 20% y vuelve. Pasarse y volver es lo que lo hace ATERRIZAR:
-        // creciendo hasta su tamaño y parando, el número se enciende en vez de llegar.
+        // creciendo hasta su tamaño y parando, el icono se enciende en vez de llegar. El velo
+        // sube con él, así que la pantalla se apaga al mismo ritmo.
         float popUp = pop * 0.6f;
 
         for (float t = 0f; t < pop; t += Time.deltaTime)
         {
             float k = t < popUp
-                ? Mathf.Lerp(0f,    1.2f, Ease(t / popUp))
-                : Mathf.Lerp(1.2f,  1f,   Ease((t - popUp) / Mathf.Max(0.0001f, pop - popUp)));
+                ? Mathf.Lerp(0f,   1.2f, Ease(t / popUp))
+                : Mathf.Lerp(1.2f, 1f,   Ease((t - popUp) / Mathf.Max(0.0001f, pop - popUp)));
 
-            rt.localScale = full * k;
+            rt.localScale   = Vector3.one * k;
+            veilImage.color = new Color(veil.r, veil.g, veil.b, veil.a * Mathf.Clamp01(t / pop));
+
             yield return null;
         }
 
-        rt.localScale = full;
+        rt.localScale = Vector3.one;
 
         yield return new WaitForSeconds(hold);
-
-        Vector3 big   = rt.localScale;
-        Vector3 small = shotsLabel.transform.localScale;
 
         for (float t = 0f; t < travel; t += Time.deltaTime)
         {
             float p = Mathf.Clamp01(t / travel);
 
-            // Arranca despacio y se dispara hacia el contador: la salida lenta deja ver de dónde
-            // sale y la llegada rápida se lee como que ENTRA, no como que pasa por ahí.
+            // Arranca despacio y se dispara hacia el destino: la salida lenta deja ver de dónde
+            // sale y la llegada rápida se lee como que LLEGA, no como que pasa por ahí.
             float ease = p * p;
 
-            rt.position   = Vector3.Lerp(from, to, ease);
-            rt.localScale = Vector3.Lerp(big, small, ease);
+            rt.position     = Vector3.Lerp(from, target, ease);
+            rt.localScale   = Vector3.one * Mathf.Lerp(1f, INTRO_ARRIVAL_SCALE, ease);
+            veilImage.color = new Color(veil.r, veil.g, veil.b, veil.a * (1f - p));
 
-            // El desvanecido va al final y no todo el camino: un número que se apaga desde que
-            // sale llega invisible y no se ve entrar en ningún sitio.
-            popup.alpha = 1f - Mathf.InverseLerp(0.75f, 1f, p);
+            // El nombre se queda atrás: acompaña al icono mientras está quieto y se apaga en
+            // cuanto arranca. Viajando con él llegaría al contador un texto que no entra en
+            // ningún sitio, y encima ilegible por el encogimiento.
+            if (label) label.alpha = 1f - Mathf.InverseLerp(0f, 0.35f, p);
+
+            // El desvanecido va al final y no todo el camino: uno que se apaga desde que sale
+            // llega invisible y no se ve entrar en ningún sitio.
+            iconImage.color = new Color(1f, 1f, 1f, 1f - Mathf.InverseLerp(0.75f, 1f, p));
 
             yield return null;
         }
 
-        Destroy(popup.gameObject);
+        Destroy(rt.gameObject);
+        Destroy(veilImage.gameObject);
+    }
+
+    // El velo que apaga el tablero detrás de los iconos, para que no compitan con cincuenta
+    // burbujas de colores. Nace transparente: lo abre quien lo pida.
+    static Image MakeVeil(RectTransform root, Color veil)
+    {
+        var go = new GameObject("StartBoosterVeil", typeof(RectTransform), typeof(Image)) { hideFlags = HideFlags.DontSave };
+        var rt = (RectTransform)go.transform;
+
+        rt.SetParent(root, false);
+        rt.SetAsLastSibling();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+
+        var image = go.GetComponent<Image>();
+        image.color         = new Color(veil.r, veil.g, veil.b, 0f);
+        image.raycastTarget = false;
+
+        return image;
+    }
+
+    // Un icono de poder listo para animar, con su nombre debajo si corresponde. Nace a escala
+    // cero: lo hace crecer quien lo pida.
+    (RectTransform rt, Image image, TMP_Text label) MakeIntroIcon(Booster booster, RectTransform root, float size)
+    {
+        var icon = BoosterRules.IconFor(booster);
+        if (icon == null) return (null, null, null);
+
+        var go = new GameObject("StartBoosterIcon", typeof(RectTransform), typeof(Image)) { hideFlags = HideFlags.DontSave };
+        var rt = (RectTransform)go.transform;
+
+        rt.SetParent(root, false);
+        rt.SetAsLastSibling();          // por encima del velo
+        rt.sizeDelta  = Vector2.one * size;
+        rt.localScale = Vector3.zero;
+
+        var image = go.GetComponent<Image>();
+        image.sprite         = icon;
+        image.raycastTarget  = false;
+        image.preserveAspect = true;
+
+        TMP_Text label = null;
+
+        // El nombre, con su propia fuente.
+        //
+        // Hecho de cero y no clonando el contador del HUD: aquel lleva contorno porque vive sobre
+        // un cartel de madera y tiene que leerse encima de él, y ese mismo contorno sobre el velo
+        // oscuro de aquí se ve como un borde pegado. Dos sitios distintos, dos tipografías.
+        //
+        // Cuelga del ICONO, así que crece y se coloca con él sin repetir cuentas.
+        if (startIntroShowName)
+        {
+            var labelGo = new GameObject("StartBoosterName", typeof(RectTransform)) { hideFlags = HideFlags.DontSave };
+            labelGo.transform.SetParent(rt, false);
+
+            label = labelGo.AddComponent<TextMeshProUGUI>();
+
+            if (startIntroNameFont != null) label.font = startIntroNameFont;
+
+            // El material BASE de la fuente, no el que traiga puesto: en TextMeshPro el contorno
+            // vive en el material, no en la fuente.
+            if (label.font != null) label.fontSharedMaterial = label.font.material;
+
+            label.text             = BoosterRules.NameFor(booster);
+            label.fontSize         = startIntroNameSize > 0f ? startIntroNameSize : DEFAULT_INTRO_NAME_SIZE;
+            label.color            = startIntroNameColor.a > 0f ? startIntroNameColor : Color.white;
+            label.raycastTarget    = false;
+            label.enableAutoSizing = false;
+            label.alignment        = TMPro.TextAlignmentOptions.Center;
+            label.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+
+            var labelRt = label.rectTransform;
+            labelRt.anchorMin = labelRt.anchorMax = new Vector2(0.5f, 0f);
+            labelRt.pivot     = new Vector2(0.5f, 1f);
+            labelRt.anchoredPosition = new Vector2(0f, -startIntroNameGap);
+            labelRt.sizeDelta  = new Vector2(size * 3f, 0f);
+            labelRt.localScale = Vector3.one;
+        }
+
+        return (rt, image, label);
+    }
+
+    // Todos los poderes de inicio a la vez: salen juntos en el centro, repartidos según cuántos
+    // sean, y cada uno se va a su sitio.
+    //
+    // Los efectos arrancan en el orden de BoosterRules.StartOrder y no literalmente a la vez, con
+    // un escalón de un suspiro entre ellos. A la vista son simultáneos —nadie distingue dos
+    // décimas— pero el que quita burbujas sigue pasando antes que el que las siembra, que es el
+    // problema que este orden vino a resolver. Simultáneo de verdad lo traería de vuelta.
+    IEnumerator PresentStartBoostersTogether(List<Booster> boosters)
+    {
+        if (boosters.Count == 0 || shotsLabel == null) yield break;
+
+        var canvas = shotsLabel.canvas;
+        if (canvas == null) yield break;
+
+        float pop    = startIntroPop    > 0f ? startIntroPop    : DEFAULT_INTRO_POP;
+        float hold   = startIntroHold   > 0f ? startIntroHold   : DEFAULT_INTRO_HOLD;
+        float travel = startIntroTravel > 0f ? startIntroTravel : DEFAULT_INTRO_TRAVEL;
+        Color veil   = startIntroVeil.a > 0f ? startIntroVeil   : DEFAULT_INTRO_VEIL;
+
+        float shrink  = startIntroTogetherScale   > 0f ? startIntroTogetherScale   : DEFAULT_TOGETHER_SCALE;
+        float stagger = startIntroTogetherStagger > 0f ? startIntroTogetherStagger : DEFAULT_TOGETHER_STAGGER;
+
+        // Más pequeños que en el modo de a uno: tres a tamaño completo no caben sin pisarse.
+        float size = (startIntroScale > 0f ? startIntroScale : DEFAULT_INTRO_SIZE) * shrink;
+
+        var root      = (RectTransform)canvas.rootCanvas.transform;
+        var veilImage = MakeVeil(root, veil);
+
+        var spots = IntroLayout(boosters.Count, size * startIntroSpread);
+        var icons = new List<(RectTransform rt, Image image, TMP_Text label, Vector3 from, Vector3 to)>();
+
+        Vector3 center = root.TransformPoint(Vector3.zero);
+
+        for (int i = 0; i < boosters.Count; i++)
+        {
+            var made = MakeIntroIcon(boosters[i], root, size);
+            if (made.rt == null) continue;
+
+            // Cada uno en su sitio del grupo, y de ahí a donde actúa su poder.
+            Vector3 from = center + (Vector3)spots[i];
+            made.rt.position = from;
+
+            icons.Add((made.rt, made.image, made.label, from, StartBoosterTarget(boosters[i])));
+        }
+
+        if (icons.Count == 0) { Destroy(veilImage.gameObject); yield break; }
+
+        // Un solo destello y un solo sonido para el grupo: tres a la vez se oyen como un golpe
+        // sucio, y lo que se anuncia es "esto es lo que traes", no tres cosas sueltas.
+        Sparkle.Burst(icons[0].rt, startIntroSparkle != null && startIntroSparkle.glowSize > 0f
+            ? startIntroSparkle : DEFAULT_INTRO_SPARKLE);
+
+        if (startIntroClip) AudioManager.Instance?.PlaySfx(startIntroClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.MediumImpact);
+
+        float popUp = pop * 0.6f;
+
+        for (float t = 0f; t < pop; t += Time.deltaTime)
+        {
+            float k = t < popUp
+                ? Mathf.Lerp(0f,   1.2f, Ease(t / popUp))
+                : Mathf.Lerp(1.2f, 1f,   Ease((t - popUp) / Mathf.Max(0.0001f, pop - popUp)));
+
+            foreach (var icon in icons) if (icon.rt) icon.rt.localScale = Vector3.one * k;
+
+            veilImage.color = new Color(veil.r, veil.g, veil.b, veil.a * Mathf.Clamp01(t / pop));
+            yield return null;
+        }
+
+        foreach (var icon in icons) if (icon.rt) icon.rt.localScale = Vector3.one;
+
+        yield return new WaitForSeconds(hold);
+
+        for (float t = 0f; t < travel; t += Time.deltaTime)
+        {
+            float p    = Mathf.Clamp01(t / travel);
+            float ease = p * p;
+
+            foreach (var icon in icons)
+            {
+                if (!icon.rt) continue;
+
+                icon.rt.position   = Vector3.Lerp(icon.from, icon.to, ease);
+                icon.rt.localScale = Vector3.one * Mathf.Lerp(1f, INTRO_ARRIVAL_SCALE, ease);
+
+                if (icon.image) icon.image.color = new Color(1f, 1f, 1f, 1f - Mathf.InverseLerp(0.75f, 1f, p));
+                if (icon.label) icon.label.alpha = 1f - Mathf.InverseLerp(0f, 0.35f, p);
+            }
+
+            veilImage.color = new Color(veil.r, veil.g, veil.b, veil.a * (1f - p));
+            yield return null;
+        }
+
+        foreach (var icon in icons) if (icon.rt) Destroy(icon.rt.gameObject);
+        Destroy(veilImage.gameObject);
+
+        // Y ahora los efectos, lanzados casi a la vez y esperando a que acabe el último: lo que
+        // viene después es soltar el control, y eso no puede pasar con la ola todavía cruzando.
+        var running = new List<Coroutine>();
+
+        foreach (var booster in boosters)
+        {
+            running.Add(StartCoroutine(StartBoosterEffect(booster)));
+            yield return new WaitForSeconds(stagger);
+        }
+
+        foreach (var routine in running) yield return routine;
+    }
+
+    // Dónde se coloca cada icono del grupo, respecto al centro.
+    //
+    // Hasta tres porque ese es el tope de poderes equipados (BoosterLoadout.MAX_EQUIPPED), y el
+    // triángulo de tres es la única forma que no deja a ninguno descolgado. De cuatro en adelante
+    // se reparten en fila, que no va a pasar pero tampoco se rompe.
+    static Vector2[] IntroLayout(int count, float gap) => count switch
+    {
+        1 => new[] { Vector2.zero },
+        2 => new[] { new Vector2(-gap, 0f), new Vector2(gap, 0f) },
+        3 => new[] { new Vector2(0f, gap * 0.8f), new Vector2(-gap, -gap * 0.6f), new Vector2(gap, -gap * 0.6f) },
+        _ => Enumerable.Range(0, count)
+                       .Select(i => new Vector2((i - (count - 1) / 2f) * gap, 0f))
+                       .ToArray(),
+    };
+
+    // Dónde actúa cada poder de inicio, en coordenadas de mundo: es a donde va su icono.
+    Vector3 StartBoosterTarget(Booster booster)
+    {
+        var container = (RectTransform)grid.transform;
+
+        switch (booster)
+        {
+            // Al contador de disparos, que es lo único que este poder toca.
+            case Booster.Oxygen:
+                return shotsLabel != null ? shotsLabel.transform.position : container.position;
+
+            // A la perla de la recámara: de ahí salen las luces que siembran el tablero, así que
+            // el icono entra justo donde va a empezar lo siguiente.
+            case Booster.Rainbow:
+                return cannon != null ? container.TransformPoint(cannon.CurrentBubbleLocal) : container.position;
+
+            // Al borde por el que va a entrar la ola, a la altura de las filas que se lleva.
+            case Booster.LowTide:
+                var art  = BoosterRules.ArtFor(Booster.LowTide);
+                int rows = art != null && art.tideRows > 0 ? art.tideRows : DEFAULT_TIDE_ROWS;
+                var band = BoosterRules.LowTideCells(grid, rows);
+
+                if (band.Count == 0) return container.position;
+
+                float top    = band.Min(c => HexGridMath.CellToLocalPos(c).y);
+                float bottom = band.Max(c => HexGridMath.CellToLocalPos(c).y);
+
+                return container.TransformPoint(new Vector3(-HexGridMath.DesignWidth / 2f, (top + bottom) / 2f, 0f));
+
+            default:
+                return container.position;
+        }
     }
 
     // Suave a la entrada y a la salida. Lo usa el rebote del '+5': con tramos lineales el número

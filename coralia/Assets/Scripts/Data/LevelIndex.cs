@@ -20,6 +20,13 @@ public class LevelIndexEntry
     // armarla con el id porque nada garantiza que el archivo se llame como su id, y una
     // suposición así falla en silencio el día que dejen de coincidir.
     public string path;
+
+    // Qué explica este nivel. Va en el índice y no solo en el JSON del nivel porque hay que poder
+    // responder "¿en qué nivel se desbloquea este poder?" sin abrir sesenta archivos — y esa
+    // pregunta la hace el HUD de la partida, cada vez que se dibuja un booster con candado.
+    //
+    // Es un derivado, no una segunda fuente: lo escribe el generador leyendo los JSON.
+    public string[] tutorials;
 }
 
 [Serializable]

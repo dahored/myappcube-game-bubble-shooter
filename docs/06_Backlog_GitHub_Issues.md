@@ -922,7 +922,7 @@ seis capítulos del GDD §2.1 caben dentro de esos 60.
 | 6 ✅ | `electric_ray` (Raya Eléctrica) | gameplay | Segundo poder de área, ya sabiendo apuntar uno |
 | 9 | `oxygen` (Reserva de Oxígeno) | inicio | El más simple de todos: +5 disparos. Cae cuando el margen de tiros empieza a apretar |
 | 13 | `mother` (Burbuja Madre) | gameplay | Ataca el color disperso, que es el problema que aparece al subir a cuatro colores |
-| 18 | `lowtide` (Marea Baja) | inicio | Cuando los tableros empiezan a abrir cargados |
+| 11 | `low_tide` (Marea Baja) | inicio | Adelantado al 11 **provisionalmente para probarlo**; su sitio por diseño es el 18, cuando los tableros empiezan a abrir cargados |
 | 24 | `ink` (Tinta de Pulpo) | gameplay | El más difícil de los que se cargan: tiñe del color que VUELVE, así que pide dominar la cola |
 | 30 | `clearwater` (Agua Clara) | inicio | Mitad del recorrido, con cinco colores en el tablero: ahí es donde sobra uno |
 | 38 | `current` (Corriente Favorable) | inicio | Un sesgo sutil. Solo se aprecia habiendo sufrido la mala suerte de colores |
