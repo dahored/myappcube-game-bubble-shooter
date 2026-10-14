@@ -12,7 +12,7 @@ Documento maestro de estado del proyecto. Si abres uno solo de los docs, **abre 
 |---|---|---|
 | **Fase 0** — Pre-producción | ✅ Completada | Concept, GDD, wireframes, setup técnico |
 | **Fase 1** — Prototipo jugable | ✅ Completada | Mecánicas core validadas |
-| **Fase 2** — MVP | 🔄 En progreso | El loop de juego está completo de punta a punta. Falta economía real, siete power-ups y los servicios externos |
+| **Fase 2** — MVP | 🔄 En progreso | El loop de juego está completo de punta a punta. Falta economía real, cuatro power-ups y los servicios externos |
 | **Fase 3** — Soft Launch | ⏳ Pendiente | Tras MVP completo |
 | **Fase 4** — Global Launch | ⏳ Pendiente | Tras soft launch validado |
 
@@ -41,11 +41,13 @@ Se entra desde el mapa, se juega el nivel, se gana o se pierde y se vuelve. Incl
 - **Progreso**: nivel máximo, estrellas, récords, tutoriales vistos, inventario y desbloqueo de boosters
 - **Cerrar la app a mitad de nivel cuesta una vida**; minimizarla no
 
-### Boosters ✅ el sistema, 3 de 10 implementados
+### Boosters ✅ el sistema, 6 de 10 implementados
 
 - `BoosterCatalog` en `Resources` concentra el arte de cada poder
 - `BoosterRules` concentra nombres, desbloqueo —que va por tutorial visto— y **qué celdas se lleva
   cada poder**: de ahí salen a la vez la marca de la mira, el orden de los pops y la explosión
+- Los de inicio comparten una entrada común: el icono sale en el centro sobre un velo y viaja a donde el poder actúa; nada se aplica antes de que llegue. Con varios equipados, el orden lo decide `BoosterRules.StartOrder` (primero los que quitan, luego los que convierten, al final los que siembran) y no el loadout
+- Un poder bloqueado se ve apagado con candado y, al tocarlo, dice en qué nivel se consigue. El número sale del índice de niveles, que lleva los `tutorials` de cada uno
 - `LevelData.allowed_boosters_start` decide qué power-ups DE INICIO ofrece cada nivel. Los de gameplay no se limitan por nivel (GDD §3.5): están todos en el HUD, con candado hasta que su tutorial los presente
 - Selección pre-nivel, HUD de gameplay, panel de recarga con packs y descuentos
 - **Bomba de Coral**: carga de luz, destello, onda expansiva, sonido y vibración
@@ -87,7 +89,7 @@ el panel de recarga se agota solo. Ver el issue de recalibración de la economí
 ### Top 5 por valor
 
 1. **Fuentes de monedas** — santuario, dailies, misiones o logros. Cualquiera desbloquea la economía
-2. **Los siete power-ups restantes** — cuatro de inicio y tres de gameplay (GDD 3.2)
+2. **Los cuatro power-ups restantes** — dos de inicio (Agua Clara, Corriente Favorable) y dos de gameplay (Tinta de Pulpo, Pinza de Langosta). La Pinza es la única que pide algo que no existe: un modo de selección sobre el tablero (GDD 3.2)
 3. **Revisar y balancear los 60 del MVP** — están escritos, falta jugarlos
 4. **Audio real** — la infraestructura está, faltan clips
 5. **Santuario** — decidir si `HomeGame` se expande o es pantalla nueva
