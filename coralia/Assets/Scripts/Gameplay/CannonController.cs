@@ -150,6 +150,16 @@ public class CannonController : MonoBehaviour
     // grid se mueve, el cañón no.
     Vector2 MuzzleLocal => _muzzleLocalBase - Vector2.up * (grid != null ? grid.ScrollOffsetY : 0f);
 
+    // De dónde sale un efecto que tiene que nacer EN la burbuja de la recámara, en el espacio del
+    // grid. La Perla manda desde acá las luces que convierten burbujas del tablero.
+    //
+    // Sale de la burbuja que se VE (CancelAnchor) y no de MuzzleLocal: aquel es el punto desde el
+    // que salen los disparos, que no es exactamente donde está dibujada la perla. Para un disparo
+    // da igual —nadie mide de dónde arrancó— pero una luz que nace a un lado de la burbuja que
+    // dice haber salido de ella se nota enseguida.
+    public Vector2 CurrentBubbleLocal =>
+        CancelAnchor != null ? WorldToGridLocal(CancelAnchor.position) : MuzzleLocal;
+
     void Awake()
     {
         currentBubbleButton.onClick.AddListener(SwapCurrentAndNext);
@@ -413,6 +423,7 @@ public class CannonController : MonoBehaviour
         _currentSpecial = Booster.None;
         _rainbowsLeft   = 0;   // cada nivel arranca sin boosters de inicio hasta que se apliquen
         _rainbowBonus   = 0f;
+        _rainbowHeld    = false;
         BoosterChanged();
         RefreshPreview();
         SetOctopusSprite(octopusIdleSprite);
@@ -846,6 +857,18 @@ public class CannonController : MonoBehaviour
         {
             SaveManager.ConsumeBooster(_currentSpecial);
             BoosterChanged();
+        }
+
+        // Y la perla que el poder había tapado vuelve a la recámara para el tiro siguiente.
+        //
+        // A la recámara y no a la reserva: disparar un poder NO gasta la burbuja de debajo — la
+        // cola no avanza (ver ResolveImpact), porque el poder la SUSTITUYE en ese tiro en vez de
+        // consumirla. Devolverla al sorteo la hacía desaparecer de la vista y reaparecer vaya a
+        // saber cuándo, que es lo que se leía como perderla (reportado por Diego).
+        if (_rainbowHeld)
+        {
+            _rainbowHeld = false;
+            _current     = BubbleColor.Rainbow;
         }
 
         if (!SaveManager.HasFiredFirstShot) SaveManager.HasFiredFirstShot = true;
@@ -1349,6 +1372,22 @@ public class CannonController : MonoBehaviour
             return false;
         }
 
+        // Una burbuja no puede ser dos poderes a la vez. Si en la recámara había una arcoíris —de
+        // la Perla, de la cuota o del bonus— cargar un poder encima dejaba las dos cosas puestas:
+        // el ícono se veía bien porque el poder manda al dibujar, pero Fire() mandaba el COLOR
+        // por un lado y el poder por otro, y al tablero llegaba una Madre que además matcheaba
+        // con todo. Dos boosters en una burbuja, que es justo lo que no puede pasar.
+        //
+        // No se tira: se aparta. Cargar y descargar son gratis en este juego, así que la perla
+        // tiene que volver intacta si el jugador se arrepiente — y si acaba disparando el poder,
+        // vuelve a la reserva para salir más adelante. Lo que pagó no se evapora por haber usado
+        // otra cosa primero.
+        if (_current == BubbleColor.Rainbow)
+        {
+            _rainbowHeld = true;
+            _current     = PlainColor();
+        }
+
         // Cargar NO descuenta: el inventario se gasta recién en Fire(). Así equivocarse de
         // ícono no cuesta monedas, y una bomba cargada que quedó sin usar al terminar el nivel
         // sigue estando la próxima vez.
@@ -1440,6 +1479,28 @@ public class CannonController : MonoBehaviour
     int   _rainbowsLeft;
     float _rainbowBonus;
 
+    // Había una arcoíris en la recámara cuando se cargó el poder que la tapa — ver LoadBooster.
+    bool  _rainbowHeld;
+
+    // Un color cualquiera de los que el nivel tiene en juego, nunca comodín. Solo se usa para la
+    // burbuja que queda DEBAJO de un poder cargado: no se ve, pero tiene que ser algo, y lo que
+    // no puede ser es otra arcoíris.
+    BubbleColor PlainColor()
+    {
+        var pool = grid.ReachableColorPool();
+
+        if (pool == null || pool.Count == 0)
+        {
+            var onGrid = grid.ColorsOnGrid();
+            pool = onGrid.Count > 0 ? new List<BubbleColor>(onGrid) : _availableColorsParsed;
+        }
+
+        foreach (var color in pool)
+            if (color != BubbleColor.Rainbow) return color;
+
+        return BubbleColor.Red;   // un nivel entero sin un solo color normal no existe
+    }
+
     // La Perla Arcoíris: la burbuja que ya está en la recámara pasa a ser comodín.
     //
     // Toca el COLOR y no el booster cargado: la arcoíris no es un poder que la burbuja lleva
@@ -1463,6 +1524,14 @@ public class CannonController : MonoBehaviour
     {
         if (_currentSpecial == Booster.None) return;
         _currentSpecial = Booster.None;
+
+        // La perla que el poder había tapado vuelve a la recámara: descargar no cuesta nada.
+        if (_rainbowHeld)
+        {
+            _rainbowHeld = false;
+            _current     = BubbleColor.Rainbow;
+        }
+
         RefreshPreview();
         BoosterChanged();
     }

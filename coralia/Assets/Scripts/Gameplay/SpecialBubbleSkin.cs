@@ -279,14 +279,27 @@ public class SpecialBubbleSkin : MonoBehaviour
 
         bool sparkVisible = visible && _sparkCfg != null;
 
+        // Cuántas hijas quiere el poder que está puesto AHORA. Las capas se reusan entre poderes
+        // —el cañón pasa de uno a otro a cada rato y recrearlas sería basura por turno—, así que
+        // el array puede tener de sobra: la Madre deja tres y la arcoíris no quiere ninguna.
+        //
+        // Sin esta cuenta, este bucle las encendía TODAS por el simple hecho de existir, y
+        // deshacía el apagado que BuildOrbit acababa de hacer. Se veía al descargar la Madre
+        // sobre una arcoíris: el disco de colores salía con las tres burbujas de la Madre encima,
+        // un poder al que nadie había llamado (reportado por Diego).
+        int orbitWanted = visible ? _orbitCfg?.sprites?.Length ?? 0 : 0;
+
         if (_back   != null && _back.gameObject.activeSelf   != visible)      _back.gameObject.SetActive(visible);
 
         if (_orbit != null)
         {
-            foreach (var child in _orbit)
-                if (child != null && child.gameObject.activeSelf != visible) child.gameObject.SetActive(visible);
+            for (int i = 0; i < _orbit.Length; i++)
+            {
+                bool on = i < orbitWanted;
+                if (_orbit[i] != null && _orbit[i].gameObject.activeSelf != on) _orbit[i].gameObject.SetActive(on);
+            }
 
-            if (visible) TickOrbit();
+            if (orbitWanted > 0) TickOrbit();
         }
 
         if (_core   != null && _core.gameObject.activeSelf   != sparkVisible) _core.gameObject.SetActive(sparkVisible);
