@@ -9,7 +9,7 @@ public class SettingsPanel : UIPanel
     [Tooltip("Regala monedas para poder probar las compras mientras no exista la tienda (issue #57).")]
     [SerializeField] Button coinsTempButton;
 
-    [SerializeField] int coinsPerTap = 10;
+    [SerializeField] int coinsPerTap = 500;
 
     protected override void Awake()
     {

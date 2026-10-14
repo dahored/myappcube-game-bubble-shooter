@@ -625,7 +625,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   resetTempButton: {fileID: 6804168750783440294}
   coinsTempButton: {fileID: 6089003994289960550}
-  coinsPerTap: 10
+  coinsPerTap: 500
 --- !u!225 &1893972891870966635
 CanvasGroup:
   m_ObjectHideFlags: 0
