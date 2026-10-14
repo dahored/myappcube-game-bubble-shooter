@@ -17,6 +17,8 @@
         3560
     ],
     "obstacles": [],
+    "tutorials": ["oxygen"],
+    "allowed_boosters_start": ["rainbow", "oxygen"],
     "objective": {
         "type": "clear_all",
         "creature_id": "",

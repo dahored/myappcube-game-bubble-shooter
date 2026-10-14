@@ -1017,9 +1017,14 @@ public class CannonController : MonoBehaviour
     // llegar —la promesa se cumple— y recién entonces verse cómo se intercambia. Cambiarla en
     // silencio sería indistinguible de re-sortearla, que es justo lo que no se quiere.
     //
-    // No cuesta disparos. Descartarla en su lugar sí costaría uno, y cada disparo que sobra ya
-    // paga 1000 puntos al ganar (ScoreRules.POINTS_PER_REMAINING_SHOT): el descarte sería un mal
-    // trato disfrazado de premio.
+    // No cuesta disparos. Descartarla COMO TIRO sí costaría uno, y cada disparo que sobra ya paga
+    // 1000 puntos al ganar (ScoreRules.POINTS_PER_REMAINING_SHOT): eso sería un mal trato
+    // disfrazado de premio. Lo que sí se descarta es el COLOR, que no vale nada.
+    //
+    // Y ese descarte es la mitad que faltaba: intercambiar a secas movía el color muerto a la
+    // ranura del pulpo, de donde volvía a la recámara en el relevo siguiente con su intercambio
+    // otra vez. El color no salía nunca de la cola, así que en un tablero al que ya no le quedan
+    // rojas, media partida se iba en animaciones de cruce (reportado por Diego).
     IEnumerator AutoSwapIfStale()
     {
         // Nunca con el dedo apoyado: cambiarle el color a alguien que ya está apuntando es
@@ -1031,7 +1036,7 @@ public class CannonController : MonoBehaviour
 
         (_current, _next) = (_next, _current);
 
-        _swapRoutine = StartCoroutine(SwapFeedback());
+        _swapRoutine = StartCoroutine(SwapFeedback(discardOutgoing: true));
     }
 
     bool StaleCurrent()
@@ -1086,7 +1091,7 @@ public class CannonController : MonoBehaviour
 
     // Las dos burbujas se cruzan de lugar, cada una arqueada hacia un lado. Antes los sprites se
     // intercambiaban de golpe y solo quedaba el pop: se veía que algo había pasado, pero no QUÉ.
-    IEnumerator SwapFeedback()
+    IEnumerator SwapFeedback(bool discardOutgoing = false)
     {
         AudioManager.Instance?.PlaySfx(swapClip); // no hace nada si está vacío
         if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
@@ -1103,6 +1108,16 @@ public class CannonController : MonoBehaviour
         // pasó a ser "next", y viceversa.
         _swapCloneOut = SpawnTravelClone(_next, here, sizeHere);
         _swapCloneIn  = SpawnTravelClone(_current, there, sizeThere);
+
+        // El intercambio automático se deshace del color que ya no sirve: el pulpo se queda con
+        // uno nuevo en vez de devolverlo a la cola. Va DESPUÉS de repartir los clones y no antes,
+        // porque el que sale de la recámara tiene que ser el muerto — es el que el jugador tenía
+        // delante, y verlo salir es lo que explica el gesto. Cambiarlo antes sacaría de la
+        // recámara un color que nunca estuvo ahí.
+        //
+        // El swap manual no pasa por acá: ahí el jugador cambió a propósito y las dos burbujas
+        // son suyas.
+        if (discardOutgoing) _next = RollColor();
 
         if (_swapCloneOut != null && _swapCloneIn != null)
         {

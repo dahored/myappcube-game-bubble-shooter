@@ -90,6 +90,13 @@ public static class BoosterRules
     // necesita. Con el extra, un nivel largo da más que uno corto, que es lo que corresponde.
     public const float RAINBOW_BONUS_CHANCE = 0.05f;
 
+    // Cuántos disparos suma la Reserva de Oxígeno (GDD §3.2).
+    //
+    // Cinco y no un porcentaje del nivel: el jugador tiene que saber qué compra antes de pagar, y
+    // "+5" se entiende sin mirar cuántos traía el nivel. Un porcentaje valdría el doble en el
+    // nivel largo por el mismo precio, y además no se puede anunciar en una línea.
+    public const int OXYGEN_SHOTS = 5;
+
     // Cuántos se regalan al presentar un booster por primera vez. DOS y no uno: el primero se
     // carga solo en el cañón para que el jugador lo dispare sin tener que descubrir el ícono del
     // HUD, y el segundo queda en el inventario para que pueda volver a usarlo cuando ÉL quiera
@@ -154,6 +161,10 @@ public static class BoosterRules
         // Reparte comodines por el nivel: se dibujan en el tablero y contagian su color al
         // estallar, pero nunca se queda cargado esperando — se aplica solo al abrir.
         Booster.Rainbow => Uses.Bubble | Uses.Burst | Uses.Claim | Uses.Seed,
+
+        // No dibuja ninguna burbuja ni estalla en ningún sitio: solo sube el contador de tiros al
+        // abrir. Todo lo que el Inspector enseñaría de él serían campos que no lee nadie.
+        Booster.Oxygen => Uses.None,
 
         _ => CANNON,
     };
@@ -449,6 +460,7 @@ public static class BoosterRules
         (Booster.Bomb,        "bomb"),
         (Booster.ElectricRay, "electric_ray"),
         (Booster.Mother,      "mother"),
+        (Booster.Oxygen,      "oxygen"),
     };
 
     public static string NameOf(Booster booster)

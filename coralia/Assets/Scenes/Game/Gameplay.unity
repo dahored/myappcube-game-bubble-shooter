@@ -5574,7 +5574,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.7058824}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.78431374}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -8833,6 +8833,30 @@ MonoBehaviour:
     waveCount: 2
     waveStagger: 0.08
     rainbowWaves: 0
+  startEffectDelay: 0.3
+  shotsGainDuration: 1
+  shotsGainClip: {fileID: 8300000, guid: eb509b35c7f9442b58256776ea9bae06, type: 3}
+  shotsGainPulse: 0.35
+  shotsGainPopupScale: 3
+  shotsGainPopupPop: 0.35
+  shotsGainPopupClip: {fileID: 8300000, guid: eb509b35c7f9442b58256776ea9bae06, type: 3}
+  shotsGainSparkle:
+    glowColor: {r: 1, g: 0.93, b: 0.72, a: 0.85}
+    glowSize: 300
+    glowFrom: 0.35
+    glowTo: 1.6
+    glowDuration: 0.5
+    moteCount: 10
+    moteColor: {r: 1, g: 1, b: 1, a: 0.95}
+    moteSize: 64
+    spawnRadius: 34
+    travel: 95
+    moteDuration: 0.55
+    stagger: 0.22
+    rainbowMotes: 0
+  shotsGainPopupHold: 0.45
+  shotsGainPopupTravel: 0.5
+  shotsGainPitchRise: 0.45
 --- !u!4 &820312950
 Transform:
   m_ObjectHideFlags: 0
