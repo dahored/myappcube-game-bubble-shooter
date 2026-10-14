@@ -145,13 +145,26 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     //
     // Pasa por SetSpecial y no por un tinte propio porque así el pop lo desvanece solo: ya sabe
     // bajarle el alfa a las capas de una burbuja con poder.
-    public void ClaimAsRainbow(float delay, float fade) => StartCoroutine(ClaimRoutine(delay, fade));
+    public void ClaimAsRainbow(float delay, float fade) => StartCoroutine(RainbowRoutine(delay, fade, null));
 
-    IEnumerator ClaimRoutine(float delay, float fade)
+    // La Perla convierte burbujas YA PUESTAS en comodines al abrir el nivel, y esas se quedan.
+    //
+    // Por eso cambia el COLOR y no el 'Special' como el contagio: lo que hace comodín a una
+    // burbuja es su ColorType (BubbleColorExtensions.LinksWith), así que teñirla sin tocarlo
+    // daría una que se ve arcoíris y matchea como lo que era — exactamente el bug que el jugador
+    // leería como que el booster no funciona.
+    //
+    // El gesto es el mismo a propósito: el jugador ya aprendió qué significa esa animación.
+    public void TurnIntoRainbow(Sprite sprite, float delay, float fade) =>
+        StartCoroutine(RainbowRoutine(delay, fade, sprite));
+
+    IEnumerator RainbowRoutine(float delay, float fade, Sprite permanentSprite)
     {
         if (delay > 0f) yield return new WaitForSeconds(delay);
 
-        SetSpecial(Booster.Rainbow);
+        if (permanentSprite != null) SetColor(BubbleColor.Rainbow, permanentSprite);
+        else                         SetSpecial(Booster.Rainbow);
+
         SpecialBubbleSkin.SetAlpha(this, 0f);
 
         // Un pelín más grande mientras se tiñe, y vuelve. Sin el gesto, el cambio de color sobre

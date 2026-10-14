@@ -147,6 +147,13 @@ public class BoosterCatalog : ScriptableObject
         [Tooltip("Tope de lo que puede durar el contagio entero. En racimos grandes el paso se comprime para no pasarse de acá — igual que la cadena de pops.")]
         public float claimMaxTotal = 0.8f;
 
+        [Tooltip("La luz que sale de la perla de la recámara hacia cada burbuja que va a convertir, con su ruta, su escalonado y sus dos sonidos (salida y llegada). Marca 'Enabled' aquí dentro para encenderla: apagada, las tres se convierten en su sitio sin que nada viaje.\n\nMismo bloque que usa la Burbuja Madre para sus hijas — lo que se afine en uno vale como referencia para el otro.")]
+        public TravelingBubble.Settings seedTravel = new();
+
+        [Range(0f, 0.8f)]
+        [Tooltip("Cuánto tarda cada burbuja alcanzada en teñirse del todo, ya con la luz encima. En CERO usa el del contagio.")]
+        public float seedFade;
+
         [Tooltip("Las ofertas que se muestran al tocar el '+' de este booster, en orden. Vacío deja el panel sin nada que vender.")]
         public Pack[] packs;
 
