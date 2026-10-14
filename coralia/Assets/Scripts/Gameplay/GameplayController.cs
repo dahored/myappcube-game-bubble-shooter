@@ -255,6 +255,20 @@ public class GameplayController : MonoBehaviour
         if (openPausedButton) openPausedButton.interactable = true;
         cannon.SetInputEnabled(true);
 
+        // La siembra de la Perla, recién acá. Se consumió al abrir el nivel, pero mostrarla ahí
+        // era regalarla a nadie: todavía no se había dibujado el primer frame, y encima la vista
+        // previa mueve el tablero entero justo encima. Acá el tablero está quieto, en su sitio y
+        // con el jugador mirándolo.
+        //
+        // Sirve igual para el nivel que PRESENTA la Perla: ese la consume dentro de
+        // ExplainMechanics, que termina unas líneas más arriba, así que el destello sale al
+        // cerrarse el modal — que es exactamente cuando el jugador quiere ver de qué le hablaron.
+        if (_seedRainbows)
+        {
+            _seedRainbows = false;
+            SeedRainbows();
+        }
+
         // El booster recién presentado llega puesto en la recámara: el jugador acaba de leer qué
         // hace y lo primero que ve al cerrar el modal es la bomba lista para disparar. Dejarlo en
         // el inventario sería pedirle que encuentre el ícono del HUD justo cuando todavía no sabe
@@ -284,10 +298,57 @@ public class GameplayController : MonoBehaviour
 
             switch (booster)
             {
-                case Booster.Rainbow: cannon.MakeCurrentRainbow(); break;
+                case Booster.Rainbow: cannon.MakeCurrentRainbow(); _seedRainbows = true; break;
             }
 
             BoosterLoadout.Toggle(booster);
+        }
+    }
+
+    // La otra mitad de la Perla: convierte burbujas YA PUESTAS en comodines, escalonadas y con su
+    // sonido, para que el jugador vea lo que acaba de pagar.
+    //
+    // Las de la cola (CannonController._rainbowsLeft) llegan de a una a lo largo de la partida y
+    // no se anuncian; estas se ven todas al abrir y se pueden planear, que es lo que las hace
+    // valer. Las dos cosas a la vez son el poder entero (pedido de Diego).
+    bool _seedRainbows;
+
+    void SeedRainbows()
+    {
+        var art    = BoosterRules.ArtFor(Booster.Rainbow);
+        var travel = art?.seedTravel;
+        var seeds  = BoosterRules.RainbowSeeds(grid);
+
+        bool travels = travel != null && travel.enabled;
+
+        // Cero significa "usa el del contagio" y no "instantáneo": el campo es nuevo, y Unity
+        // rellena un campo nuevo en un asset ya guardado con el cero del TIPO, no con el valor
+        // que diga el inicializador. Sin esto, la siembra saldría de golpe en un catálogo que
+        // nadie tocó todavía.
+        float fade = art != null && art.seedFade > 0f ? art.seedFade : art?.claimFade ?? 0f;
+        float step = travel != null && travel.stagger > 0f ? travel.stagger : art?.claimStep ?? 0f;
+
+        // La luz es el glow del propio poder: lo que viaja no es una burbuja todavía, es lo que
+        // va a convertir una. Si el catálogo no tiene glow se manda la perla misma, que se lee
+        // igual de bien y evita que el efecto desaparezca por un campo sin llenar.
+        Sprite light = BoosterRules.GlowFor(Booster.Rainbow) ?? grid.SpriteFor(BubbleColor.Rainbow);
+
+        // Desde la perla que el jugador tiene delante, no desde el borde del tablero: lo que
+        // cuenta el efecto es que el poder que acaba de pagar reparte desde su propia burbuja.
+        Vector2 from = cannon != null ? cannon.CurrentBubbleLocal : Vector2.zero;
+
+        for (int i = 0; i < seeds.Count; i++)
+        {
+            // Con viaje, cada burbuja se convierte CUANDO LLEGA su luz — es el mismo reloj que
+            // usa la Madre para sus hijas, así lo que se ve y lo que pasa no se separan nunca.
+            float at = travels ? travel.TotalFor(i) : i * step;
+
+            if (travels)
+                TravelingBubble.Send((RectTransform)grid.transform, from,
+                                     HexGridMath.CellToLocalPos(seeds[i]), light, travel, i);
+
+            grid.TurnIntoRainbow(seeds[i], at, fade);
+            StartCoroutine(PlayClipAfter(travel?.arriveClip, at));
         }
     }
 
@@ -325,10 +386,11 @@ public class GameplayController : MonoBehaviour
         {
             SaveManager.GrantBooster(booster, BoosterRules.TUTORIAL_GRANT);
 
-            // Y se equipa, aunque el jugador no lo haya elegido en la pantalla previa — ahí ni
-            // siquiera se le ofrecía, porque todavía no lo conocía. Sin esto, el segundo que se
-            // le regala no tendría ícono en el HUD y no habría forma de usarlo en este nivel.
-            BoosterLoadout.Equip(booster);
+            // Equipar es cosa de los de inicio: son los que se eligen en la pantalla previa y los
+            // que ApplyStartBoosters consume leyendo el loadout. Uno de gameplay ya no necesita
+            // pasar por acá —su ícono está en el HUD siempre, esté equipado o no— y colarlo
+            // gastaría uno de los tres huecos que le hacen falta al jugador para otra cosa.
+            if (BoosterRules.IsStart(booster)) BoosterLoadout.Equip(booster);
 
             // Solo los de gameplay se cargan en la recámara. Uno de inicio se aplica en el acto:
             // su momento era al abrir el nivel y ya pasó, así que esperar al final del tutorial es

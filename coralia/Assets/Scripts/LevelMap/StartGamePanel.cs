@@ -17,7 +17,7 @@ public class StartGamePanel : UIPanel
     [SerializeField] Button   playButton;
     [SerializeField] Button   closeButton;
 
-    [Tooltip("Los huecos de booster de la pantalla, en orden. Cuál poder va en cuál lo decide el nivel (LevelData.allowed_boosters), no el Inspector: acá solo se listan los ítems que hay.")]
+    [Tooltip("Los huecos de booster de la pantalla, en orden. Cuál poder va en cuál lo decide el nivel (LevelData.allowed_boosters_start), no el Inspector: acá solo se listan los ítems que hay.")]
     [SerializeField] BoosterItemView[] boosterSlots;
 
     [Header("Ícono según el objetivo (level.objective.type)")]

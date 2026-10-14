@@ -959,10 +959,10 @@ el poder es haberlo visto, no haber llegado a cierto nivel.
   la Raya, aunque los niveles del 7 al 20 la ofrezcan. El tutorial es la única llave.
 
 **El nivel decide si lo OFRECE, el tutorial decide si EXISTE.** Son dos filtros encadenados: el
-poder aparece en la pantalla previa solo si el nivel lo lista en su `allowed_boosters` **y** está
+poder de inicio aparece en la pantalla previa solo si el nivel lo lista en su `allowed_boosters_start` **y** está
 desbloqueado. Un nivel que no diga nada usa el trío por defecto, que hoy es solo la bomba
 (`BoosterRules.DEFAULT_ALLOWED`) — así que un jugador con los diez desbloqueados sigue viendo uno
-solo en un nivel sin `allowed_boosters`. Al repartir la tabla hay que repasar también qué niveles
+solo en un nivel sin `allowed_boosters_start`. Al repartir la tabla hay que repasar también qué niveles
 ofrecen qué.
 
 ### ⚠️ Qué hay que apagar antes de shippear
@@ -991,11 +991,11 @@ recalibrar precios, porque regalar de más mata la primera compra.
 
 ### Acceptance criteria
 - [ ] Cada id de la tabla, en el `tutorials` del JSON de su nivel
-- [ ] Ese mismo id en el `allowed_boosters` de ese nivel y de los siguientes que lo quieran ofrecer
+- [ ] Si es de inicio, ese mismo id en el `allowed_boosters_start` de ese nivel y de los siguientes que lo quieran ofrecer (los de gameplay no hace falta: están siempre en el HUD)
 - [ ] Una entrada por id en el `TutorialPanel` de `Gameplay.unity`, con su demo
 - [ ] `ui.tutorial.X.title` y `.body` en los 6 idiomas
 - [ ] Ningún nivel con dos tutoriales de power-up
-- [ ] Repasado qué `allowed_boosters` ofrece cada nivel después de cada desbloqueo
+- [ ] Repasado qué `allowed_boosters_start` ofrece cada nivel después de cada desbloqueo
 - [ ] Contrastado con la matriz poder × obstáculo: un obstáculo no debería entrar muchos niveles antes que el poder pensado para él (hoy la pegajosa entra en el 21 y la Pinza en el 45)
 - [ ] **Antes de shippear**: `Remember Seen` y todos los `Once` marcados, `TempActions` fuera
 
@@ -1151,7 +1151,7 @@ tiros es muy holgada (el nivel 10 da 84 tiros para 141 burbujas).
 - [ ] Curva difícil con walls de pago en 35, 45, 55
 - [ ] Variedad de objetivos — hoy **todos** son `clear_all`; falta repartir `rescue` y los demás
 - [ ] Obstáculos progresivos (hielo, jaulas, pegajosas, generadores, bombas)
-- [ ] `allowed_boosters` coherente con el issue del reparto de tutoriales
+- [ ] `allowed_boosters_start` coherente con el issue del reparto de tutoriales
 - [ ] Al cerrarlo, **revisar ese reparto**: tutoriales y `rescue` se recolocan sobre los niveles ya balanceados, no antes
 - [ ] Solver script que valida solubilidad de cada nivel
 

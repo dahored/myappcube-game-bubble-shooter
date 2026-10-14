@@ -208,6 +208,14 @@ public class BoosterEntryDrawer : PropertyDrawer
             yield return new Row(Get("claimMaxTotal"));
         }
 
+        // --- Siembra ---
+        if (uses.HasFlag(BoosterRules.Uses.Seed))
+        {
+            yield return new Row("Siembra: comodines en el tablero al abrir");
+            yield return new Row(Get("seedTravel"));
+            yield return new Row(Get("seedFade"));
+        }
+
         // --- Tienda ---
         yield return new Row("Panel de recarga");
         yield return new Row(Get("packs"));

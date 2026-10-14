@@ -14,7 +14,7 @@ using UnityEngine.UI;
 //   con stock   → el número, y se puede equipar.
 public class BoosterItemView : MonoBehaviour
 {
-    [Tooltip("Qué poder representa, cuando nadie lo asigna por código. En la pantalla previa lo pisa el nivel (LevelData.allowed_boosters), así que acá se deja en 'None'.\n\n'None' es lo que marca el ítem como BLOQUEADO: un hueco que no apunta a ningún poder no tiene nada que equipar.")]
+    [Tooltip("Qué poder representa, cuando nadie lo asigna por código. En la pantalla previa lo pisa el nivel (LevelData.allowed_boosters_start), así que acá se deja en 'None'.\n\n'None' es lo que marca el ítem como BLOQUEADO: un hueco que no apunta a ningún poder no tiene nada que equipar.")]
     [SerializeField] Booster booster = Booster.None;
 
     [SerializeField] Button button;
@@ -55,7 +55,7 @@ public class BoosterItemView : MonoBehaviour
     void OnEnable() => Refresh();
 
     // Qué poder muestra este hueco. Lo decide el nivel, no el prefab: la pantalla previa reparte
-    // acá el trío de LevelData.allowed_boosters, y el mismo ítem sirve para cualquiera.
+    // acá el trío de LevelData.allowed_boosters_start, y el mismo ítem sirve para cualquiera.
     public void Bind(Booster value)
     {
         booster = value;

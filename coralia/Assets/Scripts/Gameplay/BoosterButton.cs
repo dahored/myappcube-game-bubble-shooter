@@ -35,11 +35,19 @@ public class BoosterButton : MonoBehaviour
     [Tooltip("Lo que se muestra cuando no queda ninguno (el '+' para comprar).")]
     [SerializeField] GameObject emptyBadge;
 
+    [Tooltip("El candado. Se enciende mientras el poder todavía no está desbloqueado (BoosterRules.IsUnlocked): el ícono sigue viéndose detrás, para que el jugador sepa qué hay por venir.")]
+    [SerializeField] GameObject lockedState;
+
     [Tooltip("El modal de compra. Sin esto, tocar un booster que está en cero no hace nada.\n\nSi el '+' tiene su propio Button, quítaselo o nunca se llega acá: se come el toque antes de que llegue a este botón.")]
     [SerializeField] RefillBoosterPanel refillPanel;
 
     [SerializeField] Color loadedTint = new(1f, 0.85f, 0.35f, 1f);
     [SerializeField] Color idleTint   = Color.white;
+
+    // El jugador todavía no vio la explicación de este poder. Se pregunta al catálogo y no se
+    // guarda: un tutorial puede desbloquearlo a mitad del nivel, y el botón se entera en el
+    // Refresh que dispara el regalo.
+    bool Locked => !BoosterRules.IsUnlocked(booster);
 
     void Awake()
     {
@@ -47,6 +55,7 @@ public class BoosterButton : MonoBehaviour
         if (button == null) button = GetComponent<Button>();
         if (button == null) Debug.LogWarning($"[BoosterButton] Falta asignar 'button' en {name} y el objeto no tiene uno — el ícono no responde al toque.", this);
         if (button != null) button.onClick.AddListener(OnPressed);
+        if (lockedState == null) Debug.LogWarning($"[BoosterButton] Falta asignar 'Locked State' en {name} — un poder que el jugador todavía no conoce se va a ver igual que uno disponible.", this);
         if (cannon != null) cannon.OnBoosterChanged += Refresh;
 
         // Dos fuentes distintas: el cañón avisa de cargar y descargar (cambia el tinte, no el
@@ -71,6 +80,12 @@ public class BoosterButton : MonoBehaviour
     {
         if (cannon == null) return;
 
+        // Un poder que todavía no se presentó no se carga ni se vende: el botón está ahí para
+        // que el jugador vea que existe, no para empujarlo a comprar algo que no sabe qué hace.
+        // Refresh ya lo deja sin interactable, así que esto es el cinturón del tirante — vale lo
+        // que cuesta, porque quien llame a esto a mano se saltaría el Button entero.
+        if (Locked) return;
+
         if (cannon.LoadedBooster == booster) { cannon.UnloadBooster(); return; }
 
         // Sin existencias el toque es para comprar, no para cargar. Va antes de LoadBooster
@@ -91,8 +106,14 @@ public class BoosterButton : MonoBehaviour
     // OnEnable nuevo, y se quedaba con el número de relleno del prefab hasta que lo tocaran.
     public void Refresh()
     {
-        int  count  = SaveManager.BoosterCount(booster);
-        bool loaded = cannon != null && cannon.LoadedBooster == booster;
+        // Bloqueado gana a todo lo demás: sin existencias que mostrar, sin '+' que lleve a la
+        // tienda y sin carga posible. Son estados excluyentes y el orden está decidido acá, no
+        // repartido entre quien monte el prefab.
+        bool locked = Locked;
+        int  count  = locked ? 0 : SaveManager.BoosterCount(booster);
+        bool loaded = !locked && cannon != null && cannon.LoadedBooster == booster;
+
+        if (lockedState != null && lockedState.activeSelf != locked) lockedState.SetActive(locked);
 
         if (icon != null)
         {
@@ -112,15 +133,16 @@ public class BoosterButton : MonoBehaviour
         if (countObject != null) countObject.SetActive(count > 0);
         if (countText   != null) countText.text = count.ToString();
 
-        if (emptyBadge != null) emptyBadge.SetActive(count <= 0 && !loaded);
+        if (emptyBadge != null) emptyBadge.SetActive(!locked && count <= 0 && !loaded);
 
         // Lo ÚLTIMO, y no lo primero como estaba: tocar 'interactable' entra en Selectable, que es
         // código del paquete uGUI y el que nos tiró el IndexOutOfRangeException. Si eso revienta,
         // que reviente con el ícono ya pintado — lo que el jugador ve no puede depender de que una
         // llamada ajena no falle.
         //
-        // Siempre activo: con uno cargado es la única forma de descargarlo, y sin existencias es
-        // la forma de comprar más. Apagarlo en cero dejaría el '+' visible y muerto.
-        if (button != null) button.interactable = true;
+        // Activo salvo bloqueado: con uno cargado es la única forma de descargarlo, y sin
+        // existencias es la forma de comprar más —apagarlo en cero dejaría el '+' visible y
+        // muerto—. Bloqueado sí se apaga: ahí no hay nada que el toque pueda hacer.
+        if (button != null) button.interactable = !locked;
     }
 }

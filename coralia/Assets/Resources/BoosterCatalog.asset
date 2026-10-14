@@ -80,9 +80,9 @@ MonoBehaviour:
       delay: 0.18
       stagger: 0.14
       duration: 0.45
-      loopAt: 0.12
-      loopSpan: 0.34
-      loopSize: 0.95
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
@@ -172,9 +172,9 @@ MonoBehaviour:
       delay: 0.18
       stagger: 0.14
       duration: 0.45
-      loopAt: 0.12
-      loopSpan: 0.34
-      loopSize: 0.95
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
@@ -188,6 +188,18 @@ MonoBehaviour:
     claimFade: 0.16
     claimHold: 0.12
     claimMaxTotal: 0.8
+    seedTravel:
+      enabled: 1
+      delay: 0.18
+      stagger: 0.25
+      duration: 1
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
+      travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
+      arriveClip: {fileID: 8300000, guid: ecb599ab0eb4c4715bf2e619901c42ea, type: 3}
+      size: 0.7
+    seedFade: 0.28
     packs:
     - amount: 1
       price: 3
@@ -264,9 +276,9 @@ MonoBehaviour:
       delay: 0.18
       stagger: 0.14
       duration: 0.45
-      loopAt: 0.12
-      loopSpan: 0.34
-      loopSize: 0.95
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
@@ -359,9 +371,9 @@ MonoBehaviour:
       delay: 0.18
       stagger: 0.25
       duration: 1
-      loopAt: 0.34
-      loopSpan: 0.34
-      loopSize: 0.95
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
       travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
       arriveClip: {fileID: 8300000, guid: ecb599ab0eb4c4715bf2e619901c42ea, type: 3}
       size: 0.7

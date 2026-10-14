@@ -221,7 +221,7 @@ partida. Cada uno toca una palanca distinta del nivel.
 | Power-up | Efecto | Problema que resuelve | Palanca |
 |---|---|---|---|
 | **Reserva de Oxígeno** | +5 al límite de disparos | Me quedé corto por poco | Cuántos disparos tengo |
-| **Perla Arcoíris** | **Al menos 3** burbujas comodín repartidas por el nivel, la primera al empezar | No tengo con qué encajar lo que me toca | Cómo abro y qué me toca |
+| **Perla Arcoíris** | **3 burbujas del tablero** se convierten en comodín al empezar, y **al menos 3 más** repartidas entre los disparos | No tengo con qué encajar lo que me toca | Cómo abro y qué me toca |
 | **Marea Baja** | Al empezar, borra la fila más baja del tablero | El nivel abre demasiado apretado | Cuántas burbujas hay |
 | **Agua Clara** | El color con menos burbujas se convierte al color con más, y deja de salir del cañón | Ese color del que quedan tres sueltas e imposibles de juntar | Cuántos colores hay |
 | **Corriente Favorable** | Durante todo el nivel, el cañón favorece los colores que más abundan en el tablero | Me sale justo el color que no necesito | Qué color me toca |
@@ -235,6 +235,18 @@ y el jugador no puede predecir el tiro exacto. Por encima de eso, cada disparo p
 regalo (`RAINBOW_BONUS_CHANCE`): es lo que impide que el booster valga menos cuanto más largo es el
 nivel, que es justo donde más falta hace. En la práctica, una partida de 20 disparos da entre 3 y 5,
 y una de 45 ronda las 5.
+
+**Y además siembra el tablero.** Al abrir el nivel sale una luz desde la perla de la recámara
+hacia tres burbujas ya puestas; al llegar, cada una suena y se convierte en comodín
+(`RAINBOW_SEEDS`). Es el mismo viaje con rizo que usan las hijas de la Burbuja Madre
+(`TravelingBubble`), y cuenta de dónde viene el regalo: lo reparte la perla que el jugador acaba
+de pagar, no aparece solo. Son la mitad que se VE: las de la cola
+llegan de a una repartidas entre los disparos y no se anuncian, así que al pagar no pasaba nada en
+pantalla. Con las del tablero el jugador ve en el acto qué compró y puede planear con ellas a la
+vista, que es lo que una cola aleatoria no deja hacer.
+
+Se eligen al azar entre las que se ven, salteando las que ya eran comodín y procurando repartirlas
+(`RAINBOW_SPREAD`): tres comodines pegados se gastan en un solo match y valen por uno.
 
 Esto recupera `LevelData.rainbow_chance`, que llevaba meses sin uso. Se había retirado porque una
 arcoíris de semilla del flood-fill se llevaba el tablero entero, y eso ya lo resuelve
@@ -328,9 +340,13 @@ Todos son de un solo uso. No hay power-ups permanentes.
 explicación de ese poder (`BoosterRules.IsUnlocked`). En qué nivel ocurre eso se decide poniendo su
 id en el `tutorials` del JSON de ese nivel — ver 4.3 para el orden previsto.
 
-Qué power-ups **ofrece** cada nivel se escribe en su `allowed_boosters`: es una decisión de diseño
-de niveles, porque qué ayudas tienen sentido depende del objetivo. Un nivel que no diga nada usa el
-trío por defecto.
+Qué power-ups **de inicio** ofrece cada nivel se escribe en su `allowed_boosters_start`: es una
+decisión de diseño de niveles, porque qué ayudas tienen sentido depende del objetivo. Un nivel que
+no diga nada usa el trío por defecto.
+
+Los **de gameplay** no se eligen por nivel: están todos en el HUD siempre, y lo único que los
+retiene es el candado hasta que su tutorial los presenta. Es la decisión lockeada de 3.5 — se pagan
+solo si se usan, así que esconderlos no protege de nada.
 
 ### 3.4 Adquisición no-monetaria
 
@@ -1882,7 +1898,7 @@ colores, tamaños, velocidades.
   "star_thresholds": [610, 1000, 1380],
   "available_colors": ["red", "blue"],
   "tutorials": ["bomb"],
-  "allowed_boosters": ["bomb", "", ""],
+  "allowed_boosters_start": ["rainbow", "", ""],
   "obstacles": [],
   "objective": { "type": "clear_all", "creature_id": "", "creature_position": [] },
   "bubbles": [ { "row": 0, "col": 0, "color": "blue" } ]

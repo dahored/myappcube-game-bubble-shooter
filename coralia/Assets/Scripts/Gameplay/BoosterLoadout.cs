@@ -2,15 +2,21 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Qué boosters se llevan al próximo nivel. Se eligen en la pantalla previa (StartGamePanel,
-// GDD §3.3) y los lee el HUD de gameplay para saber qué íconos mostrar.
+// Qué boosters DE INICIO se llevan al próximo nivel. Se eligen en la pantalla previa
+// (StartGamePanel, GDD §3.3) y los consume GameplayController.ApplyStartBoosters al abrir.
 //
-// Equipar NO descuenta nada: el inventario se gasta recién al disparar. Esto es solo una
+// Solo los de inicio: los de gameplay no se equipan ni se eligen por nivel (GDD §3.5), están
+// siempre en el HUD. El HUD no lee esto — leerlo era lo que hacía desaparecer un ícono por no
+// haberlo elegido en una pantalla donde ni siquiera se ofrecía.
+//
+// Equipar NO descuenta nada: el inventario se gasta al abrir el nivel. Esto es solo una
 // selección, y por eso vive aparte de SaveManager — ahí está lo que el jugador TIENE, acá lo
 // que decidió llevar, que es una pregunta distinta y de otra pantalla.
 public static class BoosterLoadout
 {
-    public const int MAX_EQUIPPED = 3;   // GDD §3.5 — cap lockeado
+    // GDD §3.5 — cap lockeado, y es de los DE INICIO: son los que se pagan por partida y hay que
+    // elegir. Los de gameplay no cuentan contra esto porque no pasan por acá.
+    public const int MAX_EQUIPPED = 3;
 
     const string KEY = "booster_loadout";
 

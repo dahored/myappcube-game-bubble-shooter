@@ -21,7 +21,8 @@ public static class BoosterRules
     // Contra la pared del tablero el disco se recorta solo.
     public const int BOMB_RADIUS = 2;
 
-    // Cuántas burbujas comodín da la Perla Arcoíris en todo el nivel, contando la primera.
+    // Cuántas burbujas comodín manda la Perla Arcoíris POR LA COLA del cañón, contando la primera
+    // (que es la que queda en la recámara). Aparte de estas, siembra RAINBOW_SEEDS en el tablero.
     //
     // Una CANTIDAD y no una probabilidad: el jugador tiene que saber qué compra antes de pagar, y
     // "tres perlas" vale lo mismo en un nivel de 20 disparos que en uno de 45. Con un porcentaje,
@@ -29,6 +30,58 @@ public static class BoosterRules
     //
     // El cuándo sí es al azar, repartido a lo largo de la partida — ver CannonController.RollColor.
     public const int RAINBOW_COUNT = 3;
+
+    // Y cuántas burbujas YA PUESTAS en el tablero convierte en comodín al abrir el nivel.
+    //
+    // Es la otra mitad del poder, y la que se ve: las tres de la cola llegan de a una a lo largo
+    // de la partida, así que al pagar no pasa nada en pantalla. Sembrando el tablero, el jugador
+    // ve en el acto qué compró y además puede PLANEAR con ellas a la vista, que es lo que la cola
+    // no deja hacer (pedido de Diego).
+    public const int RAINBOW_SEEDS = 3;
+
+    // A cuántos diámetros se intenta dejarlas entre sí. Tres comodines pegados se gastan en un
+    // solo match y valen por uno — menos que repartidos, que es justo lo contrario de lo que el
+    // jugador compró. Es una preferencia y no una regla: si el tablero no da, se siembra igual.
+    const float RAINBOW_SPREAD = 2f;
+
+    // Qué burbujas del tablero se convierten. Al azar, pero no cualquier azar: salteando las que
+    // ya son comodín (convertir una no regala nada) y prefiriendo las que se VEN, porque el
+    // destello es media parte del regalo y uno que ocurre fuera de cuadro no se cobra.
+    public static List<Vector2Int> RainbowSeeds(IBoardView board, int count = RAINBOW_SEEDS)
+    {
+        var chosen = new List<Vector2Int>();
+
+        if (board == null || count <= 0) return chosen;
+
+        var pool = new List<Vector2Int>();
+
+        foreach (var cell in board.Occupied)
+            if (board.TryGetColor(cell, out var color) && color != BubbleColor.Rainbow) pool.Add(cell);
+
+        // Barajar una vez y recorrer en ese orden: así las dos pasadas comparten el mismo azar y
+        // la segunda completa con las que la primera descartó por juntas, no con otras distintas.
+        for (int i = pool.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (pool[i], pool[j]) = (pool[j], pool[i]);
+        }
+
+        foreach (var cell in pool)
+        {
+            if (chosen.Count == count) break;
+            if (board.IsVisible(cell) && FarFromAll(cell, chosen, RAINBOW_SPREAD)) chosen.Add(cell);
+        }
+
+        // Y si el tablero no daba para tanto, se completa con lo que haya. Sembrar dos juntas es
+        // peor que separadas, pero sembrar una sola cuando se pagaron tres es un booster roto.
+        foreach (var cell in pool)
+        {
+            if (chosen.Count == count) break;
+            if (!chosen.Contains(cell)) chosen.Add(cell);
+        }
+
+        return chosen;
+    }
 
     // Y la probabilidad de que caiga alguna DE MÁS en cada disparo, una vez repartidas las tres.
     //
@@ -91,6 +144,7 @@ public static class BoosterRules
         Loaded = 1 << 1,   // se queda cargado en la recámara esperando el disparo
         Burst  = 1 << 2,   // estalla al impactar
         Claim  = 1 << 3,   // tiñe las burbujas antes de que estallen
+        Seed   = 1 << 4,   // convierte burbujas del tablero al abrir el nivel
     }
 
     const Uses CANNON = Uses.Bubble | Uses.Loaded | Uses.Burst;
@@ -99,7 +153,7 @@ public static class BoosterRules
     {
         // Reparte comodines por el nivel: se dibujan en el tablero y contagian su color al
         // estallar, pero nunca se queda cargado esperando — se aplica solo al abrir.
-        Booster.Rainbow => Uses.Bubble | Uses.Burst | Uses.Claim,
+        Booster.Rainbow => Uses.Bubble | Uses.Burst | Uses.Claim | Uses.Seed,
 
         _ => CANNON,
     };
@@ -151,7 +205,7 @@ public static class BoosterRules
         // Sin mínimo de tres: lo que el jugador compró es que esto reviente, no un match.
         result.AddRange(GroupAt(struck, board));
 
-        // Y las hijas van a las más solas DEL TABLERO, de cualquier color (pedido de Diego).
+        // Y las hijas van a las más solas DE LO QUE SE VE, de cualquier color (pedido de Diego).
         //
         // Atarlas al color que se tocó las dejaba sin nada que hacer justo cuando más falta
         // hacen: al final del nivel lo que queda son restos sueltos de varios colores, y con el
@@ -167,6 +221,13 @@ public static class BoosterRules
         foreach (var other in standing)
         {
             if (!board.TryGetColor(other, out var otherColor)) continue;
+
+            // Y solo entre las que se VEN. Cuando el tablero se retiró del cañón, lo de arriba
+            // queda fuera de cuadro: una hija mandada ahí se va por el borde de la pantalla y el
+            // jugador la ve escaparse, no acertar. Las de arriba son además las más viejas del
+            // nivel, con lo que casi siempre son también las más solas — sin este filtro el poder
+            // tiende a gastar sus dos hijas justo en lo único que no se ve (reportado por Diego).
+            if (!board.IsVisible(other)) continue;
 
             // Un comodín suelto no es un resto que estorbe: es la pieza que desatasca el tablero,
             // y gastar una hija en él sería quitarle al jugador su mejor carta.
@@ -201,7 +262,7 @@ public static class BoosterRules
         foreach (var (cell, _, _) in ranked)
         {
             if (chosen.Count == MOTHER_TARGETS) break;
-            if (FarFromAll(cell, result) && FarFromAll(cell, chosen)) chosen.Add(cell);
+            if (FarFromAll(cell, result, MOTHER_SPREAD) && FarFromAll(cell, chosen, MOTHER_SPREAD)) chosen.Add(cell);
         }
 
         // Y si el tablero no da para tanto, se completa con las mejores que queden. Media ayuda
@@ -222,10 +283,10 @@ public static class BoosterRules
     // justo para que no compartan vecinos: por debajo, reventar uno ya deja al otro suelto.
     const float MOTHER_SPREAD = 2.5f;
 
-    static bool FarFromAll(Vector2Int cell, List<Vector2Int> chosen)
+    static bool FarFromAll(Vector2Int cell, List<Vector2Int> chosen, float spread)
     {
         Vector2 at    = HexGridMath.CellToLocalPos(cell);
-        float   apart = HexGridMath.BubbleDiameter * MOTHER_SPREAD;
+        float   apart = HexGridMath.BubbleDiameter * spread;
 
         foreach (var other in chosen)
             if (Vector2.Distance(at, HexGridMath.CellToLocalPos(other)) < apart) return false;
@@ -311,7 +372,7 @@ public static class BoosterRules
 
     // Qué booster explica cada tutorial. El id del tutorial que presenta un poder ES el nombre
     // del poder, así que no hay tabla que mantener: dos nombres para la misma cosa en el mismo
-    // JSON del nivel ('tutorials' y 'allowed_boosters') es justo lo que se desincroniza.
+    // JSON del nivel ('tutorials' y 'allowed_boosters_start') es justo lo que se desincroniza.
     //
     // Sin aviso por consola a propósito: la mayoría de los tutoriales no presentan ningún booster
     // ('first_steps', 'rescue'), y para esos None es la respuesta correcta, no un error.
@@ -321,16 +382,32 @@ public static class BoosterRules
     // booster es justo lo que decide si después lo compra.
     public static Booster BoosterForTutorial(string tutorialId) => Parse(tutorialId, warnIfUnknown: false);
 
-    // Un poder que el jugador todavía no conoce se muestra bloqueado, aunque el nivel lo ofrezca.
-    // El filtro va acá y no en cada JSON para que el diseñador de niveles no tenga que repetir en
-    // 60 archivos una regla que es siempre la misma: el nivel dice qué ayudas tienen sentido para
-    // su objetivo, no a partir de cuándo existen.
-    static Booster Offered(Booster booster) => IsUnlocked(booster) ? booster : Booster.None;
+    // Qué se ve en un hueco de la pantalla previa, con los dos filtros que no tiene sentido
+    // repetir en 60 archivos: el nivel dice qué ayudas tienen sentido para su objetivo, no a
+    // partir de cuándo existen ni de qué familia son.
+    static Booster Offered(Booster booster)
+    {
+        if (booster == Booster.None) return Booster.None;
+
+        // Uno de gameplay acá es un error de diseño de nivel, no una opción. Desde que el HUD los
+        // muestra todos (GDD §3.5) ofrecerlo en la previa no limita nada, y encima gastaría uno de
+        // los tres huecos que el jugador necesita para los de inicio, que son los que sí hay que
+        // elegir. Se avisa en vez de callar: el que lo escribió esperaba que hiciera algo.
+        if (!IsStart(booster))
+        {
+            Debug.LogWarning($"[BoosterRules] '{NameOf(booster)}' es un booster de gameplay: no va en 'allowed_boosters_start'. Los de gameplay están siempre en el HUD y no se eligen por nivel.");
+            return Booster.None;
+        }
+
+        // Un poder que el jugador todavía no conoce se muestra bloqueado, aunque el nivel lo
+        // ofrezca.
+        return IsUnlocked(booster) ? booster : Booster.None;
+    }
 
     // El trío que se ofrece cuando el JSON del nivel no dice nada. Existe para que los niveles ya
     // escritos sigan funcionando sin editarlos uno por uno; un nivel que quiera otra cosa lo pone
-    // en su 'allowed_boosters'.
-    static readonly Booster[] DEFAULT_ALLOWED = { Booster.Bomb, Booster.None, Booster.None };
+    // en su 'allowed_boosters_start'.
+    static readonly Booster[] DEFAULT_ALLOWED = { Booster.Rainbow, Booster.None, Booster.None };
 
     // Siempre devuelve SLOTS posiciones, rellenando con None lo que el nivel no ofrezca — así
     // quien lo muestre no tiene que decidir qué hacer con una lista corta: un hueco en None es
@@ -339,7 +416,7 @@ public static class BoosterRules
     {
         var slots = new Booster[SLOTS];
 
-        var names = level?.allowed_boosters;
+        var names = level?.allowed_boosters_start;
         if (names == null || names.Count == 0)
         {
             for (int i = 0; i < SLOTS; i++) slots[i] = Offered(DEFAULT_ALLOWED[i]);
