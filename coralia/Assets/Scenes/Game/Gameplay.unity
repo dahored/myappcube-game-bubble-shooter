@@ -8837,10 +8837,20 @@ MonoBehaviour:
   shotsGainDuration: 1
   shotsGainClip: {fileID: 8300000, guid: eb509b35c7f9442b58256776ea9bae06, type: 3}
   shotsGainPulse: 0.35
-  shotsGainPopupScale: 3
-  shotsGainPopupPop: 0.35
-  shotsGainPopupClip: {fileID: 8300000, guid: eb509b35c7f9442b58256776ea9bae06, type: 3}
-  shotsGainSparkle:
+  startIntroScale: 240
+  startIntroPop: 0.35
+  startIntroClip: {fileID: 0}
+  startIntroTogether: 0
+  startIntroSpread: 1.2
+  startIntroTogetherScale: 0.5
+  startIntroTogetherStagger: 1
+  startIntroShowName: 1
+  startIntroNameGap: 36
+  startIntroNameFont: {fileID: 11400000, guid: 206f22299a1c44c319f86b76ae678355, type: 2}
+  startIntroNameSize: 36
+  startIntroNameColor: {r: 1, g: 1, b: 1, a: 1}
+  startIntroVeil: {r: 0, g: 0.05, b: 0.12, a: 0.55}
+  startIntroSparkle:
     glowColor: {r: 1, g: 0.93, b: 0.72, a: 0.85}
     glowSize: 300
     glowFrom: 0.35
@@ -8854,8 +8864,8 @@ MonoBehaviour:
     moteDuration: 0.55
     stagger: 0.22
     rainbowMotes: 0
-  shotsGainPopupHold: 0.45
-  shotsGainPopupTravel: 0.5
+  startIntroHold: 0.45
+  startIntroTravel: 0.5
   shotsGainPitchRise: 0.45
 --- !u!4 &820312950
 Transform:
