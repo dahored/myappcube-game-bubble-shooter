@@ -224,6 +224,18 @@ public class BoosterEntryDrawer : PropertyDrawer
             yield return new Row(Get("claimMaxTotal"));
         }
 
+        // --- Marea ---
+        if (uses.HasFlag(BoosterRules.Uses.Tide))
+        {
+            yield return new Row("Marea: filas que se retiran al abrir");
+            yield return new Row(Get("tideRows"));
+            yield return new Row(Get("tideSweepDuration"));
+            yield return new Row(Get("tideSweepClip"));
+            yield return new Row(Get("tideBubble"));
+            yield return new Row(Get("tideSweepColor"));
+            yield return new Row(Get("tideTrail"));
+        }
+
         // --- Siembra ---
         if (uses.HasFlag(BoosterRules.Uses.Seed))
         {

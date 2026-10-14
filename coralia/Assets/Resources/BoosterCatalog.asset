@@ -96,6 +96,12 @@ MonoBehaviour:
     claimFade: 0.16
     claimHold: 0.12
     claimMaxTotal: 0.8
+    tideRows: 3
+    tideSweepDuration: 0.6
+    tideSweepClip: {fileID: 0}
+    tideBubble: {fileID: 0}
+    tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
+    tideTrail: 5
     seedTravel:
       enabled: 0
       delay: 0.18
@@ -200,6 +206,12 @@ MonoBehaviour:
     claimFade: 0.16
     claimHold: 0.12
     claimMaxTotal: 0.8
+    tideRows: 3
+    tideSweepDuration: 0.6
+    tideSweepClip: {fileID: 0}
+    tideBubble: {fileID: 0}
+    tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
+    tideTrail: 5
     seedTravel:
       enabled: 1
       delay: 0.18
@@ -304,6 +316,12 @@ MonoBehaviour:
     claimFade: 0.16
     claimHold: 0.12
     claimMaxTotal: 0.8
+    tideRows: 3
+    tideSweepDuration: 0.6
+    tideSweepClip: {fileID: 0}
+    tideBubble: {fileID: 0}
+    tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
+    tideTrail: 5
     seedTravel:
       enabled: 0
       delay: 0.18
@@ -411,6 +429,12 @@ MonoBehaviour:
     claimFade: 0.16
     claimHold: 0.12
     claimMaxTotal: 0.8
+    tideRows: 3
+    tideSweepDuration: 0.6
+    tideSweepClip: {fileID: 0}
+    tideBubble: {fileID: 0}
+    tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
+    tideTrail: 5
     seedTravel:
       enabled: 0
       delay: 0.18
@@ -514,6 +538,121 @@ MonoBehaviour:
     claimFade: 0.16
     claimHold: 0.12
     claimMaxTotal: 0.8
+    tideRows: 3
+    tideSweepDuration: 0.6
+    tideSweepClip: {fileID: 0}
+    tideBubble: {fileID: 0}
+    tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
+    tideTrail: 5
+    seedTravel:
+      enabled: 0
+      delay: 0.18
+      stagger: 0.25
+      duration: 1
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
+      travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
+      arriveClip: {fileID: 8300000, guid: 8642f302b66864fd690fcfe240c8db65, type: 3}
+      size: 0.7
+    seedFade: 0.28
+    packs:
+    - amount: 1
+      price: 3
+      discountPercent: 0
+    - amount: 5
+      price: 15
+      discountPercent: 20
+    - amount: 15
+      price: 40
+      discountPercent: 30
+    glowOverride: {fileID: 0}
+  - booster: 6
+    family: 1
+    icon: {fileID: -495451906180265960, guid: 47aeaa2eed51c4f73955b47ee4101e20, type: 3}
+    bubbleFrames: []
+    spin: -1440
+    framesPerSecond: 12
+    bubbleOrbit:
+      sprites: []
+      radius: 0.17
+      radiusMax: 0.19
+      size: 0.3
+      speed: 35
+      breathPerSecond: 0.22
+    bubbleSpark:
+      enabled: 0
+      color: {r: 0.8, g: 0.95, b: 1, a: 0.9}
+      fps: 14
+      scale: 0.82
+      coreScale: 0.62
+      pulseHz: 17
+    loadedLoopClip: {fileID: 0}
+    loadedLoopVolume: 0.5
+    burstClip: {fileID: 0}
+    chargeClip: {fileID: 0}
+    clipLead: 0
+    vibrate: 1
+    shake: 1
+    burstSparkle:
+      glowColor: {r: 1, g: 0.93, b: 0.72, a: 0.85}
+      glowSize: 300
+      glowFrom: 0.35
+      glowTo: 1.6
+      glowDuration: 0.5
+      moteCount: 10
+      moteColor: {r: 1, g: 1, b: 1, a: 0.95}
+      moteSize: 64
+      spawnRadius: 34
+      travel: 95
+      moteDuration: 0.55
+      stagger: 0.22
+      rainbowMotes: 0
+    burstBlast:
+      chargeTime: 0
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 1, b: 1, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 1400
+      waveDuration: 0.7
+      waveEdge: 0.18
+      waveCount: 1
+      waveStagger: 0.08
+      rainbowWaves: 1
+    burstPerBubble: 0
+    burstTravel:
+      enabled: 0
+      delay: 0.18
+      stagger: 0.14
+      duration: 0.45
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
+      travelClip: {fileID: 0}
+      arriveClip: {fileID: 0}
+      size: 0.55
+    burstLightning:
+      enabled: 0
+      color: {r: 0.65, g: 0.9, b: 1, a: 1}
+      thickness: 46
+      duration: 0.22
+      flickerHz: 28
+    claimStep: 0.06
+    claimFade: 0.16
+    claimHold: 0.12
+    claimMaxTotal: 0.8
+    tideRows: 3
+    tideSweepDuration: 1.2
+    tideSweepClip: {fileID: 8300000, guid: cc3b76ca64b134786a1b4dae244e4bf5, type: 3}
+    tideBubble: {fileID: 1505006969088389832, guid: 80daac24c790b47e09242751639cec7c, type: 3}
+    tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 1}
+    tideTrail: 20
     seedTravel:
       enabled: 0
       delay: 0.18

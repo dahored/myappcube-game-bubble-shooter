@@ -147,6 +147,27 @@ public class BoosterCatalog : ScriptableObject
         [Tooltip("Tope de lo que puede durar el contagio entero. En racimos grandes el paso se comprime para no pasarse de acá — igual que la cadena de pops.")]
         public float claimMaxTotal = 0.8f;
 
+        [Tooltip("Cuántas filas se lleva la marea al retirarse, contadas desde la más baja que TENGA burbujas. Las filas vacías no cuentan: un tablero con huecos no regala filas.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0, 6)]
+        public int tideRows = 3;
+
+        [Tooltip("Lo que tarda la cresta en cruzar el tablero de lado a lado. Es el repaso que se lleva lo que toca a su paso: sin él las filas desaparecen de golpe y no se entiende de dónde salió el hueco.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0f, 3f)]
+        public float tideSweepDuration = 0.6f;
+
+        [Tooltip("El sonido del agua retirándose. Suena UNA vez, al arrancar la cresta: lo que cruza es una sola ola.\n\nVa aparte del 'Burst Clip', que es el de las burbujas al reventar — el agua y el estallido son dos momentos.")]
+        public AudioClip tideSweepClip;
+
+        [Tooltip("La burbuja con la que se dibuja la ola. Vacío usa el brillo compartido del catálogo, que ya se lee como una burbuja de espuma.")]
+        public Sprite tideBubble;
+
+        [Tooltip("El color de la ola. Se aplica a todas sus burbujas por igual; lo que las diferencia es el tamaño.")]
+        public Color tideSweepColor = new(0.72f, 0.95f, 1f, 0.95f);
+
+        [Tooltip("Lo larga que es la espuma, en huecos por detrás de la cabeza. La de delante va a tamaño normal y la cola se va deshaciendo, que es lo que le da el sentido de marcha; cuanto más larga, más se lee como agua y menos como una fila de burbujas.\n\nCada hueco lleva más de una burbuja, desordenadas, así que el número de burbujas en pantalla es mayor que esto.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0, 30)]
+        public int tideTrail = 12;
+
         [Tooltip("La luz que sale de la perla de la recámara hacia cada burbuja que va a convertir, con su ruta, su escalonado y sus dos sonidos (salida y llegada). Marca 'Enabled' aquí dentro para encenderla: apagada, las tres se convierten en su sitio sin que nada viaje.\n\nMismo bloque que usa la Burbuja Madre para sus hijas — lo que se afine en uno vale como referencia para el otro.")]
         public TravelingBubble.Settings seedTravel = new();
 
