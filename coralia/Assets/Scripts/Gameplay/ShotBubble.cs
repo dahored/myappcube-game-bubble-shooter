@@ -45,9 +45,25 @@ public class ShotBubble : MonoBehaviour
     // Medio radio por tramo deja cuatro comprobaciones por burbuja recorrida, que es de sobra.
     const float MAX_STEP = HexGridMath.BubbleRadius * 0.5f;
 
+    // Y lo que puede avanzar en UN frame, por largo que ese frame haya sido.
+    //
+    // Los tramos de arriba parten el movimiento para no atravesar nada, pero todos ocurren dentro
+    // del mismo frame: lo que se dibuja es solo dónde acabó. A 60 fps son 42px, menos de media
+    // burbuja, y el vuelo se ve seguido; en un tirón de 100ms serían 250px de un salto, y la
+    // burbuja aparece en el destino sin haber pasado por el medio.
+    //
+    // Se nota sobre todo en los tiros que rebotan, que son los de recorrido más largo y por tanto
+    // los que más frames viven (reportado por Diego).
+    //
+    // Un diámetro por frame es el tope: a ritmo normal no se alcanza nunca, y cuando el frame se
+    // alarga el disparo prefiere tardar un poco más a teletransportarse. Lo que cuesta es tiempo
+    // de vuelo, que nadie cronometra; lo que se gana es que el tiro se pueda SEGUIR, que es de
+    // donde el jugador aprende a calcular los rebotes.
+    const float MAX_FRAME_TRAVEL = HexGridMath.BubbleDiameter;
+
     public ImpactInfo? Tick(float dt)
     {
-        float remaining = Velocity.magnitude * dt;
+        float remaining = Mathf.Min(Velocity.magnitude * dt, MAX_FRAME_TRAVEL);
 
         while (remaining > 0f)
         {
