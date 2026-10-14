@@ -93,14 +93,25 @@ public class BoosterEntryDrawer : PropertyDrawer
     // "está mal colocado", que se ve solo y se arregla en un minuto.
     static IEnumerable<Row> Rows(SerializedProperty p)
     {
-        var shown = new HashSet<string>();
-        var rows  = new List<Row>();
+        var rows = new List<Row>();
 
-        foreach (var row in Sections(p))
-        {
-            if (!row.IsHead) shown.Add(row.prop.name);
+        foreach (var row in Sections(p, UsesOf(p)))
             rows.Add(row);
-        }
+
+        // Lo que la red tiene que pescar son los campos que el drawer NO SABE dónde poner, y eso
+        // es distinto de los que este poder no usa.
+        //
+        // Preguntando solo por las secciones que salen para ESTE booster, un poder que no usa casi
+        // nada —la Reserva de Oxígeno, que solo sube el contador de tiros— mandaba a "sin sitio"
+        // la ficha de arte entera: veinte campos escondidos a propósito, presentados como un
+        // olvido (reportado por Diego).
+        //
+        // Con TODOS los usos encendidos, 'shown' es el catálogo de lo que el drawer sabe colocar,
+        // y la red vuelve a avisar solo de lo que de verdad no tiene sitio.
+        var shown = new HashSet<string>();
+
+        foreach (var row in Sections(p, ALL_USES))
+            if (!row.IsHead) shown.Add(row.prop.name);
 
         bool orphans = false;
 
@@ -122,16 +133,21 @@ public class BoosterEntryDrawer : PropertyDrawer
         return rows;
     }
 
-    static IEnumerable<Row> Sections(SerializedProperty p)
+    // Todas las secciones encendidas a la vez. No es ningún poder: es la ficha completa, y sirve
+    // para saber qué campos CONOCE este drawer — ver Rows.
+    const BoosterRules.Uses ALL_USES = (BoosterRules.Uses)~0;
+
+    // De qué tira este poder, según BoosterRules. Ahí está porque es donde ya vive todo lo que hay
+    // que escribir para uno nuevo; una tabla en el editor sería un sitio más que recordar, y el
+    // que se olvidaría.
+    static BoosterRules.Uses UsesOf(SerializedProperty p) =>
+        BoosterRules.UsesOf((Booster)p.FindPropertyRelative("booster").intValue);
+
+    static IEnumerable<Row> Sections(SerializedProperty p, BoosterRules.Uses uses)
     {
         SerializedProperty Get(string field) => p.FindPropertyRelative(field);
 
         var booster = p.FindPropertyRelative("booster");
-
-        // De qué tira este poder, según BoosterRules. Ahí está porque es donde ya vive todo lo
-        // que hay que escribir para uno nuevo; una tabla en el editor sería un sitio más que
-        // recordar, y el que se olvidaría.
-        var uses = BoosterRules.UsesOf((Booster)booster.intValue);
 
         yield return new Row(booster);
         yield return new Row(Get("family"));
