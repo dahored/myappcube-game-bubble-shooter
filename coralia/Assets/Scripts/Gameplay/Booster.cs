@@ -23,4 +23,7 @@ public enum Booster
     Mother      = 4,
     Oxygen      = 5,
     LowTide     = 6,
+    ClearWater  = 7,
+    Ink         = 8,
+    Mine        = 9,
 }

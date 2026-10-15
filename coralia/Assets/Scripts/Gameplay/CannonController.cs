@@ -1025,6 +1025,35 @@ public class CannonController : MonoBehaviour
     // ranura del pulpo, de donde volvía a la recámara en el relevo siguiente con su intercambio
     // otra vez. El color no salía nunca de la cola, así que en un tablero al que ya no le quedan
     // rojas, media partida se iba en animaciones de cruce (reportado por Diego).
+    // El mismo chequeo, pero pedido desde fuera. El relevo lo hace solo al terminar, y un poder
+    // no pasa por ahí: revienta medio tablero sin que la cola avance, así que nadie vuelve a
+    // preguntar si lo que quedó en la recámara todavía sirve. El jugador se queda apuntando con
+    // un color que ya no existe hasta gastar un disparo en descubrirlo.
+    public void CheckAutoSwap()
+    {
+        if (_swapRoutine != null) return;
+
+        StartCoroutine(CheckAutoSwapRoutine());
+    }
+
+    IEnumerator CheckAutoSwapRoutine()
+    {
+        // El tablero todavía está reventando: preguntado ahora daría los colores de ANTES del
+        // estallido, que es justo lo que no interesa. Con tope, igual que el scroll del grid, por
+        // si una animación se queda colgada.
+        float waited = 0f;
+
+        while (BubbleView.AnimatingCount > 0 && waited < SETTLE_TIMEOUT)
+        {
+            waited += Time.deltaTime;
+            yield return null;
+        }
+
+        yield return AutoSwapIfStale();
+    }
+
+    const float SETTLE_TIMEOUT = 1.5f;
+
     IEnumerator AutoSwapIfStale()
     {
         // Nunca con el dedo apoyado: cambiarle el color a alguien que ya está apuntando es
@@ -1352,11 +1381,41 @@ public class CannonController : MonoBehaviour
         if (booster != Booster.None)           SpecialBubbleSkin.Apply(slot, booster);
         else if (color == BubbleColor.Rainbow) SpecialBubbleSkin.Apply(slot, Booster.Rainbow);
         else                                   SpecialBubbleSkin.Clear(slot);
+
+    }
+
+    // Ese color deja de salir, para siempre en este nivel.
+    //
+    // Lo pide el Agua Clara: pasa las burbujas de un color al otro, y si el cañón lo siguiera
+    // ofreciendo volverían a aparecer las que acaba de quitar — el jugador habría pagado por un
+    // respiro de un disparo.
+    //
+    // Hay que sacarlo de la lista del nivel ADEMÁS de vaciarlo del tablero. RollColor se apoya en
+    // lo que hay en el grid, que ya no lo tiene, pero cae a esta lista cuando el frente está
+    // tapado o el tablero vacío, y ahí volvería a colarse.
+    public void BanColor(BubbleColor color)
+    {
+        if (color == BubbleColor.Rainbow) return;   // el comodín no se prohíbe: no es un color
+
+        _availableColorsParsed?.Remove(color);
+
+        // Y lo que ya estaba servido se cambia: la recámara y la ranura del pulpo pueden tener
+        // justo ese color, y dejarlo sería ofrecerlo una vez más después de prohibirlo.
+        if (_current == color) _current = PlainColor();
+        if (_next    == color) _next    = PlainColor();
+
+        RefreshPreview();
     }
 
     // ---- Boosters -------------------------------------------------------------------------
 
     public Booster LoadedBooster => _currentSpecial;
+
+    // El color que queda en la recámara. Con un poder cargado es el que VUELVE al dispararlo,
+    // porque un booster no consume la cola: lo lee la Tinta de Pulpo, que tiñe de ese y no del
+    // que se dispara — teñir del disparado haría match al instante y todo reventaría en el mismo
+    // movimiento, un efecto en vez de una jugada (GDD §3.2).
+    public BubbleColor CurrentColor => _current;
 
     // Para que el ícono del HUD se entere de cargar/descargar/gastar sin preguntar por frame.
     public event System.Action OnBoosterChanged;
@@ -1383,7 +1442,7 @@ public class CannonController : MonoBehaviour
         if (SaveManager.BoosterCount(booster) <= 0) return false;
         if (BoosterRules.BubbleSpriteFor(booster) == null)
         {
-            Debug.LogWarning($"[CannonController] El booster {booster} no tiene sprite asignado en GridController — no se carga.", this);
+            Debug.LogWarning($"[CannonController] '{booster}' no tiene 'Bubble Frames' en el catálogo (Resources/BoosterCatalog) — ese es el arte de su BURBUJA, distinto del icono del botón, y sin él no hay nada que dibujar en la recámara ni en el tablero. No se carga.", this);
             return false;
         }
 

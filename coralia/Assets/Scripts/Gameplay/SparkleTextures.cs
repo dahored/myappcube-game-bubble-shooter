@@ -12,6 +12,7 @@ public static class SparkleTextures
 {
     const int GLOW_SIZE = 128;
     const int MOTE_SIZE = 64;
+    const int BEACON_SIZE = 128;
     const int RING_SIZE = 256;   // más grande que los otros: un filo fino se escalona si la textura es corta
 
     // A qué distancia del centro cae el filo del aro, en tanto por uno del radio de la textura.
@@ -20,6 +21,7 @@ public static class SparkleTextures
     public const float RING_EDGE = 0.80f;
 
     static Sprite _glow;
+    static Sprite _beacon;
     static Sprite _mote;
 
     // Un aro POR grosor, no uno solo. Antes se guardaba el último y se destruía el anterior, y
@@ -42,6 +44,26 @@ public static class SparkleTextures
         float halo = Mathf.Pow(1f - d, 3f) * 0.75f;
         float core = Mathf.Exp(-(d * d) / (0.22f * 0.22f)) * 0.7f;
         return Mathf.Clamp01(halo + core);
+    });
+
+    // La luz de algo armado: un disco ENCENDIDO con su halo, no un punto con mucho alrededor.
+    //
+    // Va aparte de Glow aunque las dos sean redondas y suaves, porque dicen cosas distintas. El
+    // núcleo de Glow mide como un quinto de la textura: dibuja un destello, que es lo que hace
+    // falta cuando algo chispea. Aquí lo que tiene que leerse es una LUZ, un trozo de color sólido
+    // a la escala del dibujo que lleva debajo — con el núcleo de Glow el punto rojo salía al 15%
+    // de la burbuja y había que estirar la capa, que solo ensancha el halo (reportado por Diego).
+    //
+    // Por eso el núcleo es una meseta: lleno hasta bien pasada la mitad y recién ahí se deshace.
+    public static Sprite Beacon => _beacon != null ? _beacon : _beacon = Build(BEACON_SIZE, (x, y) =>
+    {
+        float d = Mathf.Sqrt(x * x + y * y);
+        if (d >= 1f) return 0f;
+
+        float core = 1f - Mathf.SmoothStep(0.38f, 0.74f, d);
+        float halo = Mathf.Pow(1f - d, 2.2f) * 0.45f;
+
+        return Mathf.Clamp01(core + halo);
     });
 
     // La chispa de cuatro puntas. Cada brazo es una gaussiana muy fina en un eje por una caída
@@ -246,6 +268,263 @@ public static class SparkleTextures
 
     // Build para una textura que no es cuadrada. Misma convención: x e y en -1..1, el color en
     // blanco y la forma en el alfa.
+    // El líquido de dentro de una burbuja.
+    //
+    // En BLANCO con luminosidad variable, no en alfa plano: quien la use la tiñe multiplicando,
+    // así que lo que acá es más claro sale más claro en su color. Es lo que permite el degradado
+    // del cuerpo, la cresta luminosa y las burbujas de dentro con un solo sprite y un solo tinte.
+    //
+    // Lo que hace que se lea como líquido y no como relleno son tres cosas, por orden de peso:
+    //
+    //   1. la CRESTA — un reborde grueso y casi blanco donde toca el aire. Es el detalle que más
+    //      dice "líquido"; sin él, el borde recto se ve como un corte
+    //   2. las BURBUJAS de dentro, cada una con su reflejo
+    //   3. el cuerpo oscureciéndose hacia el fondo, como algo con profundidad
+    //
+    // 'fill' es cuánto sube, de 0 (vacía) a 1 (llena). 'variant' desplaza la onda y recoloca las
+    // burbujas: capas distintas, olas distintas.
+    //
+    // Y en DOS PIEZAS, cuerpo y cresta, porque llevan colores distintos: en un líquido la
+    // superficie es más clara y más viva que el fondo, y eso no se consigue tiñendo una sola
+    // imagen con un color —multiplicando, todo sale del mismo tono— (pedido de Diego).
+    // 'frame' de 0 a 'frames'-1 recorre un CICLO COMPLETO de la ola: en el último, la superficie
+    // ha vuelto a donde empezó. Pasándolos seguidos, la cresta cambia de forma sola — se levanta
+    // por un lado mientras baja por el otro, como un líquido de verdad (pedido de Diego).
+    //
+    // Eso lo garantizan las frecuencias enteras de abajo: con múltiplos sueltos el ciclo no
+    // cerraría y el salto del último frame al primero se vería como un tirón.
+    //
+    // 'bubblesOnly' devuelve SOLO las burbujas de dentro, para dibujarlas en su propia capa por
+    // delante de todo. Metidas en el cuerpo quedaban debajo de las capas de superficie, que son
+    // semitransparentes y las lavaban hasta dejarlas en manchas planas (reportado por Diego).
+    public static Sprite Liquid(float fill, int frame = 0, int frames = 1, bool withBubbles = true,
+                                bool crestOnly = false, bool bubblesOnly = false)
+    {
+        frames = Mathf.Max(1, frames);
+        frame  = ((frame % frames) + frames) % frames;
+
+        int key = (((Mathf.Clamp(Mathf.RoundToInt(fill * 10f), 0, 10) * 64 + frame) * 2
+                + (crestOnly ? 1 : 0)) * 2 + (withBubbles ? 1 : 0)) * 2 + (bubblesOnly ? 1 : 0);
+
+        if (_liquid.TryGetValue(key, out var cached) && cached != null) return cached;
+
+        float level = Mathf.Lerp(-1f, 1f, Mathf.Clamp01(fill));
+        float shift = frame / (float)frames * Mathf.PI * 2f;
+
+        // Las burbujas de dentro, repartidas a mano. Sorteadas acá serían distintas en cada
+        // arranque del juego, y una textura cacheada no puede cambiar entre partidas.
+        var bubbles = withBubbles || bubblesOnly ? Bubbles(0) : System.Array.Empty<(float, float, float)>();
+
+        // Las burbujas SUBEN. Un líquido con burbujas quietas no se lee como líquido: se lee como
+        // una cara, sobre todo si son pocas y están repartidas simétricamente (reportado por
+        // Diego).
+        //
+        // Suben con el mismo reloj de frames que la ola, cada una a su ritmo, y al llegar a la
+        // superficie reaparecen abajo. Como el ciclo es el mismo, el bucle cierra sin salto.
+        if (bubblesOnly) return BuildColored(LIQUID_SIZE, (x, y) =>
+        {
+            // Las mismas dos fronteras que el cuerpo, porque una burbuja de dentro tiene que
+            // estar DENTRO: el vidrio por fuera y la superficie por arriba. Sin esto se dibujaban
+            // por todo el cuadro de la textura, incluso fuera de la esfera (reportado por Diego).
+            float r = Mathf.Sqrt(x * x + y * y);
+            if (r > 0.97f) return Color.clear;
+
+            float surface = level
+                          + 0.055f * Mathf.Sin(x * 5.5f + shift)
+                          + 0.028f * Mathf.Sin(x * 11f  - shift * 2f)
+                          + 0.012f * Mathf.Sin(x * 19f  + shift * 3f);
+
+            if (y > surface) return Color.clear;
+
+            float climb = frame / (float)frames;
+
+            foreach (var (bx, by0, br) in bubbles)
+            {
+                // Cada una recorre el líquido a su propio ritmo: el radio sirve de velocidad, así
+                // que las pequeñas suben más deprisa — que es justo lo que hacen de verdad.
+                float speed = Mathf.Lerp(1.6f, 0.75f, Mathf.InverseLerp(0.04f, 0.16f, br));
+                // El recorrido acaba un pelo POR DEBAJO de la superficie: llegando justo a ella,
+                // la burbuja se corta contra la ola en el último tramo de su subida.
+                float span  = (level + 1f) - br * 2f - 0.08f;
+
+                // El recorrido se repite dentro del líquido: de abajo del todo a ras de la
+                // superficie, y vuelta a empezar.
+                float by = -1f + br + Mathf.Repeat((by0 + 1f - br) + climb * speed * span, Mathf.Max(0.1f, span));
+
+                float d = Mathf.Sqrt((x - bx) * (x - bx) + (y - by) * (y - by));
+                if (d > br) continue;
+
+                // Relleno oscuro, borde brillante y un reflejo grande arriba a la izquierda. Los
+                // tres a la vez son lo que las hace esferas; con dos se leen como un aro.
+                float ring  = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(br * 0.45f, br * 0.97f, d));
+                float shade = Mathf.Lerp(0.45f, 1f, ring);
+
+                float gx = x - bx + br * 0.33f;
+                float gy = y - by - br * 0.33f;
+
+                if (Mathf.Sqrt(gx * gx + gy * gy) < br * 0.24f) shade = 1f;
+
+                // Y un brillo tenue abajo a la derecha: la luz que rebota dentro del líquido. Es
+                // el detalle que las despega del fondo en vez de dejarlas pegadas.
+                float rx = x - bx - br * 0.38f;
+                float ry = y - by + br * 0.38f;
+
+                if (Mathf.Sqrt(rx * rx + ry * ry) < br * 0.18f) shade = Mathf.Max(shade, 0.92f);
+
+                // El borde se suaviza en el último pelo para que no quede dentado. Y se funde
+                // contra las dos fronteras, para que una burbuja a medio salir se desvanezca en
+                // vez de quedar cortada por la mitad.
+                float soft  = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(br, br * 0.9f, d));
+                float glass = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.97f, 0.86f, r));
+                float under = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(surface, surface - 0.06f, y));
+
+                return new Color(shade, shade, shade, soft * glass * under);
+            }
+
+            return Color.clear;
+        });
+
+        var sprite = BuildColored(LIQUID_SIZE, (x, y) =>
+        {
+            // Dentro del círculo y nada más: lo que se sale haría parecer una mancha pegada.
+            float r = Mathf.Sqrt(x * x + y * y);
+            if (r > 0.97f) return Color.clear;
+
+            // La superficie, con tres senos de distinta frecuencia. El tercero es diminuto y es
+            // el que quita la sensación de patrón.
+            // Multiplicadores ENTEROS del desfase: es lo que hace que el ciclo cierre y el bucle
+            // de frames no dé un tirón al volver al primero.
+            float surface = level
+                          + 0.055f * Mathf.Sin(x * 5.5f + shift)
+                          + 0.028f * Mathf.Sin(x * 11f  - shift * 2f)
+                          + 0.012f * Mathf.Sin(x * 19f  + shift * 3f);
+
+            float edge = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.97f, 0.86f, r));
+
+            // Por encima de la superficie solo queda el halo de la cresta: un resplandor corto
+            // que sube al aire, como la luz que atraviesa el borde del agua.
+            if (y > surface)
+            {
+                if (!crestOnly) return Color.clear;
+
+                float halo = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(surface + CREST * 1.4f, surface, y));
+
+                return new Color(1f, 1f, 1f, halo * 0.55f * edge);
+            }
+
+            float crest = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(surface - CREST, surface, y));
+
+            // La cresta va por su lado, con su propio color: es la pieza que se tiñe de magenta
+            // mientras el cuerpo se queda morado. El filo de arriba, casi blanco.
+            if (crestOnly)
+            {
+                float lip = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(surface - CREST * 0.3f, surface, y));
+
+                return new Color(Mathf.Lerp(0.82f, 1f, lip), Mathf.Lerp(0.82f, 1f, lip), Mathf.Lerp(0.82f, 1f, lip),
+                                 crest * edge);
+            }
+
+            // El cuerpo: un poco más oscuro hacia el fondo, como algo con profundidad.
+            //
+            // Un POCO. Antes bajaba al 30% con curva cuadrática, así que casi todo el líquido
+            // quedaba al tercio de su color y se veía negruzco en vez de morado (reportado por
+            // Diego). Lo que da profundidad es el degradado, no que el fondo sea oscuro.
+            float depth = Mathf.InverseLerp(-1f, surface, y);
+            float body  = Mathf.Lerp(0.72f, 1f, Mathf.Sqrt(depth));
+
+            // Y las burbujas de dentro, con su reflejo arriba a la izquierda.
+            foreach (var (bx, by, br) in bubbles)
+            {
+                float d = Mathf.Sqrt((x - bx) * (x - bx) + (y - by) * (y - by));
+
+                if (d > br) continue;
+
+                // El contorno claro y el relleno OSCURO: el contraste entre los dos es lo único
+                // que las hace esferas a tamaño de burbuja. Con el relleno casi igual que el
+                // líquido se perdían contra el fondo (reportado por Diego).
+                float ring = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(br * 0.5f, br, d));
+                body = Mathf.Lerp(body * 0.6f, 1f, ring);
+
+                // Y su reflejo, arriba a la izquierda, a tope de claro.
+                float gloss = Mathf.Sqrt((x - bx + br * 0.32f) * (x - bx + br * 0.32f) +
+                                         (y - by - br * 0.32f) * (y - by - br * 0.32f));
+
+                if (gloss < br * 0.38f) body = 1f;
+            }
+
+            return new Color(body, body, body, edge);
+        });
+
+        _liquid[key] = sprite;
+        return sprite;
+    }
+
+    // Lo gruesa que es la cresta, en tanto por uno del radio.
+    //
+    // Exagerada a propósito. Esta textura se dibuja a tamaño de burbuja —unos 60 px en el cañón—
+    // así que un detalle "realista" del 7% del radio cabe en dos píxeles y desaparece: lo que se
+    // veía era un relleno plano (reportado por Diego). Todo lo de acá está dimensionado para
+    // leerse a ese tamaño, no para verse bien en grande.
+    const float CREST = 0.2f;
+
+    // Dónde van las burbujas de dentro: posición y radio, en coordenadas del sprite (-1..1).
+    //
+    // A mano y no sorteadas, porque la textura se cachea y tiene que ser la misma siempre.
+    //
+    // Y SOLO en la capa de abajo. Las de encima existen para que la superficie se mueva, y si
+    // llevaran burbujas se verían tres juegos desplazados entre sí — fantasmas, no volumen.
+    //
+    // Siete y desparejas a propósito: tres grandes y simétricas se leen como una cara. El tamaño
+    // además marca a qué velocidad sube cada una, así que la variedad también desordena el
+    // movimiento.
+    static (float x, float y, float r)[] Bubbles(int variant) => new[]
+    {
+        (-0.37f, -0.62f, 0.15f),
+        ( 0.26f, -0.38f, 0.11f),
+        (-0.11f, -0.80f, 0.08f),
+        ( 0.44f, -0.70f, 0.07f),
+        (-0.52f, -0.34f, 0.06f),
+        ( 0.05f, -0.52f, 0.05f),
+        (-0.20f, -0.26f, 0.04f),
+    };
+
+    static readonly Dictionary<int, Sprite> _liquid = new();
+    // Más pequeña que las demás texturas a propósito: de esta hay un juego entero de frames, y
+    // se dibuja a tamaño de burbuja (unos 60-90px), así que 160 ya sobra.
+    const int LIQUID_SIZE = 160;
+
+    // Una gota: redonda abajo y en punta arriba, como cae de verdad.
+    //
+    // En blanco con luminosidad, igual que el líquido: quien la use la tiñe, y lo más claro sale
+    // más claro en su color. Lleva su reflejo, que es lo que la hace una gota y no una lágrima
+    // recortada.
+    static Sprite _drop;
+    public static Sprite Drop => _drop != null ? _drop : _drop = BuildColored(DROP_SIZE, (x, y) =>
+    {
+        // El perfil: un círculo abajo que se estrecha hacia la punta. El ancho permitido a cada
+        // altura es lo que dibuja la silueta.
+        float t = Mathf.InverseLerp(-0.75f, 0.95f, y);
+        if (t < 0f || t > 1f) return Color.clear;
+
+        float width = Mathf.Sqrt(Mathf.Max(0f, 1f - t * t)) * Mathf.Lerp(0.72f, 0.2f, t * t);
+        float d     = Mathf.Abs(x) / Mathf.Max(0.001f, width);
+
+        if (d > 1f) return Color.clear;
+
+        // Más clara arriba que abajo, como algo con volumen.
+        float shade = Mathf.Lerp(0.72f, 1f, Mathf.InverseLerp(-0.75f, 0.4f, y));
+
+        // Y su reflejo, arriba a la izquierda.
+        float gx = (x + 0.22f) / 0.26f;
+        float gy = (y - 0.12f) / 0.3f;
+
+        if (gx * gx + gy * gy < 1f) shade = 1f;
+
+        return new Color(shade, shade, shade, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1f, 0.82f, d)));
+    });
+
+    const int DROP_SIZE = 128;
+
     static Sprite BuildRect(int width, int height, System.Func<float, float, float> alphaAt)
     {
         var texture = new Texture2D(width, height, TextureFormat.RGBA32, mipChain: false)

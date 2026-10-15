@@ -2,6 +2,7 @@
     "id": 17,
     "chapter": 1,
     "name": "Lluvia de burbujas",
+    "tutorials": ["mine"],
     "max_shots": 38,
     "min_shots_to_clear": 13,
     "rainbow_chance": 0.05000000074505806,
@@ -17,6 +18,7 @@
         1560
     ],
     "obstacles": [],
+    "allowed_boosters_start": ["rainbow", "low_tide", "mine"],
     "objective": {
         "type": "clear_all",
         "creature_id": "",

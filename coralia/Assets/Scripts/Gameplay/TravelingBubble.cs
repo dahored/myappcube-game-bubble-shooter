@@ -51,21 +51,61 @@ public class TravelingBubble : MonoBehaviour
         [Tooltip("El sonido de la LLEGADA: lo que se oye cuando una hija alcanza su objetivo y lo revienta, y también cuando se deshace en el agua sin haber encontrado ninguno.\n\nAparte del 'Burst Clip' del poder a propósito: el estallido del impacto y el de una hija son dos cosas distintas, y con el mismo sonido el segundo se confunde con un eco del primero. Vacío usa el del poder.")]
         public AudioClip arriveClip;
 
-        [Tooltip("Qué mide la hija mientras viaja, respecto a una burbuja del tablero.")]
-        [Range(0.2f, 1f)]
+        [Tooltip("Qué mide mientras viaja, respecto a una burbuja del tablero.")]
+        [Range(0.2f, 1.5f)]
         public float size = 0.55f;
+
+        [Tooltip("Cuánto se QUEDA PEGADA al llegar, antes de empezar a irse. En cero desaparece al tocar, que es lo que quiere una hija que revienta; una gota de tinta en cambio tiene que verse caer ENCIMA y quedarse ahí un momento.")]
+        [Range(0f, 3f)]
+        public float stickTime;
+
+        [Tooltip("Y lo que tarda en desvanecerse después de ese momento pegada. Es cuando la burbuja de debajo cambia de color: lo que se va y lo que aparece son el mismo gesto.")]
+        [Range(0f, 2f)]
+        public float stickFade;
 
         // Desde que estalla el impacto hasta que llega la hija número 'index'. Quien lance el
         // viaje lo necesita para retrasar el pop de la burbuja de destino, y vive acá para que no
         // haya dos sitios sumando los mismos tramos.
         public float TotalFor(int index) => delay + index * stagger + duration;
+
+        // Y cuándo empieza a desvanecerse, que es cuando lo de debajo tiene que cambiar.
+        public float FadeStartFor(int index) => TotalFor(index) + stickTime;
+
+        // La misma configuración con otro escalonado. La pide el Agua Clara, que manda una
+        // burbuja por cada una que va a convertir: con veinte en el tablero, el 'stagger' puesto
+        // a mano las repartiría en cinco segundos. Comprimiéndolo, el poder dura lo mismo con
+        // tres que con veinte — igual que la cadena de pops.
+        public Settings WithStagger(float value) => new()
+        {
+            enabled    = enabled,
+            delay      = delay,
+            stagger    = value,
+            duration   = duration,
+            loopAt     = loopAt,
+            loopSpan   = loopSpan,
+            loopSize   = loopSize,
+            travelClip = travelClip,
+            arriveClip = arriveClip,
+            size       = size,
+        };
     }
 
     // from/to en coordenadas del TABLERO, no del canvas: así el viaje acompaña al tablero si este
     // se desplaza por el scroll mientras la hija está en el aire.
-    public static void Send(RectTransform gridContainer, Vector2 from, Vector2 to, Sprite sprite, Settings s, int index)
+    // Devuelve la Image de lo que sale volando, para que quien la mande pueda teñirla: la gota de
+    // la Tinta va del color que reparte, y ese color lo sabe quien dispara, no esto.
+    //
+    // 'extraDelay' es una espera añadida a su turno. La usa la Tinta, que reparte DESPUÉS de que
+    // el racimo del impacto termine de reventar.
+    //
+    // 'stickTo' es a qué se pega al aterrizar. Fijar la posición no basta: el tablero se desplaza
+    // cuando se retira del cañón, y la burbuja de debajo puede caerse — en los dos casos la gota
+    // se quedaba flotando donde ya no había nada (reportado por Diego). Colgando de ella, va
+    // donde vaya, y si revienta se va con ella.
+    public static Image Send(RectTransform gridContainer, Vector2 from, Vector2 to, Sprite sprite,
+                             Settings s, int index, float extraDelay = 0f, RectTransform stickTo = null)
     {
-        if (gridContainer == null || s == null || !s.enabled || sprite == null) return;
+        if (gridContainer == null || s == null || !s.enabled || sprite == null) return null;
 
         var go = new GameObject("TravelingBubble", typeof(RectTransform), typeof(Image))
         {
@@ -86,7 +126,9 @@ public class TravelingBubble : MonoBehaviour
         image.raycastTarget  = false;
         image.preserveAspect = true;
 
-        go.AddComponent<TravelingBubble>().Init(from, to, s, index);
+        go.AddComponent<TravelingBubble>().Init(from, to, s, index, extraDelay, stickTo);
+
+        return image;
     }
 
     RectTransform _rt;
@@ -98,6 +140,8 @@ public class TravelingBubble : MonoBehaviour
     float   _spin;           // hacia qué lado se abre el rizo
     float   _elapsed;
     bool    _started;        // si ya arrancó, para sonar en el primer fotograma de vuelo y no en todos
+    bool    _landed;         // si ya se posó: a partir de ahí no se mueve más
+    RectTransform _stickTo;  // y de qué cuelga desde entonces
     float   _wait;           // lo que le toca esperar a ESTA, con su turno incluido
 
     // Qué parte del CAMINO se gasta mientras riza. Es poco a propósito: con avance normal la
@@ -107,7 +151,7 @@ public class TravelingBubble : MonoBehaviour
     float _loopFrom, _loopTo;    // el rizo, en camino recorrido
     float _timeBefore, _timeLoop; // y en tiempo: cuándo empieza y cuánto dura
 
-    void Init(Vector2 from, Vector2 to, Settings s, int index)
+    void Init(Vector2 from, Vector2 to, Settings s, int index, float extraDelay = 0f, RectTransform stickTo = null)
     {
         _rt       = (RectTransform)transform;
         _image    = GetComponent<Image>();
@@ -119,10 +163,12 @@ public class TravelingBubble : MonoBehaviour
         // una sola cosa partida en dos en vez de dos que van a sitios distintos.
         _spin = index % 2 == 0 ? 1f : -1f;
 
-        // Su turno: cada una sale un poco después que la anterior.
-        _wait = s.delay + index * s.stagger;
+        // Su turno: cada una sale un poco después que la anterior, más lo que quien la mande
+        // haya querido esperar antes de empezar el reparto entero.
+        _wait = extraDelay + s.delay + index * s.stagger;
 
-        _along = (to - from).normalized;
+        _stickTo = stickTo;
+        _along   = (to - from).normalized;
         _side  = new Vector2(-_along.y, _along.x) * _spin;
 
         // El reparto del viaje, resuelto una sola vez: no depende del instante y lo necesitan
@@ -130,7 +176,9 @@ public class TravelingBubble : MonoBehaviour
         _loopFrom = Mathf.Clamp(s.loopAt, 0f, 1f - DURING_LOOP);   // camino hecho antes del rizo
         _loopTo   = _loopFrom + DURING_LOOP;                        // y con el rizo ya dado
 
-        _timeLoop  = Mathf.Clamp01(s.loopSpan);
+        // Sin rizo no hay parada en medio: el tiempo entero es de los dos tramos rectos, que así
+        // se funden en uno solo y la gota cae de un tirón.
+        _timeLoop  = s.loopSize > 0f ? Mathf.Clamp01(s.loopSpan) : 0f;
 
         // Lo que el rizo no usa se reparte entre los dos tramos rectos EN PROPORCIÓN A SU LARGO,
         // no a partes iguales: si no, el tramo corto se recorrería despacio y el largo volando,
@@ -156,25 +204,83 @@ public class TravelingBubble : MonoBehaviour
             AudioManager.Instance?.PlaySfx(_settings.travelClip);
         }
 
-        t = Mathf.Clamp01(t / _settings.duration);
+        // Lo que se queda pegada al llegar, y lo que tarda en irse después. Cero en las dos es el
+        // comportamiento de siempre: llega y desaparece.
+        float stick = Mathf.Max(0f, _settings.stickTime);
+        float fade  = Mathf.Max(0f, _settings.stickFade);
 
-        Place(At(t));
-
-        // Se apaga justo al final, no durante: tiene que llegar entera para que el pop de la
-        // burbuja de destino se lea como consecuencia suya.
-        if (t > 0.9f)
+        if (t < _settings.duration)
         {
-            var c = _image.color;
-            _image.color = new Color(c.r, c.g, c.b, Mathf.InverseLerp(1f, 0.9f, t));
+            Place(At(Mathf.Clamp01(t / _settings.duration)));
+
+            // Sin pegado, se apaga en el último tramo del vuelo: tiene que llegar entera para que
+            // el pop de la burbuja de destino se lea como consecuencia suya.
+            if (stick <= 0f && fade <= 0f)
+            {
+                float p = Mathf.Clamp01(t / _settings.duration);
+                var   c = _image.color;
+
+                if (p > 0.9f) _image.color = new Color(c.r, c.g, c.b, Mathf.InverseLerp(1f, 0.9f, p));
+            }
+
+            return;
         }
 
-        if (t >= 1f) Destroy(gameObject);
+        // Ya llegó. Sin pegado ni desvanecido, se va como siempre.
+        if (stick <= 0f && fade <= 0f) { Place(At(1f)); Destroy(gameObject); return; }
+
+        // Con pegado, se queda QUIETA del todo: la posición se fija una vez y no se vuelve a
+        // tocar, y se endereza. Place la deja girada hacia donde venía, y una gota posada encima
+        // de una burbuja tiene que estar vertical — ese resto de giro es el movimiento que se
+        // seguía notando mientras debería estar parada (pedido de Diego).
+        if (!_landed)
+        {
+            _landed = true;
+            _rt.localEulerAngles = Vector3.zero;
+
+            // Pegada a lo que alcanzó: a partir de acá su posición es la de esa burbuja, no una
+            // coordenada del tablero. Centrada sobre ella y sin volver a tocarla.
+            if (_stickTo != null)
+            {
+                _rt.SetParent(_stickTo, worldPositionStays: false);
+                _rt.anchorMin = _rt.anchorMax = _rt.pivot = new Vector2(0.5f, 0.5f);
+                _rt.anchoredPosition = Vector2.zero;
+                _rt.SetAsLastSibling();
+            }
+            else
+            {
+                _rt.anchoredPosition = At(1f);
+            }
+        }
+
+        // Si la burbuja de debajo desapareció —la reventó una cadena, se cayó— la gota se va con
+        // ella: una mancha flotando sobre el agua no tiene sentido.
+        if (_stickTo == null && transform.parent == null) { Destroy(gameObject); return; }
+
+        float after = t - _settings.duration;
+
+        // Quieta encima de lo que alcanzó: es el momento en que se LEE que cayó ahí.
+        if (after < stick) return;
+
+        if (fade <= 0f) { Destroy(gameObject); return; }
+
+        // Y se va. Mientras se va, lo de debajo cambia: los dos gestos son el mismo.
+        float gone = Mathf.Clamp01((after - stick) / fade);
+        var   tint = _image.color;
+
+        _image.color = new Color(tint.r, tint.g, tint.b, 1f - gone);
+
+        if (gone >= 1f) Destroy(gameObject);
     }
 
     // Dónde está la hija en el instante t del viaje.
     Vector2 At(float t)
     {
         Vector2 at = Vector2.Lerp(_from, _to, Advance(t));
+
+        // Sin rizo, línea recta: lo pide una gota que cae: un bucle en el aire la convertiría en
+        // otra cosa. El reparto de tiempos de Advance sigue valiendo, solo que sin la vuelta.
+        if (_settings.loopSize <= 0f) return at;
 
         float loop = Mathf.InverseLerp(_timeBefore, _timeBefore + _timeLoop, t);
         if (loop <= 0f || loop >= 1f) return at;

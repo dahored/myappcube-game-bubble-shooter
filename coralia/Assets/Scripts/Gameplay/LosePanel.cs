@@ -1,3 +1,4 @@
+using Solo.MOST_IN_ONE;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,6 +31,9 @@ public class LosePanel : UIPanel
         base.Open();
         AudioManager.Instance?.StopMusic(); // corta la música de gameplay al perder (pedido de Diego) — así se escucha bien el sonido de derrota
         AudioManager.Instance?.PlayUi(loseClip, loseClipVolume);
+
+        // El reverso del Success de la victoria: el móvil también cuenta cómo terminó.
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.Failure);
     }
 
     // La vida de esta derrota ya se descontó antes de que este panel se abriera (ver

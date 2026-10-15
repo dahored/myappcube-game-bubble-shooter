@@ -442,6 +442,52 @@ public class GameplayController : MonoBehaviour
     const float TIDE_FOAM_ALPHA      = 0.75f;
     const float TIDE_POP_LAG         = 0.1f;
 
+    // Cuánto crece una burbuja cuando la onda le pasa por encima, y cuánto dura ese golpe. Son
+    // el tamaño del gesto, no decisiones de diseño: un campo por cada uno sería ruido en una
+    // ficha que ya tiene tres.
+    const float CLEAR_NUDGE          = 0.1f;
+    const float CLEAR_NUDGE_TIME     = 0.25f;
+
+    const float DEFAULT_INK_SPREAD   = 0.4f;
+    const float DEFAULT_INK_HOLD     = 1f;
+    const float DEFAULT_INK_FADE     = 0.5f;
+
+    // Lo que tarda la mancha en acabar de aparecer. Corto: es un salpicón, no una llegada.
+    const float INK_BLOT_POP         = 0.12f;
+
+    // Qué parte del desvanecido ocupa el contagio por la cadena. Menos de uno a propósito: la
+    // última de la cadena tiene que empezar a teñirse antes de que la mancha haya terminado de
+    // irse, o se vería cambiar sola después de que el gesto acabó.
+    const float CHAIN_SPREAD         = 0.6f;
+
+    // El salpicón de cada burbuja alcanzada: crece y vuelve, como si algo le hubiera caído encima.
+    const float INK_NUDGE            = 0.14f;
+    const float INK_NUDGE_TIME       = 0.22f;
+
+    const float DEFAULT_CLEAR_FADE   = 0.25f;
+
+    // Lo que tarda en plantarse cada mina y cuánto se escalonan entre sí, cuando el catálogo no
+    // dice nada. Cero significa "usa esto" y no "instantáneo": Unity rellena un campo nuevo en un
+    // asset ya guardado con el cero del TIPO, así que sin esto el poder saldría de golpe en un
+    // catálogo que nadie tocó todavía.
+    const float DEFAULT_SEED_FADE = 0.25f;
+    const float DEFAULT_SEED_STEP = 0.12f;
+
+    // La onda por defecto: cruza la pantalla entera, que es lo que este poder necesita y la de la
+    // Bomba no — aquella se queda en su radio.
+    static readonly BombBlast.Settings DEFAULT_CLEAR_WAVE = new()
+    {
+        waveColor    = new Color(0.75f, 0.95f, 1f, 0.8f),
+        waveFrom     = 40f,
+
+        // DIÁMETRO, no radio: desde el centro de la pantalla la esquina está a unos 1100 de
+        // radio, así que para pasarse del borde hace falta más del doble de esa cifra.
+        waveTo       = 2800f,
+        waveDuration = 0.9f,
+        waveEdge     = 0.1f,
+        waveCount    = 2,
+        waveStagger  = 0.12f,
+    };
     const int   DEFAULT_TIDE_ROWS    = 3;
     const float DEFAULT_TIDE_CROSS   = 0.6f;
     const int   DEFAULT_TIDE_TRAIL   = 12;
@@ -491,6 +537,7 @@ public class GameplayController : MonoBehaviour
             yield return PresentStartBoostersTogether(ordered);
 
             _startEffects.Clear();
+            if (cannon) cannon.CheckAutoSwap();
             yield break;
         }
 
@@ -509,6 +556,7 @@ public class GameplayController : MonoBehaviour
         }
 
         _startEffects.Clear();
+        if (cannon) cannon.CheckAutoSwap();
     }
 
     // Lo que hace cada poder de inicio cuando su icono llega. En un solo sitio porque los dos
@@ -525,8 +573,10 @@ public class GameplayController : MonoBehaviour
                 yield return SeedRainbows();
                 break;
 
-            case Booster.Oxygen:  yield return GainShots(BoosterRules.OXYGEN_SHOTS); break;
-            case Booster.LowTide: yield return SweepLowTide(); break;
+            case Booster.Oxygen:     yield return GainShots(BoosterRules.OXYGEN_SHOTS); break;
+            case Booster.LowTide:    yield return SweepLowTide(); break;
+            case Booster.ClearWater: yield return ClearTheWater(); break;
+            case Booster.Mine:       yield return PlantMines();    break;
         }
     }
 
@@ -541,6 +591,80 @@ public class GameplayController : MonoBehaviour
     // suma puntos es comprar estrellas con monedas. Lo que se compra es aire contra el cañón, y
     // los puntos siguen siendo del jugador — mismo criterio que el Agua Clara, que convierte en
     // vez de borrar justo para que el racimo lo reviente él.
+    // El Agua Clara: el color más escaso del tablero pasa al más abundante (GDD §3.2).
+    //
+    // CONVIERTE, no borra. Borrar resolvería parte del objetivo solo y tiraría todo lo que
+    // colgara de esas burbujas — un derrumbe que nadie previó al balancear el nivel. Así el
+    // tablero sigue igual de lleno pero queda un racimo grande que el jugador revienta con su
+    // disparo: el mérito es suyo, no del poder.
+    //
+    // Y ese color deja de salir del cañón. Sin eso, las burbujas que acaba de quitar volverían
+    // por la cola y el jugador habría pagado por un respiro de un disparo.
+    IEnumerator ClearTheWater()
+    {
+        var (from, to) = BoosterRules.ClearWaterColors(grid.ColorCounts());
+
+        // Con un solo color en el tablero no hay "el más escaso". El poder ya se cobró —se
+        // consume al abrir— pero al menos no se queda colgado fingiendo que hace algo.
+        if (from == BubbleColor.Rainbow || to == BubbleColor.Rainbow) yield break;
+
+        var cells = grid.CellsOfColor(from);
+        if (cells.Count == 0) yield break;
+
+        var   art  = BoosterRules.ArtFor(Booster.ClearWater);
+        float fade = art != null && art.clearFade > 0f ? art.clearFade : DEFAULT_CLEAR_FADE;
+
+        var wave = art != null && art.clearWave != null && art.clearWave.waveTo > 0f
+            ? art.clearWave
+            : DEFAULT_CLEAR_WAVE;
+
+        // La onda sale de donde se apagó el icono, y ese punto es el centro de la pantalla —
+        // misma cuenta que StartBoosterTarget, para que no haya dos ideas de dónde está.
+        var     container = (RectTransform)grid.transform;
+        Vector2 origin    = container.InverseTransformPoint(ScreenCenter());
+
+        BombBlast.Ripple(container, origin, wave);
+
+        if (art?.clearClip) AudioManager.Instance?.PlaySfx(art.clearClip);
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.MediumImpact);
+
+        // Y cada burbuja cambia CUANDO EL FRENTE LA ALCANZA.
+        //
+        // El reparto no es por orden ni por tandas: es la distancia real al centro convertida en
+        // tiempo con la misma cuenta que usa la onda para crecer. Por eso el teñido va pegado al
+        // frente y no detrás ni delante — lo que se ve y lo que pasa son lo mismo.
+        //
+        // Una burbuja más lejos que 'Wave To' no se quedaría nunca sin cambiar: el tiempo se topa
+        // al final de la onda, así que el poder siempre termina lo que empezó.
+        //
+        // El radio de la onda es un DIÁMETRO, así que la distancia a la que llega es la mitad.
+        float span    = Mathf.Max(1f, wave.waveTo - wave.waveFrom) / 2f;
+        float started = wave.waveFrom / 2f;
+
+        float AtDistance(Vector2Int cell)
+        {
+            float distance = Vector2.Distance(origin, HexGridMath.CellToLocalPos(cell));
+
+            return Mathf.Clamp01((distance - started) / span) * wave.waveDuration;
+        }
+
+        // El empujón lo recibe TODO el tablero, no solo lo que cambia de color: lo que cruza es
+        // una onda, y una onda mueve lo que toca. Viendo saltar solo las burbujas que se tiñen,
+        // el efecto se lee como un parpadeo por colores en vez de como algo que pasa por encima.
+        foreach (var cell in new List<Vector2Int>(grid.Occupied))
+            if (grid.TryGetBubble(cell, out var view) && view != null)
+                StartCoroutine(Nudge((RectTransform)view.transform, AtDistance(cell), CLEAR_NUDGE_TIME, CLEAR_NUDGE));
+
+        foreach (var cell in cells)
+            grid.Recolor(cell, to, AtDistance(cell), fade);
+
+        // El cañón deja de ofrecerlo, ya mismo: si esperara a que la onda terminara, el jugador
+        // podría ver llegar a la recámara justo el color que está desapareciendo del tablero.
+        cannon.BanColor(from);
+
+        yield return new WaitForSeconds(wave.waveDuration + fade);
+    }
+
     IEnumerator SweepLowTide()
     {
         var art  = BoosterRules.ArtFor(Booster.LowTide);
@@ -812,6 +936,19 @@ public class GameplayController : MonoBehaviour
     (RectTransform rt, Image image, TMP_Text label) MakeIntroIcon(Booster booster, RectTransform root, float size)
     {
         var icon = BoosterRules.IconFor(booster);
+
+        // Sin icono en el catálogo, el poder entraba MUDO: esta entrada se abandonaba y el efecto
+        // ocurría sin que nada lo anunciara — que es justo lo que la entrada vino a arreglar.
+        //
+        // Un asset a medio configurar no puede apagar una pieza del juego. Se avisa por consola,
+        // que es donde se arregla, y se sigue con el brillo del propio poder: dice menos que su
+        // icono, pero dice que algo acaba de pasar.
+        if (icon == null)
+        {
+            Debug.LogWarning($"[GameplayController] '{booster}' no tiene 'Icon' en el catálogo — su entrada sale con el brillo genérico.", this);
+            icon = BoosterRules.GlowFor(booster);
+        }
+
         if (icon == null) return (null, null, null);
 
         var go = new GameObject("StartBoosterIcon", typeof(RectTransform), typeof(Image)) { hideFlags = HideFlags.DontSave };
@@ -992,6 +1129,207 @@ public class GameplayController : MonoBehaviour
                        .ToArray(),
     };
 
+    // La Tinta de Pulpo: salpica unas cuantas burbujas del radio y las tiñe del color que VUELVE
+    // a la recámara (GDD §3.2).
+    //
+    // Del que vuelve y no del que se dispara: teñir del disparado haría match al instante y todo
+    // reventaría en el mismo movimiento — un efecto, no una jugada. Del que vuelve, el terreno
+    // queda sembrado y el remate es del jugador en el disparo siguiente.
+    //
+    // No revienta: de ahí que no pase por ResolveBoosterBlast como los demás.
+    void SplashInk(Vector2Int center)
+    {
+        if (cannon == null) return;
+
+        var color = cannon.CurrentColor;
+
+        // Un comodín no tiñe de nada: encaja con todo, así que "pintar de arcoíris" sería
+        // repartir comodines gratis — otro poder, y mucho más fuerte.
+        if (color == BubbleColor.Rainbow) return;
+
+        var   art    = BoosterRules.ArtFor(Booster.Ink);
+        int   count  = BoosterRules.InkSplash;
+        float spread = art != null && art.inkSpread > 0f ? art.inkSpread  : DEFAULT_INK_SPREAD;
+        float fade   = art != null && art.inkFade   > 0f ? art.inkFade    : DEFAULT_INK_FADE;
+
+        // Lo que la salpicadura espera tras el estallido. Puede ser CERO —y lo es por defecto—
+        // porque las dos cosas son el mismo momento: el frasco se parte y la tinta salta. Un
+        // retardo las separaba en dos sucesos (pedido de Diego).
+        float wait = Mathf.Max(0f, art?.inkDelay ?? 0f);
+
+        var splashed = BoosterRules.InkCells(center, grid, count, BoosterRules.InkRadius);
+        if (splashed.Count == 0) return;
+
+        // De la más cercana al impacto hacia afuera: la mancha se abre desde donde cayó, que es
+        // lo que el jugador estaba mirando.
+        Vector2 from = HexGridMath.CellToLocalPos(center);
+        splashed.Sort((a, b) => Vector2.Distance(from, HexGridMath.CellToLocalPos(a))
+                        .CompareTo(Vector2.Distance(from, HexGridMath.CellToLocalPos(b))));
+
+        float hold = art != null && art.inkHold > 0f ? art.inkHold : DEFAULT_INK_HOLD;
+        float step = splashed.Count > 1 ? spread / (splashed.Count - 1) : 0f;
+
+        Sprite drop = BoosterRules.InkDrop;
+        float  size = BoosterRules.InkDropSize;
+        Color  tint = BoosterRules.InkDropTint(color);
+
+        // Lo ya pintado por otra gota no se vuelve a contar: dos que caen en el mismo racimo son
+        // una sola mancha más grande, no el doble de trabajo.
+        var painted = new HashSet<Vector2Int>();
+
+        for (int i = 0; i < splashed.Count; i++)
+        {
+            if (!grid.TryGetBubble(splashed[i], out var view) || view == null) continue;
+            if (painted.Contains(splashed[i])) continue;
+
+            float at = wait + i * step;
+
+            // La mancha aparece ENCIMA, sin viaje: la tinta salpica, no vuela. Y cuelga de la
+            // burbuja, así que va donde ella vaya — el tablero se desplaza cuando se retira del
+            // cañón, y una mancha anclada al tablero se quedaría en el sitio viejo.
+            StartCoroutine(InkBlot((RectTransform)view.transform, drop, tint, size, at, hold, fade));
+
+            // El empujón va cuando CAE, no cuando se pinta: es el golpe de algo que aterriza.
+            StartCoroutine(Nudge((RectTransform)view.transform, at, INK_NUDGE_TIME, INK_NUDGE));
+
+            if (art?.inkClip) StartCoroutine(PlayClipAfter(art.inkClip, at));
+            StartCoroutine(VibrateAfter(MOST_HapticFeedback.HapticTypes.LightImpact, at));
+
+            // Y se lleva LA CADENA entera, no solo la burbuja que pilló: cayendo sobre una que
+            // está acompañada, el color se extiende por todas sus vecinas y el jugador se
+            // encuentra un racimo listo para reventar.
+            var chain = BoosterRules.InkChain(splashed[i], grid);
+
+            // El contagio sale de donde cayó la gota hacia afuera, dentro del mismo tiempo que
+            // tarde en desvanecerse: lo que se va y lo que aparece siguen siendo el mismo gesto,
+            // por larga que sea la cadena.
+            float creep = chain.Count > 1 ? fade * CHAIN_SPREAD / (chain.Count - 1) : 0f;
+
+            // El sonido del tinte va con la primera de la cadena y no con cada una: una cadena
+            // larga son diez burbujas cambiando, y diez clips encimados no suenan a diez cosas,
+            // suenan a ruido.
+            if (art?.inkPaintClip) StartCoroutine(PlayClipAfter(art.inkPaintClip, at + hold));
+
+            // Más suave que la caída: la gota golpea, el color solo aparece.
+            StartCoroutine(VibrateAfter(MOST_HapticFeedback.HapticTypes.SoftImpact, at + hold));
+
+            for (int j = 0; j < chain.Count; j++)
+            {
+                if (!painted.Add(chain[j])) continue;
+
+                grid.Recolor(chain[j], color, at + hold + j * creep, fade);
+
+                if (j > 0 && grid.TryGetBubble(chain[j], out var member) && member != null)
+                    StartCoroutine(Nudge((RectTransform)member.transform, at + hold + j * creep,
+                                         INK_NUDGE_TIME, INK_NUDGE * 0.6f));
+            }
+        }
+
+        // El reparto termina mucho después de que el poder devuelva el control, y teñir también
+        // puede dejar un color sin una sola burbuja en el tablero. El chequeo del estallido ya
+        // pasó para entonces, así que hace falta otro cuando la última mancha se fue.
+        StartCoroutine(CheckSwapAfter(wait + spread + hold + fade));
+    }
+
+    IEnumerator CheckSwapAfter(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        if (!_levelEnded && cannon) cannon.CheckAutoSwap();
+    }
+
+    // Una mancha de tinta encima de una burbuja: aparece, se queda quieta y se va.
+    //
+    // Cuelga de la burbuja y no del tablero, así que ni el retiro del grid ni un derrumbe la
+    // dejan flotando donde ya no hay nada. Si la burbuja desaparece, la mancha se va con ella.
+    IEnumerator InkBlot(RectTransform bubble, Sprite sprite, Color tint, float size,
+                        float delay, float hold, float fade)
+    {
+        if (bubble == null || sprite == null) yield break;
+
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+        if (bubble == null) yield break;
+
+        var go = new GameObject("InkBlot", typeof(RectTransform), typeof(Image)) { hideFlags = HideFlags.DontSave };
+        var rt = (RectTransform)go.transform;
+
+        rt.SetParent(bubble, worldPositionStays: false);
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = Vector2.one * (HexGridMath.BubbleDiameter * size);
+        rt.anchoredPosition = Vector2.zero;
+        rt.SetAsLastSibling();
+
+        // Cada una cae girada por su lado: cuatro manchas idénticas se leen como un sello
+        // repetido y no como algo que salpicó.
+        rt.localEulerAngles = new Vector3(0f, 0f, Random.Range(0f, 360f));
+
+        var image = go.GetComponent<Image>();
+        image.sprite         = sprite;
+        image.color          = tint;
+        image.raycastTarget  = false;
+        image.preserveAspect = true;
+
+        // Un golpe al aparecer, y quieta: lo que se pidió es que no haya movimiento mientras está
+        // encima, así que el gesto se gasta entero en el primer instante.
+        for (float t = 0f; t < INK_BLOT_POP && go != null; t += Time.deltaTime)
+        {
+            float p = Mathf.Clamp01(t / INK_BLOT_POP);
+
+            rt.localScale = Vector3.one * Mathf.Lerp(0.55f, 1f, Ease(p));
+            yield return null;
+        }
+
+        if (go == null) yield break;
+        rt.localScale = Vector3.one;
+
+        yield return new WaitForSeconds(hold);
+
+        for (float t = 0f; t < fade && go != null; t += Time.deltaTime)
+        {
+            image.color = new Color(tint.r, tint.g, tint.b, tint.a * (1f - Mathf.Clamp01(t / fade)));
+            yield return null;
+        }
+
+        if (go != null) Destroy(go);
+    }
+
+    // Un golpe de tamaño y vuelta a lo de antes.    // Un golpe de tamaño y vuelta a lo de antes. Lo usa la onda del Agua Clara al pasar por cada
+    // burbuja, escalonado por la distancia, así que el tablero entero se mueve a su paso.
+    //
+    // Guarda y restaura la escala en vez de darla por 1: una burbuja puede venir de otro gesto, y
+    // dejarla en 1 al terminar la encogería o la estiraría sin que nadie supiera por qué.
+    IEnumerator Nudge(RectTransform rt, float delay, float duration, float amount)
+    {
+        if (rt == null) yield break;
+
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+        if (rt == null) yield break;
+
+        Vector3 size = rt.localScale;
+        float   span = Mathf.Max(0.05f, duration);
+
+        for (float t = 0f; t < span; t += Time.deltaTime)
+        {
+            if (rt == null) yield break;
+
+            rt.localScale = size * (1f + amount * Mathf.Sin(Mathf.Clamp01(t / span) * Mathf.PI));
+            yield return null;
+        }
+
+        if (rt != null) rt.localScale = size;
+    }
+
+    // El centro de la pantalla, en coordenadas de mundo. Es donde sale el icono de un poder de
+    // inicio, y para los que actúan en todo el tablero es también donde se quedan.
+    Vector3 ScreenCenter()
+    {
+        var canvas = shotsLabel != null ? shotsLabel.canvas : null;
+
+        return canvas != null
+            ? ((RectTransform)canvas.rootCanvas.transform).TransformPoint(Vector3.zero)
+            : grid.transform.position;
+    }
+
     // Dónde actúa cada poder de inicio, en coordenadas de mundo: es a donde va su icono.
     Vector3 StartBoosterTarget(Booster booster)
     {
@@ -1007,6 +1345,18 @@ public class GameplayController : MonoBehaviour
             // el icono entra justo donde va a empezar lo siguiente.
             case Booster.Rainbow:
                 return cannon != null ? container.TransformPoint(cannon.CurrentBubbleLocal) : container.position;
+
+            // A ningún sitio: se queda donde está y se apaga ahí, porque de ese punto sale la
+            // onda. Los demás viajan a donde actúan; este ACTÚA en toda la pantalla, y una onda
+            // que cubre la pantalla nace del centro de la pantalla.
+            case Booster.ClearWater:
+                return ScreenCenter();
+
+            // Tampoco va a un sitio: las minas caen repartidas por TODO el tablero, de arriba
+            // abajo, así que no hay un punto al que apuntar. Se apaga en el centro y desde ahí
+            // salen las luces a plantarlas.
+            case Booster.Mine:
+                return ScreenCenter();
 
             // Al borde por el que va a entrar la ola, a la altura de las filas que se lleva.
             case Booster.LowTide:
@@ -1081,7 +1431,7 @@ public class GameplayController : MonoBehaviour
     {
         var art    = BoosterRules.ArtFor(Booster.Rainbow);
         var travel = art?.seedTravel;
-        var seeds  = BoosterRules.RainbowSeeds(grid);
+        var seeds  = BoosterRules.SeedCells(grid);
 
         bool travels = travel != null && travel.enabled;
 
@@ -1118,6 +1468,47 @@ public class GameplayController : MonoBehaviour
         // Se espera a que la última llegue y acabe de teñirse: lo que venga detrás es otro regalo
         // y tiene que empezar cuando este haya terminado de contarse.
         float last = seeds.Count > 0 ? (travels ? travel.TotalFor(seeds.Count - 1) : (seeds.Count - 1) * step) : 0f;
+
+        yield return new WaitForSeconds(last + fade);
+    }
+
+    // Planta las minas. Comparte TODO con la siembra de la Perla salvo en qué convierte: el
+    // mismo reparto por bandas, el mismo viaje de luces, el mismo gesto al llegar.
+    //
+    // Y comparte el motivo: si las minas aparecieran de golpe, el jugador vería un tablero
+    // distinto sin haber visto pasar nada, y lo que pagó no se cobra.
+    IEnumerator PlantMines()
+    {
+        var art    = BoosterRules.ArtFor(Booster.Mine);
+        var travel = art?.seedTravel;
+        var cells  = BoosterRules.SeedCells(grid);
+
+        bool travels = travel != null && travel.enabled;
+
+        float fade = art != null && art.seedFade > 0f ? art.seedFade : DEFAULT_SEED_FADE;
+        float step = travel != null && travel.stagger > 0f ? travel.stagger : DEFAULT_SEED_STEP;
+
+        // La luz es el glow del poder; sin él, la propia burbuja de mina. Lo que viaja no es una
+        // mina todavía: es lo que va a convertir una burbuja en mina.
+        Sprite light = BoosterRules.GlowFor(Booster.Mine) ?? BoosterRules.BubbleSpriteFor(Booster.Mine);
+
+        // Desde el centro de la pantalla, que es donde se apagó el icono. La Perla sale de su
+        // perla porque la tiene delante; este poder no tiene burbuja en la recámara.
+        Vector2 from = ((RectTransform)grid.transform).InverseTransformPoint(ScreenCenter());
+
+        for (int i = 0; i < cells.Count; i++)
+        {
+            float at = travels ? travel.TotalFor(i) : i * step;
+
+            if (travels)
+                TravelingBubble.Send((RectTransform)grid.transform, from,
+                                     HexGridMath.CellToLocalPos(cells[i]), light, travel, i);
+
+            grid.TurnIntoMine(cells[i], at, fade);
+            StartCoroutine(PlayClipAfter(art?.minePlantClip != null ? art.minePlantClip : travel?.arriveClip, at));
+        }
+
+        float last = cells.Count > 0 ? (travels ? travel.TotalFor(cells.Count - 1) : (cells.Count - 1) * step) : 0f;
 
         yield return new WaitForSeconds(last + fade);
     }
@@ -1162,10 +1553,13 @@ public class GameplayController : MonoBehaviour
             // gastaría uno de los tres huecos que le hacen falta al jugador para otra cosa.
             if (BoosterRules.IsStart(booster)) BoosterLoadout.Equip(booster);
 
-            // Solo los de gameplay se cargan en la recámara. Uno de inicio se aplica en el acto:
-            // su momento era al abrir el nivel y ya pasó, así que esperar al final del tutorial es
-            // lo más cerca que se puede estar de ese momento. Pasarlo por LoadBooster lo trataría
-            // como una burbuja especial y lo dejaría cargado sin poder dispararse nunca.
+            // Solo los de gameplay se cargan en la recámara. Pasar uno de inicio por LoadBooster
+            // lo trataría como una burbuja especial y lo dejaría puesto sin poder dispararse.
+            //
+            // Y el de inicio no se APLICA acá aunque lo parezca: ApplyStartBoosters lo cobra y lo
+            // encola, y la cola se reproduce al cerrarse el modal (ver PlayStartEffects, que corre
+            // después de ExplainMechanics). Así el poder que el tutorial acaba de explicar entra
+            // con su icono y su efecto, igual que si lo hubiera traído equipado.
             if (BoosterRules.IsInGame(booster)) _autoLoadBooster = booster;
             else                                ApplyStartBoosters();
         }
@@ -1336,7 +1730,13 @@ public class GameplayController : MonoBehaviour
             return;
         }
 
-        AfterRemoval(ResolveMatchAndDrop(landedCell));
+        var removed = ResolveMatchAndDrop(landedCell);
+
+        // Una mina estalla con lo que le pasa al lado, y una burbuja que ATERRIZA pegada a ella
+        // es eso aunque el disparo no haya matcheado nada. Sin esto, el jugador podría apoyarse
+        // contra una mina y no pasaría nada — que es justo lo contrario de "es sensible".
+        removed.Add(landedCell);
+        AfterRemoval(removed);
     }
 
     // El poder se pega, carga, y recién entonces estalla.
@@ -1376,22 +1776,130 @@ public class GameplayController : MonoBehaviour
 
         AfterRemoval(ResolveBoosterBlast(booster, center, struck));
 
+        // La Tinta hace su match como cualquier burbuja y RECIÉN DESPUÉS salpica lo que queda
+        // alrededor (pedido de Diego). En este orden, las que el impacto se llevó ya no están en
+        // el tablero, así que la mancha no se gasta en burbujas que estaban muriéndose.
+        //
+        // El color que aplica no se ve afectado: un poder no consume la cola, así que lo que hay
+        // en la recámara después de resolver es lo mismo que había antes.
+        if (BoosterRules.Tints(booster)) SplashInk(center);
+
         // Solo si el nivel sigue: con el panel de victoria o derrota ya abierto, devolver el
         // control sería dejar disparar por detrás de él.
         if (_levelEnded) yield break;
 
         cannon.SetInputEnabled(true);
         if (openPausedButton) openPausedButton.interactable = true;
+
+        // Y que el cañón revise lo que tiene servido: el estallido pudo llevarse el último rojo
+        // del tablero, y el relevo —que es quien normalmente pregunta— no corre al usar un poder.
+        if (cannon) cannon.CheckAutoSwap();
     }
 
     // Lo que hay que mirar después de cualquier remoción, venga de un match o de una explosión.
+    // Cuándo revienta cada celda de esta jugada, en segundos desde ahora.
+    //
+    // Hace falta porque una mina no se enciende "porque hubo un match" sino porque una burbuja
+    // DESAPARECIÓ a su lado, y los pops de una cadena van escalonados. Estallando al instante, la
+    // mina pegada a la última del racimo se adelantaba a lo que la encendía (reportado por Diego).
+    //
+    // Se acumula durante toda la jugada —incluida la cadena de minas, que añade las suyas con su
+    // propio retraso— y se vacía al final, en AfterRemoval.
+    readonly Dictionary<Vector2Int, float> _poppedAt = new();
+
     void AfterRemoval(HashSet<Vector2Int> removed)
     {
+        // Las minas primero, y la cadena ENTERA: una que estalla puede encender a la de al lado y
+        // esa a la siguiente. Mirar si el nivel terminó a mitad de esa cadena sería decidirlo
+        // sobre un tablero que todavía va a cambiar, y lo que la cadena se lleve cuenta igual
+        // para la criatura y para el marcador.
+        DetonateMinesTouching(removed);
+
         if (removed.Contains(_creatureCell)) _creatureFreed = true;
 
         if (progressScore != null) progressScore.SetScore(LiveScore, _level.star_thresholds);
 
         CheckWinLose();
+
+        _poppedAt.Clear();
+    }
+
+    // Enciende las minas que tengan algo pegado en 'touched', y las que esas enciendan, hasta que
+    // no quede ninguna. Lo que se lleven se suma a 'touched', que por eso entra y sale: quien
+    // llamó tiene que terminar con la lista COMPLETA de lo que desapareció.
+    //
+    // Una mina estalla por contacto y no por color: lo mismo da que la burbuja de al lado se haya
+    // ido en un match, en una explosión o que acabe de llegar. Una sola regla y los tres casos
+    // que pidió Diego —disparo, cadena y otra mina— salen de ella sin un caso especial cada uno.
+    void DetonateMinesTouching(HashSet<Vector2Int> touched)
+    {
+        // Cada mina con CUÁNDO se enciende: el instante en que revienta la primera vecina que se
+        // va a su lado. Una mina pegada a la última del racimo espera a esa; estallando al tirar
+        // se adelantaba a lo que la encendía.
+        var pending = new Dictionary<Vector2Int, float>();
+        var fired   = new HashSet<Vector2Int>();
+
+        foreach (var cell in touched)
+            foreach (var around in HexGridMath.GetNeighbors(cell))
+                Queue(around, PopTime(cell));
+
+        while (pending.Count > 0)
+        {
+            // La que antes se encienda, primero: una que estalle tarde puede encender a otra, y
+            // resolviéndolas en desorden esa otra saldría antes que quien la enciende.
+            var  mine = Vector2Int.zero;
+            float at  = float.MaxValue;
+
+            foreach (var pair in pending)
+                if (pair.Value < at) { mine = pair.Key; at = pair.Value; }
+
+            pending.Remove(mine);
+
+            if (!fired.Add(mine)) continue;
+
+            // Las minas que caen DENTRO del radio se apuntan ANTES de que el estallido se las
+            // lleve: preguntarlo después no encontraría ninguna, porque ya no estarían en el
+            // tablero. Una mina alcanzada por otra estalla, no revienta como una burbuja más.
+            var caught = new List<Vector2Int>();
+
+            foreach (var cell in BoosterRules.CellsHitBy(Booster.Mine, mine, null, grid))
+                if (cell != mine && !fired.Contains(cell)
+                    && grid.TryGetBubble(cell, out var view) && view.IsMine) caught.Add(cell);
+
+            // Se dispara aunque su celda ya esté vacía: la que se llevó una vecina estalla igual,
+            // desde donde estaba. Es lo que hace que la cadena salga hacia afuera en vez de
+            // pararse en la primera.
+            // El estallido suena acá y no dentro de ResolveBoosterBlast: los que se disparan ya
+            // lo tocan antes de llamarla —el sonido va con la mecha, no con el estallido— y
+            // ponerlo dentro lo repetiría dos veces en cada bomba.
+            StartCoroutine(PlayClipAfter(BoosterRules.ArtFor(Booster.Mine)?.burstClip, at));
+
+            var blown = ResolveBoosterBlast(Booster.Mine, mine, null, at);
+
+            touched.UnionWith(blown);
+
+            // Y ahora sí, con el reloj del estallido ya apuntado: cada una se enciende cuando la
+            // onda llega HASTA ELLA, no cuando la anterior empieza.
+            foreach (var cell in caught) Queue(cell, PopTime(cell), force: true);
+
+            foreach (var cell in blown)
+                foreach (var around in HexGridMath.GetNeighbors(cell))
+                    Queue(around, PopTime(cell));
+        }
+
+        // Si la celda no reventó —una burbuja que ATERRIZA al lado también enciende— va al
+        // instante: no hay nada que esperar.
+        float PopTime(Vector2Int cell) => _poppedAt.TryGetValue(cell, out float t) ? t : 0f;
+
+        // Se queda con el PRIMER contacto: dos vecinas que revientan a destiempo la encienden
+        // cuando llega la primera, no cuando acaba la segunda.
+        void Queue(Vector2Int cell, float when, bool force = false)
+        {
+            if (fired.Contains(cell)) return;
+            if (!force && !(grid.TryGetBubble(cell, out var view) && view.IsMine)) return;
+
+            if (!pending.TryGetValue(cell, out float had) || when < had) pending[cell] = when;
+        }
     }
 
     // Match (3+ conectadas) -> explode, después drop de todo lo que quedó flotando.
@@ -1441,6 +1949,8 @@ public class GameplayController : MonoBehaviour
                 }
 
         _comboStreak++;
+
+        VibrateBurst(matched.Count);
 
         // FindConnectedSameColor devuelve las celdas en orden de flood-fill (BFS) desde la
         // burbuja que tocó el disparo — así que el índice ya es "qué tan lejos" está cada
@@ -1492,9 +2002,13 @@ public class GameplayController : MonoBehaviour
                                       hasRainbow && i > 0 ? null : popClip);
             }
 
-            grid.SpawnScorePopup(cell, popValue, hasRainbow ? burstDelay : i * popStep, ScorePopup.POP_LIFETIME);
+            float at = hasRainbow ? burstDelay : i * popStep;
+
+            grid.SpawnScorePopup(cell, popValue, at, ScorePopup.POP_LIFETIME);
             grid.RemoveBubble(cell);
             removed.Add(cell);
+
+            _poppedAt[cell] = at;
         }
         _bubblesPopped += matched.Count;
 
@@ -1530,7 +2044,11 @@ public class GameplayController : MonoBehaviour
     // valen lo que valga la racha en ese momento (decisión de Diego). Tratarlo como un disparo
     // neutro hacía que una racha de 20 volviera a mostrar 10 al explotar, y se leía como si la
     // bomba la hubiera roto — que es exactamente lo contrario de lo que un poder debería hacer.
-    HashSet<Vector2Int> ResolveBoosterBlast(Booster booster, Vector2Int center, Vector2Int? struck)
+    // 'startDelay' retrasa lo que se VE, no lo que pasa: el grid se resuelve en el acto como
+    // siempre. Lo usa la cadena de minas, donde cada una tiene que esperar a que reviente lo que
+    // la enciende — y de paso hace que una mina encendida por otra salga detrás y no a la vez.
+    HashSet<Vector2Int> ResolveBoosterBlast(Booster booster, Vector2Int center, Vector2Int? struck,
+                                            float startDelay = 0f)
     {
         var removed = new HashSet<Vector2Int>();
         var art     = BoosterRules.ArtFor(booster);
@@ -1552,7 +2070,13 @@ public class GameplayController : MonoBehaviour
         if (grid.IsOccupied(center) && !hit.Contains(center)) hit.Insert(0, center);
 
         // Antes de los pops, mientras la burbuja del poder todavía existe para marcar el lugar.
-        if (grid.TryGetBubble(center, out var armed))
+        //
+        // Con retraso se lanza desde el PUNTO y no desde la burbuja: para cuando llegue su turno
+        // esa burbuja ya no existe, y colgar el destello de ella lo haría desaparecer con ella.
+        if (startDelay > 0f)
+            StartCoroutine(SparkleAfter(HexGridMath.CellToLocalPos(center),
+                                        art?.burstSparkle ?? bombSparkle, startDelay));
+        else if (grid.TryGetBubble(center, out var armed))
             Sparkle.Burst((RectTransform)armed.transform, art?.burstSparkle ?? bombSparkle);
 
         var blast     = art?.burstBlast ?? bombBlast;
@@ -1565,13 +2089,19 @@ public class GameplayController : MonoBehaviour
         // fila de once no explota desde el medio— y cada celda pone su onda más abajo, al ritmo
         // de su propio pop.
         if (!perBubble)
-            BombBlast.Play((RectTransform)grid.transform, HexGridMath.CellToLocalPos(center), blast);
+        {
+            if (startDelay > 0f)
+                StartCoroutine(BlastAfter(HexGridMath.CellToLocalPos(center), blast, startDelay));
+            else
+                BombBlast.Play((RectTransform)grid.transform, HexGridMath.CellToLocalPos(center), blast);
+        }
 
         // HeavyImpact, no el LightImpact del resto del juego: cada burbuja que revienta ya da su
         // propio toque ligero, así que la cadena de diecinueve suena a escombros. El golpe fuerte
         // va UNA vez y antes que todos ellos — es la explosión, y lo que viene después es su
         // consecuencia. Con la misma intensidad que los pops, el estallido se perdería entre ellos.
-        Vibrate(booster);
+        if (startDelay > 0f) StartCoroutine(VibrateAfter(MOST_HapticFeedback.HapticTypes.HeavyImpact, startDelay));
+        else                 Vibrate(booster);
 
         float popStep = ChainStep(hit.Count, POP_CHAIN_DELAY);
 
@@ -1608,7 +2138,7 @@ public class GameplayController : MonoBehaviour
             var cell = hit[i];
 
             bool goes = travels && i >= firstTraveler;
-            float at  = goes ? travel.TotalFor(sent) : i * popStep;
+            float at  = startDelay + (goes ? travel.TotalFor(sent) : i * popStep);
 
             if (goes)
             {
@@ -1646,6 +2176,8 @@ public class GameplayController : MonoBehaviour
             grid.SpawnScorePopup(cell, popValue, at, ScorePopup.POP_LIFETIME);
             grid.RemoveBubble(cell);
             removed.Add(cell);
+
+            _poppedAt[cell] = at;
         }
 
         // Las hijas que no encontraron a quién ir salen IGUAL y revientan en el agua. No sacarlas
@@ -1698,6 +2230,31 @@ public class GameplayController : MonoBehaviour
     // Un clip suelto más tarde. Lo piden los poderes cuyo efecto no ocurre todo en el mismo
     // instante: sin esto, el sonido del estallido de una hija habría que colgarlo de la burbuja
     // de destino, que es de quien MENOS depende — ella solo recibe.
+    // Lo mismo que PlayClipAfter pero para el móvil: los efectos escalonados anuncian lo suyo con
+    // retraso, y un toque que llega cuando ya pasó la cosa se siente como un fallo del teléfono.
+    IEnumerator VibrateAfter(MOST_HapticFeedback.HapticTypes type, float delay)
+    {
+        if (!SaveManager.Vibration) yield break;
+
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        MOST_HapticFeedback.Generate(type);
+    }
+
+    IEnumerator SparkleAfter(Vector2 at, Sparkle.Settings settings, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        if (grid != null) Sparkle.BurstAt((RectTransform)grid.transform, at, settings);
+    }
+
+    IEnumerator BlastAfter(Vector2 at, BombBlast.Settings settings, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        if (grid != null) BombBlast.Play((RectTransform)grid.transform, at, settings);
+    }
+
     IEnumerator PlayClipAfter(AudioClip clip, float delay)
     {
         if (clip == null) yield break;
@@ -1781,6 +2338,24 @@ public class GameplayController : MonoBehaviour
 
         AudioManager.Instance?.PlaySfx(art.burstClip);
         Vibrate(booster);
+    }
+
+    // El golpe del estallido, por tamaño del grupo. Va UNA vez y ANTES de la cadena de pops, con
+    // el mismo criterio que los poderes: cada burbuja ya da su toque ligero, así que lo que falta
+    // no es más ruido sino el golpe que los abre.
+    //
+    // Por debajo del umbral no se añade nada: un match de tres ES el toque de tres pops, y
+    // meterle un golpe fuerte delante lo convertiría en una explosión que no fue.
+    const int MATCH_MEDIUM = 5;
+    const int MATCH_HEAVY  = 8;
+
+    void VibrateBurst(int count)
+    {
+        if (!SaveManager.Vibration || count < MATCH_MEDIUM) return;
+
+        MOST_HapticFeedback.Generate(count >= MATCH_HEAVY
+            ? MOST_HapticFeedback.HapticTypes.HeavyImpact
+            : MOST_HapticFeedback.HapticTypes.MediumImpact);
     }
 
     void Vibrate(Booster booster)
