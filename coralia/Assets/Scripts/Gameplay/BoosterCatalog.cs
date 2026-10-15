@@ -85,11 +85,40 @@ public class BoosterCatalog : ScriptableObject
         [Range(1f, 30f)]
         public float framesPerSecond = 8f;
 
+        [Tooltip("Cuánto líquido lleva dentro la burbuja, de 0 (nada) a 1 (llena). Se dibuja por código y se recorta al círculo, con la superficie ondulada y espuma en el borde — no hace falta arte.\n\nMedia es lo que mejor se lee: llena no se distingue de una burbuja de color, y vacía no dice nada. En CERO no se dibuja.")]
+        [Range(0f, 1f)]
+        public float liquidFill;
+
+        [Tooltip("De qué color es el líquido. Es la marca del poder, así que no cambia con lo que vaya a repartir: eso ya lo dice la zona de la mira.\n\nCon alfa en CERO el líquido no se dibuja aunque 'Liquid Fill' tenga valor.")]
+        public Color liquidColor = new(0.68f, 0.32f, 0.92f, 1f);
+
+        [Tooltip("El color de la SUPERFICIE, que en un líquido siempre es más clara y más viva que el fondo. Es lo que lo despega de ser un relleno plano.\n\nCon alfa en CERO se aclara sola a partir del color del cuerpo.")]
+        public Color liquidCrestColor = new(0.91f, 0.37f, 0.94f, 1f);
+
+        [Tooltip("Cuántas capas de líquido se superponen. Una sola se ve como una mancha pintada; varias, con la superficie desfasada y meciéndose cada una a su ritmo, se cruzan y se separan sin repetirse — y eso es lo que el ojo lee como algo que fluye.\n\nEn CERO usa el valor por defecto.")]
+        [Range(1, 5)]
+        public int liquidLayers = 3;
+
+        [Tooltip("A qué ritmo AVANZA la ola, en pasos por segundo. Es lo que hace que la cresta cambie de forma —se levanta por un lado mientras baja por el otro— en vez de moverse como una pieza rígida.\n\nEn CERO la ola se queda quieta y solo se balancea.")]
+        [Range(0f, 24f)]
+        public float liquidFlowFps = 9f;
+
+        [Tooltip("Cuánto se inclina el líquido de un lado a otro, en grados. Es lo que lo hace parecer líquido: quieto se ve como una mancha pintada dentro del vidrio.\n\nEn CERO no se mueve.")]
+        [Range(0f, 25f)]
+        public float liquidSway = 7f;
+
+        [Tooltip("A qué ritmo se mece, en vaivenes por segundo. Lento se lee como un líquido pesado; rápido, como agua agitada.")]
+        [Range(0.05f, 3f)]
+        public float liquidSwayHz = 0.45f;
+
         [Tooltip("Burbujas pequeñas girando DENTRO de la grande. Arrastra un sprite por cada hija: tres sprites son tres burbujas orbitando. El fondo lo pone 'Bubble Frames' y se queda quieto.")]
         public SpecialBubbleSkin.Orbit bubbleOrbit = new();
 
         [Tooltip("El chisporroteo de DENTRO de la burbuja: dos rayos horizontales saliendo de un destello en el medio. Se dibuja por código, así que no hace falta arte ni frames.")]
         public SpecialBubbleSkin.Spark bubbleSpark = new();
+
+        [Tooltip("La luz que parpadea DENTRO de la burbuja. Para algo armado que espera a que lo toquen — la mina plantada.\n\nVa aparte del chisporroteo eléctrico porque cuentan lo contrario: el rayo no para nunca y dice que está vivo; esta está apagada casi todo el rato y el destello corto dice que espera.")]
+        public SpecialBubbleSkin.Beacon bubbleBeacon = new();
 
         [Tooltip("Sonido EN BUCLE que suena mientras el poder está puesto en la recámara — la mecha encendida de la bomba, por ejemplo. Se corta al descargarlo o al dispararlo.\n\nOpcional: sin clip no suena nada y el poder funciona igual.")]
         public AudioClip loadedLoopClip;
@@ -168,6 +197,63 @@ public class BoosterCatalog : ScriptableObject
         [Range(0, 30)]
         public int tideTrail = 12;
 
+        [Tooltip("A cuántas burbujas llega la salpicadura de la Tinta.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0, 12)]
+        public int inkSplash = 4;
+
+        [Tooltip("Hasta dónde busca las burbujas que va a pintar, en anillos alrededor del impacto. Es también la zona que marca la mira.\n\nLas que el match se lleva no cuentan: para cuando cae la gota ya no están.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0, 5)]
+        public int inkRadius = 2;
+
+        [Tooltip("Lo que la tinta espera, tras reventar el racimo que tocó, antes de empezar a salpicar. La cadena de pops todavía está sonando: las dos cosas a la vez se leen como una sola.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0f, 1.5f)]
+        public float inkDelay = 0.35f;
+
+        [Tooltip("La mancha que cae sobre cada burbuja. Vacío usa una gota dibujada por código.")]
+        public Sprite inkDrop;
+
+        [Tooltip("Lo grande que sale la mancha respecto a la burbuja que ensucia. Por encima de 1 se desborda, que es lo que hace una salpicadura.")]
+        [Range(0.5f, 2.5f)]
+        public float inkDropSize = 1.15f;
+
+        [Tooltip("De qué color sale la mancha. Con alfa en CERO se pinta del color que va a repartir, que es lo que cuenta lo que va a pasar antes de que pase — útil si la mancha es blanca o gris.\n\nSi el sprite ya viene coloreado, pon acá blanco para que se vea tal cual.")]
+        public Color inkDropColor;
+
+        [Tooltip("Tope de lo que puede durar el reparto entero: las manchas aparecen escalonadas dentro de este tiempo, así que cuatro y diez tardan lo mismo.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0f, 2f)]
+        public float inkSpread = 0.4f;
+
+        [Tooltip("Lo que la mancha se queda QUIETA encima antes de empezar a irse. Es el momento en que se lee que cayó ahí.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0f, 3f)]
+        public float inkHold = 1f;
+
+        [Tooltip("Lo que tarda en desvanecerse. Es también lo que tarda la burbuja de debajo en cambiar de color: lo que se va y lo que aparece son el mismo gesto.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0f, 2f)]
+        public float inkFade = 0.5f;
+
+        [Tooltip("El sonido de la mancha al CAER, uno por gota.")]
+        public AudioClip inkClip;
+
+        [Tooltip("El sonido del cambio de color, uno por gota. Suena cuando la mancha empieza a irse y el color aparece debajo — o sea 'Ink Hold' después del anterior.\n\nVa aparte de 'Ink Clip' porque son dos momentos: algo que cae y algo que se tiñe. Con un solo sonido, el cambio de color pasa desapercibido.")]
+        public AudioClip inkPaintClip;
+
+        [Tooltip("La onda que sale del icono y cruza la pantalla. Cada burbuja cambia de color CUANDO EL FRENTE LA ALCANZA, así que 'Wave Duration' es también lo que dura el poder y 'Wave To' hasta dónde llega: para que cubra la pantalla entera tiene que pasarse del borde.\n\nMismo bloque que las ondas de la Bomba, pero sin su fogonazo.")]
+        public BombBlast.Settings clearWave = new();
+
+        [Tooltip("Lo que tarda CADA burbuja en terminar de cambiar de color, una vez la onda la alcanzó.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0f, 1f)]
+        public float clearFade = 0.25f;
+
+        [Tooltip("El sonido de la onda. Suena UNA vez, al salir: lo que cruza es una sola onda.")]
+        public AudioClip clearClip;
+
+        [Tooltip("Hasta dónde llega una mina plantada al estallar, en anillos: 1 son 7 burbujas y 2 son 19, igual que la Bomba de Coral.\n\nVa aparte del radio de la Bomba a propósito: la mina no cuesta disparo y estalla sola, así que es otro poder y se balancea por separado.\n\nEn CERO usa el valor por defecto.")]
+        [Range(0, 4)]
+        public int mineRadius = 2;
+
+        [Tooltip("El sonido de PLANTAR cada mina, al abrir el nivel. Suena una vez por mina, escalonado igual que la siembra de la Perla.\n\nNo es el del estallido —ese es 'Burst Clip'— ni un pitido mientras espera.")]
+        public AudioClip minePlantClip;
+
         [Tooltip("La luz que sale de la perla de la recámara hacia cada burbuja que va a convertir, con su ruta, su escalonado y sus dos sonidos (salida y llegada). Marca 'Enabled' aquí dentro para encenderla: apagada, las tres se convierten en su sitio sin que nada viaje.\n\nMismo bloque que usa la Burbuja Madre para sus hijas — lo que se afine en uno vale como referencia para el otro.")]
         public TravelingBubble.Settings seedTravel = new();
 
@@ -234,6 +320,15 @@ public class BoosterCatalog : ScriptableObject
     {
         var frames = EntryFor(booster)?.bubbleFrames;
 
+        // Y nada más: el icono NO sirve de respaldo.
+        //
+        // Se probó, para poder usar un poder antes de tener su arte, y sale mal: el icono está
+        // dibujado para un botón de UI —plano, con su marco, pensado a 100px— y dentro del
+        // tablero se ve como un parche. Peor aún, tapa que el arte falta, así que el poder parece
+        // terminado y nadie vuelve a mirarlo (reportado por Diego).
+        //
+        // Sin 'Bubble Frames' el poder no se carga, y el aviso de CannonController dice el campo
+        // exacto que hay que llenar.
         return frames != null && frames.Length > 0 ? frames[0] : null;
     }
 

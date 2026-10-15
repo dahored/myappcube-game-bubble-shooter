@@ -17,3 +17,7 @@ dragon-studio-popping-bubbles-406647 -> bubble_travel
 universfield-bubble-pop-09-229312 -> bubble_arrival
 dragon-studio-deep-sea-underwater-ambience-482888 -> mother_loaded
 tithuh-level-up-523624 -> moves_up
+dragon-studio-glass-breaking-386153 -> breaking_glass
+dragon-studio-waterdrop-406639 -> waterdrop
+freesound_community-beep-104060 -> mine_beep
+

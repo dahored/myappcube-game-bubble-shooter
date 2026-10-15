@@ -16,6 +16,8 @@
         2650
     ],
     "obstacles": [],
+    "tutorials": ["clear_water"],
+    "allowed_boosters_start": ["rainbow", "low_tide", "clear_water"],
     "objective": {
         "type": "clear_all",
         "creature_id": "",

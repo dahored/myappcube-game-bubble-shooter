@@ -22,6 +22,13 @@ MonoBehaviour:
     - {fileID: 8661716057833069622, guid: 5d25dcddc5c2b4ea4a2c7c2c52714122, type: 3}
     spin: 0
     framesPerSecond: 8
+    liquidFill: 0
+    liquidColor: {r: 0.68, g: 0.32, b: 0.92, a: 1}
+    liquidCrestColor: {r: 0.91, g: 0.37, b: 0.94, a: 1}
+    liquidLayers: 3
+    liquidFlowFps: 9
+    liquidSway: 7
+    liquidSwayHz: 0.45
     bubbleOrbit:
       sprites: []
       radius: 0.17
@@ -36,6 +43,16 @@ MonoBehaviour:
       scale: 0.82
       coreScale: 0.62
       pulseHz: 17
+    bubbleBeacon:
+      enabled: 0
+      color: {r: 1, g: 0.18, b: 0.06, a: 1}
+      scale: 0.42
+      hz: 1.3
+      flash: 0.28
+      dim: 0.2
+      clip: {fileID: 0}
+      clipGap: 0.5
+      clipVolume: 0.45
     loadedLoopClip: {fileID: 8300000, guid: 3a6108d9e4a794136b761ba8e98e561f, type: 3}
     loadedLoopVolume: 0.5
     burstClip: {fileID: 8300000, guid: 2bc19cb1498714ed7a9d0606323ba591, type: 3}
@@ -86,6 +103,8 @@ MonoBehaviour:
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
+      stickTime: 0
+      stickFade: 0
     burstLightning:
       enabled: 0
       color: {r: 0.65, g: 0.9, b: 1, a: 1}
@@ -102,6 +121,38 @@ MonoBehaviour:
     tideBubble: {fileID: 0}
     tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
     tideTrail: 5
+    inkSplash: 4
+    inkRadius: 2
+    inkDelay: 0.35
+    inkDrop: {fileID: 0}
+    inkDropSize: 1.15
+    inkDropColor: {r: 0, g: 0, b: 0, a: 0}
+    inkSpread: 0.4
+    inkHold: 1
+    inkFade: 0.25
+    inkClip: {fileID: 0}
+    inkPaintClip: {fileID: 0}
+    clearWave:
+      chargeTime: 1.2
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 0.97, b: 0.85, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 1000
+      waveDuration: 0.55
+      waveEdge: 0.07
+      waveCount: 2
+      waveStagger: 0.08
+      rainbowWaves: 0
+    clearFade: 0.25
+    clearClip: {fileID: 0}
+    mineRadius: 2
+    minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
       delay: 0.18
@@ -113,6 +164,8 @@ MonoBehaviour:
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
+      stickTime: 0
+      stickFade: 0
     seedFade: 0
     packs:
     - amount: 1
@@ -132,6 +185,13 @@ MonoBehaviour:
     - {fileID: 7416691928268232256, guid: cd4e4136d804f443b88d74e25ee17f0f, type: 3}
     spin: -1440
     framesPerSecond: 12
+    liquidFill: 0
+    liquidColor: {r: 0.68, g: 0.32, b: 0.92, a: 1}
+    liquidCrestColor: {r: 0.91, g: 0.37, b: 0.94, a: 1}
+    liquidLayers: 3
+    liquidFlowFps: 9
+    liquidSway: 7
+    liquidSwayHz: 0.45
     bubbleOrbit:
       sprites: []
       radius: 0.17
@@ -146,6 +206,16 @@ MonoBehaviour:
       scale: 0.82
       coreScale: 0.62
       pulseHz: 17
+    bubbleBeacon:
+      enabled: 0
+      color: {r: 1, g: 0.18, b: 0.06, a: 1}
+      scale: 0.42
+      hz: 1.3
+      flash: 0.28
+      dim: 0.2
+      clip: {fileID: 0}
+      clipGap: 0.5
+      clipVolume: 0.45
     loadedLoopClip: {fileID: 8300000, guid: 354feb70d2e104569919dc3f945eb62f, type: 3}
     loadedLoopVolume: 0.5
     burstClip: {fileID: 8300000, guid: 354feb70d2e104569919dc3f945eb62f, type: 3}
@@ -196,6 +266,8 @@ MonoBehaviour:
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
+      stickTime: 0
+      stickFade: 0
     burstLightning:
       enabled: 0
       color: {r: 0.65, g: 0.9, b: 1, a: 1}
@@ -212,6 +284,38 @@ MonoBehaviour:
     tideBubble: {fileID: 0}
     tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
     tideTrail: 5
+    inkSplash: 4
+    inkRadius: 2
+    inkDelay: 0.35
+    inkDrop: {fileID: 0}
+    inkDropSize: 1.15
+    inkDropColor: {r: 0, g: 0, b: 0, a: 0}
+    inkSpread: 0.4
+    inkHold: 1
+    inkFade: 0.25
+    inkClip: {fileID: 0}
+    inkPaintClip: {fileID: 0}
+    clearWave:
+      chargeTime: 1.2
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 0.97, b: 0.85, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 1000
+      waveDuration: 0.55
+      waveEdge: 0.07
+      waveCount: 2
+      waveStagger: 0.08
+      rainbowWaves: 0
+    clearFade: 0.25
+    clearClip: {fileID: 0}
+    mineRadius: 2
+    minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 1
       delay: 0.18
@@ -223,6 +327,8 @@ MonoBehaviour:
       travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
       arriveClip: {fileID: 8300000, guid: 8642f302b66864fd690fcfe240c8db65, type: 3}
       size: 0.7
+      stickTime: 0
+      stickFade: 0
     seedFade: 0.28
     packs:
     - amount: 1
@@ -242,6 +348,13 @@ MonoBehaviour:
     - {fileID: -1032720602377991539, guid: 915236230473b41e39179f0aea8474ae, type: 3}
     spin: 0
     framesPerSecond: 1
+    liquidFill: 0
+    liquidColor: {r: 0.68, g: 0.32, b: 0.92, a: 1}
+    liquidCrestColor: {r: 0.91, g: 0.37, b: 0.94, a: 1}
+    liquidLayers: 3
+    liquidFlowFps: 9
+    liquidSway: 7
+    liquidSwayHz: 0.45
     bubbleOrbit:
       sprites: []
       radius: 0.17
@@ -256,6 +369,16 @@ MonoBehaviour:
       scale: 1
       coreScale: 1.2
       pulseHz: 17
+    bubbleBeacon:
+      enabled: 0
+      color: {r: 1, g: 0.18, b: 0.06, a: 1}
+      scale: 0.42
+      hz: 1.3
+      flash: 0.28
+      dim: 0.2
+      clip: {fileID: 0}
+      clipGap: 0.5
+      clipVolume: 0.45
     loadedLoopClip: {fileID: 8300000, guid: 96e70155ecd7d451aa6bae224faf7214, type: 3}
     loadedLoopVolume: 0.5
     burstClip: {fileID: 8300000, guid: bab5e120469c4479bad03e480d40082b, type: 3}
@@ -306,6 +429,8 @@ MonoBehaviour:
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
+      stickTime: 0
+      stickFade: 0
     burstLightning:
       enabled: 1
       color: {r: 1, g: 0.98883486, b: 0.3915094, a: 1}
@@ -322,6 +447,38 @@ MonoBehaviour:
     tideBubble: {fileID: 0}
     tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
     tideTrail: 5
+    inkSplash: 4
+    inkRadius: 2
+    inkDelay: 0.35
+    inkDrop: {fileID: 0}
+    inkDropSize: 1.15
+    inkDropColor: {r: 0, g: 0, b: 0, a: 0}
+    inkSpread: 0.4
+    inkHold: 1
+    inkFade: 0.25
+    inkClip: {fileID: 0}
+    inkPaintClip: {fileID: 0}
+    clearWave:
+      chargeTime: 1.2
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 0.97, b: 0.85, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 1000
+      waveDuration: 0.55
+      waveEdge: 0.07
+      waveCount: 2
+      waveStagger: 0.08
+      rainbowWaves: 0
+    clearFade: 0.25
+    clearClip: {fileID: 0}
+    mineRadius: 2
+    minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
       delay: 0.18
@@ -333,6 +490,8 @@ MonoBehaviour:
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
+      stickTime: 0
+      stickFade: 0
     seedFade: 0
     packs:
     - amount: 1
@@ -352,6 +511,13 @@ MonoBehaviour:
     - {fileID: 3825108340541979968, guid: 10d02dd5f5b824196a1e3e6ff89afa6f, type: 3}
     spin: 0
     framesPerSecond: 1
+    liquidFill: 0
+    liquidColor: {r: 0.68, g: 0.32, b: 0.92, a: 1}
+    liquidCrestColor: {r: 0.91, g: 0.37, b: 0.94, a: 1}
+    liquidLayers: 3
+    liquidFlowFps: 9
+    liquidSway: 7
+    liquidSwayHz: 0.45
     bubbleOrbit:
       sprites:
       - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
@@ -369,6 +535,16 @@ MonoBehaviour:
       scale: 1
       coreScale: 1.2
       pulseHz: 17
+    bubbleBeacon:
+      enabled: 0
+      color: {r: 1, g: 0.18, b: 0.06, a: 1}
+      scale: 0.42
+      hz: 1.3
+      flash: 0.28
+      dim: 0.2
+      clip: {fileID: 0}
+      clipGap: 0.5
+      clipVolume: 0.45
     loadedLoopClip: {fileID: 8300000, guid: d1643082d0377484094a0209b2f35975, type: 3}
     loadedLoopVolume: 0.05
     burstClip: {fileID: 8300000, guid: 2bc19cb1498714ed7a9d0606323ba591, type: 3}
@@ -419,6 +595,8 @@ MonoBehaviour:
       travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
       arriveClip: {fileID: 8300000, guid: ecb599ab0eb4c4715bf2e619901c42ea, type: 3}
       size: 0.7
+      stickTime: 0
+      stickFade: 0
     burstLightning:
       enabled: 0
       color: {r: 1, g: 0.98883486, b: 0.3915094, a: 1}
@@ -435,6 +613,38 @@ MonoBehaviour:
     tideBubble: {fileID: 0}
     tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
     tideTrail: 5
+    inkSplash: 4
+    inkRadius: 2
+    inkDelay: 0.35
+    inkDrop: {fileID: 0}
+    inkDropSize: 1.15
+    inkDropColor: {r: 0, g: 0, b: 0, a: 0}
+    inkSpread: 0.4
+    inkHold: 1
+    inkFade: 0.25
+    inkClip: {fileID: 0}
+    inkPaintClip: {fileID: 0}
+    clearWave:
+      chargeTime: 1.2
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 0.97, b: 0.85, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 1000
+      waveDuration: 0.55
+      waveEdge: 0.07
+      waveCount: 2
+      waveStagger: 0.08
+      rainbowWaves: 0
+    clearFade: 0.25
+    clearClip: {fileID: 0}
+    mineRadius: 2
+    minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
       delay: 0.18
@@ -446,6 +656,8 @@ MonoBehaviour:
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
+      stickTime: 0
+      stickFade: 0
     seedFade: 0
     packs:
     - amount: 1
@@ -464,6 +676,13 @@ MonoBehaviour:
     bubbleFrames: []
     spin: -1440
     framesPerSecond: 12
+    liquidFill: 0
+    liquidColor: {r: 0.68, g: 0.32, b: 0.92, a: 1}
+    liquidCrestColor: {r: 0.91, g: 0.37, b: 0.94, a: 1}
+    liquidLayers: 3
+    liquidFlowFps: 9
+    liquidSway: 7
+    liquidSwayHz: 0.45
     bubbleOrbit:
       sprites: []
       radius: 0.17
@@ -478,6 +697,16 @@ MonoBehaviour:
       scale: 0.82
       coreScale: 0.62
       pulseHz: 17
+    bubbleBeacon:
+      enabled: 0
+      color: {r: 1, g: 0.18, b: 0.06, a: 1}
+      scale: 0.42
+      hz: 1.3
+      flash: 0.28
+      dim: 0.2
+      clip: {fileID: 0}
+      clipGap: 0.5
+      clipVolume: 0.45
     loadedLoopClip: {fileID: 0}
     loadedLoopVolume: 0.5
     burstClip: {fileID: 0}
@@ -528,6 +757,8 @@ MonoBehaviour:
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
+      stickTime: 0
+      stickFade: 0
     burstLightning:
       enabled: 0
       color: {r: 0.65, g: 0.9, b: 1, a: 1}
@@ -544,6 +775,38 @@ MonoBehaviour:
     tideBubble: {fileID: 0}
     tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
     tideTrail: 5
+    inkSplash: 4
+    inkRadius: 2
+    inkDelay: 0.35
+    inkDrop: {fileID: 0}
+    inkDropSize: 1.15
+    inkDropColor: {r: 0, g: 0, b: 0, a: 0}
+    inkSpread: 0.4
+    inkHold: 1
+    inkFade: 0.25
+    inkClip: {fileID: 0}
+    inkPaintClip: {fileID: 0}
+    clearWave:
+      chargeTime: 1.2
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 0.97, b: 0.85, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 1000
+      waveDuration: 0.55
+      waveEdge: 0.07
+      waveCount: 2
+      waveStagger: 0.08
+      rainbowWaves: 0
+    clearFade: 0.25
+    clearClip: {fileID: 0}
+    mineRadius: 2
+    minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
       delay: 0.18
@@ -555,6 +818,8 @@ MonoBehaviour:
       travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
       arriveClip: {fileID: 8300000, guid: 8642f302b66864fd690fcfe240c8db65, type: 3}
       size: 0.7
+      stickTime: 0
+      stickFade: 0
     seedFade: 0.28
     packs:
     - amount: 1
@@ -573,6 +838,13 @@ MonoBehaviour:
     bubbleFrames: []
     spin: -1440
     framesPerSecond: 12
+    liquidFill: 0
+    liquidColor: {r: 0.68, g: 0.32, b: 0.92, a: 1}
+    liquidCrestColor: {r: 0.91, g: 0.37, b: 0.94, a: 1}
+    liquidLayers: 3
+    liquidFlowFps: 9
+    liquidSway: 7
+    liquidSwayHz: 0.45
     bubbleOrbit:
       sprites: []
       radius: 0.17
@@ -587,6 +859,16 @@ MonoBehaviour:
       scale: 0.82
       coreScale: 0.62
       pulseHz: 17
+    bubbleBeacon:
+      enabled: 0
+      color: {r: 1, g: 0.18, b: 0.06, a: 1}
+      scale: 0.42
+      hz: 1.3
+      flash: 0.28
+      dim: 0.2
+      clip: {fileID: 0}
+      clipGap: 0.5
+      clipVolume: 0.45
     loadedLoopClip: {fileID: 0}
     loadedLoopVolume: 0.5
     burstClip: {fileID: 0}
@@ -637,6 +919,8 @@ MonoBehaviour:
       travelClip: {fileID: 0}
       arriveClip: {fileID: 0}
       size: 0.55
+      stickTime: 0
+      stickFade: 0
     burstLightning:
       enabled: 0
       color: {r: 0.65, g: 0.9, b: 1, a: 1}
@@ -653,6 +937,38 @@ MonoBehaviour:
     tideBubble: {fileID: 1505006969088389832, guid: 80daac24c790b47e09242751639cec7c, type: 3}
     tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 1}
     tideTrail: 20
+    inkSplash: 4
+    inkRadius: 2
+    inkDelay: 0.35
+    inkDrop: {fileID: 0}
+    inkDropSize: 1.15
+    inkDropColor: {r: 0, g: 0, b: 0, a: 0}
+    inkSpread: 0.4
+    inkHold: 1
+    inkFade: 0.25
+    inkClip: {fileID: 0}
+    inkPaintClip: {fileID: 0}
+    clearWave:
+      chargeTime: 1.2
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 0.97, b: 0.85, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 1000
+      waveDuration: 0.55
+      waveEdge: 0.07
+      waveCount: 2
+      waveStagger: 0.08
+      rainbowWaves: 0
+    clearFade: 0.25
+    clearClip: {fileID: 0}
+    mineRadius: 2
+    minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
       delay: 0.18
@@ -664,6 +980,496 @@ MonoBehaviour:
       travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
       arriveClip: {fileID: 8300000, guid: 8642f302b66864fd690fcfe240c8db65, type: 3}
       size: 0.7
+      stickTime: 0
+      stickFade: 0
+    seedFade: 0.28
+    packs:
+    - amount: 1
+      price: 3
+      discountPercent: 0
+    - amount: 5
+      price: 15
+      discountPercent: 20
+    - amount: 15
+      price: 40
+      discountPercent: 30
+    glowOverride: {fileID: 0}
+  - booster: 7
+    family: 1
+    icon: {fileID: 1856023289631398723, guid: 85a1a9fd11a5b4328a8705f3ddea1d29, type: 3}
+    bubbleFrames: []
+    spin: -1440
+    framesPerSecond: 12
+    liquidFill: 0
+    liquidColor: {r: 0.68, g: 0.32, b: 0.92, a: 1}
+    liquidCrestColor: {r: 0.91, g: 0.37, b: 0.94, a: 1}
+    liquidLayers: 3
+    liquidFlowFps: 9
+    liquidSway: 7
+    liquidSwayHz: 0.45
+    bubbleOrbit:
+      sprites: []
+      radius: 0.17
+      radiusMax: 0.19
+      size: 0.3
+      speed: 35
+      breathPerSecond: 0.22
+    bubbleSpark:
+      enabled: 0
+      color: {r: 0.8, g: 0.95, b: 1, a: 0.9}
+      fps: 14
+      scale: 0.82
+      coreScale: 0.62
+      pulseHz: 17
+    bubbleBeacon:
+      enabled: 0
+      color: {r: 1, g: 0.18, b: 0.06, a: 1}
+      scale: 0.42
+      hz: 1.3
+      flash: 0.28
+      dim: 0.2
+      clip: {fileID: 0}
+      clipGap: 0.5
+      clipVolume: 0.45
+    loadedLoopClip: {fileID: 0}
+    loadedLoopVolume: 0.5
+    burstClip: {fileID: 0}
+    chargeClip: {fileID: 0}
+    clipLead: 0
+    vibrate: 1
+    shake: 1
+    burstSparkle:
+      glowColor: {r: 1, g: 0.93, b: 0.72, a: 0.85}
+      glowSize: 300
+      glowFrom: 0.35
+      glowTo: 1.6
+      glowDuration: 0.5
+      moteCount: 10
+      moteColor: {r: 1, g: 1, b: 1, a: 0.95}
+      moteSize: 64
+      spawnRadius: 34
+      travel: 95
+      moteDuration: 0.55
+      stagger: 0.22
+      rainbowMotes: 0
+    burstBlast:
+      chargeTime: 0
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 1, b: 1, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 1400
+      waveDuration: 0.7
+      waveEdge: 0.18
+      waveCount: 1
+      waveStagger: 0.08
+      rainbowWaves: 1
+    burstPerBubble: 0
+    burstTravel:
+      enabled: 0
+      delay: 0.18
+      stagger: 0.14
+      duration: 0.45
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
+      travelClip: {fileID: 0}
+      arriveClip: {fileID: 0}
+      size: 0.55
+      stickTime: 0
+      stickFade: 0
+    burstLightning:
+      enabled: 0
+      color: {r: 0.65, g: 0.9, b: 1, a: 1}
+      thickness: 46
+      duration: 0.22
+      flickerHz: 28
+    claimStep: 0.06
+    claimFade: 0.16
+    claimHold: 0.12
+    claimMaxTotal: 0.8
+    tideRows: 3
+    tideSweepDuration: 1.2
+    tideSweepClip: {fileID: 8300000, guid: cc3b76ca64b134786a1b4dae244e4bf5, type: 3}
+    tideBubble: {fileID: 1505006969088389832, guid: 80daac24c790b47e09242751639cec7c, type: 3}
+    tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 1}
+    tideTrail: 20
+    inkSplash: 4
+    inkRadius: 2
+    inkDelay: 0.35
+    inkDrop: {fileID: 0}
+    inkDropSize: 1.15
+    inkDropColor: {r: 0, g: 0, b: 0, a: 0}
+    inkSpread: 0.4
+    inkHold: 1
+    inkFade: 0.25
+    inkClip: {fileID: 0}
+    inkPaintClip: {fileID: 0}
+    clearWave:
+      chargeTime: 0
+      chargeColor: {r: 1, g: 1, b: 1, a: 0}
+      chargeSize: 0
+      chargePulse: 0
+      flashColor: {r: 1, g: 1, b: 1, a: 0}
+      flashSpread: 0
+      flashRise: 0
+      flashFall: 0
+      waveColor: {r: 0.75, g: 0.95, b: 1, a: 0.8}
+      waveFrom: 40
+      waveTo: 2800
+      waveDuration: 0.9
+      waveEdge: 0.1
+      waveCount: 2
+      waveStagger: 0.12
+      rainbowWaves: 0
+    clearFade: 0.25
+    clearClip: {fileID: 8300000, guid: 2bc19cb1498714ed7a9d0606323ba591, type: 3}
+    mineRadius: 2
+    minePlantClip: {fileID: 0}
+    seedTravel:
+      enabled: 0
+      delay: 0.18
+      stagger: 0.25
+      duration: 1
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
+      travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
+      arriveClip: {fileID: 8300000, guid: 8642f302b66864fd690fcfe240c8db65, type: 3}
+      size: 0.7
+      stickTime: 0
+      stickFade: 0
+    seedFade: 0.28
+    packs:
+    - amount: 1
+      price: 3
+      discountPercent: 0
+    - amount: 5
+      price: 15
+      discountPercent: 20
+    - amount: 15
+      price: 40
+      discountPercent: 30
+    glowOverride: {fileID: 0}
+  - booster: 8
+    family: 0
+    icon: {fileID: 2282136319279139012, guid: d6f8ef640629e47328fe1071d85d7ae2, type: 3}
+    bubbleFrames:
+    - {fileID: 463396256857311206, guid: b31c280fd51494deeb89c5553d55e9f0, type: 3}
+    spin: 0
+    framesPerSecond: 1
+    liquidFill: 0.5
+    liquidColor: {r: 0.69, g: 0.26, b: 0.97, a: 1}
+    liquidCrestColor: {r: 0.96, g: 0.45, b: 1, a: 1}
+    liquidLayers: 3
+    liquidFlowFps: 3.5
+    liquidSway: 7
+    liquidSwayHz: 0.45
+    bubbleOrbit:
+      sprites: []
+      radius: 0.17
+      radiusMax: 0.25
+      size: 0.3
+      speed: -150
+      breathPerSecond: 0.22
+    bubbleSpark:
+      enabled: 0
+      color: {r: 1, g: 1, b: 1, a: 0.9}
+      fps: 14
+      scale: 1
+      coreScale: 1.2
+      pulseHz: 17
+    bubbleBeacon:
+      enabled: 0
+      color: {r: 1, g: 0.18, b: 0.06, a: 1}
+      scale: 0.42
+      hz: 1.3
+      flash: 0.28
+      dim: 0.2
+      clip: {fileID: 0}
+      clipGap: 0.5
+      clipVolume: 0.45
+    loadedLoopClip: {fileID: 8300000, guid: d1643082d0377484094a0209b2f35975, type: 3}
+    loadedLoopVolume: 0.05
+    burstClip: {fileID: 8300000, guid: 9a267ccbc9aeb4523af2fc3c162b7716, type: 3}
+    chargeClip: {fileID: 0}
+    clipLead: 0
+    vibrate: 1
+    shake: 1
+    burstSparkle:
+      glowColor: {r: 1, g: 0.93, b: 0.72, a: 0.85}
+      glowSize: 300
+      glowFrom: 1.93
+      glowTo: 1.6
+      glowDuration: 0.5
+      moteCount: 10
+      moteColor: {r: 1, g: 1, b: 1, a: 0.95}
+      moteSize: 64
+      spawnRadius: 34
+      travel: 95
+      moteDuration: 0.55
+      stagger: 0.22
+      rainbowMotes: 0
+    burstBlast:
+      chargeTime: 0
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 1, b: 1, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 400
+      waveDuration: 0.7
+      waveEdge: 0.18
+      waveCount: 1
+      waveStagger: 0.08
+      rainbowWaves: 0
+    burstPerBubble: 1
+    burstTravel:
+      enabled: 0
+      delay: 0.18
+      stagger: 0.25
+      duration: 1
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
+      travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
+      arriveClip: {fileID: 8300000, guid: ecb599ab0eb4c4715bf2e619901c42ea, type: 3}
+      size: 0.7
+      stickTime: 0
+      stickFade: 0
+    burstLightning:
+      enabled: 0
+      color: {r: 1, g: 0.98883486, b: 0.3915094, a: 1}
+      thickness: 80
+      duration: 0.4
+      flickerHz: 28
+    claimStep: 0.06
+    claimFade: 0.16
+    claimHold: 0.12
+    claimMaxTotal: 0.8
+    tideRows: 3
+    tideSweepDuration: 0.6
+    tideSweepClip: {fileID: 0}
+    tideBubble: {fileID: 0}
+    tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
+    tideTrail: 5
+    inkSplash: 6
+    inkRadius: 4
+    inkDelay: 0
+    inkDrop: {fileID: -8212066693482842052, guid: 0864e55d1a7a14d8ab1a72eedbaeaedc, type: 3}
+    inkDropSize: 1.2
+    inkDropColor: {r: 1, g: 1, b: 1, a: 0}
+    inkSpread: 0.4
+    inkHold: 1
+    inkFade: 0.5
+    inkClip: {fileID: 8300000, guid: c6ca132819dd64eb5a6c1cfd46976311, type: 3}
+    inkPaintClip: {fileID: 8300000, guid: c6ca132819dd64eb5a6c1cfd46976311, type: 3}
+    clearWave:
+      chargeTime: 1.2
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 0.97, b: 0.85, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 1000
+      waveDuration: 0.55
+      waveEdge: 0.07
+      waveCount: 2
+      waveStagger: 0.08
+      rainbowWaves: 0
+    clearFade: 0.25
+    clearClip: {fileID: 0}
+    mineRadius: 2
+    minePlantClip: {fileID: 0}
+    seedTravel:
+      enabled: 0
+      delay: 0.18
+      stagger: 0.14
+      duration: 0.85
+      loopAt: 0.12
+      loopSpan: 0.34
+      loopSize: 0.95
+      travelClip: {fileID: 0}
+      arriveClip: {fileID: 0}
+      size: 0.55
+      stickTime: 0
+      stickFade: 0
+    seedFade: 0
+    packs:
+    - amount: 1
+      price: 3
+      discountPercent: 0
+    - amount: 5
+      price: 15
+      discountPercent: 20
+    - amount: 15
+      price: 40
+      discountPercent: 30
+    glowOverride: {fileID: 0}
+  - booster: 9
+    family: 1
+    icon: {fileID: 4265560667516233302, guid: 01844773e403a4f5cb99212eb74ffc54, type: 3}
+    bubbleFrames:
+    - {fileID: 3825108340541979968, guid: 10d02dd5f5b824196a1e3e6ff89afa6f, type: 3}
+    spin: 0
+    framesPerSecond: 12
+    liquidFill: 0
+    liquidColor: {r: 0.68, g: 0.32, b: 0.92, a: 1}
+    liquidCrestColor: {r: 0.91, g: 0.37, b: 0.94, a: 1}
+    liquidLayers: 3
+    liquidFlowFps: 9
+    liquidSway: 7
+    liquidSwayHz: 0.45
+    bubbleOrbit:
+      sprites: []
+      radius: 0.17
+      radiusMax: 0.19
+      size: 0.3
+      speed: 35
+      breathPerSecond: 0.22
+    bubbleSpark:
+      enabled: 0
+      color: {r: 0.8, g: 0.95, b: 1, a: 0.9}
+      fps: 14
+      scale: 0.82
+      coreScale: 0.62
+      pulseHz: 17
+    bubbleBeacon:
+      enabled: 1
+      color: {r: 1, g: 0.18, b: 0.06, a: 1}
+      scale: 0.42
+      hz: 1.3
+      flash: 0.45
+      dim: 0.2
+      clip: {fileID: 8300000, guid: 827e5a7408ceb4228a3cfb2905be7c09, type: 3}
+      clipGap: 0.5
+      clipVolume: 0.45
+    loadedLoopClip: {fileID: 0}
+    loadedLoopVolume: 0.5
+    burstClip: {fileID: 8300000, guid: 2bc19cb1498714ed7a9d0606323ba591, type: 3}
+    chargeClip: {fileID: 0}
+    clipLead: 0
+    vibrate: 1
+    shake: 1
+    burstSparkle:
+      glowColor: {r: 1, g: 0.93, b: 0.72, a: 0.85}
+      glowSize: 300
+      glowFrom: 0.35
+      glowTo: 1.6
+      glowDuration: 0.5
+      moteCount: 10
+      moteColor: {r: 1, g: 1, b: 1, a: 0.95}
+      moteSize: 64
+      spawnRadius: 34
+      travel: 95
+      moteDuration: 0.55
+      stagger: 0.22
+      rainbowMotes: 0
+    burstBlast:
+      chargeTime: 0
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 1, b: 1, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 800
+      waveDuration: 0.7
+      waveEdge: 0.1
+      waveCount: 1
+      waveStagger: 0.08
+      rainbowWaves: 0
+    burstPerBubble: 0
+    burstTravel:
+      enabled: 0
+      delay: 0.18
+      stagger: 0.14
+      duration: 0.45
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
+      travelClip: {fileID: 0}
+      arriveClip: {fileID: 0}
+      size: 0.55
+      stickTime: 0
+      stickFade: 0
+    burstLightning:
+      enabled: 0
+      color: {r: 0.65, g: 0.9, b: 1, a: 1}
+      thickness: 46
+      duration: 0.22
+      flickerHz: 28
+    claimStep: 0.06
+    claimFade: 0.16
+    claimHold: 0.12
+    claimMaxTotal: 0.8
+    tideRows: 3
+    tideSweepDuration: 0.6
+    tideSweepClip: {fileID: 0}
+    tideBubble: {fileID: 0}
+    tideSweepColor: {r: 0.72, g: 0.95, b: 1, a: 0.95}
+    tideTrail: 5
+    inkSplash: 4
+    inkRadius: 2
+    inkDelay: 0.35
+    inkDrop: {fileID: 0}
+    inkDropSize: 1.15
+    inkDropColor: {r: 0, g: 0, b: 0, a: 0}
+    inkSpread: 0.4
+    inkHold: 1
+    inkFade: 0.25
+    inkClip: {fileID: 0}
+    inkPaintClip: {fileID: 0}
+    clearWave:
+      chargeTime: 1.2
+      chargeColor: {r: 1, g: 0.92, b: 0.6, a: 0.95}
+      chargeSize: 300
+      chargePulse: 9
+      flashColor: {r: 1, g: 0.97, b: 0.85, a: 0.6}
+      flashSpread: 1.5
+      flashRise: 0.05
+      flashFall: 0.45
+      waveColor: {r: 1, g: 1, b: 1, a: 0.9}
+      waveFrom: 70
+      waveTo: 1000
+      waveDuration: 0.55
+      waveEdge: 0.07
+      waveCount: 2
+      waveStagger: 0.08
+      rainbowWaves: 0
+    clearFade: 0.25
+    clearClip: {fileID: 0}
+    mineRadius: 1
+    minePlantClip: {fileID: 0}
+    seedTravel:
+      enabled: 1
+      delay: 0.18
+      stagger: 0.25
+      duration: 1
+      loopAt: 0.45
+      loopSpan: 0.4
+      loopSize: 1.15
+      travelClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
+      arriveClip: {fileID: 8300000, guid: 8642f302b66864fd690fcfe240c8db65, type: 3}
+      size: 0.7
+      stickTime: 0
+      stickFade: 0
     seedFade: 0.28
     packs:
     - amount: 1

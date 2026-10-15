@@ -798,7 +798,7 @@ aporta nada especial.
 | **Burbuja-bomba** (36) | sin definir en el GDD | — | Depende de qué haga; decidirlo en su propio issue |
 | **Cadena viva** (46) | Dos burbujas unidas, mueren juntas o no mueren | Bomba ✅ · Raya ✅ | Un área se lleva las dos a la vez sin pensarlo |
 
-Tres de los diez poderes (Reserva de Oxígeno, Marea Baja, Corriente Favorable) no tienen sinergia
+Dos de los diez poderes (Reserva de Oxígeno, Marea Baja) no tienen sinergia
 con ningún obstáculo, **y está bien**: son los que tocan las palancas del nivel —tiros, cuántas
 burbujas, qué color sale— y su sitio es otro. Forzarles una sinergia sería inventarla.
 
@@ -923,9 +923,9 @@ seis capítulos del GDD §2.1 caben dentro de esos 60.
 | 9 | `oxygen` (Reserva de Oxígeno) | inicio | El más simple de todos: +5 disparos. Cae cuando el margen de tiros empieza a apretar |
 | 13 | `mother` (Burbuja Madre) | gameplay | Ataca el color disperso, que es el problema que aparece al subir a cuatro colores |
 | 11 | `low_tide` (Marea Baja) | inicio | Adelantado al 11 **provisionalmente para probarlo**; su sitio por diseño es el 18, cuando los tableros empiezan a abrir cargados |
-| 24 | `ink` (Tinta de Pulpo) | gameplay | El más difícil de los que se cargan: tiñe del color que VUELVE, así que pide dominar la cola |
-| 30 | `clearwater` (Agua Clara) | inicio | Mitad del recorrido, con cinco colores en el tablero: ahí es donde sobra uno |
-| 38 | `current` (Corriente Favorable) | inicio | Un sesgo sutil. Solo se aprecia habiendo sufrido la mala suerte de colores |
+| 15 | `ink` (Tinta de Pulpo) | gameplay | Adelantado al 15 **provisionalmente para probarlo**; su sitio por diseño es el 24 — es el más difícil de los que se cargan, tiñe del color que VUELVE y pide dominar la cola |
+| 13 | `clear_water` (Agua Clara) | inicio | Adelantado al 13 **provisionalmente para probarlo**; su sitio por diseño es el 30, a mitad de recorrido y con cinco colores en el tablero, que es donde sobra uno |
+| 17 | `mine` (Plantar Bombas) | inicio | Adelantado al 17 **provisionalmente para probarlo**; su sitio por diseño es el 38 — abre un tablero cerrado y eso no se sufre hasta bien entrado el recorrido |
 | 45 | `claw` (Pinza de Langosta) | gameplay | El último: es el único que pide una forma de activación nueva (tocar el tablero) |
 
 Del 46 al 60 no entra ninguno nuevo: el tramo final se juega con todo lo aprendido.
@@ -1037,7 +1037,7 @@ añade su caso a ese `switch`.
 | ~~**Perla Arcoíris**~~ ✅ | Al menos 3 comodines repartidos por el nivel, el primero al empezar | Hecho — `CannonController.MakeCurrentRainbow` + el reparto en `RollColor` |
 | **Marea Baja** | Al empezar, borra la fila más baja del tablero | `GridController` + `CollapseFloating` y la animación de pop que ya existen |
 | **Agua Clara** | El color con menos burbujas se CONVIERTE al color con más, y deja de salir del cañón | `ColorsOnGrid` + `BubbleView.SetColor` (ya existe para la arcoíris) |
-| **Corriente Favorable** | Durante todo el nivel, el cañón favorece los colores que más abundan | sesgar `CannonController.RollColor` |
+| ~~**Plantar Bombas**~~ ✅ | Planta 3 bombas sensibles cada 10 filas al abrir. Sin color y sin match: estallan en radio 2 cuando algo revienta o aterriza a su lado | Hecho — `BoosterRules.SeedCells` (compartido con la Perla) + `GameplayController.DetonateMinesTouching` |
 
 **Agua Clara convierte, no elimina** — borrar dispararía la caída de todo lo que colgara de esas
 burbujas, un efecto que nadie previó al balancear el nivel, y resolvería parte del objetivo solo.

@@ -17,6 +17,7 @@
         4140
     ],
     "obstacles": [],
+    "tutorials": ["ink"],
     "objective": {
         "type": "clear_all",
         "creature_id": "",

@@ -53,6 +53,11 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     public bool          IsCreature { get; private set; }
     public Booster Special    { get; private set; }
 
+    // Una mina plantada ocupa su celda pero no tiene color: no encaja con nada, no cuenta como
+    // color del tablero y no entra en ningún grupo. Lo único que hace es estallar cuando algo la
+    // toca. Se pregunta en un solo sitio para que nadie tenga que acordarse de la regla.
+    public bool IsMine => Special == Booster.Mine;
+
     // El poder que lleva esta burbuja, con su arte. Las capas van sobre la raíz (este mismo
     // objeto), encima del sprite de color: una bomba no se mezcla con su color, lo tapa.
     public void SetSpecial(Booster special)
@@ -145,7 +150,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     //
     // Pasa por SetSpecial y no por un tinte propio porque así el pop lo desvanece solo: ya sabe
     // bajarle el alfa a las capas de una burbuja con poder.
-    public void ClaimAsRainbow(float delay, float fade) => StartCoroutine(RainbowRoutine(delay, fade, null));
+    public void ClaimAsRainbow(float delay, float fade) => StartCoroutine(RecolorRoutine(delay, fade, ColorType, null));
 
     // La Perla convierte burbujas YA PUESTAS en comodines al abrir el nivel, y esas se quedan.
     //
@@ -156,16 +161,37 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     //
     // El gesto es el mismo a propósito: el jugador ya aprendió qué significa esa animación.
     public void TurnIntoRainbow(Sprite sprite, float delay, float fade) =>
-        StartCoroutine(RainbowRoutine(delay, fade, sprite));
+        StartCoroutine(RecolorRoutine(delay, fade, BubbleColor.Rainbow, sprite));
 
-    IEnumerator RainbowRoutine(float delay, float fade, Sprite permanentSprite)
+    // La misma conversión para cualquier color. La usa el Agua Clara, que pasa las burbujas del
+    // color más escaso al más abundante: no revienta nada, así que el cambio tiene que verse o el
+    // jugador no se entera de qué pagó.
+    public void TurnInto(BubbleColor color, Sprite sprite, float delay, float fade) =>
+        StartCoroutine(RecolorRoutine(delay, fade, color, sprite));
+
+    // Plantar Bombas convierte burbujas del tablero en minas, y con el MISMO gesto que la Perla:
+    // el jugador ya aprendió que esa animación significa "este poder tocó esta burbuja", y dos
+    // gestos distintos para la misma idea serían dos cosas que aprender en vez de una.
+    //
+    // Conserva su ColorType por dentro y nadie lo mira: lo que la saca de los matches y de los
+    // recuentos es IsMine, no el color. Quitárselo obligaría a inventar un color "ninguno" y a
+    // que todo lo que recorre la paleta se acordara de saltarlo.
+    public void TurnIntoMine(float delay, float fade) =>
+        StartCoroutine(RecolorRoutine(delay, fade, ColorType, null, Booster.Mine));
+
+    IEnumerator RecolorRoutine(float delay, float fade, BubbleColor color, Sprite permanentSprite,
+                               Booster special = Booster.Rainbow)
     {
         if (delay > 0f) yield return new WaitForSeconds(delay);
 
-        if (permanentSprite != null) SetColor(BubbleColor.Rainbow, permanentSprite);
-        else                         SetSpecial(Booster.Rainbow);
+        if (permanentSprite != null) SetColor(color, permanentSprite);
+        else                         SetSpecial(special);
 
-        SpecialBubbleSkin.SetAlpha(this, 0f);
+        // El alfa solo vale para una burbuja con capas encima (arcoíris, poderes). Una de color
+        // corriente no tiene ninguna, y bajárselo la dejaría invisible hasta el final del gesto.
+        bool layered = ColorType == BubbleColor.Rainbow || Special != Booster.None;
+
+        if (layered) SpecialBubbleSkin.SetAlpha(this, 0f);
 
         // Un pelín más grande mientras se tiñe, y vuelve. Sin el gesto, el cambio de color sobre
         // una burbuja quieta se pierde entre las demás que ya están cambiando.
@@ -175,12 +201,12 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
         {
             float p = Mathf.Clamp01(t / fade);
 
-            SpecialBubbleSkin.SetAlpha(this, p);
+            if (layered) SpecialBubbleSkin.SetAlpha(this, p);
             transform.localScale = baseScale * (1f + 0.12f * Mathf.Sin(p * Mathf.PI));
             yield return null;
         }
 
-        SpecialBubbleSkin.SetAlpha(this, 1f);
+        if (layered) SpecialBubbleSkin.SetAlpha(this, 1f);
         transform.localScale = baseScale;
     }
 

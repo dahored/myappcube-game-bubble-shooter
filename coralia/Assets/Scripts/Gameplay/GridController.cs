@@ -300,9 +300,19 @@ public class GridController : MonoBehaviour, IBoardView
     {
         var colors = new HashSet<BubbleColor>();
         foreach (var view in _cells.Values)
-            if (view.ColorType != BubbleColor.Rainbow) colors.Add(view.ColorType);
+            if (HasColor(view)) colors.Add(view.ColorType);
         return colors;
     }
+
+    // Una burbuja cuenta como color cuando TIENE uno. Quedan fuera dos: el comodín, que encaja
+    // con todo y por eso no representa una necesidad de suministro, y la mina plantada, que no
+    // encaja con nada y solo ocupa sitio hasta que algo la toque.
+    //
+    // En un solo sitio porque la pregunta sale por todas partes —la cola del cañón, el recuento
+    // del Agua Clara, los vecinos de un comodín— y la que se olvidara de la mina ofrecería un
+    // color que no existe o lo contaría como el más escaso.
+    static bool HasColor(BubbleView view) =>
+        view != null && !view.IsMine && view.ColorType != BubbleColor.Rainbow;
 
     // Colores del FRENTE del grid, repetidos según cuánto conviene ofrecer cada uno. La lista
     // sale con repeticiones a propósito: sortear un elemento al azar ya respeta los pesos.
@@ -331,7 +341,7 @@ public class GridController : MonoBehaviour, IBoardView
 
             foreach (var neighbor in HexGridMath.GetNeighbors(slot))
             {
-                if (!TryGetBubble(neighbor, out var view) || view.ColorType == BubbleColor.Rainbow) continue;
+                if (!TryGetBubble(neighbor, out var view) || !HasColor(view)) continue;
                 around.TryGetValue(view.ColorType, out int count);
                 around[view.ColorType] = count + 1;
             }
@@ -345,7 +355,7 @@ public class GridController : MonoBehaviour, IBoardView
         foreach (var pair in _cells)
         {
             var color = pair.Value.ColorType;
-            if (color == BubbleColor.Rainbow || !IsReachable(pair.Key)) continue;
+            if (!HasColor(pair.Value) || !IsReachable(pair.Key)) continue;
 
             pool.Add(color);
         }
@@ -560,7 +570,10 @@ public class GridController : MonoBehaviour, IBoardView
 
     public bool TryGetColor(Vector2Int cell, out BubbleColor color)
     {
-        if (_cells.TryGetValue(cell, out var view)) { color = view.ColorType; return true; }
+        // Una mina ocupa la celda pero no responde a esta pregunta: quien quiera saber si hay
+        // ALGO usa IsOccupied, y quien pregunte de qué color es se la salta sin más. Es lo que
+        // la deja fuera de los grupos, de los recuentos y de las siembras sin tocar ninguno.
+        if (_cells.TryGetValue(cell, out var view) && !view.IsMine) { color = view.ColorType; return true; }
 
         color = default;
         return false;
@@ -575,11 +588,53 @@ public class GridController : MonoBehaviour, IBoardView
     // Convierte una burbuja del tablero en comodín, para la siembra de la Perla. El sprite sale
     // de acá y no de quien llama: los sprites por color viven en este Inspector, y pedírselos a
     // GameplayController sería repartir el mismo dato en dos sitios.
-    public void TurnIntoRainbow(Vector2Int cell, float delay, float fade)
+    public void TurnIntoRainbow(Vector2Int cell, float delay, float fade) =>
+        Recolor(cell, BubbleColor.Rainbow, delay, fade);
+
+    // Y en mina, para Plantar Bombas. Va por el mismo gesto que el comodín: lo que cambia es qué
+    // queda plantado, no cómo se cuenta.
+    public void TurnIntoMine(Vector2Int cell, float delay, float fade)
     {
         if (!_cells.TryGetValue(cell, out var view) || view == null) return;
 
-        view.TurnIntoRainbow(SpriteFor(BubbleColor.Rainbow), delay, fade);
+        view.TurnIntoMine(delay, fade);
+    }
+
+    // Cambia el color de una burbuja del tablero con su gesto. El sprite sale de acá y no de
+    // quien llama: los sprites por color viven en este Inspector, y pedírselos fuera sería
+    // repartir el mismo dato en dos sitios.
+    public void Recolor(Vector2Int cell, BubbleColor color, float delay, float fade)
+    {
+        if (!_cells.TryGetValue(cell, out var view) || view == null) return;
+
+        view.TurnInto(color, SpriteFor(color), delay, fade);
+    }
+
+    // Cuántas burbujas hay de cada color. El comodín no cuenta: no es un color del tablero sino
+    // algo que encaja con todos, y contarlo falsearía cuál es el más escaso.
+    public Dictionary<BubbleColor, int> ColorCounts()
+    {
+        var counts = new Dictionary<BubbleColor, int>();
+
+        foreach (var view in _cells.Values)
+        {
+            if (!HasColor(view)) continue;
+
+            counts.TryGetValue(view.ColorType, out int n);
+            counts[view.ColorType] = n + 1;
+        }
+
+        return counts;
+    }
+
+    public List<Vector2Int> CellsOfColor(BubbleColor color)
+    {
+        var cells = new List<Vector2Int>();
+
+        foreach (var pair in _cells)
+            if (HasColor(pair.Value) && pair.Value.ColorType == color) cells.Add(pair.Key);
+
+        return cells;
     }
 
     public void RemoveBubble(Vector2Int cell) => _cells.Remove(cell);
@@ -672,7 +727,7 @@ public class GridController : MonoBehaviour, IBoardView
         var colors = new HashSet<BubbleColor>();
 
         foreach (var neighbor in HexGridMath.GetNeighbors(cell))
-            if (TryGetBubble(neighbor, out var view) && view.ColorType != BubbleColor.Rainbow)
+            if (TryGetBubble(neighbor, out var view) && HasColor(view))
                 colors.Add(view.ColorType);
 
         return colors;
@@ -682,7 +737,7 @@ public class GridController : MonoBehaviour, IBoardView
     public List<Vector2Int> FindConnectedSameColor(Vector2Int start)
     {
         var result = new List<Vector2Int>();
-        if (!TryGetBubble(start, out var startView)) return result;
+        if (!TryGetBubble(start, out var startView) || startView.IsMine) return result;
 
         var visited = new HashSet<Vector2Int> { start };
         var queue   = new Queue<Vector2Int>();
@@ -695,6 +750,7 @@ public class GridController : MonoBehaviour, IBoardView
             foreach (var n in HexGridMath.GetNeighbors(cell))
             {
                 if (visited.Contains(n) || !TryGetBubble(n, out var neighborView)) continue;
+                if (neighborView.IsMine) continue;
                 if (!startView.ColorType.LinksWith(neighborView.ColorType)) continue;
                 visited.Add(n);
                 queue.Enqueue(n);

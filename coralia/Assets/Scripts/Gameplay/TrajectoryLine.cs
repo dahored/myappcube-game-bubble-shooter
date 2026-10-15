@@ -62,6 +62,8 @@ public class TrajectoryLine : MonoBehaviour
     // dibuja varias llamadas más abajo, y arrastrarlo por la firma de todas sería peor.
     Booster _booster;
 
+
+
     void Awake()
     {
         for (int i = 0; i < maxDots; i++)
@@ -156,6 +158,8 @@ public class TrajectoryLine : MonoBehaviour
 
         if (booster != Booster.None && LandingCell.HasValue)
         {
+            Color tint = blastMarkColor;
+
             foreach (var cell in BoosterRules.CellsAimedBy(booster, LandingCell.Value, StruckCell, gridController))
             {
                 var mark = MarkAt(used++);
@@ -167,8 +171,7 @@ public class TrajectoryLine : MonoBehaviour
                 // vacía y parecería que va a explotar la nada.
                 float weight = gridController.IsOccupied(cell) ? 1f : blastEmptyFade;
 
-                mark.color = new Color(blastMarkColor.r, blastMarkColor.g, blastMarkColor.b,
-                                       blastMarkColor.a * alpha * weight);
+                mark.color = new Color(tint.r, tint.g, tint.b, tint.a * alpha * weight);
                 mark.gameObject.SetActive(true);
 
                 // DELANTE de las burbujas, y se reafirma cada vez: el gridContainer va sumando

@@ -105,7 +105,9 @@
             "chapter": 1,
             "name": "El bajío",
             "path": "Levels/Chapter_1/013",
-            "tutorials": []
+            "tutorials": [
+                "clear_water"
+            ]
         },
         {
             "id": 14,
@@ -119,7 +121,9 @@
             "chapter": 1,
             "name": "Cardumen dorado",
             "path": "Levels/Chapter_1/015",
-            "tutorials": []
+            "tutorials": [
+                "ink"
+            ]
         },
         {
             "id": 16,
@@ -133,7 +137,9 @@
             "chapter": 1,
             "name": "Lluvia de burbujas",
             "path": "Levels/Chapter_1/017",
-            "tutorials": []
+            "tutorials": [
+                "mine"
+            ]
         },
         {
             "id": 18,

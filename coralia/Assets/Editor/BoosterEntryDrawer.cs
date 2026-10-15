@@ -172,8 +172,25 @@ public class BoosterEntryDrawer : PropertyDrawer
                 if (frames.arraySize > 1) yield return new Row(Get("framesPerSecond"));
                 else                      yield return new Row(Get("spin"));
 
+                yield return new Row(Get("liquidFill"));
+
+                // El resto del líquido solo si la burbuja lleva: mismo criterio que el adelanto
+                // del clip con la carga en cero. Media docena de ajustes de líquido en un poder
+                // que no tiene ninguno son media docena de campos que no hacen nada — y el que
+                // los ve puestos cree que sí (reportado por Diego sobre la mina).
+                if (Get("liquidFill").floatValue > 0f)
+                {
+                    yield return new Row(Get("liquidColor"));
+                    yield return new Row(Get("liquidCrestColor"));
+                    yield return new Row(Get("liquidLayers"));
+                    yield return new Row(Get("liquidFlowFps"));
+                    yield return new Row(Get("liquidSway"));
+                    yield return new Row(Get("liquidSwayHz"));
+                }
+
                 yield return new Row(Get("bubbleOrbit"));
                 yield return new Row(Get("bubbleSpark"));
+                yield return new Row(Get("bubbleBeacon"));
                 yield return new Row(Get("glowOverride"));
             }
         }
@@ -224,6 +241,32 @@ public class BoosterEntryDrawer : PropertyDrawer
             yield return new Row(Get("claimMaxTotal"));
         }
 
+        // --- Tinta ---
+        if (uses.HasFlag(BoosterRules.Uses.Ink))
+        {
+            yield return new Row("Salpicadura: revienta lo que toca y tiñe alrededor");
+            yield return new Row(Get("inkSplash"));
+            yield return new Row(Get("inkRadius"));
+            yield return new Row(Get("inkDelay"));
+            yield return new Row(Get("inkDrop"));
+            yield return new Row(Get("inkDropSize"));
+            yield return new Row(Get("inkDropColor"));
+            yield return new Row(Get("inkSpread"));
+            yield return new Row(Get("inkHold"));
+            yield return new Row(Get("inkFade"));
+            yield return new Row(Get("inkClip"));
+            yield return new Row(Get("inkPaintClip"));
+        }
+
+        // --- Agua Clara ---
+        if (uses.HasFlag(BoosterRules.Uses.Clear))
+        {
+            yield return new Row("Conversión: un color pasa a otro al abrir");
+            yield return new Row(Get("clearWave"));
+            yield return new Row(Get("clearFade"));
+            yield return new Row(Get("clearClip"));
+        }
+
         // --- Marea ---
         if (uses.HasFlag(BoosterRules.Uses.Tide))
         {
@@ -239,9 +282,17 @@ public class BoosterEntryDrawer : PropertyDrawer
         // --- Siembra ---
         if (uses.HasFlag(BoosterRules.Uses.Seed))
         {
-            yield return new Row("Siembra: comodines en el tablero al abrir");
+            yield return new Row("Siembra: burbujas del tablero convertidas al abrir");
             yield return new Row(Get("seedTravel"));
             yield return new Row(Get("seedFade"));
+        }
+
+        // --- Minas ---
+        if (uses.HasFlag(BoosterRules.Uses.Mine))
+        {
+            yield return new Row("Minas: lo que planta y hasta dónde revienta");
+            yield return new Row(Get("mineRadius"));
+            yield return new Row(Get("minePlantClip"));
         }
 
         // --- Tienda ---

@@ -23,7 +23,7 @@ public static class BoosterRules
     public const int BOMB_RADIUS = 2;
 
     // Cuántas burbujas comodín manda la Perla Arcoíris POR LA COLA del cañón, contando la primera
-    // (que es la que queda en la recámara). Aparte de estas, siembra RAINBOW_SEEDS en el tablero.
+    // (que es la que queda en la recámara). Aparte de estas, siembra en el tablero — ver SeedCells.
     //
     // Una CANTIDAD y no una probabilidad: el jugador tiene que saber qué compra antes de pagar, y
     // "tres perlas" vale lo mismo en un nivel de 20 disparos que en uno de 45. Con un porcentaje,
@@ -38,42 +38,96 @@ public static class BoosterRules
     // de la partida, así que al pagar no pasa nada en pantalla. Sembrando el tablero, el jugador
     // ve en el acto qué compró y además puede PLANEAR con ellas a la vista, que es lo que la cola
     // no deja hacer (pedido de Diego).
-    public const int RAINBOW_SEEDS = 3;
+    public const int SEEDS_PER_BAND = 3;
+
+    // Y la banda sobre la que se cuentan. La siembra no es un total repartido por el tablero
+    // entero: son TRES CADA DIEZ FILAS, contadas desde la primera ocupada hacia abajo.
+    //
+    // Con un total a secas, el azar las amontonaba donde más burbujas hubiera —casi siempre
+    // arriba— y la mitad de abajo de un tablero largo se quedaba sin nada. Por bandas, cada tramo
+    // de diez filas se lleva lo suyo, y un tablero el doble de alto da el doble (pedido de Diego).
+    public const int BAND_ROWS = 10;
+
+    // La banda incompleta se lleva su parte proporcional, redondeada. Diez filas dan tres, cinco
+    // dan dos, dos filas dan una y una sola fila no da ninguna: un resto tan corto no llega a
+    // valer una semilla entera.
+    public static int SeedsForRows(int rows) =>
+        Mathf.FloorToInt(rows / (float)BAND_ROWS * SEEDS_PER_BAND + 0.5f);
 
     // A cuántos diámetros se intenta dejarlas entre sí. Tres comodines pegados se gastan en un
     // solo match y valen por uno — menos que repartidos, que es justo lo contrario de lo que el
     // jugador compró. Es una preferencia y no una regla: si el tablero no da, se siembra igual.
-    const float RAINBOW_SPREAD = 2f;
+    const float SEED_SPREAD = 2f;
 
-    // Qué burbujas del tablero se convierten. Al azar, pero no cualquier azar: salteando las que
-    // ya son comodín (convertir una no regala nada) y prefiriendo las que se VEN, porque el
-    // destello es media parte del regalo y uno que ocurre fuera de cuadro no se cobra.
-    public static List<Vector2Int> RainbowSeeds(IBoardView board, int count = RAINBOW_SEEDS)
+    // Qué burbujas del tablero se convierten, banda por banda. Al azar, pero no cualquier azar:
+    // salteando las que ya son comodín o mina —convertir una no regala nada— y separándolas entre
+    // sí dentro de su banda.
+    //
+    // Y por TODO el tablero, se vea o no: antes se prefería lo visible porque el destello es media
+    // parte del regalo, pero con eso un tablero largo sembraba las tres en el primer pantallazo y
+    // el resto del nivel no tenía ninguna (pedido de Diego).
+    public static List<Vector2Int> SeedCells(IBoardView board)
     {
         var chosen = new List<Vector2Int>();
 
-        if (board == null || count <= 0) return chosen;
+        if (board == null) return chosen;
 
         var pool = new List<Vector2Int>();
 
         foreach (var cell in board.Occupied)
             if (board.TryGetColor(cell, out var color) && color != BubbleColor.Rainbow) pool.Add(cell);
 
-        // Barajar una vez y recorrer en ese orden: así las dos pasadas comparten el mismo azar y
-        // la segunda completa con las que la primera descartó por juntas, no con otras distintas.
+        if (pool.Count == 0) return chosen;
+
+        // Barajar UNA vez para todas las bandas: así las dos pasadas de cada banda comparten el
+        // mismo azar y la segunda completa con las que la primera descartó por juntas.
         for (int i = pool.Count - 1; i > 0; i--)
         {
             int j = Random.Range(0, i + 1);
             (pool[i], pool[j]) = (pool[j], pool[i]);
         }
 
+        int top = int.MaxValue;
+        foreach (var cell in pool) top = Mathf.Min(top, cell.y);
+
+        var bands = new Dictionary<int, List<Vector2Int>>();
+
+        foreach (var cell in pool)
+        {
+            int band = (cell.y - top) / BAND_ROWS;
+
+            if (!bands.TryGetValue(band, out var list)) bands[band] = list = new List<Vector2Int>();
+            list.Add(cell);
+        }
+
+        foreach (var band in bands.Values) chosen.AddRange(SeedBand(band));
+
+        return chosen;
+    }
+
+    // Lo que le toca a una banda: su alto REAL manda, no el de la banda. Una última banda con dos
+    // filas ocupadas no da lo mismo que una con nueve, aunque las dos sean "la banda incompleta".
+    static List<Vector2Int> SeedBand(List<Vector2Int> pool)
+    {
+        var chosen = new List<Vector2Int>();
+
+        int first = int.MaxValue, last = int.MinValue;
+
+        foreach (var cell in pool)
+        {
+            first = Mathf.Min(first, cell.y);
+            last  = Mathf.Max(last,  cell.y);
+        }
+
+        int count = SeedsForRows(last - first + 1);
+
         foreach (var cell in pool)
         {
             if (chosen.Count == count) break;
-            if (board.IsVisible(cell) && FarFromAll(cell, chosen, RAINBOW_SPREAD)) chosen.Add(cell);
+            if (FarFromAll(cell, chosen, SEED_SPREAD)) chosen.Add(cell);
         }
 
-        // Y si el tablero no daba para tanto, se completa con lo que haya. Sembrar dos juntas es
+        // Y si la banda no daba para tanto, se completa con lo que haya. Sembrar dos juntas es
         // peor que separadas, pero sembrar una sola cuando se pagaron tres es un booster roto.
         foreach (var cell in pool)
         {
@@ -158,11 +212,142 @@ public static class BoosterRules
     // siembra sobre un tablero que ya nadie va a tocar.
     public static int StartOrder(Booster booster) => booster switch
     {
-        Booster.LowTide => 0,
+        Booster.LowTide    => 0,
+        Booster.ClearWater => 1,
         Booster.Rainbow => 2,
         Booster.Oxygen  => 3,
         _               => 2,
     };
+
+    // A cuántas burbujas llega la Tinta de Pulpo, hasta dónde revienta y cuánto más allá busca a
+    // las que pinta (GDD §3.2).
+    public const int INK_SPLASH = 4;
+    public const int INK_RADIUS = 2;
+
+    // Cuántas salpica y hasta dónde busca, leídos del catálogo. El número sale por tres sitios —
+    // el tablero, el tutorial y el texto que lo anuncia — y tienen que decir los tres lo mismo.
+    public static int InkSplash => ArtFor(Booster.Ink)?.inkSplash > 0 ? ArtFor(Booster.Ink).inkSplash : INK_SPLASH;
+    public static int InkRadius => ArtFor(Booster.Ink)?.inkRadius > 0 ? ArtFor(Booster.Ink).inkRadius : INK_RADIUS;
+
+    // Hasta dónde llega una mina plantada al estallar. Va aparte de BOMB_RADIUS porque son dos
+    // poderes distintos: la Bomba se apunta y cuesta un disparo, la mina estalla sola cuando algo
+    // la roza. Que cada una valga lo que vale se balancea moviendo su radio sin tocar la otra.
+    public const int MINE_RADIUS = 2;
+
+    public static int MineRadius => ArtFor(Booster.Mine)?.mineRadius > 0
+                                  ? ArtFor(Booster.Mine).mineRadius : MINE_RADIUS;
+
+    // El arte de la salpicadura, también en un solo sitio: lo piden el tablero y el tutorial, y
+    // una mancha que no se parezca a la otra enseña el poder al revés.
+    public const float INK_DROP_SIZE = 1.15f;
+
+    public static Sprite InkDrop     => ArtFor(Booster.Ink)?.inkDrop != null
+                                      ? ArtFor(Booster.Ink).inkDrop : SparkleTextures.Drop;
+    public static float  InkDropSize => ArtFor(Booster.Ink)?.inkDropSize > 0f
+                                      ? ArtFor(Booster.Ink).inkDropSize : INK_DROP_SIZE;
+
+    // El color de la mancha: el que va a repartir, salvo que el catálogo mande otro. Un sprite ya
+    // coloreado se tiñe de blanco desde el catálogo para que se vea tal cual.
+    public static Color InkDropTint(BubbleColor color) =>
+        ArtFor(Booster.Ink)?.inkDropColor.a > 0f ? ArtFor(Booster.Ink).inkDropColor : color.Tint();
+
+    // Qué burbujas salpica la Tinta: cuatro al azar del radio del impacto.
+    //
+    // Al azar y no las más cercanas: eligiendo las de al lado dejaría siempre una mancha compacta
+    // pegada al punto de impacto, que es una bomba pequeña con otro color. Repartidas, el jugador
+    // tiene que mirar dónde cayeron y decidir cuál aprovecha — y cada tiro sale distinto.
+    //
+    // Se saltan los comodines: teñir uno le quita al jugador su mejor carta a cambio de un color
+    // corriente, que es lo contrario de ayudar.
+    public static List<Vector2Int> InkCells(Vector2Int center, IBoardView board, int count, int radius)
+    {
+        var pool = new List<Vector2Int>();
+
+        if (board == null) return pool;
+
+        foreach (var cell in HexGridMath.CellsWithinRadius(center, radius))
+        {
+            if (cell == center) continue;
+            if (!board.TryGetColor(cell, out var color) || color == BubbleColor.Rainbow) continue;
+
+            pool.Add(cell);
+        }
+
+        // Las del racimo que el impacto se lleva no se pintan: cuando la tinta llegue ya no van a
+        // estar, y gastar salpicaduras en ellas dejaría la mancha más pobre de lo que se pagó.
+        // Quien llame ya las habrá quitado del tablero si resolvió el golpe primero; esto cubre
+        // el caso de que pregunte antes.
+
+        for (int i = pool.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (pool[i], pool[j]) = (pool[j], pool[i]);
+        }
+
+        if (pool.Count > count) pool.RemoveRange(count, pool.Count - count);
+
+        return pool;
+    }
+
+    // El racimo al que pertenece una burbuja, para que la gota que cae encima se lleve la cadena
+    // entera (pedido de Diego).
+    //
+    // Es lo que convierte la Tinta en un poder y no en cuatro burbujas sueltas: cayendo sobre una
+    // que está acompañada, el color se extiende por todas sus vecinas y el jugador se encuentra
+    // un racimo listo para reventar.
+    //
+    // Sin comodines: el grupo puede pasar por uno —enlaza con todo— pero pintarlo le quitaría al
+    // jugador su mejor carta a cambio de un color corriente.
+    public static List<Vector2Int> InkChain(Vector2Int cell, IBoardView board)
+    {
+        var chain = new List<Vector2Int>();
+
+        if (board == null) return chain;
+
+        foreach (var member in GroupAt(cell, board))
+            if (board.TryGetColor(member, out var color) && color != BubbleColor.Rainbow)
+                chain.Add(member);
+
+        // Desde donde cayó la gota hacia afuera: el color se extiende, no aparece de golpe.
+        Vector2 from = HexGridMath.CellToLocalPos(cell);
+        chain.Sort((a, b) => Vector2.Distance(from, HexGridMath.CellToLocalPos(a))
+                     .CompareTo(Vector2.Distance(from, HexGridMath.CellToLocalPos(b))));
+
+        return chain;
+    }
+
+    // Si este poder TIÑE en vez de reventar. La Tinta es el único hasta ahora, y el camino del
+    // impacto necesita saberlo antes de empezar a quitar burbujas.
+    public static bool Tints(Booster booster) => booster == Booster.Ink;
+
+    // Qué dos colores toca el Agua Clara: el más escaso se convierte en el más abundante (GDD §3.2).
+    //
+    // Convierte y no borra. Borrar resolvería parte del objetivo solo, y dispararía la caída de
+    // todo lo que colgara de esas burbujas — un efecto que nadie previó al balancear el nivel.
+    // Convirtiéndolas, el tablero sigue igual de lleno pero queda un racimo grande que el jugador
+    // revienta CON SU DISPARO: el mérito es suyo.
+    //
+    // Devuelve None en los dos si no hay nada que hacer: con un solo color en el tablero no hay
+    // "el más escaso", y gastar el poder ahí sería cobrarle por nada.
+    public static (BubbleColor from, BubbleColor to) ClearWaterColors(Dictionary<BubbleColor, int> counts)
+    {
+        if (counts == null || counts.Count < 2) return (BubbleColor.Rainbow, BubbleColor.Rainbow);
+
+        var from = BubbleColor.Rainbow;
+        var to   = BubbleColor.Rainbow;
+        int few  = int.MaxValue;
+        int many = -1;
+
+        foreach (var pair in counts)
+        {
+            // Empates por el orden del enum, no por el del diccionario: la elección tiene que ser
+            // la misma cada vez que se pregunte, y el recorrido de un Dictionary no lo garantiza.
+            if (pair.Value < few  || (pair.Value == few  && pair.Key < from)) { few  = pair.Value; from = pair.Key; }
+            if (pair.Value > many || (pair.Value == many && pair.Key < to))   { many = pair.Value; to   = pair.Key; }
+        }
+
+        return from == to ? (BubbleColor.Rainbow, BubbleColor.Rainbow) : (from, to);
+    }
 
     // Cuántos se regalan al presentar un booster por primera vez. DOS y no uno: el primero se
     // carga solo en el cañón para que el jugador lo dispare sin tener que descubrir el ícono del
@@ -197,6 +382,12 @@ public static class BoosterRules
         Booster.Bomb        => HexGridMath.CellsWithinRadius(cell, BOMB_RADIUS),
         Booster.ElectricRay => HexGridMath.CellsInRowFrom((struck ?? cell).y, (struck ?? cell).x),
         Booster.Mother      => MotherCells(struck ?? cell, board),
+
+        // Lo que toca revienta CON SU RACIMO, como un match normal y sin mínimo de tres — igual
+        // que la Madre. NO un área como la bomba: ese trabajo ya lo hace ella, y lo que esta
+        // aporta es la tinta que reparte después (pedido de Diego).
+        Booster.Ink         => GroupAt(struck ?? cell, board),
+        Booster.Mine        => HexGridMath.CellsWithinRadius(cell, MineRadius),
         _                   => new List<Vector2Int>(),
     };
 
@@ -220,6 +411,9 @@ public static class BoosterRules
         Claim  = 1 << 3,   // tiñe las burbujas antes de que estallen
         Seed   = 1 << 4,   // convierte burbujas del tablero al abrir el nivel
         Tide   = 1 << 5,   // se lleva filas enteras por abajo al abrir el nivel
+        Clear  = 1 << 6,   // pasa las burbujas de un color a otro al abrir el nivel
+        Ink    = 1 << 7,   // salpica color sobre las burbujas que alcanza, sin reventarlas
+        Mine   = 1 << 8,   // planta bombas sensibles en el tablero al abrir el nivel
     }
 
     const Uses CANNON = Uses.Bubble | Uses.Loaded | Uses.Burst;
@@ -230,6 +424,10 @@ public static class BoosterRules
         // estallar, pero nunca se queda cargado esperando — se aplica solo al abrir.
         Booster.Rainbow => Uses.Bubble | Uses.Burst | Uses.Claim | Uses.Seed,
 
+        // Como los otros tres del cañón —se carga, vuela y revienta el racimo que toca— más lo
+        // suyo propio: las gotas que salen después. Su 'Burst Clip' es el cristal quebrándose.
+        Booster.Ink => CANNON | Uses.Ink,
+
         // No dibuja ninguna burbuja ni estalla en ningún sitio: solo sube el contador de tiros al
         // abrir. Todo lo que el Inspector enseñaría de él serían campos que no lee nadie.
         Booster.Oxygen => Uses.None,
@@ -237,6 +435,14 @@ public static class BoosterRules
         // Tampoco se carga ni produce burbuja, pero SÍ estalla: se lleva varias filas enteras y
         // eso necesita su sonido, su destello y su temblor, además de lo suyo propio.
         Booster.LowTide => Uses.Burst | Uses.Tide,
+
+        // Este no revienta nada: convierte. Solo sus propios ajustes.
+        Booster.ClearWater => Uses.Clear,
+
+        // Siembra como la Perla y estalla como la Bomba, pero ninguna de las dos cosas pasa
+        // cuando se dispara: planta al abrir, y lo que estalla después son las minas, cada una
+        // por su cuenta. Por eso Seed y Burst sin Loaded — nunca se carga en la recámara.
+        Booster.Mine => Uses.Bubble | Uses.Burst | Uses.Seed | Uses.Mine,
 
         _ => CANNON,
     };
@@ -248,9 +454,21 @@ public static class BoosterRules
     // lo que tiene que ser es una sorpresa que se entiende al verla ocurrir. Lo que sí se promete
     // es dónde va a pegar, que es lo único que el jugador decide.
     public static List<Vector2Int> CellsAimedBy(Booster booster, Vector2Int cell, Vector2Int? struck = null, IBoardView board = null) =>
-        booster == Booster.Mother
-            ? new List<Vector2Int> { struck ?? cell }
-            : CellsHitBy(booster, cell, struck, board);
+        booster switch
+        {
+            Booster.Mother => new List<Vector2Int> { struck ?? cell },
+
+            // La Tinta no marca nada: se apunta como un disparo normal (pedido de Diego).
+            //
+            // Marcaba la zona en la que iba a repartir, y sobraba por dos motivos: a qué burbujas
+            // en concreto va se sortea al impactar —así que el hexágono prometía más precisión de
+            // la que hay— y el color ya se ve DENTRO de la burbuja, que es de donde salió la idea
+            // del líquido. Enseñar las dos cosas era decir lo mismo dos veces y tapar el tablero
+            // justo cuando hay que leerlo.
+            Booster.Ink    => new List<Vector2Int>(),
+
+            _              => CellsHitBy(booster, cell, struck, board),
+        };
 
     // Si la mira señala el hueco donde la burbuja va a quedar pegada.
     //
@@ -558,6 +776,9 @@ public static class BoosterRules
         (Booster.Mother,      "mother"),
         (Booster.Oxygen,      "oxygen"),
         (Booster.LowTide,     "low_tide"),
+        (Booster.ClearWater,  "clear_water"),
+        (Booster.Ink,         "ink"),
+        (Booster.Mine,        "mine"),
     };
 
     public static string NameOf(Booster booster)
@@ -620,7 +841,9 @@ public static class BoosterRules
     {
         Booster.Oxygen  => new object[] { OXYGEN_SHOTS },
         Booster.LowTide => new object[] { ArtFor(booster)?.tideRows > 0 ? ArtFor(booster).tideRows : 3 },
-        Booster.Rainbow => new object[] { RAINBOW_SEEDS, RAINBOW_COUNT },
+        Booster.Rainbow => new object[] { SEEDS_PER_BAND, RAINBOW_COUNT, BAND_ROWS },
+        Booster.Mine    => new object[] { SEEDS_PER_BAND, BAND_ROWS, MineRadius },
+        Booster.Ink     => new object[] { InkSplash },
         _               => System.Array.Empty<object>(),
     };
 
