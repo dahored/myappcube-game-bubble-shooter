@@ -221,10 +221,10 @@ partida. Cada uno toca una palanca distinta del nivel.
 | Power-up | Efecto | Problema que resuelve | Palanca |
 |---|---|---|---|
 | **Reserva de Oxígeno** | +5 al límite de disparos | Me quedé corto por poco | Cuántos disparos tengo |
-| **Perla Arcoíris** | **3 burbujas del tablero** se convierten en comodín al empezar, y **al menos 3 más** repartidas entre los disparos | No tengo con qué encajar lo que me toca | Cómo abro y qué me toca |
+| **Perla Arcoíris** | **3 burbujas del tablero cada 10 filas** se convierten en comodín al empezar, y **al menos 3 más** repartidas entre los disparos | No tengo con qué encajar lo que me toca | Cómo abro y qué me toca |
 | **Marea Baja** | Al empezar, la marea se retira y se lleva las **3 filas de abajo** (`tideRows`) | El nivel abre demasiado apretado | Cuántas burbujas hay |
 | **Agua Clara** | El color con menos burbujas se convierte al color con más, y deja de salir del cañón | Ese color del que quedan tres sueltas e imposibles de juntar | Cuántos colores hay |
-| **Corriente Favorable** | Durante todo el nivel, el cañón favorece los colores que más abundan en el tablero | Me sale justo el color que no necesito | Qué color me toca |
+| **Plantar Bombas** | Al empezar se plantan **3 bombas cada 10 filas** (`SEEDS_PER_BAND` / `BAND_ROWS`). No tienen color ni encajan con nada: estallan en radio 2 (`mineRadius`) cuando algo revienta o aterriza a su lado | El tablero está cerrado y no tengo por dónde abrirlo | Dónde puedo romper |
 
 **La Perla da un MÍNIMO garantizado, no una probabilidad.** El jugador tiene que saber qué compra
 antes de pagar, y "al menos tres" se cumple igual en un nivel de 20 disparos que en uno de 45 — con
@@ -237,15 +237,17 @@ nivel, que es justo donde más falta hace. En la práctica, una partida de 20 di
 y una de 45 ronda las 5.
 
 **Y además siembra el tablero.** Al abrir el nivel sale una luz desde la perla de la recámara
-hacia tres burbujas ya puestas; al llegar, cada una suena y se convierte en comodín
-(`RAINBOW_SEEDS`). Es el mismo viaje con rizo que usan las hijas de la Burbuja Madre
+hacia las burbujas elegidas; al llegar, cada una suena y se convierte en comodín.
+Son **tres por cada diez filas** (`SEEDS_PER_BAND` sobre `BAND_ROWS`) y por TODO el tablero, se vea
+o no: con un total a secas el azar las amontonaba arriba, y la mitad de abajo de un tablero largo
+se quedaba sin ninguna. La banda incompleta se lleva su parte proporcional redondeada. Es el mismo viaje con rizo que usan las hijas de la Burbuja Madre
 (`TravelingBubble`), y cuenta de dónde viene el regalo: lo reparte la perla que el jugador acaba
 de pagar, no aparece solo. Son la mitad que se VE: las de la cola
 llegan de a una repartidas entre los disparos y no se anuncian, así que al pagar no pasaba nada en
 pantalla. Con las del tablero el jugador ve en el acto qué compró y puede planear con ellas a la
 vista, que es lo que una cola aleatoria no deja hacer.
 
-Se eligen al azar entre las que se ven, salteando las que ya eran comodín y procurando repartirlas
+Se eligen al azar por bandas de diez filas, salteando las que ya eran comodín y procurando repartirlas
 (`RAINBOW_SPREAD`): tres comodines pegados se gastan en un solo match y valen por uno.
 
 Esto recupera `LevelData.rainbow_chance`, que llevaba meses sin uso. Se había retirado porque una
@@ -308,10 +310,19 @@ del color disparado haría match al instante y todo reventaría en el mismo movi
 no una jugada. Teñir del que vuelve deja el terreno sembrado y el remate es del jugador, en el
 disparo siguiente.
 
-Ese color no se ve mientras el pulpo está cargado, así que **la marca de zona de la mira se pinta
-de él**: apuntas, ves la mancha del color que va a aplicar, y sabes qué va a pasar sin que nadie te
-lo explique. De paso tapa el mismo hueco que la bomba tiene hoy — con un especial cargado, el
-jugador no sabe qué color recupera.
+Ese color no se ve en el HUD mientras el pulpo está cargado, así que **se ve DENTRO de la burbuja**:
+el frasco va medio lleno del líquido que va a repartir. Lo que ves dentro es lo que va a salir, y
+eso se entiende sin que nadie lo explique.
+
+**La mira no marca nada**: se apunta como un disparo normal. Marcar la zona sobraba por dos
+motivos — a qué burbujas va en concreto se sortea al impactar, así que el área prometía más
+precisión de la que hay, y el color ya se ve en el líquido. Las dos cosas a la vez decían lo mismo
+dos veces y tapaban el tablero justo cuando hay que leerlo.
+
+**Y la gota se lleva la cadena.** Cayendo sobre una burbuja acompañada, el color se extiende por
+todas sus vecinas del mismo color desde el punto de impacto hacia afuera. Es lo que convierte el
+poder en una jugada y no en cuatro burbujas sueltas: el jugador se encuentra un racimo listo para
+reventar, y el remate es suyo.
 
 **La Raya Eléctrica barre la fila que GOLPEA, no aquella en la que se posa.** Disparando desde
 abajo la burbuja se pega justo debajo de la que tocó, y esa fila suele estar vacía: resolver sobre
@@ -324,6 +335,12 @@ así.
 
 **Cuatro de los cinco se cargan en el cañón y se apuntan.** Solo la Pinza pide una forma distinta
 de activación (tocar el tablero), así que es la única que exige una pieza de interfaz nueva.
+
+**Plantar Bombas reemplaza a Corriente Favorable** (decisión de Diego). La Corriente sesgaba la
+cola del cañón durante todo el nivel: un efecto que el jugador no puede ver ocurrir y que además
+pisa lo que la cola ya hace sola (`ReachableColorPool` solo ofrece colores que sirven), así que
+pagaba por algo que se parecía demasiado a no pagar nada. Plantar Bombas ocupa su hueco —el quinto
+de inicio— y comparte el reparto por bandas con la Perla: un solo sistema de siembra para los dos.
 
 **Qué se descartó y por qué**
 
