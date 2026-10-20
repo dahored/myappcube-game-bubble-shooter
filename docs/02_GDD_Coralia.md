@@ -285,7 +285,7 @@ Viven en el HUD. Ninguno sirve sin elegir dónde o cuándo.
 | **Raya Eléctrica** | Barre entera la fila horizontal que golpea | El grid se me vino encima | Se carga en el cañón |
 | **Burbuja Madre** | Lleva tres burbujas dentro girando. Al impactar las suelta: una revienta el racimo que tocó y las otras dos van a por las burbujas **más solas del tablero** | Los restos sueltos que no alcanzo | Se carga en el cañón |
 | **Tinta de Pulpo** | Al impactar, el pulpo se suelta y salpica 4 burbujas al azar dentro del radio, tiñéndolas del color que vuelve a la recámara | Tengo este color y ningún sitio donde pegarlo | Se carga en el cañón |
-| **Pinza de Langosta** | Tocas una burbuja del tablero y la destruye. No gasta disparo | *Esa* burbuja que sostiene todo | Selección sobre el tablero |
+| **Punto Débil** | Tocas una burbuja del tablero y se va con las de su color — **desde dos**. No gasta disparo | *Esa* burbuja que sostiene todo | Selección sobre el tablero |
 
 **La Madre va a las aisladas, no a las cercanas.** Si fuera a las más próximas al impacto sería una
 bomba pequeña y peor. Yendo a las que menos vecinos de su color tienen, ataca justo lo que el
@@ -333,8 +333,17 @@ eléctricas. Aun así el id interno pasó de `torpedo` a `electric_ray`, porque 
 dentro de un año va a pensar en el arma y no en el animal — y su arte y su audio ya se llamaban
 así.
 
-**Cuatro de los cinco se cargan en el cañón y se apuntan.** Solo la Pinza pide una forma distinta
-de activación (tocar el tablero), así que es la única que exige una pieza de interfaz nueva.
+**Cuatro de los cinco se cargan en el cañón y se apuntan.** Solo el Punto Débil pide una forma
+distinta de activación (tocar el tablero), así que es el único que exigió una pieza de interfaz
+nueva: `GameplayController.BeginPick`, que oscurece el tablero y manda el siguiente toque al poder
+en vez de al cañón.
+
+**El Punto Débil ignora el mínimo de tres** (decisión de Diego). Revienta el racimo de la burbuja
+que toques por debajo del mínimo normal: una pareja se va entera y una burbuja suelta se va sola.
+Sin esa excepción no resolvería nada — justo el caso que viene a arreglar, la burbuja aislada que
+no se puede matchear, sería el único que seguiría sin solución. Era "Pinza de Langosta" y destruía
+una sola celda; se renombró y se amplió al racimo porque destruir una burbuja suelta ya lo hacía
+cualquier disparo bien puesto.
 
 **Plantar Bombas reemplaza a Corriente Favorable** (decisión de Diego). La Corriente sesgaba la
 cola del cañón durante todo el nivel: un efecto que el jugador no puede ver ocurrir y que además
