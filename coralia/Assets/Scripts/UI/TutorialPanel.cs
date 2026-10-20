@@ -52,6 +52,9 @@ public class TutorialPanel : UIPanel
     [SerializeField] TMP_Text  titleText;
     [SerializeField] TMP_Text  bodyText;
     [SerializeField] Image     imageSlot;
+
+    [Tooltip("Dónde sale el ICONO del poder que explica este tutorial, el mismo que el jugador va a buscar luego en el HUD o en la pantalla previa. Se llena solo a partir del id de la entrada y se apaga en los tutoriales que no son de ningún poder.\n\nOpcional. Sin él, un poder que no dibuja burbuja —el Punto Débil, que solo existe como botón— se explica entero sin que el jugador llegue a ver cuál es.")]
+    [SerializeField] Image     boosterIcon;
     [Tooltip("Dónde se instancia la demostración de la entrada CUANDO es un prefab del proyecto. Si la demostración ya vive colgada del panel en la escena, esto no hace falta: se queda donde esté y el panel solo la enciende.")]
     [SerializeField] Transform animationSlot;
     [SerializeField] Button    okButton;
@@ -147,9 +150,43 @@ public class TutorialPanel : UIPanel
         if (bodyText)  bodyText.text  = Fill(_showing.bodyKey);
         if (okText)    okText.text    = LocaleManager.Get("ui.tutorial.ok");
 
+        ShowBoosterIcon(BoosterRules.BoosterForTutorial(_showing.id));
+
         ShowVisual(_showing);
 
         Open();
+    }
+
+    // El icono del poder al que pertenece este tutorial.
+    //
+    // Sale del catálogo y no de la entrada: el id ya dice de qué poder se habla, y pedirlo otra
+    // vez por el Inspector sería la segunda copia del mismo dato — la que se queda vieja cuando
+    // el arte cambia.
+    //
+    // Los que no son de ningún poder (los primeros pasos, el cambio de burbuja, el rescate)
+    // apagan el hueco: ahí el icono sería un adorno que promete un botón que no existe.
+    void ShowBoosterIcon(Booster booster)
+    {
+        if (boosterIcon == null) return;
+
+        var icon = booster != Booster.None ? BoosterRules.IconFor(booster) : null;
+
+        // Un hueco que se apaga solo es indistinguible de uno que nadie asignó. Si el tutorial ES
+        // de un poder, su icono tiene que estar: callarlo deja al jugador sin saber qué botón
+        // buscar y a quien lo monta sin saber que falta algo.
+        if (booster != Booster.None && icon == null)
+            Debug.LogWarning($"[TutorialPanel] '{booster}' no tiene 'Icon' en el catálogo (Resources/BoosterCatalog): el tutorial se explica entero sin enseñar cuál es el botón.", this);
+
+        // Y un hueco transparente tampoco: desde acá todo fue bien —sprite puesto y objeto
+        // encendido— y en pantalla no sale nada, que es el fallo más caro de encontrar porque no
+        // deja rastro en ningún sitio (pasó con el alfa en cero del prefab).
+        if (icon != null && boosterIcon.color.a <= 0f)
+            Debug.LogWarning($"[TutorialPanel] El hueco del icono tiene el color con alfa 0: el icono de '{booster}' se asigna pero se dibuja transparente.", boosterIcon);
+
+        boosterIcon.sprite = icon;
+
+        if (boosterIcon.gameObject.activeSelf != (icon != null))
+            boosterIcon.gameObject.SetActive(icon != null);
     }
 
     void ShowVisual(Entry entry)

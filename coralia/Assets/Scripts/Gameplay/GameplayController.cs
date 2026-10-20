@@ -272,8 +272,15 @@ public class GameplayController : MonoBehaviour
         // trae su destello y su sonido en vez de aparecer en silencio.
         if (_autoLoadBooster != Booster.None)
         {
-            cannon.LoadBooster(_autoLoadBooster);
+            var booster = _autoLoadBooster;
             _autoLoadBooster = Booster.None;
+
+            // Uno que se usa señalando el tablero no cabe en la recámara: no tiene burbuja, así
+            // que LoadBooster lo rechazaba avisando de unos 'Bubble Frames' que nunca va a tener
+            // (reportado por Diego). Lo equivalente es abrirle el modo de elegir, que es
+            // exactamente lo mismo que el jugador acaba de ver en el tutorial.
+            if (BoosterRules.PicksOnBoard(booster)) BeginPick(booster);
+            else                                    cannon.LoadBooster(booster);
         }
     }
 
@@ -388,6 +395,17 @@ public class GameplayController : MonoBehaviour
     [Tooltip("El velo que se pone detrás del icono para que destaque sobre el tablero. Se abre y se cierra con él.\n\nCon alfa en CERO usa el valor por defecto; para quitarlo de verdad, pon el color totalmente transparente con alfa mínimo.")]
     [SerializeField] Color startIntroVeil = new(0f, 0.05f, 0.12f, 0.55f);
 
+    [Tooltip("El velo que oscurece el tablero mientras el jugador elige una burbuja (Punto Débil). Oscuro pero translúcido: lo que hay que ver es el tablero, y el velo solo dice que ahora el toque hace otra cosa.\n\nCon alfa en CERO usa el valor por defecto.")]
+    [SerializeField] Color pickVeil = new(0f, 0.05f, 0.12f, 0.35f);
+
+    [Tooltip("Lo que tarda el velo en aparecer y en irse, en segundos.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 1f)]
+    [SerializeField] float pickFade = 0.18f;
+
+    [Tooltip("El cuerpo del aviso que explica qué hacer mientras se elige, en píxeles.")]
+    [Range(10f, 120f)]
+    [SerializeField] float pickHintSize = 44f;
+
     [Tooltip("El resplandor y las chispas que acompañan al icono al aparecer. Mismo bloque que usan los poderes al estallar.\n\nCon 'Glow Size' en CERO usa un juego de valores por defecto, para que el efecto no nazca invisible.")]
     [SerializeField] Sparkle.Settings startIntroSparkle = new();
 
@@ -470,6 +488,11 @@ public class GameplayController : MonoBehaviour
     // dice nada. Cero significa "usa esto" y no "instantáneo": Unity rellena un campo nuevo en un
     // asset ya guardado con el cero del TIPO, así que sin esto el poder saldría de golpe en un
     // catálogo que nadie tocó todavía.
+    // El velo y el aviso del modo "elige una burbuja", cuando el Inspector no dice nada.
+    static readonly Color DEFAULT_PICK_VEIL = new(0f, 0.05f, 0.12f, 0.35f);
+    const float DEFAULT_PICK_FADE = 0.18f;
+    const float DEFAULT_PICK_HINT = 44f;
+
     const float DEFAULT_SEED_FADE = 0.25f;
     const float DEFAULT_SEED_STEP = 0.12f;
 
@@ -913,6 +936,126 @@ public class GameplayController : MonoBehaviour
 
     // El velo que apaga el tablero detrás de los iconos, para que no compitan con cincuenta
     // burbujas de colores. Nace transparente: lo abre quien lo pida.
+    // El velo y el aviso de "ahora toca elegir". El velo NO recibe toques: tiene que dejar pasar
+    // el tap a la burbuja que hay debajo, que es justo lo que el jugador va a hacer.
+    void ShowPickVeil(Booster booster)
+    {
+        if (shotsLabel == null || shotsLabel.canvas == null) return;
+
+        var root = (RectTransform)shotsLabel.canvas.rootCanvas.transform;
+        var veil = pickVeil.a > 0f ? pickVeil : DEFAULT_PICK_VEIL;
+
+        _pickVeilImage      = MakeVeil(root, veil);
+        _pickVeilImage.name = "PickVeil";
+        _pickVeilAlpha      = veil.a;
+
+        // El renglón de avisos del juego, si lo hay: el mismo que usa el hint de disparo. Puesto
+        // por mi cuenta abajo del todo, el aviso caía justo encima de la barra de poderes
+        // (reportado por Diego) — y ese sitio ya estaba resuelto para esto.
+        _pickHint   = cannon != null && cannon.Hint != null ? cannon.Hint.Message : null;
+        _pickBorrowed = _pickHint != null;
+
+        if (_pickHint == null) _pickHint = MakeHint(root, "");
+
+        _pickHint.text = BoosterRules.TextFor("ui.booster.pick.hint", booster);
+        _pickHint.gameObject.SetActive(true);
+
+        StartCoroutine(FadePick());
+    }
+
+    void HidePickVeil()
+    {
+        if (_pickVeilImage == null && _pickHint == null) return;
+
+        StartCoroutine(FadePickOut(_pickVeilImage, _pickHint, _pickVeilAlpha, _pickBorrowed));
+
+        _pickVeilImage = null;
+        _pickHint      = null;
+        _pickBorrowed  = false;
+    }
+
+    IEnumerator FadePick()
+    {
+        float time = pickFade > 0f ? pickFade : DEFAULT_PICK_FADE;
+
+        for (float t = 0f; t < time; t += Time.deltaTime)
+        {
+            SetPickAlpha(_pickVeilImage, _pickHint, t / time, _pickVeilAlpha);
+            yield return null;
+        }
+
+        SetPickAlpha(_pickVeilImage, _pickHint, 1f, _pickVeilAlpha);
+    }
+
+    // Se le pasan las piezas en vez de leer los campos: para cuando termine el desvanecido, el
+    // modo puede haber vuelto a arrancar con unas nuevas, y apagaría las que acaban de nacer.
+    IEnumerator FadePickOut(Image veil, TMP_Text hint, float veilAlpha, bool borrowed)
+    {
+        float time = pickFade > 0f ? pickFade : DEFAULT_PICK_FADE;
+
+        for (float t = 0f; t < time; t += Time.deltaTime)
+        {
+            SetPickAlpha(veil, hint, 1f - t / time, veilAlpha);
+            yield return null;
+        }
+
+        if (veil) Destroy(veil.gameObject);
+
+        // El prestado se apaga y se devuelve entero, con su alfa: destruirlo dejaría al hint de
+        // disparo sin renglón para el resto de la partida.
+        if (borrowed && hint)
+        {
+            hint.alpha = 1f;
+            hint.gameObject.SetActive(false);
+        }
+        else if (hint) Destroy(hint.gameObject);
+    }
+
+    static void SetPickAlpha(Image veil, TMP_Text hint, float progress, float veilAlpha)
+    {
+        float p = Mathf.Clamp01(progress);
+
+        if (veil)
+        {
+            var c = veil.color;
+            veil.color = new Color(c.r, c.g, c.b, veilAlpha * p);
+        }
+
+        if (hint) hint.alpha = p;
+    }
+
+    TMP_Text MakeHint(RectTransform root, string text)
+    {
+        var go = new GameObject("PickHint", typeof(RectTransform)) { hideFlags = HideFlags.DontSave };
+        var rt = (RectTransform)go.transform;
+
+        rt.SetParent(root, false);
+        rt.SetAsLastSibling();
+
+        // Pegado abajo y a lo ancho: ahí no tapa el tablero, que es lo único que el jugador
+        // necesita mirar mientras elige.
+        rt.anchorMin        = new Vector2(0.05f, 0.06f);
+        rt.anchorMax        = new Vector2(0.95f, 0.06f);
+        rt.pivot            = new Vector2(0.5f, 0f);
+        rt.offsetMin        = Vector2.zero;
+        rt.offsetMax        = new Vector2(0f, pickHintSize * 2.4f);
+
+        var label = go.AddComponent<TextMeshProUGUI>();
+
+        if (startIntroNameFont != null) label.font = startIntroNameFont;
+        if (label.font != null)         label.fontSharedMaterial = label.font.material;
+
+        label.text             = text;
+        label.fontSize         = pickHintSize > 0f ? pickHintSize : DEFAULT_PICK_HINT;
+        label.color            = startIntroNameColor.a > 0f ? startIntroNameColor : Color.white;
+        label.raycastTarget    = false;
+        label.enableAutoSizing = false;
+        label.alignment        = TMPro.TextAlignmentOptions.Center;
+        label.textWrappingMode = TMPro.TextWrappingModes.Normal;
+
+        return label;
+    }
+
     static Image MakeVeil(RectTransform root, Color veil)
     {
         var go = new GameObject("StartBoosterVeil", typeof(RectTransform), typeof(Image)) { hideFlags = HideFlags.DontSave };
@@ -1797,6 +1940,204 @@ public class GameplayController : MonoBehaviour
     }
 
     // Lo que hay que mirar después de cualquier remoción, venga de un match o de una explosión.
+    // ---- Elegir sobre el tablero (Punto Débil) --------------------------------------------
+    //
+    // Vive acá y no en un componente aparte para que no haya nada que cablear en la escena: el
+    // velo y el aviso se construyen por código, igual que la entrada de los poderes de inicio.
+    //
+    // El modo es poco más que un interruptor. Tocar una burbuja ya llegaba hasta acá por
+    // GridController.OnBubbleTapped —lo usa el cañón para apuntar de un toque— así que lo único
+    // que cambia es QUIÉN atiende ese toque mientras dura.
+    Booster  _picking = Booster.None;
+    Image    _pickVeilImage;
+    bool     _pickBorrowed;   // el renglón es del hint de disparo: se devuelve, no se destruye
+    float    _pickVeilAlpha;   // el alfa configurado: MakeVeil nace en cero y lo perdería
+    TMP_Text _pickHint;
+
+    public bool Picking => _picking != Booster.None;
+
+    // Devuelve si el modo arrancó. Falso no es un error: puede no quedar ninguno, o el nivel
+    // puede haber terminado mientras el dedo iba al botón.
+    public bool BeginPick(Booster booster)
+    {
+        if (_levelEnded || Picking || grid == null)      return false;
+        if (!BoosterRules.PicksOnBoard(booster))         return false;
+        if (SaveManager.BoosterCount(booster) <= 0)      return false;
+
+        _picking = booster;
+
+        // El cañón se calla: si no, el mismo toque apuntaría y dispararía además de gastar el
+        // poder. Los dos escuchan el MISMO evento del grid.
+        cannon?.SetInputEnabled(false);
+
+        grid.OnBubbleTapped    += HandlePicked;
+        grid.OnBubblePressed   += ShowPickPreview;
+
+        // Arrastrar RE-APUNTA en vez de cancelar: el dedo recorre el tablero y el objetivo lo
+        // sigue, y lo que haya debajo al soltar es lo que se lleva. Cancelar se hace soltando
+        // fuera del tablero o tocando otra vez el botón (pedido de Diego).
+        grid.OnBubbleHovered   += ShowPickPreview;
+        grid.OnBubbleUnhovered += PickLeft;
+        grid.OnBubbleDragEnd   += ReleasePick;
+
+        ShowPickVeil(booster);
+        return true;
+    }
+
+    // Se cancela desde el mismo botón del HUD que lo encendió, igual que descargar un poder de la
+    // recámara: encender y apagar tienen que costar lo mismo, que es nada.
+    public void CancelPick()
+    {
+        if (!Picking) return;
+
+        EndPick();
+        cannon?.SetInputEnabled(true);
+    }
+
+    void EndPick()
+    {
+        if (grid != null)
+        {
+            grid.OnBubbleTapped   -= HandlePicked;
+            grid.OnBubblePressed  -= ShowPickPreview;
+            grid.OnBubbleHovered  -= ShowPickPreview;
+            grid.OnBubbleUnhovered -= PickLeft;
+            grid.OnBubbleDragEnd  -= ReleasePick;
+        }
+
+        ClearPickPreview();
+
+        _picking = Booster.None;
+
+        HidePickVeil();
+    }
+
+    void HandlePicked(Vector2Int cell)
+    {
+        var booster = _picking;
+
+        if (!grid.IsOccupied(cell)) return;   // el tablero cambió entre el toque y esto
+
+        ClearPickPreview();
+        EndPick();
+
+        // Se cobra DESPUÉS de saber que había dónde usarlo, y si el cobro falla no pasa nada: sin
+        // existencias no se debería haber podido entrar al modo, pero cobrar y no hacer nada es
+        // la única forma de que el jugador pierda algo sin verlo.
+        if (!SaveManager.ConsumeBooster(booster)) { cannon?.SetInputEnabled(true); return; }
+
+        AudioManager.Instance?.PlaySfx(BoosterRules.ArtFor(booster)?.burstClip);
+
+        AfterRemoval(ResolveBoosterBlast(booster, cell, cell));
+
+        // No gasta disparo (decisión de Diego): se paga aparte, y cobrarle además un tiro lo
+        // dejaría peor que disparar bien. Así que el turno sigue donde estaba.
+        if (!_levelEnded)
+        {
+            cannon?.SetInputEnabled(true);
+            cannon?.CheckAutoSwap();
+        }
+    }
+
+    // Lo que se llevaría el toque que el dedo tiene apoyado ahora mismo.
+    //
+    // La vista previa existe porque este poder no gasta disparo: lo único que cuesta equivocarse
+    // es perderlo entero, así que el jugador tiene que poder VER qué compra y deslizar fuera si
+    // no era eso. El arrepentimiento sale gratis del propio sistema de eventos — 'Up' llega
+    // siempre y 'Click' solo si el dedo acabó encima.
+    readonly List<Vector2Int> _pickPreview = new();
+
+    Vector2Int? _pickAt;             // sobre qué celda está el dedo ahora
+
+    void ShowPickPreview(Vector2Int cell)
+    {
+        if (!Picking || !grid.IsOccupied(cell)) return;
+        if (_pickAt == cell) { _pickLeaving = false; return; }   // sigue donde estaba
+
+        _pickLeaving = false;
+
+        ClearPickPreview();
+        _pickAt = cell;
+
+        foreach (var hit in BoosterRules.CellsHitBy(_picking, cell, cell, grid))
+        {
+            if (!grid.TryGetBubble(hit, out var view) || view == null) continue;
+
+            _pickPreview.Add(hit);
+            StartCoroutine(Swell((RectTransform)view.transform, PICK_PREVIEW_TIME, PICK_PREVIEW_SCALE));
+        }
+
+        // Los MISMOS aros con los que la Bomba marca su zona al apuntar. El jugador ya sabe lo
+        // que significan, y un resplandor propio para decir lo mismo sería hacérselo aprender
+        // dos veces.
+        cannon?.Trajectory?.MarkCells(_pickPreview);
+    }
+
+    // El dedo sale de la burbuja marcada. No se borra en el acto: pasando de una a la de al lado,
+    // Unity manda primero la salida y después la entrada, así que borrar aquí apagaría lo que la
+    // entrada está a punto de encender. Se espera un frame, y si para entonces entró en otra, no
+    // había nada que borrar.
+    bool _pickLeaving;
+
+    void PickLeft(Vector2Int cell)
+    {
+        if (!Picking || _pickAt != cell) return;
+
+        _pickLeaving = true;
+        StartCoroutine(ClearIfLeft());
+    }
+
+    IEnumerator ClearIfLeft()
+    {
+        yield return null;
+
+        if (_pickLeaving) ClearPickPreview();
+    }
+
+    // Y al soltar se lleva lo que estuviera marcado. Soltando en el vacío no hay nada marcado y
+    // no pasa nada: ese es el camino para arrepentirse sin gastar el poder.
+    void ReleasePick(Vector2 screenPos)
+    {
+        if (!Picking) return;
+
+        if (_pickAt.HasValue) HandlePicked(_pickAt.Value);
+        else                  ClearPickPreview();
+    }
+
+    void ClearPickPreview()
+    {
+        foreach (var cell in _pickPreview)
+            if (grid.TryGetBubble(cell, out var view) && view != null)
+                StartCoroutine(Swell((RectTransform)view.transform, PICK_PREVIEW_TIME, 1f));
+
+        cannon?.Trajectory?.ClearMarks();
+
+        _pickPreview.Clear();
+        _pickAt = null;
+    }
+
+    // Crece o vuelve, sin rebote: la vista previa tiene que leerse como un estado —"estas se van
+    // a ir"— y un gesto con rebote se lee como que algo ya pasó.
+    static IEnumerator Swell(RectTransform target, float time, float to)
+    {
+        if (target == null) yield break;
+
+        float from = target.localScale.x;
+
+        for (float t = 0f; t < time; t += Time.deltaTime)
+        {
+            if (target == null) yield break;
+
+            target.localScale = Vector3.one * Mathf.Lerp(from, to, t / time);
+            yield return null;
+        }
+
+        if (target != null) target.localScale = Vector3.one * to;
+    }
+
+    const float PICK_PREVIEW_TIME  = 0.1f;
+    const float PICK_PREVIEW_SCALE = 1.14f;
+
     // Cuándo revienta cada celda de esta jugada, en segundos desde ahora.
     //
     // Hace falta porque una mina no se enciende "porque hubo un match" sino porque una burbuja

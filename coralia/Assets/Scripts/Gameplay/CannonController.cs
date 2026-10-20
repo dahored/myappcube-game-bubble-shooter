@@ -56,6 +56,10 @@ public class CannonController : MonoBehaviour
 
     [Header("Mano fantasma — cómo disparar (issue #7)")]
     [SerializeField] ShootHintView shootHint;     // opcional — dejar vacío hasta tener el prefab
+
+    public ShootHintView Hint => shootHint;
+
+    public TrajectoryLine Trajectory => trajectoryLine;
     [SerializeField] float         idleHintDelay      = 6f;   // segundos sin interactuar antes de mostrarla de nuevo
     [SerializeField] float         hintSwayAngle      = 25f;  // grados a cada lado de la vertical, demuestra que también se apunta a los costados
     [SerializeField] float         hintSwayPeriod     = 12f;  // segundos por ciclo completo (izq→der→izq) — muy lento y suave, no un tic rápido

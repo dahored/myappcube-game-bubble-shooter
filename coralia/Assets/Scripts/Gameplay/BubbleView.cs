@@ -14,17 +14,35 @@ using UnityEngine.UI;
 // justo encima de una burbuja, nunca llegaba a AimInputRelay. Con gran parte de la pantalla
 // cubierta de burbujas, en la práctica el drag solo funcionaba en los huecos vacíos (reportado
 // por Diego, comparando con otros bubble shooters que dejan apuntar desde cualquier lado).
-public class BubbleView : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandler, IPointerEnterHandler, IPointerExitHandler,
+                          IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [SerializeField] Image bubbleImage;
     [SerializeField] Image creatureIcon;
 
     public event System.Action<BubbleView> OnTapped;
+
+    // El dedo APOYADO, aparte del toque completo. Lo usa el modo de elegir del Punto Débil para
+    // enseñar qué se va a llevar antes de soltar — y para que deslizar fuera y soltar sea un
+    // arrepentimiento, no una compra.
+    public event System.Action<BubbleView> OnPressed;
+
+    // El dedo ENTRA en esta burbuja, también si llega arrastrando desde otra. Se lo preguntamos
+    // al sistema de eventos en vez de traducir la posición a celda por nuestra cuenta: la cuenta
+    // depende del pivote y del desplazamiento del tablero, y marcaba la de al lado.
+    public event System.Action<BubbleView> OnHovered;
+    public event System.Action<BubbleView> OnUnhovered;
     public event System.Action<Vector2> OnDragBegin;
     public event System.Action<Vector2> OnDragMove;
     public event System.Action<Vector2> OnDragEnd;
 
     public void OnPointerClick(PointerEventData eventData) => OnTapped?.Invoke(this);
+
+    // El dedo apoyado marca el objetivo; moverlo y soltarlo ya tienen sus propios eventos de
+    // arrastre, así que no hace falta escuchar el 'Up'.
+    public void OnPointerDown(PointerEventData eventData)  => OnPressed?.Invoke(this);
+    public void OnPointerEnter(PointerEventData eventData) => OnHovered?.Invoke(this);
+    public void OnPointerExit(PointerEventData eventData)  => OnUnhovered?.Invoke(this);
     public void OnBeginDrag(PointerEventData eventData)    => OnDragBegin?.Invoke(eventData.position);
     public void OnDrag(PointerEventData eventData)         => OnDragMove?.Invoke(eventData.position);
     public void OnEndDrag(PointerEventData eventData)      => OnDragEnd?.Invoke(eventData.position);

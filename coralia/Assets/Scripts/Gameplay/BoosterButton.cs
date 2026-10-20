@@ -19,6 +19,9 @@ public class BoosterButton : MonoBehaviour
     public Booster Booster => booster;
 
     [SerializeField] CannonController cannon;
+
+    [Tooltip("Quien maneja el modo de elegir una burbuja del tablero (Punto Débil). Vacío lo busca solo en la escena: solo hace falta para los poderes que se usan señalando.")]
+    [SerializeField] GameplayController gameplay;
     [SerializeField] Button           button;
 
     [Tooltip("El ícono en sí. El sprite lo pone el catálogo (Resources/BoosterCatalog) según qué booster sea: lo que haya puesto a mano acá solo se ve si el catálogo no lo tiene.\n\nSe tiñe con 'Loaded Tint' mientras el poder está cargado en el cañón. El tinte es el recurso pobre para cuando no hay un 'Loaded State' con arte propio que encender.")]
@@ -66,6 +69,11 @@ public class BoosterButton : MonoBehaviour
     void Awake()
     {
         if (cannon == null) Debug.LogWarning($"[BoosterButton] Falta asignar 'cannon' en {name} — el ícono no va a poder cargar nada.", this);
+
+        // Solo lo necesitan los que se usan señalando el tablero, así que se busca en vez de
+        // pedirlo: obligar a arrastrarlo en los cinco botones para que lo use uno es trabajo de
+        // Inspector que no compra nada.
+        if (gameplay == null) gameplay = FindAnyObjectByType<GameplayController>();
         if (button == null) button = GetComponent<Button>();
         if (button == null) Debug.LogWarning($"[BoosterButton] Falta asignar 'button' en {name} y el objeto no tiene uno — el ícono no responde al toque.", this);
         if (button != null) button.onClick.AddListener(OnPressed);
@@ -101,6 +109,11 @@ public class BoosterButton : MonoBehaviour
         // como roto, y la pregunta que el jugador se hace al ver un candado es exactamente esa.
         if (Locked) { ShowLockedTooltip(); return; }
 
+        // Los que se usan señalando el tablero no pasan por la recámara: ni se cargan, ni gastan
+        // disparo, ni tienen burbuja que dibujar. El botón enciende el modo y el segundo toque lo
+        // apaga, igual que cargar y descargar.
+        if (BoosterRules.PicksOnBoard(booster)) { TogglePick(); return; }
+
         if (cannon.LoadedBooster == booster) { cannon.UnloadBooster(); return; }
 
         // Sin existencias el toque es para comprar, no para cargar. Va antes de LoadBooster
@@ -114,6 +127,27 @@ public class BoosterButton : MonoBehaviour
         cannon.LoadBooster(booster);
         // Sin refresco explícito en el camino del "no se pudo": LoadBooster avisa por evento
         // cuando sí cambia algo, y si devolvió false no cambió nada que mostrar.
+    }
+
+    void TogglePick()
+    {
+        if (gameplay == null)
+        {
+            Debug.LogWarning($"[BoosterButton] '{booster}' se usa señalando el tablero y {name} no encontró el GameplayController: el botón no puede hacer nada.", this);
+            return;
+        }
+
+        if (gameplay.Picking) { gameplay.CancelPick(); Refresh(); return; }
+
+        // Sin existencias el toque es para comprar, igual que en los que se cargan.
+        if (SaveManager.BoosterCount(booster) <= 0)
+        {
+            if (refillPanel != null) refillPanel.Show(booster);
+            return;
+        }
+
+        gameplay.BeginPick(booster);
+        Refresh();
     }
 
     // Público porque la lista del HUD tiene que poder pedirlo: ella decide qué botones se ven, y
@@ -162,7 +196,10 @@ public class BoosterButton : MonoBehaviour
         // repartido entre quien monte el prefab.
         bool locked = Locked;
         int  count  = locked ? 0 : SaveManager.BoosterCount(booster);
-        bool loaded = !locked && cannon != null && cannon.LoadedBooster == booster;
+        // "Puesto" es lo mismo para los dos: cargado en la recámara, o con el modo de elegir
+        // abierto. El jugador no distingue las dos formas de activarse y el botón tampoco debería.
+        bool loaded = !locked && (cannon != null && cannon.LoadedBooster == booster
+                               || gameplay != null && gameplay.Picking && BoosterRules.PicksOnBoard(booster));
 
         if (lockedState != null && lockedState.activeSelf != locked) lockedState.SetActive(locked);
 

@@ -251,6 +251,10 @@ public class BoosterCatalog : ScriptableObject
         [Range(0, 4)]
         public int mineRadius = 2;
 
+        [Tooltip("Cuántos anillos se lleva ADEMÁS el Punto Débil alrededor de la burbuja señalada: 1 son 7 burbujas y 2 son 19. Estas van sin importar el color.\n\nEn CERO solo se lleva el racimo del color que toques — que es lo que lo distingue de la Bomba de Coral. Subiéndolo empieza a parecerse a ella: la Bomba es radio 2 y cuesta un disparo.")]
+        [Range(0, 3)]
+        public int weakSpotRadius;
+
         [Tooltip("El sonido de PLANTAR cada mina, al abrir el nivel. Suena una vez por mina, escalonado igual que la siembra de la Perla.\n\nNo es el del estallido —ese es 'Burst Clip'— ni un pitido mientras espera.")]
         public AudioClip minePlantClip;
 
