@@ -152,6 +152,13 @@ public class GridController : MonoBehaviour, IBoardView
     public event System.Action<Vector2Int> OnBubbleTapped;
     void HandleBubbleViewTapped(BubbleView view) => OnBubbleTapped?.Invoke(view.Cell);
 
+    // El dedo apoyado, para quien quiera marcar algo mientras dura.
+    public event System.Action<Vector2Int> OnBubblePressed;
+
+    // Y por cuál va pasando mientras lo arrastra.
+    public event System.Action<Vector2Int> OnBubbleHovered;
+    public event System.Action<Vector2Int> OnBubbleUnhovered;
+
     // Reenvío de drag iniciado sobre una burbuja — mismo destino que AimInputRelay
     // (CannonController.OnAimBegin/OnAimDrag/OnAimEnd), para que apuntar arrastrando funcione
     // igual empiece donde empiece el gesto, no solo en huecos vacíos del grid.
@@ -555,6 +562,9 @@ public class GridController : MonoBehaviour, IBoardView
     void SubscribeBubbleInput(BubbleView view)
     {
         view.OnTapped    += HandleBubbleViewTapped;
+        view.OnPressed   += v => OnBubblePressed?.Invoke(v.Cell);
+        view.OnHovered   += v => OnBubbleHovered?.Invoke(v.Cell);
+        view.OnUnhovered += v => OnBubbleUnhovered?.Invoke(v.Cell);
         view.OnDragBegin += p => OnBubbleDragBegin?.Invoke(p);
         view.OnDragMove  += p => OnBubbleDragMove?.Invoke(p);
         view.OnDragEnd   += p => OnBubbleDragEnd?.Invoke(p);

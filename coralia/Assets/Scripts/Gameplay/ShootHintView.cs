@@ -18,6 +18,11 @@ public class ShootHintView : MonoBehaviour
     [SerializeField] CanvasGroup canvasGroup;
     [SerializeField] TMP_Text    messageText;         // opcional — "Mantén presionado..." / "Suelta para disparar". NO cuelga de este GameObject (que se mueve con SetPosition) — queda fijo en su propio lugar, este script solo lo prende/apaga y le cambia el texto.
 
+    // El sitio donde el juego pone sus avisos de una línea. Se abre porque no es solo de este
+    // hint: el modo de elegir del Punto Débil escribe en el MISMO renglón, y tener dos sitios
+    // para la misma clase de aviso termina con los dos pisándose o con uno encima del HUD.
+    public TMP_Text Message => messageText;
+
     RectTransform _root; // este mismo GameObject — se mueve entero al seguir el balanceo de la línea
 
     [Header("Gesto de presión (loop) — timer independiente del balanceo de CannonController")]

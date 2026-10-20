@@ -43,6 +43,11 @@ public class TrajectoryLine : MonoBehaviour
     // diecinueve Image por frame es presión de GC constante.
     readonly List<Image> _blastMarks = new();
 
+    // Las del modo de elegir van en su PROPIO montón: las de apuntar se apagan en Hide() cada vez
+    // que el cañón deja de apuntar, y compartiendo montón ese apagado se llevaría por delante lo
+    // que el dedo está marcando ahora mismo.
+    readonly List<Image> _pickMarks = new();
+
     readonly List<RectTransform> _pool      = new();
     readonly List<Image>         _poolImage = new();
 
@@ -162,7 +167,7 @@ public class TrajectoryLine : MonoBehaviour
 
             foreach (var cell in BoosterRules.CellsAimedBy(booster, LandingCell.Value, StruckCell, gridController))
             {
-                var mark = MarkAt(used++);
+                var mark = MarkAt(_blastMarks, used++);
                 mark.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);
 
                 // La marca sobre una burbuja es la que cuenta: esa burbuja vuela. La que cae en un
@@ -185,9 +190,37 @@ public class TrajectoryLine : MonoBehaviour
         for (int i = used; i < _blastMarks.Count; i++) _blastMarks[i].gameObject.SetActive(false);
     }
 
-    Image MarkAt(int index)
+    // Las mismas marcas, pero para un poder que se SEÑALA en vez de apuntarse: el Punto Débil no
+    // dispara nada, así que no hay trayectoria que las traiga — las pide quien lleva el modo.
+    //
+    // Se reusan a propósito en vez de inventar un resplandor aparte: el jugador ya aprendió qué
+    // significa ese aro cuando apunta con la Bomba, y enseñarle otra cosa para decir lo mismo es
+    // hacerle aprender dos veces (pedido de Diego).
+    public void MarkCells(IEnumerable<Vector2Int> cells)
     {
-        while (_blastMarks.Count <= index)
+        int used = 0;
+
+        foreach (var cell in cells)
+        {
+            var mark = MarkAt(_pickMarks, used++);
+
+            mark.rectTransform.anchoredPosition = HexGridMath.CellToLocalPos(cell);
+            mark.color = blastMarkColor;
+            mark.gameObject.SetActive(true);
+            mark.rectTransform.SetAsLastSibling();
+        }
+
+        for (int i = used; i < _pickMarks.Count; i++) _pickMarks[i].gameObject.SetActive(false);
+    }
+
+    public void ClearMarks()
+    {
+        foreach (var mark in _pickMarks) if (mark) mark.gameObject.SetActive(false);
+    }
+
+    Image MarkAt(List<Image> pool, int index)
+    {
+        while (pool.Count <= index)
         {
             var go = new GameObject("BlastMark", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image))
             {
@@ -208,10 +241,10 @@ public class TrajectoryLine : MonoBehaviour
             image.sprite        = SparkleTextures.Ring(blastMarkEdge);
             image.raycastTarget = false;   // apuntar por encima de la marca tiene que seguir funcionando
 
-            _blastMarks.Add(image);
+            pool.Add(image);
         }
 
-        return _blastMarks[index];
+        return pool[index];
     }
 
     // Misma lógica que CannonController.ResolveImpact — así el preview nunca miente sobre

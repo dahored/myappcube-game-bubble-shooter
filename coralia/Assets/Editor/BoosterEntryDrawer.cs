@@ -258,6 +258,13 @@ public class BoosterEntryDrawer : PropertyDrawer
             yield return new Row(Get("inkPaintClip"));
         }
 
+        // --- Señalar sobre el tablero ---
+        if (uses.HasFlag(BoosterRules.Uses.Pick))
+        {
+            yield return new Row("Señalar: se usa tocando una burbuja");
+            yield return new Row(Get("weakSpotRadius"));
+        }
+
         // --- Agua Clara ---
         if (uses.HasFlag(BoosterRules.Uses.Clear))
         {

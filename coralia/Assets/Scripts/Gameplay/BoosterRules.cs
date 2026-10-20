@@ -229,6 +229,27 @@ public static class BoosterRules
     public static int InkSplash => ArtFor(Booster.Ink)?.inkSplash > 0 ? ArtFor(Booster.Ink).inkSplash : INK_SPLASH;
     public static int InkRadius => ArtFor(Booster.Ink)?.inkRadius > 0 ? ArtFor(Booster.Ink).inkRadius : INK_RADIUS;
 
+    // Lo que se lleva el Punto Débil: el racimo del color señalado —sin el mínimo de tres— más,
+    // si el catálogo lo pide, un radio alrededor que va sin mirar el color.
+    //
+    // El radio por defecto es CERO y no es un descuido: con radio, este poder hace lo mismo que
+    // la Bomba de Coral y además el match, así que la Bomba dejaría de tener sentido. Queda como
+    // palanca para afinarlo, con el aviso puesto en el tooltip.
+    public static int WeakSpotRadius => ArtFor(Booster.WeakSpot)?.weakSpotRadius ?? 0;
+
+    static List<Vector2Int> WeakSpotCells(Vector2Int cell, IBoardView board)
+    {
+        var cells  = GroupAt(cell, board);
+        int radius = WeakSpotRadius;
+
+        if (radius <= 0) return cells;
+
+        foreach (var around in HexGridMath.CellsWithinRadius(cell, radius))
+            if (!cells.Contains(around)) cells.Add(around);
+
+        return cells;
+    }
+
     // Hasta dónde llega una mina plantada al estallar. Va aparte de BOMB_RADIUS porque son dos
     // poderes distintos: la Bomba se apunta y cuesta un disparo, la mina estalla sola cuando algo
     // la roza. Que cada una valga lo que vale se balancea moviendo su radio sin tocar la otra.
@@ -388,6 +409,11 @@ public static class BoosterRules
         // aporta es la tinta que reparte después (pedido de Diego).
         Booster.Ink         => GroupAt(struck ?? cell, board),
         Booster.Mine        => HexGridMath.CellsWithinRadius(cell, MineRadius),
+
+        // Lo que tenga, sin el mínimo de tres: la gracia del poder es que vale para la burbuja
+        // suelta que no se puede matchear de ninguna manera. Con el mínimo normal, justo el caso
+        // que viene a resolver sería el único que no resuelve.
+        Booster.WeakSpot    => WeakSpotCells(cell, board),
         _                   => new List<Vector2Int>(),
     };
 
@@ -414,6 +440,7 @@ public static class BoosterRules
         Clear  = 1 << 6,   // pasa las burbujas de un color a otro al abrir el nivel
         Ink    = 1 << 7,   // salpica color sobre las burbujas que alcanza, sin reventarlas
         Mine   = 1 << 8,   // planta bombas sensibles en el tablero al abrir el nivel
+        Pick   = 1 << 9,   // se usa eligiendo una burbuja del tablero, no disparando
     }
 
     const Uses CANNON = Uses.Bubble | Uses.Loaded | Uses.Burst;
@@ -438,6 +465,10 @@ public static class BoosterRules
 
         // Este no revienta nada: convierte. Solo sus propios ajustes.
         Booster.ClearWater => Uses.Clear,
+
+        // No se carga ni dibuja burbuja: se usa señalando el tablero. Estalla donde señales, así
+        // que sí necesita su sonido, su destello y su temblor.
+        Booster.WeakSpot => Uses.Burst | Uses.Pick,
 
         // Siembra como la Perla y estalla como la Bomba, pero ninguna de las dos cosas pasa
         // cuando se dispara: planta al abrir, y lo que estalla después son las minas, cada una
@@ -779,6 +810,7 @@ public static class BoosterRules
         (Booster.ClearWater,  "clear_water"),
         (Booster.Ink,         "ink"),
         (Booster.Mine,        "mine"),
+        (Booster.WeakSpot,    "weak_spot"),
     };
 
     public static string NameOf(Booster booster)
@@ -886,6 +918,13 @@ public static class BoosterRules
     // que aparece en el HUD se ve enseguida; uno que se aplicara solo al empezar no se vería nunca.
     public static BoosterCatalog.Family FamilyOf(Booster booster) =>
         ArtFor(booster)?.family ?? BoosterCatalog.Family.InGame;
+
+    // Si se usa señalando una burbuja del tablero en vez de cargándolo en el cañón.
+    //
+    // Es una pregunta aparte de la familia: este es de gameplay —el jugador elige dónde y cuándo—
+    // pero no pasa por la recámara, así que ni se carga, ni gasta disparo, ni necesita arte de
+    // burbuja. Preguntando por la familia, el botón del HUD intentaría cargarlo y fallaría.
+    public static bool PicksOnBoard(Booster booster) => booster == Booster.WeakSpot;
 
     public static bool IsInGame(Booster booster) => FamilyOf(booster) == BoosterCatalog.Family.InGame;
     public static bool IsStart(Booster booster)  => booster != Booster.None && FamilyOf(booster) == BoosterCatalog.Family.Start;

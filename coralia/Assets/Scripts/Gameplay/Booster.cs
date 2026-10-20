@@ -26,4 +26,5 @@ public enum Booster
     ClearWater  = 7,
     Ink         = 8,
     Mine        = 9,
+    WeakSpot    = 10,
 }

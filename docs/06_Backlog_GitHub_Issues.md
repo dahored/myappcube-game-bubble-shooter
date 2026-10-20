@@ -772,7 +772,7 @@ Sin esta matriz pasan dos cosas, las dos malas:
   cuál llevar es elegir cuál gastar, y el jugador acaba comprando siempre el más barato.
 
 Con la matriz, en cambio, el jugador aprende a **leer el tablero antes de elegir**: ve hielo y
-piensa en área, ve una pegajosa y piensa en la Pinza. Ese momento —mirar el nivel y decidir qué
+piensa en área, ve una pegajosa y piensa en el Punto Débil. Ese momento —mirar el nivel y decidir qué
 llevar— es el que convierte la pantalla previa en una jugada en vez de en un escaparate.
 
 ### La regla que no se negocia
@@ -793,7 +793,7 @@ aporta nada especial.
 |---|---|---|---|
 | **Hielo** (nivel 11) | Pide dos impactos | Bomba ✅ · Raya ✅ | Un poder de área se lleva hielo y burbuja en el mismo golpe |
 | **Jaula de coral** (16) | Se rompe con un match adyacente | Perla ✅ · Burbuja Madre ✅ | Los dos fuerzan un match donde no lo había, que es justo lo que la jaula pide |
-| **Pegajosa / crustáceo** (21) | No cae nunca; solo muere por match directo | **Pinza de Langosta** ✅ | Es LA respuesta: destruye una celda concreta sin necesitar match. El resto ➖ |
+| **Pegajosa / crustáceo** (21) | No cae nunca; solo muere por match directo | **Punto Débil** ✅ | Es LA respuesta: revienta la celda que señales sin necesitar match. El resto ➖ |
 | **Generador de algas** (26) | Produce una burbuja cada 5 disparos | Raya ✅ · Agua Clara ✅ | La Raya barre su fila entera; Agua Clara le quita el color con el que alimenta |
 | **Burbuja-bomba** (36) | sin definir en el GDD | — | Depende de qué haga; decidirlo en su propio issue |
 | **Cadena viva** (46) | Dos burbujas unidas, mueren juntas o no mueren | Bomba ✅ · Raya ✅ | Un área se lleva las dos a la vez sin pensarlo |
@@ -810,7 +810,7 @@ escena, y ahí es donde esto deja de ser balance y pasa a ser el juego:
 - La **jaula de coral** ya nace para esto en el GDD: *"encierra una criatura"*. Jaula + rescate es
   la pareja obvia y debería ser el primer nivel que combine las dos cosas.
 - Una criatura detrás de **pegajosas** no se puede liberar dejándola caer: hay que ir a por ella.
-  Es el nivel donde la Pinza se explica sola.
+  Es el nivel donde el Punto Débil se explica solo.
 - Una criatura bajo un **generador** mete prisa sin poner un reloj: cada cinco disparos el camino
   que abriste se vuelve a cerrar.
 
@@ -823,14 +823,14 @@ Cruzando esta matriz con el reparto tentativo sale un choque que hay que resolve
 
 | | Obstáculo entra en | Poder que lo resuelve | Se desbloquea en |
 |---|---|---|---|
-| Pegajosa | **21** | Pinza de Langosta | **45** ❌ |
+| Pegajosa | **21** | Punto Débil | **45** ❌ (hoy en el 19 para probarlo) |
 | Generador | 26 | Agua Clara | 30 ❌ |
 | Jaula | 16 | Burbuja Madre | 13 ✅ |
 | Hielo | 11 | Bomba | 2 ✅ |
 
-**La pegajosa aparece 24 niveles antes que el poder pensado para ella.** La Pinza está al final del
+**La pegajosa aparece 24 niveles antes que el poder pensado para ella.** El Punto Débil está al final del
 reparto porque es la única que pide un gesto nuevo, no por difícil de entender — así que mover una
-de las dos es razonable, y probablemente sea la Pinza la que suba.
+de las dos es razonable, y probablemente sea el Punto Débil el que baje.
 
 Esto no significa que el obstáculo sea injugable antes: la regla de arriba garantiza que se puede
 sin el poder. Significa que el jugador se come el obstáculo en su peor versión durante 24 niveles
@@ -879,7 +879,7 @@ el poder sepa de obstáculos. Los poderes siguen sin saber que existen.
 ### Acceptance criteria
 - [ ] Matriz cerrada, con la justificación mecánica de cada sinergia
 - [ ] Ninguna casilla hace un obstáculo **imposible** sin power-up — solo más caro en disparos
-- [ ] Resuelto el choque Pinza / pegajosa, y repasado el reparto entero contra la matriz
+- [ ] Resuelto el choque Punto Débil / pegajosa, y repasado el reparto entero contra la matriz
 - [ ] Decidido qué tipos de daño existen (área, match, directo, teñido) antes de escribir el primero
 - [ ] Al menos un nivel por pareja obstáculo + rescate, empezando por jaula + criatura
 - [ ] El GDD §2.3 recoge la matriz
@@ -926,7 +926,7 @@ seis capítulos del GDD §2.1 caben dentro de esos 60.
 | 15 | `ink` (Tinta de Pulpo) | gameplay | Adelantado al 15 **provisionalmente para probarlo**; su sitio por diseño es el 24 — es el más difícil de los que se cargan, tiñe del color que VUELVE y pide dominar la cola |
 | 13 | `clear_water` (Agua Clara) | inicio | Adelantado al 13 **provisionalmente para probarlo**; su sitio por diseño es el 30, a mitad de recorrido y con cinco colores en el tablero, que es donde sobra uno |
 | 17 | `mine` (Plantar Bombas) | inicio | Adelantado al 17 **provisionalmente para probarlo**; su sitio por diseño es el 38 — abre un tablero cerrado y eso no se sufre hasta bien entrado el recorrido |
-| 45 | `claw` (Pinza de Langosta) | gameplay | El último: es el único que pide una forma de activación nueva (tocar el tablero) |
+| 19 | `weak_spot` (Punto Débil) | gameplay | Adelantado al 19 **provisionalmente para probarlo**; su sitio por diseño es el 45 — es el único que pide una forma de activación nueva (tocar el tablero) |
 
 Del 46 al 60 no entra ninguno nuevo: el tramo final se juega con todo lo aprendido.
 
@@ -940,7 +940,7 @@ Si hay que recolocar uno, estas son las restricciones a respetar:
    receptivo; más adelante, un tutorial cada pocos niveles interrumpe una partida que ya fluye.
 3. **Alternar familias.** Dos de inicio seguidos se confunden entre sí, porque ninguno pide una
    decisión y los dos "pasan solos" al empezar.
-4. **El que pide interfaz nueva, el último.** La Pinza no se apunta: se toca una burbuja del
+4. **El que pide interfaz nueva, el último.** El Punto Débil no se apunta: se toca una burbuja del
    tablero. Enseñar un gesto nuevo cuando el resto ya es automático cuesta menos.
 5. **Por complejidad, no por potencia.** El criterio no es cuánto ayuda sino cuánto hay que
    entender para usarlo: la Tinta llega tarde por difícil de explicar, no por fuerte.
@@ -996,7 +996,7 @@ recalibrar precios, porque regalar de más mata la primera compra.
 - [ ] `ui.tutorial.X.title` y `.body` en los 6 idiomas
 - [ ] Ningún nivel con dos tutoriales de power-up
 - [ ] Repasado qué `allowed_boosters_start` ofrece cada nivel después de cada desbloqueo
-- [ ] Contrastado con la matriz poder × obstáculo: un obstáculo no debería entrar muchos niveles antes que el poder pensado para él (hoy la pegajosa entra en el 21 y la Pinza en el 45)
+- [ ] Contrastado con la matriz poder × obstáculo: un obstáculo no debería entrar muchos niveles antes que el poder pensado para él (hoy la pegajosa entra en el 21 y el Punto Débil en el 45)
 - [ ] **Antes de shippear**: `Remember Seen` y todos los `Once` marcados, `TempActions` fuera
 
 ### Dependencias y orden
@@ -1077,10 +1077,10 @@ de plantilla, y entre los dos cubren casi todo lo que un poder nuevo puede neces
 | ~~**Raya Eléctrica**~~ ✅ | Barre entera la fila horizontal que golpea | Hecho |
 | ~~**Burbuja Madre**~~ ✅ | Suelta tres: revienta el racimo que tocó y las dos burbujas **más solas del tablero** | Hecho |
 | **Tinta de Pulpo** | El pulpo salpica 4 burbujas al azar dentro del radio, tiñéndolas del **color que vuelve a la recámara** | `HexGridMath.CellsWithinRadius` + `BubbleView.SetColor` |
-| **Pinza de Langosta** | Tocas una burbuja del tablero y la destruye. No gasta disparo | **Nada: necesita una pieza nueva** |
+| ~~**Punto Débil**~~ ✅ | Tocas una burbuja y se va con las de su color desde DOS. No gasta disparo | Hecho — `BoosterRules.PicksOnBoard` + `GameplayController.BeginPick` |
 
 **Uno de los dos es una variación del mismo camino** — se cargan en el cañón, se apuntan, y lo
-único que cambia es qué le pasa al grid al impactar. La Pinza es la única que pide un modo de
+único que cambia es qué le pasa al grid al impactar. El Punto Débil era el único que pedía un modo de
 selección sobre el tablero, que no existe.
 
 ### Lo que la Raya Eléctrica dejó montado
@@ -1122,7 +1122,7 @@ Dos detalles que no son opcionales:
 - [ ] `ui.booster.X.name` y `.description` en los 6 idiomas
 - [ ] Un tutorial por cada uno, con su id = el nombre del booster
 - [ ] La marca de zona de la mira refleja el efecto real de cada uno
-- [ ] Modo de selección sobre el tablero para la Pinza
+- [x] Modo de selección sobre el tablero (Punto Débil) — `GameplayController.BeginPick`
 - [ ] Todos aparecen en el HUD vía `BoosterHudList` sin tocar ese script
 
 ---

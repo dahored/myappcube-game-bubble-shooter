@@ -2,6 +2,7 @@
     "id": 19,
     "chapter": 1,
     "name": "Corriente cruzada",
+    "tutorials": ["weak_spot"],
     "max_shots": 69,
     "min_shots_to_clear": 27,
     "rainbow_chance": 0.05000000074505806,
