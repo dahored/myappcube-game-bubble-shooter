@@ -153,6 +153,7 @@ MonoBehaviour:
     clearFade: 0.25
     clearClip: {fileID: 0}
     mineRadius: 2
+    weakSpotRadius: 0
     minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
@@ -317,6 +318,7 @@ MonoBehaviour:
     clearFade: 0.25
     clearClip: {fileID: 0}
     mineRadius: 2
+    weakSpotRadius: 0
     minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 1
@@ -481,6 +483,7 @@ MonoBehaviour:
     clearFade: 0.25
     clearClip: {fileID: 0}
     mineRadius: 2
+    weakSpotRadius: 0
     minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
@@ -648,6 +651,7 @@ MonoBehaviour:
     clearFade: 0.25
     clearClip: {fileID: 0}
     mineRadius: 2
+    weakSpotRadius: 0
     minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
@@ -811,6 +815,7 @@ MonoBehaviour:
     clearFade: 0.25
     clearClip: {fileID: 0}
     mineRadius: 2
+    weakSpotRadius: 0
     minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
@@ -974,6 +979,7 @@ MonoBehaviour:
     clearFade: 0.25
     clearClip: {fileID: 0}
     mineRadius: 2
+    weakSpotRadius: 0
     minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
@@ -1137,6 +1143,7 @@ MonoBehaviour:
     clearFade: 0.25
     clearClip: {fileID: 8300000, guid: 2bc19cb1498714ed7a9d0606323ba591, type: 3}
     mineRadius: 2
+    weakSpotRadius: 0
     minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
@@ -1301,6 +1308,7 @@ MonoBehaviour:
     clearFade: 0.25
     clearClip: {fileID: 0}
     mineRadius: 2
+    weakSpotRadius: 0
     minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0
@@ -1465,6 +1473,7 @@ MonoBehaviour:
     clearFade: 0.25
     clearClip: {fileID: 0}
     mineRadius: 1
+    weakSpotRadius: 0
     minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 1
@@ -1628,6 +1637,7 @@ MonoBehaviour:
     clearFade: 0.25
     clearClip: {fileID: 0}
     mineRadius: 2
+    weakSpotRadius: 1
     minePlantClip: {fileID: 0}
     seedTravel:
       enabled: 0

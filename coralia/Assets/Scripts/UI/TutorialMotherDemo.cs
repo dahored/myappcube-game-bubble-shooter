@@ -20,8 +20,8 @@ using UnityEngine.UI;
 // mañana cambia el criterio, la demostración cambia con él en vez de quedar enseñando otra cosa.
 public class TutorialMotherDemo : MonoBehaviour, IBoardView
 {
-    [Tooltip("Sprites de burbuja de colores DISTINTOS, tres o más. El tercero es el del montón y el de las dos solas: conviene que destaque sobre los otros dos.")]
-    [SerializeField] Sprite[] bubbleSprites;
+    [Tooltip("Los colores con los que se dibuja esta demostración, elegidos de los que el juego ya tiene. El arte sale del BubbleCatalog: así una burbuja del tutorial no puede verse distinta de la del tablero, y cambiar el arte de un color lo cambia en los dos sitios.")]
+    [SerializeField] BubbleColor[] bubbleColors = { BubbleColor.Blue, BubbleColor.Red, BubbleColor.Yellow };
 
     [Tooltip("La mano que apunta. La misma que usan los demás tutoriales: conviene que sea la misma para que el gesto se reconozca de uno al otro.")]
     [SerializeField] Sprite handSprite;
@@ -107,6 +107,20 @@ public class TutorialMotherDemo : MonoBehaviour, IBoardView
         return false;
     }
 
+
+    // El sprite de uno de los colores de arriba. El módulo vive acá y no en cada llamada: con
+    // diez demostraciones pidiéndolo, el que se olvide revienta con un índice fuera de rango.
+    Sprite SpriteAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? BubbleCatalog.Sprite(bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length])
+            : null;
+
+    // Y el color en sí, para lo que necesite saberlo y no solo dibujarlo.
+    BubbleColor ColorAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length]
+            : BubbleColor.Red;
+
     void OnEnable()
     {
         if (!Ready()) return;
@@ -124,9 +138,9 @@ public class TutorialMotherDemo : MonoBehaviour, IBoardView
 
     bool Ready()
     {
-        if (bubbleSprites != null && bubbleSprites.Length >= 3 && MotherSprite != null) return true;
+        if (bubbleColors != null && bubbleColors.Length >= 3 && MotherSprite != null) return true;
 
-        Debug.LogWarning($"[TutorialMotherDemo] '{name}' necesita al menos tres sprites de burbuja de colores distintos, y que BoosterCatalog tenga el arte de la Burbuja Madre: sin eso no hay nada que mostrar.", this);
+        Debug.LogWarning($"[TutorialMotherDemo] '{name}' necesita al menos tres colores de burbuja distintos en 'Bubble Colors', y que BoosterCatalog tenga el arte de la Burbuja Madre: sin eso no hay nada que mostrar.", this);
         return false;
     }
 
@@ -181,7 +195,7 @@ public class TutorialMotherDemo : MonoBehaviour, IBoardView
         foreach (var (col, row, color) in CLUSTER)
         {
             var cell   = new Vector2Int(col, row);
-            var bubble = Spawn($"Bubble{col}_{row}", bubbleSprites[color % bubbleSprites.Length], size);
+            var bubble = BubbleGlow.AddTo(Spawn($"Bubble{col}_{row}", SpriteAt(color), size));
 
             Place(bubble, CellPos(cell));
             _cluster[cell] = bubble;
@@ -207,7 +221,7 @@ public class TutorialMotherDemo : MonoBehaviour, IBoardView
         // Las dos que saldrán. Se crean ya, apagadas, para no instanciar a mitad de la animación.
         for (int i = 0; i < Targets().Count; i++)
         {
-            var kid = Spawn($"Kid{i}", bubbleSprites[0], size * 0.55f);
+            var kid = BubbleGlow.AddTo(Spawn($"Kid{i}", SpriteAt(0), size * 0.55f));
             kid.enabled = false;
             _kids.Add(kid);
         }
@@ -477,7 +491,7 @@ public class TutorialMotherDemo : MonoBehaviour, IBoardView
         {
             int color = _colors.TryGetValue(targets[i], out int c) ? c : 0;
 
-            _kids[i].sprite  = bubbleSprites[color % bubbleSprites.Length];
+            _kids[i].sprite  = SpriteAt(color);
             _kids[i].color   = Color.white;
             _kids[i].enabled = true;
             Place(_kids[i], from);

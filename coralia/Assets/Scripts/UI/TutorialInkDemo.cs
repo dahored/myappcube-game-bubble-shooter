@@ -23,8 +23,8 @@ using UnityEngine.UI;
 // a BoosterRules, así que a qué burbujas salpica lo decide el MISMO código que en una partida.
 public class TutorialInkDemo : MonoBehaviour, IBoardView
 {
-    [Tooltip("Sprites de burbuja de colores DISTINTOS, tres o más. El primero es el color que vuelve al cañón y el que la tinta reparte: conviene que destaque sobre los otros.")]
-    [SerializeField] Sprite[] bubbleSprites;
+    [Tooltip("Los colores con los que se dibuja esta demostración, elegidos de los que el juego ya tiene. El arte sale del BubbleCatalog: así una burbuja del tutorial no puede verse distinta de la del tablero, y cambiar el arte de un color lo cambia en los dos sitios.")]
+    [SerializeField] BubbleColor[] bubbleColors = { BubbleColor.Blue, BubbleColor.Red, BubbleColor.Yellow };
 
     [Tooltip("La mano que apunta. La misma que usan los demás tutoriales: conviene que sea la misma para que el gesto se reconozca de uno al otro.")]
     [SerializeField] Sprite handSprite;
@@ -86,7 +86,7 @@ public class TutorialInkDemo : MonoBehaviour, IBoardView
     static Vector2Int Landed => new(4, 3);   // y dónde se posa, justo debajo
 
     // El color que vuelve a la recámara, y con el que la tinta pinta. Es un índice de
-    // 'bubbleSprites', igual que en el racimo.
+    // 'bubbleColors', igual que en el racimo.
     const int RETURNING = 0;
 
     // Para que la demostración salpique SIEMPRE las mismas. InkCells sortea a propósito —cada
@@ -118,13 +118,28 @@ public class TutorialInkDemo : MonoBehaviour, IBoardView
 
     public bool TryGetColor(Vector2Int cell, out BubbleColor color)
     {
-        // Los índices de sprite se hacen pasar por colores. Da igual cuáles sean mientras dos
-        // iguales se cuenten como iguales: el poder solo compara.
-        if (_colors.TryGetValue(cell, out int index)) { color = (BubbleColor)index; return true; }
+        // El color es el de verdad, el que esté elegido en 'Bubble Colors': antes acá se colaba
+        // el índice del sprite disfrazado de color, y dos azules en huecos distintos del array se
+        // leían como colores distintos.
+        if (_colors.TryGetValue(cell, out int index)) { color = ColorAt(index); return true; }
 
         color = default;
         return false;
     }
+
+
+    // El sprite de uno de los colores de arriba. El módulo vive acá y no en cada llamada: con
+    // diez demostraciones pidiéndolo, el que se olvide revienta con un índice fuera de rango.
+    Sprite SpriteAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? BubbleCatalog.Sprite(bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length])
+            : null;
+
+    // Y el color en sí, para lo que necesite saberlo y no solo dibujarlo.
+    BubbleColor ColorAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length]
+            : BubbleColor.Red;
 
     void OnEnable()
     {
@@ -147,9 +162,9 @@ public class TutorialInkDemo : MonoBehaviour, IBoardView
 
     bool Ready()
     {
-        if (bubbleSprites != null && bubbleSprites.Length >= 3 && InkSprite != null) return true;
+        if (bubbleColors != null && bubbleColors.Length >= 3 && InkSprite != null) return true;
 
-        Debug.LogWarning($"[TutorialInkDemo] '{name}' necesita al menos tres sprites de burbuja de colores distintos, y que BoosterCatalog tenga el arte de la Tinta de Pulpo: sin eso no hay nada que mostrar.", this);
+        Debug.LogWarning($"[TutorialInkDemo] '{name}' necesita al menos tres colores de burbuja distintos en 'Bubble Colors', y que BoosterCatalog tenga el arte de la Tinta de Pulpo: sin eso no hay nada que mostrar.", this);
         return false;
     }
 
@@ -203,7 +218,7 @@ public class TutorialInkDemo : MonoBehaviour, IBoardView
         foreach (var (col, row, color) in CLUSTER)
         {
             var cell   = new Vector2Int(col, row);
-            var bubble = Spawn($"Bubble{col}_{row}", bubbleSprites[color % bubbleSprites.Length], size);
+            var bubble = BubbleGlow.AddTo(Spawn($"Bubble{col}_{row}", SpriteAt(color), size));
 
             Place(bubble, CellPos(cell));
             _cluster[cell] = bubble;
@@ -227,7 +242,7 @@ public class TutorialInkDemo : MonoBehaviour, IBoardView
         }
 
         _ink  = Spawn("Ink",  InkSprite, size);
-        _next = Spawn("Next", bubbleSprites[RETURNING % bubbleSprites.Length], size * nextSize);
+        _next = BubbleGlow.AddTo(Spawn("Next", SpriteAt(RETURNING), size * nextSize));
 
         _hand = handSprite != null ? Spawn("Hand", handSprite, size * 1.6f) : null;
     }
@@ -255,7 +270,7 @@ public class TutorialInkDemo : MonoBehaviour, IBoardView
     }
 
     // De qué color sale la mancha. En el juego sale sola: el color que reparte es un BubbleColor y
-    // tiene su tinte en la tabla. Acá los colores son índices de 'bubbleSprites', y qué color tiene
+    // tiene su tinte en la tabla. Acá los colores son índices de 'bubbleColors', y qué color tiene
     // el sprite que se le asigne no hay manera de saberlo sin leerle los píxeles — que es justo lo
     // que no se puede hacer con una textura importada. Por eso se configura, y sin configurar cae
     // en el morado de la tinta, que es de lo que va el poder.
@@ -370,7 +385,7 @@ public class TutorialInkDemo : MonoBehaviour, IBoardView
             var cell = new Vector2Int(col, row);
 
             _colors[cell]  = color;
-            _cluster[cell].sprite                = bubbleSprites[color % bubbleSprites.Length];
+            _cluster[cell].sprite                = SpriteAt(color);
             _cluster[cell].enabled               = true;
             _cluster[cell].color                 = Color.white;
             _cluster[cell].transform.localScale  = Vector3.one;
@@ -589,7 +604,7 @@ public class TutorialInkDemo : MonoBehaviour, IBoardView
             if (!swapped && p >= 0.5f && bubble != null)
             {
                 swapped       = true;
-                bubble.sprite = bubbleSprites[RETURNING % bubbleSprites.Length];
+                bubble.sprite = SpriteAt(RETURNING);
                 _colors[cell] = RETURNING;
             }
 

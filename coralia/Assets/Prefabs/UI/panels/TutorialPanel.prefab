@@ -300,9 +300,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d4b37cd3352245aa9d73cf0638ce3fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialCancelDemo
-  bubbleSprites:
-  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
+  bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
   dotSprite: {fileID: 0}
   dotColor: {r: 1, g: 1, b: 1, a: 0.85}
@@ -510,12 +508,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87486297309b941e8893870ef0da52cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialWeakSpotDemo
-  bubbleSprites:
-  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-  - {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
-  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
-  - {fileID: -2563078757209599538, guid: 962be93758c2d4080a44b80e92a21aaa, type: 3}
-  - {fileID: 5547376898668789171, guid: 13fd4b4a4e05042eebd4a5aa316ece11, type: 3}
+  bubbleColors: 01000000000000000200000003000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
   bubbleSize: 0.1
   aspect: 0.72
@@ -821,10 +814,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f892e2de415b747709c75f861e04b764, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialInkDemo
-  bubbleSprites:
-  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-  - {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
-  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
+  bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
   aspect: 0.72
   nextSize: 0.55
@@ -891,10 +881,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 33d346990f7604cdcbf0f8e80f228978, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialMineDemo
-  bubbleSprites:
-  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
-  - {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
+  bubbleColors: 010000000000000002000000i
   bubbleSize: 0.1
   aspect: 0.72
   lightSize: 0.75
@@ -954,9 +941,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59cd63b978133461ca9c01d0916fff38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialSwapDemo
-  bubbleSprites:
-  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
+  bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
   dotSprite: {fileID: 0}
   dotColor: {r: 1, g: 1, b: 1, a: 0.85}
@@ -1347,10 +1332,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 017b3d46278cb42b5b9e39787b4f6da3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialRainbowDemo
-  bubbleSprites:
-  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
-  - {fileID: 5547376898668789171, guid: 13fd4b4a4e05042eebd4a5aa316ece11, type: 3}
+  bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
   dotSprite: {fileID: 7416691928268232256, guid: cd4e4136d804f443b88d74e25ee17f0f, type: 3}
   dotColor: {r: 1, g: 1, b: 1, a: 0.85}
@@ -1489,10 +1471,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8a2451a3ea55487d8adcd48b4554a29, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialMotherDemo
-  bubbleSprites:
-  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
-  - {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
+  bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
   aspect: 0.72
   markColor: {r: 1, g: 1, b: 1, a: 0.85}
@@ -1558,9 +1537,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c163f771cf334463bde1c1ded1f8d8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialShootDemo
-  bubbleSprites:
-  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
+  bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
   dotSprite: {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
   dotColor: {r: 1, g: 1, b: 1, a: 0.85}
@@ -1915,10 +1892,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f8c2a16d59ac4fdf894932473cdb35f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialElectricRayDemo
-  bubbleSprites:
-  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
-  - {fileID: 5547376898668789171, guid: 13fd4b4a4e05042eebd4a5aa316ece11, type: 3}
+  bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
   aspect: 0.72
   markColor: {r: 0.75, g: 0.95, b: 1, a: 0.85}
@@ -2492,11 +2466,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b11f52bdcd80e4d96b1f3f2b86433c6a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialBombDemo
-  bubbleSprites:
-  - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-  - {fileID: 8811693040233011940, guid: 68cdda231e47a4010b309c4a6f26f53f, type: 3}
-  - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
-  - {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
+  bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
   bubbleSize: 0.1
   aspect: 0.72
