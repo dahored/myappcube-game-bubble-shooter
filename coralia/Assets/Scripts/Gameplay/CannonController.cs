@@ -1214,6 +1214,10 @@ public class CannonController : MonoBehaviour
         // mientras la burbuja cruzaba al otro lado.
         SpecialBubbleSkin.SetAlpha(currentBubbleImage, alpha);
         SpecialBubbleSkin.SetAlpha(nextBubbleImage,    alpha);
+
+        // El brillo cuelga de la ranura y es un Graphic aparte: sin esto se quedaba visible en la
+        // almeja mientras la burbuja cruzaba al otro lado, igual que le pasaba a las capas.
+        foreach (var layer in _slotGlow.Values) SetAlpha(layer, alpha);
     }
 
     static void SetAlpha(Image image, float alpha)
@@ -1382,10 +1386,64 @@ public class CannonController : MonoBehaviour
 
         slot.sprite = booster != Booster.None ? BoosterRules.BubbleSpriteFor(booster) : grid.SpriteFor(color);
 
+        bool plain = booster == Booster.None && color != BubbleColor.Rainbow;
+
         if (booster != Booster.None)           SpecialBubbleSkin.Apply(slot, booster);
         else if (color == BubbleColor.Rainbow) SpecialBubbleSkin.Apply(slot, Booster.Rainbow);
         else                                   SpecialBubbleSkin.Clear(slot);
 
+        // Las del cañón son Image sueltas y no BubbleView, así que el brillo del catálogo no les
+        // llegaba por ningún lado: la recámara y la ranura del pulpo salían planas mientras el
+        // tablero entero brillaba (reportado por Diego).
+        //
+        // Solo para las de color: una con poder o comodín ya trae el suyo en su skin, y poner
+        // otro encima la deja con dos.
+        SetSlotGlow(slot, plain ? BubbleCatalog.Glow : null);
+    }
+
+    // El brillo de una ranura, creado al vuelo y colgado de ella. Se guarda por ranura para no
+    // andar buscándolo por nombre en cada relevo.
+    readonly Dictionary<Image, Image> _slotGlow = new();
+
+    void SetSlotGlow(Image slot, Sprite sprite)
+    {
+        if (!_slotGlow.TryGetValue(slot, out var layer) || layer == null)
+        {
+            if (sprite == null) return;   // nada que enseñar: tampoco hace falta crearla
+
+            var go = new GameObject("SlotGlow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image))
+            {
+                hideFlags = HideFlags.DontSave,
+            };
+
+            var rt = (RectTransform)go.transform;
+
+            rt.SetParent(slot.transform, false);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+
+            layer = go.GetComponent<Image>();
+            layer.raycastTarget = false;
+
+            // Que se apague con su burbuja: el cañón enciende y apaga esa Image desde siete
+            // sitios y el brillo es un hijo, así que no se entera por su cuenta.
+            go.AddComponent<FollowGraphicEnabled>();
+
+            _slotGlow[slot] = layer;
+        }
+
+        if (sprite != null) layer.sprite = sprite;
+
+        var follow = layer.GetComponent<FollowGraphicEnabled>();
+
+        if (follow != null) follow.Wanted = sprite != null;
+
+        layer.enabled = sprite != null && slot.enabled;
+
+        // Al frente de su ranura, pero por DEBAJO de las capas del skin: un poder dibuja lo suyo
+        // encima del cristal, no debajo.
+        layer.transform.SetAsFirstSibling();
     }
 
     // Ese color deja de salir, para siempre en este nivel.

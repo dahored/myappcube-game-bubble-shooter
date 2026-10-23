@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 [Serializable]
 public class LevelData
@@ -60,8 +61,99 @@ public class LevelData
 public class ObjectiveData
 {
     public string type;               // "clear_all" | "rescue"
-    public string creature_id;        // id de la criatura a rescatar (solo en "rescue")
-    public List<int> creature_position; // [fila, col] donde está la criatura
+
+    // Las burbujas de rescate del nivel: dónde va cada una y con qué receta. Lista PLANA, sin
+    // agrupar por criatura: la receta ya dice qué lleva dentro, y escribirlo otra vez al lado
+    // sería poder contradecirse.
+    //
+    // El hub las agrupa solo por lo que llevan, así que tres coquíes en tres recetas distintas
+    // salen en un único hueco con un 3. Tres criaturas distintas, en tres huecos (GDD §2.2).
+    public List<CellPos> rescues;
+
+    // --- Forma vieja, de cuando el rescate era una sola criatura ---
+    //
+    // Se siguen leyendo porque están escritos en los JSON de prueba y porque el editor de niveles
+    // todavía los produce. Rescues() los normaliza, así que el resto del código no sabe por cuál
+    // de las dos formas vino.
+    public string creature_id;
+    public List<int> creature_position; // [fila, col]
+
+    // Las dos formas, resueltas en una sola lista. Vacía si este nivel no rescata nada.
+    public List<CellPos> Rescues()
+    {
+        if (rescues != null && rescues.Count > 0) return rescues;
+
+        if (creature_position == null || creature_position.Count != 2) return new List<CellPos>();
+
+        return new List<CellPos>
+        {
+            new() { row = creature_position[0], col = creature_position[1], holds = creature_id },
+        };
+    }
+}
+
+// Una burbuja de rescate puesta en el tablero.
+//
+// No hace falta que haya una entrada suya en 'bubbles': esta burbuja NO es de color, se crea
+// desde el objetivo. Escribirla en los dos sitios sería poder contradecirse.
+[Serializable]
+public class CellPos
+{
+    public int row;
+    public int col;
+
+    // Qué receta del RescueBubbleCatalog usa. Es lo normal: la receta trae qué lleva dentro, el
+    // fondo, el brillo y las capas, así que el nivel solo dice dónde va.
+    public string bubble;
+
+    // Cómo SE VE: su cuerpo es el de ese color del BubbleCatalog. Solo apariencia.
+    //
+    // Vacío no dibuja cuerpo — lo que se ve es el fondo de la receta, la criatura y el brillo.
+    public string color;
+
+    // Con quién MATCHEA. Es lo que decide cómo se juega, y va aparte del color a propósito: una
+    // criatura puede verse verde y encajar con las verdes, o verse verde y abrirse con cualquier
+    // match. Son dos preguntas distintas y mezclarlas obligaba a elegir las dos a la vez.
+    //
+    //   con match  — encaja solo con ese color, como una burbuja normal.
+    //   sin match  — la abre CUALQUIER match que ocurra a su lado, sea del color que sea.
+    //
+    // Y en los dos casos las capas son golpes: un match que la alcanza le quita una en vez de
+    // llevársela.
+    public string match;
+
+    // Qué lleva dentro, escrito a mano. Es la EXCEPCIÓN: sirve para una burbuja suelta sin
+    // receta, y escrito manda sobre la de la receta.
+    [CreatureId]
+    public string holds;
+
+    public const int MAX_LAYERS = 3;
+
+    public Vector2Int Cell => new(col, row);
+
+    public RescueBubbleCatalog.Recipe Recipe => RescueBubbleCatalog.Get(bubble);
+
+    // Los dos colores, ya parseados. Null cuando no se declaró ninguno.
+    public BubbleColor? Color() => Parse(color, "color");
+    public BubbleColor? Match() => Parse(match, "match");
+
+    static BubbleColor? Parse(string value, string campo)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+
+        try   { return BubbleColorExtensions.Parse(value); }
+        catch { Debug.LogWarning($"[LevelData] Una burbuja de rescate pide '{value}' en '{campo}' y ese color no existe: se ignora."); return null; }
+    }
+
+    // Qué lleva dentro, resuelto. En un solo sitio para que no haya dos respuestas a la misma
+    // pregunta: con la mezcla hecha en dos sitios, el tablero y el hub podrían mostrar cosas
+    // distintas de la misma celda.
+    public string Holds()
+    {
+        if (!string.IsNullOrEmpty(holds)) return holds;
+
+        return Recipe?.holds ?? "";
+    }
 }
 
 [Serializable]

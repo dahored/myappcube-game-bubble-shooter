@@ -17,7 +17,12 @@ using UnityEngine.UI;
 public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandler, IPointerEnterHandler, IPointerExitHandler,
                           IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+    [Header("La burbuja — lo que lleva CUALQUIERA")]
+    [Tooltip("El cuerpo: el sprite de color, o el de la burbuja de un poder.")]
     [SerializeField] Image bubbleImage;
+
+    [Header("Lo que lleve dentro — solo las de rescate")]
+    [Tooltip("La criatura o el objeto atrapado, animado si su entrada del catálogo trae varios cuadros.")]
     [SerializeField] Image creatureIcon;
 
     public event System.Action<BubbleView> OnTapped;
@@ -69,6 +74,29 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
     public Vector2Int    Cell       { get; private set; }
     public BubbleColor   ColorType  { get; private set; }
     public bool          IsCreature { get; private set; }
+
+    // Qué criatura encierra, si encierra alguna. Lo guarda la burbuja y no una tabla aparte
+    // porque es suyo: al reventar hay que saber a quién se liberó para sumarlo al objetivo y
+    // para tocar SU sonido, y un mapa de celda a criatura se desincroniza en cuanto el tablero
+    // se desplaza o una burbuja cae.
+    public string CreatureId { get; private set; }
+
+    // Cuántos golpes le quedan a su caparazón. Cero es "a la vista": el siguiente golpe la libera.
+    public int LayersLeft { get; private set; }
+
+    // Si además de llevar criatura TIENE color, y entonces matchea como una burbuja normal. Lo
+    // decide el nivel al colocarla, no la receta: la misma criatura puede ir suelta en un nivel y
+    // metida en una verde en otro.
+    public bool CreatureMatches { get; private set; }
+
+    bool _hasBody;
+
+    // El cuerpo se pinta aparte del color de match: la burbuja puede verse de un color y encajar
+    // con otro, o con ninguno.
+    public void SetBody(Sprite sprite)
+    {
+        if (bubbleImage != null && sprite != null) bubbleImage.sprite = sprite;
+    }
     public Booster Special    { get; private set; }
 
     // Una mina plantada ocupa su celda pero no tiene color: no encaja con nada, no cuenta como
@@ -92,6 +120,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         ColorType = color;
         if (bubbleImage) bubbleImage.sprite = sprite;
         RefreshColorSkin();
+        RefreshGlow();
 
         var rt = (RectTransform)transform;
         rt.anchoredPosition = HexGridMath.CellToLocalPos(cell);
@@ -120,10 +149,227 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         else                                  SpecialBubbleSkin.Clear(this);
     }
 
-    public void SetCreatureMarker(bool isCreature)
+    // Mete una criatura dentro de esta burbuja, con el arte que diga el catálogo. Un solo cuadro
+    // se queda quieto; varios se pasan en bucle, que es lo que distingue a un bicho vivo esperando
+    // a que lo saquen de una calcomanía pegada en el cristal.
+    public void SetCreature(string creatureId) => SetCreature(creatureId, null, false);
+
+    public void SetCreature(string creatureId, RescueBubbleCatalog.Recipe recipe) =>
+        SetCreature(creatureId, recipe, false);
+
+    // 'recipe' trae el arte de la BURBUJA —fondo, brillo y capas—; el catálogo de criaturas trae
+    // el de lo que lleva dentro. Separados a propósito: lo de dentro se define una vez y la
+    // burbuja se compone tantas veces como variantes pida el diseño de niveles.
+    // 'matches' es si encaja por color; 'body' es si tiene cuerpo que dibujar. Van separados
+    // porque son dos decisiones del nivel y ninguna implica la otra.
+    public void SetCreature(string creatureId, RescueBubbleCatalog.Recipe recipe, bool matches, bool body = false)
     {
-        IsCreature = isCreature;
-        if (creatureIcon) creatureIcon.gameObject.SetActive(isCreature);
+        CreatureMatches = matches;
+        _hasBody        = body;
+
+        IsCreature = !string.IsNullOrEmpty(creatureId);
+        CreatureId = IsCreature ? creatureId : null;
+
+        _creatureFrames = IsCreature ? CreatureCatalog.Frames(creatureId) : null;
+        _creatureFps    = IsCreature ? CreatureCatalog.Fps(creatureId)    : 0f;
+        _creatureFrame  = 0;
+        _creatureTime   = 0f;
+
+        if (creatureIcon == null) return;
+
+        bool draws = _creatureFrames != null && _creatureFrames.Length > 0;
+
+        if (draws) creatureIcon.sprite = _creatureFrames[0];
+
+        if (creatureIcon.gameObject.activeSelf != draws) creatureIcon.gameObject.SetActive(draws);
+
+        // El cuerpo se enseña si el nivel le dio uno. Es independiente del match: una criatura
+        // puede verse verde y abrirse con cualquier match, o no tener cuerpo y encajar solo con
+        // las verdes. Con cuerpo, el fondo de la receta no se usa — ya hay algo detrás.
+        if (bubbleImage != null && bubbleImage.enabled != _hasBody) bubbleImage.enabled = _hasBody;
+
+        var back = IsCreature && !_hasBody ? recipe?.background : null;
+        // El brillo es de la BURBUJA, no de lo que lleve: una de rescate lo saca de su receta y
+        // una de color del catálogo común. Vacío en los dos sitios significa que el cuerpo ya lo
+        // trae pintado, que es como están hoy los sprites.
+        BuildLayers();
+        Dress(_back, back);
+
+        _recipe = recipe;
+        RefreshGlow();
+
+        // Las capas se dibujan de dentro hacia afuera: la primera de la lista queda pegada a la
+        // criatura y la última encima de todas, que es la primera que se cae.
+        var layers = IsCreature && recipe != null ? recipe.Layers() : System.Array.Empty<Sprite>();
+
+        LayersLeft = layers.Length;
+
+        for (int i = 0; i < _shells.Length; i++)
+            Dress(_shells[i], i < layers.Length ? layers[i] : null);
+
+        if (IsCreature && !draws)
+            Debug.LogWarning($"[BubbleView] La criatura '{creatureId}' no tiene arte en CreatureCatalog ni icono genérico: la burbuja que la encierra se va a ver vacía.", this);
+    }
+
+    // Le quita una capa. Devuelve si con eso quedó a la vista, que es cuando el siguiente golpe
+    // la libera.
+    //
+    // Se rompe la de FUERA, que es la del índice más alto porque es la que se dibuja encima.
+    // 'LayersLeft - 1' es además el índice de esa capa en 'Layers()', que es con lo que quien
+    // llame busca su sonido.
+    public bool BreakLayer()
+    {
+        if (LayersLeft <= 0) return true;
+
+        int outer = LayersLeft - 1;
+
+        if (_shells != null && outer < _shells.Length && _shells[outer] != null)
+            StartCoroutine(ShatterLayer(_shells[outer]));
+
+        LayersLeft--;
+        return LayersLeft <= 0;
+    }
+
+    // La capa se va creciendo y desvaneciéndose: encogerse se lee como que se guarda, y lo que
+    // tiene que leerse es que se rompió.
+    IEnumerator ShatterLayer(Image layer)
+    {
+        const float TIME = 0.25f;
+
+        var rt = (RectTransform)layer.transform;
+
+        for (float t = 0f; t < TIME; t += Time.deltaTime)
+        {
+            float p = Mathf.Clamp01(t / TIME);
+
+            rt.localScale = Vector3.one * (1f + 0.35f * p);
+            layer.color   = new Color(1f, 1f, 1f, 1f - p);
+            yield return null;
+        }
+
+        rt.localScale = Vector3.one;
+        layer.color   = Color.white;
+
+        layer.gameObject.SetActive(false);
+    }
+
+    // Las capas se CREAN acá y no se piden en el Inspector: su arte ya sale del catálogo, así
+    // que pedir además el hueco sería cablear a mano algo que el código puede montar solo — y
+    // cinco huecos por prefab son cinco sitios donde olvidarse (pedido de Diego).
+    //
+    // Mismo criterio que SpecialBubbleSkin con las suyas: hideFlags para que no se serialicen
+    // dentro del prefab, estiradas al host, y sin recibir toques.
+    Image   _back;
+    Image   _glow;
+    Image[] _shells;
+
+    void FadeRescueLayers(float alpha)
+    {
+        var tint = new Color(1f, 1f, 1f, alpha);
+
+        if (creatureIcon) creatureIcon.color = tint;
+        if (_back)        _back.color        = tint;
+        if (_glow)        _glow.color        = tint;
+
+        if (_shells == null) return;
+
+        foreach (var shell in _shells) if (shell) shell.color = tint;
+    }
+
+    RescueBubbleCatalog.Recipe _recipe;
+
+    Image MakeLayer(string label)
+    {
+        var go = new GameObject(label, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image))
+        {
+            hideFlags = HideFlags.DontSave,
+        };
+
+        var rt = (RectTransform)go.transform;
+
+        rt.SetParent(transform, false);
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+
+        var image = go.GetComponent<Image>();
+
+        image.raycastTarget = false;   // el toque tiene que llegar a la burbuja, no a su brillo
+        image.enabled       = false;
+
+        return image;
+    }
+
+    // El orden de dibujo es el de la jerarquía, así que se reafirma cada vez que se montan: el
+    // fondo justo detrás de la criatura, el brillo encima de ella, y las capas sobre el brillo.
+    void BuildLayers()
+    {
+        if (_glow != null) return;
+
+        _back = MakeLayer("BubbleBack");
+
+        if (creatureIcon != null) _back.transform.SetSiblingIndex(creatureIcon.transform.GetSiblingIndex());
+
+        if (creatureIcon != null) creatureIcon.transform.SetAsLastSibling();
+
+        _glow   = MakeLayer("BubbleGlow");
+        _shells = new[] { MakeLayer("BubbleShell1"), MakeLayer("BubbleShell2"), MakeLayer("BubbleShell3") };
+    }
+
+    // El brillo es de la BURBUJA, no de lo que lleve dentro: una de rescate lo saca de su receta
+    // y una de color del catálogo común.
+    //
+    // Se refresca desde Setup y no solo al meterle criatura: una burbuja de color NO pasa por
+    // SetCreature nunca, así que metido ahí dentro el brillo solo lo veían las de rescate y el
+    // tablero entero salía plano (reportado por Diego).
+    //
+    // Vacío significa que el cuerpo ya lo trae pintado, que es como estaban los sprites antes de
+    // exportarlos planos — por eso no se avisa de que falte.
+    void RefreshGlow()
+    {
+        BuildLayers();
+
+        Dress(_glow, IsCreature ? RescueBubbleCatalog.Glow(_recipe) : BubbleCatalog.Glow);
+    }
+
+    // Pone el sprite y enciende o apaga la capa. Sin sprite no hay capa: una encendida con la
+    // imagen de la burbuja anterior es peor que ninguna.
+    //
+    // Se enciende y apaga el COMPONENTE y no el objeto: estas capas las crea el código en el
+    // primer Setup y apagar el objeto impediría que una corrutina suya terminara.
+    static void Dress(Image layer, Sprite sprite)
+    {
+        if (layer == null) return;
+
+        if (sprite != null) layer.sprite = sprite;
+
+        layer.enabled = sprite != null;
+    }
+
+    Sprite[] _creatureFrames;
+    float    _creatureFps;
+    int      _creatureFrame;
+    float    _creatureTime;
+
+    void Update()
+    {
+        if (_creatureFrames == null || _creatureFrames.Length < 2 || _creatureFps <= 0f) return;
+        if (creatureIcon == null || !creatureIcon.gameObject.activeSelf) return;
+
+        _creatureTime += Time.deltaTime;
+
+        float step = 1f / _creatureFps;
+
+        // Se descuenta en vez de ponerlo a cero: con un fps alto y un frame largo pueden tocar
+        // dos pasos de una, y reiniciando se perdería uno y la animación iría más lenta de lo
+        // que dice el catálogo.
+        while (_creatureTime >= step)
+        {
+            _creatureTime -= step;
+            _creatureFrame = (_creatureFrame + 1) % _creatureFrames.Length;
+        }
+
+        creatureIcon.sprite = _creatureFrames[_creatureFrame];
     }
 
     // delay: para que el match no explote todo junto — GameplayController le pasa un
@@ -256,6 +502,11 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
             transform.localScale = baseScale * (1f + 0.3f * p);
             if (bubbleImage) bubbleImage.color = new Color(1f, 1f, 1f, 1f - p);
             if (Special != Booster.None) SpecialBubbleSkin.SetAlpha(this, 1f - p);
+
+            // Y lo que la burbuja de rescate lleve encima. Sin esto, la que entra en un match
+            // reventaba el cuerpo y dejaba al bicho y su cristal plantados hasta que el objeto se
+            // destruía, en vez de estallar entera (reportado por Diego).
+            FadeRescueLayers(1f - p);
             yield return null;
         }
         Destroy(gameObject);
