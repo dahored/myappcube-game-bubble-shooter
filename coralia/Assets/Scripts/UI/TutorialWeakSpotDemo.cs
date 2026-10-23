@@ -18,8 +18,8 @@ using UnityEngine.UI;
 // BoosterRules, así que qué se lleva cada toque lo decide el MISMO código que en una partida.
 public class TutorialWeakSpotDemo : MonoBehaviour, IBoardView
 {
-    [Tooltip("Sprites de burbuja de colores DISTINTOS, cuatro o más. Con menos, la pareja y la burbuja sola acaban compartiendo color y el poder parece hacer otra cosa.")]
-    [SerializeField] Sprite[] bubbleSprites;
+    [Tooltip("Los colores con los que se dibuja esta demostración, elegidos de los que el juego ya tiene. El arte sale del BubbleCatalog: así una burbuja del tutorial no puede verse distinta de la del tablero, y cambiar el arte de un color lo cambia en los dos sitios.")]
+    [SerializeField] BubbleColor[] bubbleColors = { BubbleColor.Blue, BubbleColor.Red, BubbleColor.Yellow };
 
     [Tooltip("La mano que señala. La misma que usan los demás tutoriales: conviene que sea la misma para que el gesto se reconozca de uno al otro.")]
     [SerializeField] Sprite handSprite;
@@ -66,6 +66,20 @@ public class TutorialWeakSpotDemo : MonoBehaviour, IBoardView
     float         _builtFor;
     int           _target;   // a cuál de los dos le toca esta vuelta
 
+
+    // El sprite de uno de los colores de arriba. El módulo vive acá y no en cada llamada: con
+    // diez demostraciones pidiéndolo, el que se olvide revienta con un índice fuera de rango.
+    Sprite SpriteAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? BubbleCatalog.Sprite(bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length])
+            : null;
+
+    // Y el color en sí, para lo que necesite saberlo y no solo dibujarlo.
+    BubbleColor ColorAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length]
+            : BubbleColor.Red;
+
     void OnEnable()
     {
         if (!Ready()) return;
@@ -81,9 +95,9 @@ public class TutorialWeakSpotDemo : MonoBehaviour, IBoardView
 
     bool Ready()
     {
-        if (bubbleSprites != null && bubbleSprites.Length >= 4 && handSprite != null) return true;
+        if (bubbleColors != null && bubbleColors.Length >= 4 && handSprite != null) return true;
 
-        Debug.LogWarning($"[TutorialWeakSpotDemo] '{name}' necesita al menos cuatro sprites de burbuja de colores distintos y el de la mano: sin eso no hay nada que mostrar.", this);
+        Debug.LogWarning($"[TutorialWeakSpotDemo] '{name}' necesita al menos cuatro colores de burbuja distintos en 'Bubble Colors' y el de la mano: sin eso no hay nada que mostrar.", this);
         return false;
     }
 
@@ -97,10 +111,10 @@ public class TutorialWeakSpotDemo : MonoBehaviour, IBoardView
 
         if (!_colors.TryGetValue(cell, out int index)) return false;
 
-        // Los índices de sprite se leen como colores del juego para que LinksWith —que es lo que
-        // agrupa de verdad— tenga algo con qué comparar. Rainbow queda fuera: acá no hay comodín
-        // y uno por accidente conectaría el tablero entero.
-        color = (BubbleColor)(index % (int)BubbleColor.Rainbow);
+        // Ahora el color es el de verdad, el mismo que el nivel escribiría en su JSON: antes acá
+        // se colaba el índice del sprite disfrazado de color, y dos azules en huecos distintos del
+        // array se leían como colores distintos.
+        color = ColorAt(index);
         return true;
     }
 
@@ -152,7 +166,7 @@ public class TutorialWeakSpotDemo : MonoBehaviour, IBoardView
 
     void Place(Vector2Int cell, int color, float size)
     {
-        var bubble = Spawn($"Bubble{cell.x}_{cell.y}", bubbleSprites[color % bubbleSprites.Length], size);
+        var bubble = BubbleGlow.AddTo(Spawn($"Bubble{cell.x}_{cell.y}", SpriteAt(color), size));
 
         ((RectTransform)bubble.transform).anchoredPosition = CellPos(cell);
 

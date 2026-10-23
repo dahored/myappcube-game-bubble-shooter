@@ -16,8 +16,8 @@ using UnityEngine.UI;
 // que cambie el tamaño del panel.
 public class TutorialRainbowDemo : MonoBehaviour
 {
-    [Tooltip("Sprites de burbuja de colores DISTINTOS, tres o más. Los dos primeros forman las dos parejas con las que estalla la perla; el tercero rellena y hace de contraste.")]
-    [SerializeField] Sprite[] bubbleSprites;
+    [Tooltip("Los colores con los que se dibuja esta demostración, elegidos de los que el juego ya tiene. El arte sale del BubbleCatalog: así una burbuja del tutorial no puede verse distinta de la del tablero, y cambiar el arte de un color lo cambia en los dos sitios.")]
+    [SerializeField] BubbleColor[] bubbleColors = { BubbleColor.Blue, BubbleColor.Red, BubbleColor.Yellow };
 
     [Tooltip("La mano que apunta. La misma que usan los otros tutoriales, para que el gesto se reconozca.")]
     [SerializeField] Sprite handSprite;
@@ -50,7 +50,7 @@ public class TutorialRainbowDemo : MonoBehaviour
     // (4,0)+(5,0), y cada hueco de abajo toca exactamente a una de ellas: en una fila impar los
     // vecinos de arriba de (x,1) son (x,0) y (x+1,0).
     static readonly Vector2Int[] ROW_CELLS = { new(1, 0), new(2, 0), new(3, 0), new(4, 0), new(5, 0) };
-    static readonly int[]        ROW       = { 2, 0, 0, 1, 1 };   // índices en bubbleSprites
+    static readonly int[]        ROW       = { 2, 0, 0, 1, 1 };   // índices en bubbleColors
     static readonly Vector2Int[] TARGETS   = { new(2, 1), new(4, 1) };
     static readonly int[][]      POPS      = { new[] { 1, 2 }, new[] { 3, 4 } };   // qué dos estallan con cada objetivo
 
@@ -73,6 +73,20 @@ public class TutorialRainbowDemo : MonoBehaviour
     // con la del tablero es enseñar mal.
     static Sprite PearlSprite => BoosterRules.BubbleSpriteFor(Booster.Rainbow);
 
+
+    // El sprite de uno de los colores de arriba. El módulo vive acá y no en cada llamada: con
+    // diez demostraciones pidiéndolo, el que se olvide revienta con un índice fuera de rango.
+    Sprite SpriteAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? BubbleCatalog.Sprite(bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length])
+            : null;
+
+    // Y el color en sí, para lo que necesite saberlo y no solo dibujarlo.
+    BubbleColor ColorAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length]
+            : BubbleColor.Red;
+
     void OnEnable()
     {
         if (!Ready()) return;
@@ -88,9 +102,9 @@ public class TutorialRainbowDemo : MonoBehaviour
 
     bool Ready()
     {
-        if (bubbleSprites != null && bubbleSprites.Length >= 3 && PearlSprite != null && handSprite != null) return true;
+        if (bubbleColors != null && bubbleColors.Length >= 3 && PearlSprite != null && handSprite != null) return true;
 
-        Debug.LogWarning($"[TutorialRainbowDemo] '{name}' necesita tres sprites de burbuja de colores distintos, el de la mano, y que BoosterCatalog tenga el arte de la perla: sin eso no hay nada que mostrar.", this);
+        Debug.LogWarning($"[TutorialRainbowDemo] '{name}' necesita tres colores de burbuja distintos en 'Bubble Colors', el de la mano, y que BoosterCatalog tenga el arte de la perla: sin eso no hay nada que mostrar.", this);
         return false;
     }
 
@@ -144,7 +158,7 @@ public class TutorialRainbowDemo : MonoBehaviour
 
         for (int i = 0; i < ROW.Length; i++)
         {
-            var bubble = Spawn($"Bubble{i}", bubbleSprites[ROW[i] % bubbleSprites.Length], size);
+            var bubble = BubbleGlow.AddTo(Spawn($"Bubble{i}", SpriteAt(ROW[i]), size));
             Place(bubble, CellPos(ROW_CELLS[i]));
             _row.Add(bubble);
         }

@@ -14,8 +14,8 @@ using UnityEngine.UI;
 // compuesta a mano habría que realinearla cada vez que cambie el tamaño del panel.
 public class TutorialSwapDemo : MonoBehaviour
 {
-    [Tooltip("Dos sprites de burbuja de colores distintos. El PRIMERO es el que hace match (el que espera en la cola); el segundo es el que arranca en la recámara y no sirve.")]
-    [SerializeField] Sprite[] bubbleSprites;
+    [Tooltip("Los colores con los que se dibuja esta demostración, elegidos de los que el juego ya tiene. El arte sale del BubbleCatalog: así una burbuja del tutorial no puede verse distinta de la del tablero, y cambiar el arte de un color lo cambia en los dos sitios.")]
+    [SerializeField] BubbleColor[] bubbleColors = { BubbleColor.Blue, BubbleColor.Red, BubbleColor.Yellow };
 
     [Tooltip("La mano que toca. La misma que usan los otros tutoriales, para que el gesto se reconozca.")]
     [SerializeField] Sprite handSprite;
@@ -68,6 +68,20 @@ public class TutorialSwapDemo : MonoBehaviour
     Coroutine     _loop;
     float         _builtFor;
 
+
+    // El sprite de uno de los colores de arriba. El módulo vive acá y no en cada llamada: con
+    // diez demostraciones pidiéndolo, el que se olvide revienta con un índice fuera de rango.
+    Sprite SpriteAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? BubbleCatalog.Sprite(bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length])
+            : null;
+
+    // Y el color en sí, para lo que necesite saberlo y no solo dibujarlo.
+    BubbleColor ColorAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length]
+            : BubbleColor.Red;
+
     void OnEnable()
     {
         if (!Ready()) return;
@@ -83,9 +97,9 @@ public class TutorialSwapDemo : MonoBehaviour
 
     bool Ready()
     {
-        if (bubbleSprites != null && bubbleSprites.Length >= 2 && handSprite != null) return true;
+        if (bubbleColors != null && bubbleColors.Length >= 2 && handSprite != null) return true;
 
-        Debug.LogWarning($"[TutorialSwapDemo] '{name}' necesita dos sprites de burbuja de colores distintos y uno de mano: sin eso no hay nada que mostrar.", this);
+        Debug.LogWarning($"[TutorialSwapDemo] '{name}' necesita dos colores de burbuja distintos en 'Bubble Colors' y uno de mano: sin eso no hay nada que mostrar.", this);
         return false;
     }
 
@@ -129,20 +143,20 @@ public class TutorialSwapDemo : MonoBehaviour
         // La línea primero, para que quede detrás: en UGUI el orden de dibujo es el de la jerarquía.
         for (int i = 0; i < dots; i++)
         {
-            var dot = Spawn("Dot", dotSprite != null ? dotSprite : bubbleSprites[0], size * dotSize);
+            var dot = Spawn("Dot", dotSprite != null ? dotSprite : SpriteAt(0), size * dotSize);
             dot.color = dotColor;
             _trail.Add(dot);
         }
 
         for (int i = 0; i < ROW.Length; i++)
         {
-            var bubble = Spawn($"Bubble{i}", bubbleSprites[ROW[i] % bubbleSprites.Length], size);
+            var bubble = BubbleGlow.AddTo(Spawn($"Bubble{i}", SpriteAt(ROW[i]), size));
             Place(bubble, CellPos(ROW_CELLS[i]));
             _row.Add(bubble);
         }
 
-        _shot   = Spawn("Loaded", bubbleSprites[1 % bubbleSprites.Length], size);
-        _queued = Spawn("Queued", bubbleSprites[0], size * nextScale);
+        _shot   = BubbleGlow.AddTo(Spawn("Loaded", SpriteAt(1), size));
+        _queued = BubbleGlow.AddTo(Spawn("Queued", SpriteAt(0), size * nextScale));
         _hand   = Spawn("Hand", handSprite, size * 1.5f);
     }
 
@@ -232,14 +246,14 @@ public class TutorialSwapDemo : MonoBehaviour
         // detalle. El que sirve espera en la cola.
         _shot.enabled = true;
         _shot.color   = Color.white;
-        _shot.sprite  = bubbleSprites[1 % bubbleSprites.Length];
+        _shot.sprite  = SpriteAt(1);
         _shot.transform.localScale = Vector3.one;
         Size(_shot, size);
         Place(_shot, CannonPos());
 
         _queued.enabled = true;
         _queued.color   = Color.white;
-        _queued.sprite  = bubbleSprites[0];
+        _queued.sprite  = SpriteAt(0);
         Size(_queued, size * nextScale);
         Place(_queued, QueuePos());
 
