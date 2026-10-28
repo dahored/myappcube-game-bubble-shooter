@@ -202,6 +202,10 @@ public class GameplayController : MonoBehaviour
 
         int levelId = PlayerPrefs.GetInt("selected_level", 1);
         _level = LevelLoader.LoadById(levelId);
+
+        // Una tirada por partida. Lo que decide es a cuál de las burbujas igual de solas van las
+        // hijas de la Madre: sin esto, repetir el nivel las mandaba siempre al mismo sitio.
+        BoosterRules.Variety = Random.Range(1, int.MaxValue);
         if (_level == null)
         {
             Debug.LogError($"[GameplayController] No se encontró el nivel {levelId}");
@@ -2257,6 +2261,11 @@ public class GameplayController : MonoBehaviour
         // zoom es de 1 a 1,2 y en un icono de 90 píxeles eso no se nota (reportado por Diego).
         rt.localScale = Vector3.one * RESCUE_POP_FROM;
 
+        // Lo vivo tiembla y lo de piedra no. Sale de en qué lista del catálogo esté: una perla
+        // o un cofre moviéndose como gelatina se leen como de goma, y un caracol que sube tieso
+        // parece un icono y no un bicho al que acaban de soltar.
+        bool jelly = CreatureCatalog.Creature(creatureId);
+
         float time  = rescueFlight > 0f ? rescueFlight : DEFAULT_RESCUE_FLIGHT;
         float trail = rescueTrail  > 0f ? rescueTrail  : DEFAULT_RESCUE_TRAIL;
         float spark = 0f;
@@ -2265,7 +2274,11 @@ public class GameplayController : MonoBehaviour
         // reventó" de "esto de dentro se soltó" — saliendo disparado en el mismo frame, las dos
         // cosas se leen como una sola y no se ve qué se rescató.
         yield return Swell(rt, RESCUE_POP_TIME, RESCUE_POP_SCALE);
-        yield return new WaitForSeconds(RESCUE_POP_HOLD);
+
+        // Y donde lo de piedra se queda quieto un instante, lo vivo rebota. Es el mismo hueco de
+        // tiempo: el rebote no retrasa la salida, solo la llena.
+        if (jelly) yield return Wobble(rt, RESCUE_POP_HOLD + JELLY_EXTRA, RESCUE_POP_SCALE);
+        else       yield return new WaitForSeconds(RESCUE_POP_HOLD);
 
         var mid = ControlPoint(from, to, fromWorld);
 
@@ -2279,7 +2292,12 @@ public class GameplayController : MonoBehaviour
 
             // Del tamaño del golpe al del hueco del hub: el zoom se gasta POR EL CAMINO, así que
             // lo que llega arriba ya tiene el tamaño del icono y no da un salto al aterrizar.
-            rt.localScale = Vector3.one * Mathf.Lerp(RESCUE_POP_SCALE, 0.55f, p);
+            float grow = Mathf.Lerp(RESCUE_POP_SCALE, 0.55f, p);
+
+            // El temblor va MULTIPLICANDO ese tamaño, no sustituyéndolo: así el bicho sigue
+            // encogiendo hacia el hueco del hub mientras tiembla, en vez de quedarse clavado.
+            rt.localScale = jelly ? Vector3.one * grow + Jelly.Pulse(t, JELLY_FLY) * grow
+                                  : Vector3.one * grow;
 
             if ((spark += Time.deltaTime) >= trail)
             {
@@ -2474,6 +2492,12 @@ public class GameplayController : MonoBehaviour
     const float RESCUE_POP_TIME  = 0.28f;
     const float RESCUE_POP_SCALE = 1.2f;
     const float RESCUE_POP_HOLD  = 0.12f;
+
+    // La gelatina: cuánto se deforma al salir y cuánto por el camino, y lo que se alarga la
+    // espera de salida para que el rebote quepa. El ritmo y la amortiguación están en 'Jelly'.
+    const float JELLY_POP   = 0.22f;
+    const float JELLY_FLY   = 0.10f;
+    const float JELLY_EXTRA = 0.25f;
 
     // Cuántos descuentos hay agendados y todavía sin ocurrir. Es lo que convierte el número de
     // pantalla en algo DERIVADO del tablero en vez de una cuenta paralela.
@@ -2681,6 +2705,21 @@ public class GameplayController : MonoBehaviour
 
     // Crece o vuelve, sin rebote: la vista previa tiene que leerse como un estado —"estas se van
     // a ir"— y un gesto con rebote se lee como que algo ya pasó.
+    // El rebote en el sitio, alrededor de un tamaño fijo. La fórmula está en 'Jelly', compartida
+    // con la burbuja: el bicho que tiembla esperando y el que tiembla al salir son el mismo.
+    static IEnumerator Wobble(RectTransform target, float time, float around)
+    {
+        for (float t = 0f; t < time; t += Time.deltaTime)
+        {
+            if (target == null) yield break;
+
+            target.localScale = Vector3.one * around + Jelly.Pulse(t, JELLY_POP) * around;
+            yield return null;
+        }
+
+        if (target != null) target.localScale = Vector3.one * around;
+    }
+
     static IEnumerator Swell(RectTransform target, float time, float to)
     {
         if (target == null) yield break;
@@ -3079,6 +3118,13 @@ public class GameplayController : MonoBehaviour
         int firstTraveler = hit.Count - BoosterRules.TravelersOf(booster);
         int sent          = 0;
 
+        // Lo que cada hija se lleva DE PROPINA al caer: las de su color que estuvieran pegadas a
+        // su objetivo. Se apunta acá y se resuelve después del bucle porque hay que mirarlo con
+        // el tablero tal como está en ese momento —las hijas van al final de la lista, así que
+        // para entonces el racimo del impacto ya salió— y reventarlo dentro cambiaría lo que el
+        // propio bucle va a encontrar.
+        var alongside = new List<(Vector2Int cell, float at)>();
+
         for (int i = 0; i < hit.Count; i++)
         {
             var cell = hit[i];
@@ -3104,6 +3150,25 @@ public class GameplayController : MonoBehaviour
                                      HexGridMath.CellToLocalPos(hit[0]),
                                      HexGridMath.CellToLocalPos(cell),
                                      sprite, travel, sent++);
+
+                // Y el racimo de ese objetivo, si lo tiene. Empieza cuando la hija aterriza, no
+                // al disparar el poder: lo que se lleva el grupo es ella al caer, y adelantarlo
+                // se vería como burbujas desapareciendo solas al otro lado del tablero.
+                if (BoosterRules.ChildrenMatch(booster))
+                {
+                    // 'FindConnectedSameColor' sale en anchura desde el objetivo, así que la
+                    // lista ya viene ordenada de la más cercana a la más lejana. Eso es lo que
+                    // hace que el racimo reviente EN CADENA, igual que un match disparado, en vez
+                    // de desaparecer de golpe (pedido de Diego).
+                    var friends  = grid.FindConnectedSameColor(cell);
+                    float chain  = ChainStep(friends.Count, POP_CHAIN_DELAY);
+                    int   link   = 1;
+
+                    if (friends.Count >= BoosterRules.CHILD_MIN_MATCH)
+                        foreach (var friend in friends)
+                            if (friend != cell && !removed.Contains(friend) && !hit.Contains(friend))
+                                alongside.Add((friend, at + link++ * chain));
+                }
             }
 
             if (grid.TryGetBubble(cell, out var view))
@@ -3141,6 +3206,23 @@ public class GameplayController : MonoBehaviour
 
             TravelingBubble.Send((RectTransform)grid.transform, HexGridMath.CellToLocalPos(hit[0]), away, spare, travel, extra);
             StartCoroutine(PopInOpenWater(away, travel.TotalFor(extra), art));
+        }
+
+        // Y ahora sí lo que las hijas se llevaron de propina. Fuera del bucle de arriba para no
+        // modificar el tablero mientras ese lo recorre.
+        foreach (var (cell, at) in alongside)
+        {
+            if (!removed.Add(cell)) continue;   // dos hijas pueden rozar el mismo racimo
+
+            if (grid.TryGetBubble(cell, out var view)) view.PlayPopAnimation(at, popClip);
+
+            grid.SpawnScorePopup(cell, popValue, at, ScorePopup.POP_LIFETIME);
+            grid.RemoveBubble(cell);
+
+            _poppedAt[cell] = at;
+
+            _bubblesPopped++;
+            _popScore += popValue;
         }
 
         _bubblesPopped += hit.Count;

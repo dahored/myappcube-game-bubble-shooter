@@ -25,4 +25,4 @@ MonoBehaviour:
     layer3: {fileID: 0}
     layer3Clip: {fileID: 0}
   sharedGlow: {fileID: 1505006969088389832, guid: 80daac24c790b47e09242751639cec7c, type: 3}
-  sharedBurstClip: {fileID: 8300000, guid: eb509b35c7f9442b58256776ea9bae06, type: 3}
+  sharedBurstClip: {fileID: 8300000, guid: 063342297e45e4c4b8d33ef0395ba2c0, type: 3}

@@ -288,6 +288,12 @@ public class SpecialBubbleSkin : MonoBehaviour
         // Se reinicia en cada Apply: una burbuja que vuelve a ser especial arranca derecha, no
         // en el ángulo donde quedó la anterior que usó este mismo objeto.
         if (skin._back) skin._back.transform.localRotation = Quaternion.identity;
+
+        // Y el brillo del cristal, lo ÚLTIMO de todo, siempre. Las capas de más arriba se suben
+        // al final cada una por su cuenta, pero 'Layer' reusa la que ya existe sin volver a
+        // subirla: a partir del segundo Apply la órbita quedaba por encima del reflejo y el
+        // brillo de la burbuja grande se veía detrás de las tres de dentro (reportado por Diego).
+        if (skin._glow) skin._glow.transform.SetAsLastSibling();
     }
 
     public static void Clear(Component host)
@@ -814,6 +820,14 @@ public class SpecialBubbleSkin : MonoBehaviour
                 _orbit[i] = go.GetComponent<Image>();
                 _orbit[i].raycastTarget  = false;
                 _orbit[i].preserveAspect = true;
+
+                // Y el mismo brillo que cualquier burbuja del tablero. Los sprites que van acá
+                // son los cuerpos PLANOS, así que sin esto las tres de dentro salían mates
+                // mientras la que las lleva brillaba (reportado por Diego).
+                //
+                // Se añade solo al crearla: las hijas se reusan entre Apply y Apply, y repetirlo
+                // iría apilando un cristal encima de otro cada vez que el cañón carga.
+                BubbleGlow.AddTo(_orbit[i]);
             }
 
             _orbit[i].sprite = _orbitCfg.sprites[i];

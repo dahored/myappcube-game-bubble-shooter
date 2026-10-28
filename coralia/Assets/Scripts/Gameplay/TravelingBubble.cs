@@ -126,6 +126,11 @@ public class TravelingBubble : MonoBehaviour
         image.raycastTarget  = false;
         image.preserveAspect = true;
 
+        // El mismo brillo que las del tablero. El sprite que llega acá es el cuerpo PLANO, así
+        // que sin esto la hija que la Madre manda a su objetivo cruzaba el tablero mate mientras
+        // todo lo demás brillaba (reportado por Diego).
+        BubbleGlow.AddTo(image);
+
         go.AddComponent<TravelingBubble>().Init(from, to, s, index, extraDelay, stickTo);
 
         return image;

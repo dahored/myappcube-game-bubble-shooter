@@ -170,6 +170,14 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         IsCreature = !string.IsNullOrEmpty(creatureId);
         CreatureId = IsCreature ? creatureId : null;
 
+        // Lo vivo respira dentro de su burbuja; un cofre no. Sale de en qué lista del catálogo
+        // esté puesto, igual que el rebote de cuando sale.
+        _breathes = IsCreature && CreatureCatalog.Creature(creatureId);
+
+        // Cada una arranca su respiración por un sitio. Empezando todas a la vez, un tablero con
+        // tres bichos los tendría latiendo al unísono, que se lee como un efecto y no como vida.
+        _breathTime = Random.Range(0f, 10f);
+
         _creatureFrames = IsCreature ? CreatureCatalog.Frames(creatureId) : null;
         _creatureFps    = IsCreature ? CreatureCatalog.Fps(creatureId)    : 0f;
         _creatureFrame  = 0;
@@ -350,11 +358,28 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
     float    _creatureFps;
     int      _creatureFrame;
     float    _creatureTime;
+    bool     _breathes;
+    float    _breathTime;
+
+    // Cuánto se deforma al respirar. Muy poco a propósito: tiene que notarse que está vivo sin
+    // que parezca que se está retorciendo.
+    const float BREATH = 0.06f;
 
     void Update()
     {
-        if (_creatureFrames == null || _creatureFrames.Length < 2 || _creatureFps <= 0f) return;
         if (creatureIcon == null || !creatureIcon.gameObject.activeSelf) return;
+
+        // La respiración va ANTES del avance de cuadros y fuera de su condición: un bicho de un
+        // solo sprite —que es como van a estar casi todos— se quedaría tieso si dependiera de
+        // tener animación, y es justo el que más la necesita.
+        if (_breathes)
+        {
+            _breathTime += Time.deltaTime;
+
+            creatureIcon.rectTransform.localScale = Vector3.one + Jelly.Idle(_breathTime, BREATH);
+        }
+
+        if (_creatureFrames == null || _creatureFrames.Length < 2 || _creatureFps <= 0f) return;
 
         _creatureTime += Time.deltaTime;
 

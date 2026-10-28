@@ -584,6 +584,29 @@ public static class BoosterRules
             return a.cell.y != b.cell.y ? a.cell.y.CompareTo(b.cell.y) : a.cell.x.CompareTo(b.cell.x);
         });
 
+        // Entre las que están IGUAL DE SOLAS se sortea, en vez de coger siempre la primera. El
+        // orden de arriba es estricto y repetible, y eso hacía que dos partidas del mismo nivel
+        // mandaran las hijas exactamente al mismo sitio (reportado por Diego). El criterio no
+        // cambia —siguen yendo a lo más suelto—, lo que cambia es cuál de las empatadas toca.
+        //
+        // La semilla incluye la celda tocada y cuántas burbujas quedan, así que dos Madres
+        // distintas en la misma partida tampoco repiten entre sí.
+        if (ranked.Count > 1)
+        {
+            int best = ranked[0].friends;
+            int pool = 0;
+
+            while (pool < ranked.Count && ranked[pool].friends <= best + MOTHER_SLACK) pool++;
+
+            var dice = new System.Random(Variety ^ (struck.x * 73856093) ^ (struck.y * 19349663) ^ standing.Count);
+
+            for (int i = pool - 1; i > 0; i--)
+            {
+                int j = dice.Next(i + 1);
+                (ranked[i], ranked[j]) = (ranked[j], ranked[i]);
+            }
+        }
+
         // Se cuentan las ELEGIDAS, no el tamaño de la lista: con el racimo dentro, 'result' ya
         // pasa de dos antes de empezar y las hijas no salían nunca.
         var chosen = new List<Vector2Int>();
@@ -614,6 +637,19 @@ public static class BoosterRules
     // A cuántos diámetros de burbuja tienen que estar los objetivos entre sí. Dos y pico es lo
     // justo para que no compartan vecinos: por debajo, reventar uno ya deja al otro suelto.
     const float MOTHER_SPREAD = 2.5f;
+
+    // Cuánta compañía de más se le admite a una candidata para seguir entrando en el sorteo. En
+    // UNO: las que están igual de solas que la mejor, y las que tienen un amigo más. Subiéndolo,
+    // el poder empieza a gastar hijas en montones que el jugador ya sabe resolver.
+    const int MOTHER_SLACK = 1;
+
+    // La partida. Se sortea al cargar el nivel y no cambia hasta el siguiente, y es lo que hace
+    // que la Madre elija distinto en cada intento del MISMO nivel (reportado por Diego).
+    //
+    // Es una semilla y no un Random suelto porque la elección tiene que ser repetible DENTRO de
+    // una partida: la mira y la explosión son dos llamadas distintas, y con azar de verdad la
+    // previsualización señalaría unas burbujas y reventarían otras.
+    public static int Variety { get; set; }
 
     static bool FarFromAll(Vector2Int cell, List<Vector2Int> chosen, float spread)
     {
@@ -688,6 +724,17 @@ public static class BoosterRules
     // varias burbujas, y por distancia a secas le habría salido una hija a la otra punta de su
     // propio racimo.
     public static int TravelersOf(Booster booster) => booster == Booster.Mother ? MOTHER_TARGETS : 0;
+
+    // Una hija que cae no solo revienta a la que fue a buscar: se lleva también a las de su color
+    // que estuvieran pegadas a ella, como un match. Es lo que convierte a la Madre en algo más
+    // que dos burbujas por el precio de una bomba (pedido de Diego).
+    //
+    // Con DOS basta, no tres. El tercero del match es la propia hija, que llega de ese color: lo
+    // que el jugador ve es una burbuja que aterriza y cierra el grupo, y pedirle tres ya puestas
+    // sería pedirle un match que se habría hecho solo.
+    public const int CHILD_MIN_MATCH = 2;
+
+    public static bool ChildrenMatch(Booster booster) => booster == Booster.Mother;
 
     // Cuántos vecinos de su mismo color tiene. Es la medida de "qué tan sola está": cero vecinos
     // es una burbuja que no se puede juntar con nada desde donde está. Aquí sí vale LinksWith —
