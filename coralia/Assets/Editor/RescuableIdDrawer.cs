@@ -1,18 +1,18 @@
 using UnityEditor;
 using UnityEngine;
 
-// Dibuja un campo marcado con [CreatureId] como un desplegable con lo que haya en el
-// CreatureCatalog, separado en criaturas y objetos.
+// Dibuja un campo marcado con [RescuableId] como un desplegable con lo que haya en los dos
+// catálogos, separado en criaturas y objetos.
 //
 // Existe porque escribirlo a mano no falla al guardar: falla en partida, con la criatura saliendo
 // genérica y sin que nada diga por qué. Un dedazo en "coqui" es invisible hasta que alguien juega
 // ese nivel.
 //
-// Lo que ya esté escrito y no exista en el catálogo NO se borra: se enseña marcado para que se
-// vea que sobra, pero tirarlo convertiría un id que quizá solo falta por crear en una pérdida
-// silenciosa.
-[CustomPropertyDrawer(typeof(CreatureIdAttribute))]
-public class CreatureIdDrawer : PropertyDrawer
+// Lo que ya esté escrito y no exista en ninguno de los dos NO se borra: se enseña marcado para
+// que se vea que sobra, pero tirarlo convertiría un id que quizá solo falta por crear en una
+// pérdida silenciosa.
+[CustomPropertyDrawer(typeof(RescuableIdAttribute))]
+public class RescuableIdDrawer : PropertyDrawer
 {
     const string NONE = "(ninguno)";
 
@@ -24,12 +24,13 @@ public class CreatureIdDrawer : PropertyDrawer
             return;
         }
 
-        var catalog = CreatureCatalog.Instance;
+        string[] creatures = Rescuable.CreatureIds;
+        string[] objects   = Rescuable.ObjectIds;
 
-        if (catalog == null)
+        if (creatures.Length == 0 && objects.Length == 0)
         {
-            // Sin catálogo se deja el campo de texto: mejor poder escribirlo que quedarse sin
-            // forma de rellenarlo hasta que el asset exista.
+            // Sin ningún catálogo se deja el campo de texto: mejor poder escribirlo que quedarse
+            // sin forma de rellenarlo hasta que los assets existan.
             EditorGUI.PropertyField(position, property, label);
             return;
         }
@@ -37,8 +38,8 @@ public class CreatureIdDrawer : PropertyDrawer
         position = EditorGUI.PrefixLabel(position, label);
 
         string current = property.stringValue;
-        bool   known   = string.IsNullOrEmpty(current) || catalog.EntryFor(current) != null;
-        string shown   = string.IsNullOrEmpty(current) ? NONE : known ? current : $"{current}  ⚠ no está en el catálogo";
+        bool   known   = string.IsNullOrEmpty(current) || Rescuable.Exists(current);
+        string shown   = string.IsNullOrEmpty(current) ? NONE : known ? current : $"{current}  ⚠ no está en ningún catálogo";
 
         if (!EditorGUI.DropdownButton(position, new GUIContent(shown), FocusType.Keyboard)) return;
 
@@ -47,8 +48,8 @@ public class CreatureIdDrawer : PropertyDrawer
         menu.AddItem(new GUIContent(NONE), string.IsNullOrEmpty(current), () => Set(property, ""));
         menu.AddSeparator("");
 
-        Add(menu, property, "Criaturas", catalog.CreatureIds, current);
-        Add(menu, property, "Objetos",   catalog.ObjectIds,   current);
+        Add(menu, property, "Criaturas", creatures, current);
+        Add(menu, property, "Objetos",   objects,   current);
 
         menu.DropDown(position);
     }

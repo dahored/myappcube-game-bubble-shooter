@@ -172,14 +172,14 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
 
         // Lo vivo respira dentro de su burbuja; un cofre no. Sale de en qué lista del catálogo
         // esté puesto, igual que el rebote de cuando sale.
-        _breathes = IsCreature && CreatureCatalog.Creature(creatureId);
+        _breathes = IsCreature && Rescuable.IsCreature(creatureId);
 
         // Cada una arranca su respiración por un sitio. Empezando todas a la vez, un tablero con
         // tres bichos los tendría latiendo al unísono, que se lee como un efecto y no como vida.
         _breathTime = Random.Range(0f, 10f);
 
-        _creatureFrames = IsCreature ? CreatureCatalog.Frames(creatureId) : null;
-        _creatureFps    = IsCreature ? CreatureCatalog.Fps(creatureId)    : 0f;
+        _creatureFrames = IsCreature ? Rescuable.Frames(creatureId) : null;
+        _creatureFps    = IsCreature ? Rescuable.Fps(creatureId)    : 0f;
         _creatureFrame  = 0;
         _creatureTime   = 0f;
 
@@ -216,7 +216,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
             Dress(_shells[i], i < layers.Length ? layers[i] : null);
 
         if (IsCreature && !draws)
-            Debug.LogWarning($"[BubbleView] La criatura '{creatureId}' no tiene arte en CreatureCatalog ni icono genérico: la burbuja que la encierra se va a ver vacía.", this);
+            Debug.LogWarning($"[BubbleView] La criatura '{creatureId}' no tiene arte en ningún catálogo ni icono genérico: la burbuja que la encierra se va a ver vacía.", this);
     }
 
     // Le quita una capa. Devuelve si con eso quedó a la vista, que es cuando el siguiente golpe
