@@ -2180,7 +2180,7 @@ public class GameplayController : MonoBehaviour
 
                 _freed++;
 
-            _recipeAt.TryGetValue(cell, out var recipe);
+                _recipeAt.TryGetValue(cell, out var recipe);
 
                 // Dos sonidos y no uno: el cristal que se rompe y el bicho que sale. Son dos
                 // cosas distintas y juntarlas en un clip obligaría a tener uno por criatura.
@@ -3304,7 +3304,33 @@ public class GameplayController : MonoBehaviour
     (int count, float step) CollapseFloating(HashSet<Vector2Int> removed, float delay = 0f)
     {
         var collapsing = grid.FindUnreachableFromCeiling().OrderByDescending(cell => cell.y).ToList();
-        float step     = ChainStep(collapsing.Count, DROP_CHAIN_DELAY);
+
+        // Lo que lleva caparazón no se libera por perder el techo: se agarra. Se saca de las
+        // caídas ANTES de contar nada, porque no se cae ni suma puntos de caída — baja a otra
+        // celda y lo que pierde es una capa.
+        //
+        // Sin esto el derrumbe regalaba el rescate entero: tres capas deshechas por suerte, con
+        // un caparazón que solo significaba algo cuando el golpe venía de un disparo.
+        //
+        // La ÚLTIMA capa no se agarra: romperla es exactamente lo que libera, igual que el último
+        // golpe de un match (ver HitRescue). Así tres capas son tres desprendimientos y una es
+        // uno — el caparazón cuesta lo mismo venga el golpe de donde venga.
+        var clinging = new List<(Vector2Int from, BubbleView view)>();
+
+        for (int i = collapsing.Count - 1; i >= 0; i--)
+        {
+            if (!grid.TryGetBubble(collapsing[i], out var shelled) || shelled == null) continue;
+            if (!shelled.IsCreature || shelled.LayersLeft <= 1)                        continue;
+
+            clinging.Add((collapsing[i], shelled));
+
+            // Fuera del tablero ya: puesta, se sostendría a SÍ MISMA —la celda de al lado la
+            // tendría por vecina ocupada— y bajaría a un hueco que también está cayendo.
+            grid.RemoveBubble(collapsing[i]);
+            collapsing.RemoveAt(i);
+        }
+
+        float step = ChainStep(collapsing.Count, DROP_CHAIN_DELAY);
 
         for (int i = 0; i < collapsing.Count; i++)
         {
@@ -3321,7 +3347,71 @@ public class GameplayController : MonoBehaviour
         }
         _bubblesDropped += collapsing.Count;
 
+        // Después del bucle y no dentro: para acá lo que se cayó ya salió del tablero, así que
+        // el hueco al que bajan es el de verdad y no uno que está por desaparecer.
+        ClingOn(clinging, removed, delay + collapsing.Count * step);
+
         return (collapsing.Count, step);
+    }
+
+    // Lo que se desprendió con caparazón baja a la celda más cercana que siga colgando del techo,
+    // y el aterrizaje le cuesta una capa. Una criatura bajo tres se desprende tres veces antes de
+    // salir, igual que pide tres matches: el caparazón cuesta lo mismo venga el golpe de donde
+    // venga.
+    //
+    // Si no queda dónde agarrarse —el tablero se vació— se libera. No hay tablero del que
+    // desprenderse, y dejarla flotando sola sería un nivel que no se puede terminar.
+    void ClingOn(List<(Vector2Int from, BubbleView view)> clinging, HashSet<Vector2Int> removed, float delay)
+    {
+        foreach (var (from, view) in clinging)
+        {
+            if (view == null) continue;
+
+            // Una a una, no todas de golpe: SlideBubbleTo la deja registrada en su celda nueva, y
+            // así la siguiente ya la ve ocupada en vez de mudarse al mismo hueco.
+            var landing = grid.FindLandingCell(from);
+
+            if (!landing.HasValue)
+            {
+                view.PlayDropAnimation(dropClip, delay);
+
+                // Metida en 'removed' y no contada acá: quien llamó ya pasa ese conjunto por
+                // CountRescued, y liberarla por un segundo camino serían dos sitios que tienen
+                // que decir lo mismo.
+                removed.Add(from);
+                _poppedAt[from] = delay;
+                continue;
+            }
+
+            // Cuál es la capa que salta, antes de romperla: después no queda rastro de cuál era,
+            // y es con eso con lo que se busca su sonido.
+            int breaking = view.LayersLeft - 1;
+
+            _recipeAt.TryGetValue(from, out var recipe);
+
+            float fall = grid.SlideBubbleTo(view, landing.Value, delay);
+
+            // Las dos tablas van POR CELDA, así que la mudanza hay que escribirla también en
+            // ellas: con la clave vieja la criatura dejaba de contar para el objetivo y el nivel
+            // se volvía imposible de ganar.
+            if (_creatureAt.Remove(from, out int index)) _creatureAt[landing.Value] = index;
+            if (_recipeAt.Remove(from))                  _recipeAt[landing.Value]   = recipe;
+
+            StartCoroutine(ShedLayerOnLanding(view, recipe, breaking, delay + fall));
+        }
+    }
+
+    // La capa salta CUANDO ATERRIZA y no al desprenderse: el golpe es el aterrizaje, y romperla
+    // antes deja el cristal sonando con la burbuja todavía en el aire.
+    IEnumerator ShedLayerOnLanding(BubbleView view, RescueBubbleCatalog.Recipe recipe, int breaking, float delay)
+    {
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        if (view == null) yield break;
+
+        view.BreakLayer();
+
+        AudioManager.Instance?.PlaySfx(RescueBubbleCatalog.LayerBurst(recipe, breaking));
     }
 
     // Acompaña la cadena con un golpe de temblor por burbuja, con los mismos tiempos que se le
