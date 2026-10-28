@@ -2140,7 +2140,7 @@ public class GameplayController : MonoBehaviour
 
         if (_targets.Count > 0)
             for (int i = 0; i < _targets.Count; i++)
-                goals.Add((CreatureCatalog.Icon(_targets[i]), _remaining[i]));
+                goals.Add((Rescuable.Icon(_targets[i]), _remaining[i]));
 
         // Sin rescate, lo que se cuenta son burbujas: el hub sirve igual para "limpia el tablero"
         // y el jugador ve cuánto le queda en vez de deducirlo mirando.
@@ -2185,7 +2185,7 @@ public class GameplayController : MonoBehaviour
                 // Dos sonidos y no uno: el cristal que se rompe y el bicho que sale. Son dos
                 // cosas distintas y juntarlas en un clip obligaría a tener uno por criatura.
                 StartCoroutine(PlayClipAfter(RescueBubbleCatalog.Burst(recipe),            PopTime(cell)));
-                StartCoroutine(PlayClipAfter(CreatureCatalog.RescueClip(_targets[index]),  PopTime(cell)));
+                StartCoroutine(PlayClipAfter(Rescuable.RescueClip(_targets[index]),  PopTime(cell)));
 
                 // El destello va en el MISMO sitio para los dos caminos —la que entra en un match
                 // y la que abre un vecino— porque los dos acaban acá. Puesto en cada uno serían
@@ -2223,7 +2223,7 @@ public class GameplayController : MonoBehaviour
         _pendingTicks--;
 
         var slot = objectiveHub != null ? objectiveHub.SlotAt(index) : null;
-        var icon = CreatureCatalog.Icon(creatureId);
+        var icon = Rescuable.Icon(creatureId);
 
         // Sin hub o sin arte no hay vuelo que enseñar, pero el objetivo sí tiene que bajar: el
         // efecto es el adorno, la cuenta es el juego.
@@ -2264,7 +2264,7 @@ public class GameplayController : MonoBehaviour
         // Lo vivo tiembla y lo de piedra no. Sale de en qué lista del catálogo esté: una perla
         // o un cofre moviéndose como gelatina se leen como de goma, y un caracol que sube tieso
         // parece un icono y no un bicho al que acaban de soltar.
-        bool jelly = CreatureCatalog.Creature(creatureId);
+        bool jelly = Rescuable.IsCreature(creatureId);
 
         float time  = rescueFlight > 0f ? rescueFlight : DEFAULT_RESCUE_FLIGHT;
         float trail = rescueTrail  > 0f ? rescueTrail  : DEFAULT_RESCUE_TRAIL;

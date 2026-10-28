@@ -124,7 +124,7 @@ public class CellPos
 
     // Qué lleva dentro, escrito a mano. Es la EXCEPCIÓN: sirve para una burbuja suelta sin
     // receta, y escrito manda sobre la de la receta.
-    [CreatureId]
+    [RescuableId]
     public string holds;
 
     public const int MAX_LAYERS = 3;

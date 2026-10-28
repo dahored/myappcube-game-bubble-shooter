@@ -3,9 +3,9 @@ using UnityEngine;
 
 // Las recetas de burbuja de rescate: qué lleva dentro, con qué fondo y bajo qué capas.
 //
-// Va SEPARADO de CreatureCatalog porque son dos cosas distintas. Aquel es el inventario de arte
-// —los bichos, los cacharros, las capas y los fondos, cada uno con sus sprites— y este es lo que
-// se compone con ese arte. Mezclados, añadir un caballito de mar y añadir "caballito bajo doble
+// Va SEPARADO de los catálogos de criaturas y de objetos porque son dos cosas distintas.
+// Aquellos son el inventario de arte —los bichos, los cacharros, cada uno con sus sprites— y
+// este es lo que se compone con ese arte. Mezclados, añadir un caballito de mar y añadir "caballito bajo doble
 // hielo" serían la misma operación, y no lo son: lo primero se hace una vez y lo segundo tantas
 // veces como variantes pida el diseño de niveles.
 //
@@ -23,8 +23,8 @@ public class RescueBubbleCatalog : ScriptableObject
         [Tooltip("Cómo la nombra el nivel. Algo que se lea solo: 'coqui_hielo', 'perla_libre'.")]
         public string id;
 
-        [Tooltip("Qué lleva dentro. Se elige de lo que haya en el CreatureCatalog.")]
-        [CreatureId]
+        [Tooltip("Qué lleva dentro. Se elige de lo que haya en los catálogos de criaturas y de objetos.")]
+        [RescuableId]
         public string holds;
 
         [Tooltip("El fondo que va DETRÁS de lo que lleva dentro. Opcional: vacío deja ver el agua.")]
@@ -190,9 +190,8 @@ public class RescueBubbleCatalog : ScriptableObject
 
             // Se comprueba contra el inventario: una receta que lleva algo inexistente sale con
             // el icono genérico y se ve en el juego, no acá.
-            if (!string.IsNullOrWhiteSpace(recipe.holds) && CreatureCatalog.Instance != null
-                && CreatureCatalog.Instance.EntryFor(recipe.holds) == null)
-                Debug.LogWarning($"[RescueBubbleCatalog] '{recipe.id}' lleva '{recipe.holds}' y eso no está en el CreatureCatalog.", this);
+            if (!string.IsNullOrWhiteSpace(recipe.holds) && !Rescuable.Exists(recipe.holds))
+                Debug.LogWarning($"[RescueBubbleCatalog] '{recipe.id}' lleva '{recipe.holds}' y eso no está ni en el CreatureCatalog ni en el ObjectCatalog.", this);
 
             // Un hueco salteado es un error de montaje: las capas van de dentro hacia afuera y
             // dejar la 1 vacía con la 2 puesta no significa nada.
