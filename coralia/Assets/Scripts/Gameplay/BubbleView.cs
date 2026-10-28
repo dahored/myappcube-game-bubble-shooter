@@ -258,7 +258,10 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         rt.localScale = Vector3.one;
         layer.color   = Color.white;
 
-        layer.gameObject.SetActive(false);
+        // El COMPONENTE y no el objeto: es el mismo interruptor que usa Dress, y apagando el
+        // objeto una capa vuelta a vestir se quedaría invisible mientras LayersLeft dice que
+        // está puesta.
+        layer.enabled = false;
     }
 
     // Las capas se CREAN acá y no se piden en el Inspector: su arte ya sale del catálogo, así
@@ -507,6 +510,54 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
     // desprendió una cadena grande", no un bug.
     public void PlayDropAnimation(AudioClip dropClip = null, float delay = 0f) =>
         StartCoroutine(DropAndDestroy(dropClip, delay));
+
+    // Caer hasta una celda y QUEDARSE ahí, que es lo contrario de PlayDropAnimation: esa se va
+    // del tablero y se destruye. Lo necesita lo que se desprende y tiene caparazón, que no se
+    // libera por perder el techo — baja hasta donde pueda agarrarse.
+    //
+    // Misma gravedad que la caída de verdad: son el mismo gesto visto dos veces, y con tiempos
+    // distintos una de las dos se sentiría falsa.
+    //
+    // Devuelve cuánto tarda en llegar, que es lo que necesita saber quien la manda: el golpe
+    // del aterrizaje —la capa que salta, su sonido— tiene que ocurrir CUANDO llega, y sin esto
+    // habría que adivinarlo con un número escrito aparte.
+    public float PlaySlideTo(Vector2 localPos, float delay = 0f)
+    {
+        float time = SlideTime(((RectTransform)transform).anchoredPosition, localPos);
+
+        StartCoroutine(SlideTo(localPos, delay, time));
+        return time;
+    }
+
+    // Con un piso de tiempo: el salto puede ser de media celda, y a gravedad pura eso se
+    // resuelve en dos frames y no se ve que haya caído.
+    public static float SlideTime(Vector2 from, Vector2 to) =>
+        Mathf.Max(SLIDE_MIN_TIME, DropDuration(Vector2.Distance(from, to)));
+
+    IEnumerator SlideTo(Vector2 target, float delay, float time)
+    {
+        BeginAnimation();   // cuenta desde ya: el grid no debe moverse mientras esta espera su turno
+
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        var     rt    = (RectTransform)transform;
+        Vector2 start = rt.anchoredPosition;
+
+        for (float t = 0f; t < time; t += Time.deltaTime)
+        {
+            // Cuadrática y no lineal, para que acelere como cualquier cosa que se suelta: a
+            // velocidad constante parece que la arrastraron.
+            float p = Mathf.Clamp01(t / time);
+
+            rt.anchoredPosition = Vector2.Lerp(start, target, p * p);
+            yield return null;
+        }
+
+        rt.anchoredPosition = target;
+        EndAnimation();
+    }
+
+    const float SLIDE_MIN_TIME = 0.22f;
 
     IEnumerator PopAndDestroy(float delay, AudioClip popClip)
     {

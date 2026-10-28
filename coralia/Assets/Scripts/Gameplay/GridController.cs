@@ -586,6 +586,24 @@ public class GridController : MonoBehaviour, IBoardView
         _cells[cell] = view;
     }
 
+    // Muda una burbuja que YA está en el tablero a otra celda, dejándola caer hasta ahí.
+    //
+    // Aparte de RegisterExisting porque esa la planta de golpe en su sitio: viene volando del
+    // cañón y ya llegó, así que no hay nada que enseñar. Esta se desprendió de donde estaba y
+    // tiene que VERSE bajar, o el salto parece un error de dibujo.
+    //
+    // Devuelve cuánto tarda la caída, o cero si no se pudo mudar.
+    public float SlideBubbleTo(BubbleView view, Vector2Int cell, float delay = 0f)
+    {
+        if (view == null || _cells.ContainsKey(cell)) return 0f;
+
+        _cells.Remove(view.Cell);
+        _cells[cell] = view;
+        view.SetCell(cell);
+
+        return view.PlaySlideTo(HexGridMath.CellToLocalPos(cell), delay);
+    }
+
     void SubscribeBubbleInput(BubbleView view)
     {
         view.OnTapped    += HandleBubbleViewTapped;
@@ -848,6 +866,51 @@ public class GridController : MonoBehaviour, IBoardView
         foreach (var cell in _cells.Keys)
             if (!reachable.Contains(cell)) unreachable.Add(cell);
         return unreachable;
+    }
+
+    // Adónde va lo que se desprende y NO se va: la celda vacía más cercana que toque el tablero.
+    // Null cuando no hay ninguna, o sea cuando el tablero se vació y ya no queda de dónde
+    // agarrarse.
+    //
+    // A igual distancia gana la de ABAJO. Lo que se suelta cae, y verlo subir a un hueco de
+    // arriba se leería como un error de dibujo en vez de como una caída.
+    //
+    // Se busca por anillos y no barriendo el tablero porque las filas no tienen fondo
+    // —IsValidCell solo pide y >= 0— así que un barrido no tendría dónde pararse. Y el anillo
+    // más chico que da candidata gana, que es justo "la más cercana".
+    public Vector2Int? FindLandingCell(Vector2Int from)
+    {
+        if (_cells.Count == 0) return null;
+
+        for (int radius = 1; radius <= LANDING_RINGS; radius++)
+        {
+            Vector2Int? best = null;
+
+            foreach (var cell in HexGridMath.CellsWithinRadius(from, radius))
+            {
+                if (IsOccupied(cell) || !TouchesGrid(cell)) continue;
+
+                if (best == null
+                    || cell.y > best.Value.y
+                    || (cell.y == best.Value.y &&
+                        Mathf.Abs(cell.x - from.x) < Mathf.Abs(best.Value.x - from.x)))
+                    best = cell;
+            }
+
+            if (best.HasValue) return best;
+        }
+
+        return null;
+    }
+
+    const int LANDING_RINGS = 12;   // el grid de diseño tiene doce filas: más allá no hay tablero
+
+    bool TouchesGrid(Vector2Int cell)
+    {
+        foreach (var neighbor in HexGridMath.GetNeighbors(cell))
+            if (IsOccupied(neighbor)) return true;
+
+        return false;
     }
 
     // El arte sale del BubbleCatalog. Antes eran catorce campos sueltos en este Inspector: con
