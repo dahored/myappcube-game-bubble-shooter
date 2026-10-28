@@ -54,6 +54,19 @@ public static class LevelDifficultyEstimator
         // es el layout: con 0.6, más de la mitad del grid se cae de una y el nivel se termina en
         // tres jugadas por más disparos que tenga asignados.
         public float collapse;
+
+        // Cuántas burbujas de rescate tiene y con cuántos disparos se resuelven jugando bien.
+        //
+        // Los disparos NO se deducen: el recorrido hasta una criatura depende de dónde la
+        // pusiste y de qué colores tiene alrededor, y eso no se estima sin jugar el nivel. Sale
+        // de 'min_shots_to_clear' del JSON, que es donde ya anotas a mano lo mismo para los de
+        // limpiar — en un nivel de rescate ese número significa "disparos hasta liberarlas".
+        public int rescues;
+        public int rescueShots;
+
+        // El límite del nivel. Hace falta para saber cuántos disparos SOBRAN, que es de donde
+        // sale casi todo el puntaje de un rescate.
+        public int maxShots;
     }
 
     public static Report Analyze(LevelData level)
@@ -87,6 +100,10 @@ public static class LevelDifficultyEstimator
 
         Simulate(cells, target, out report.minShots, out report.popped, out report.dropped, out report.popScore);
         report.realisticShots = Realistic(report.minShots, report.colors);
+
+        report.rescues     = level.objective != null ? level.objective.Rescues().Count : 0;
+        report.rescueShots = level.min_shots_to_clear;
+        report.maxShots    = level.max_shots;
         report.collapse       = Collapse(cells);
         return report;
     }
@@ -385,6 +402,11 @@ public static class LevelDifficultyEstimator
         return popScore + ScoreRules.DropScore(report.dropped);
     }
 
+    // Un nivel de RESCATE se mide contra esta misma referencia y no contra una escala aparte:
+    // cada cosa que libera vale la barra repartida entre las que pide (ScoreRules.RescueUnitScore),
+    // así que cumplir el objetivo la llena igual que limpiar el tablero llena la de un nivel de
+    // limpiar. Lo que cambia es QUÉ llena la barra, no cuánto mide.
+    //
     static bool TryParse(string value, out BubbleColor color)
     {
         try   { color = BubbleColorExtensions.Parse(value); return true; }

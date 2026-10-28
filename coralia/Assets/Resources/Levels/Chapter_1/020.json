@@ -19,9 +19,11 @@
     ],
     "obstacles": [],
     "objective": {
-        "type": "clear_all",
-        "creature_id": "",
-        "creature_position": []
+        "type": "rescue",
+        "rescues": [
+            { "row": 18, "col": 4, "bubble": "test", "match":"blue" },
+            { "row": 18, "col": 7, "bubble": "test", "match":"yellow" }
+        ]
     },
     "bubbles": [
         {

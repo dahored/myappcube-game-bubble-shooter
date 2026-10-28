@@ -16,8 +16,8 @@ using UnityEngine.UI;
 // hueco que le toque, así que la misma pieza sirve en un panel grande y en uno chico.
 public class TutorialShootDemo : MonoBehaviour
 {
-    [Tooltip("Dos sprites de burbuja de colores distintos. El primero es el color que hace match; el segundo, el que acompaña para que se note la diferencia.")]
-    [SerializeField] Sprite[] bubbleSprites;
+    [Tooltip("Los colores con los que se dibuja esta demostración, elegidos de los que el juego ya tiene. El arte sale del BubbleCatalog: así una burbuja del tutorial no puede verse distinta de la del tablero, y cambiar el arte de un color lo cambia en los dos sitios.")]
+    [SerializeField] BubbleColor[] bubbleColors = { BubbleColor.Blue, BubbleColor.Red, BubbleColor.Yellow };
 
     [Tooltip("La mano que apunta. La misma que usa ShootHintView dentro del gameplay: conviene que sea la misma para que el gesto se reconozca.")]
     [SerializeField] Sprite handSprite;
@@ -80,6 +80,20 @@ public class TutorialShootDemo : MonoBehaviour
     Coroutine     _loop;
     float         _builtFor;   // el alto con el que se armó, para rehacerlo si el hueco cambia
 
+
+    // El sprite de uno de los colores de arriba. El módulo vive acá y no en cada llamada: con
+    // diez demostraciones pidiéndolo, el que se olvide revienta con un índice fuera de rango.
+    Sprite SpriteAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? BubbleCatalog.Sprite(bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length])
+            : null;
+
+    // Y el color en sí, para lo que necesite saberlo y no solo dibujarlo.
+    BubbleColor ColorAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length]
+            : BubbleColor.Red;
+
     void OnEnable()
     {
         if (!Ready()) return;
@@ -95,9 +109,9 @@ public class TutorialShootDemo : MonoBehaviour
 
     bool Ready()
     {
-        if (bubbleSprites != null && bubbleSprites.Length >= 2 && handSprite != null) return true;
+        if (bubbleColors != null && bubbleColors.Length >= 2 && handSprite != null) return true;
 
-        Debug.LogWarning($"[TutorialShootDemo] '{name}' necesita dos sprites de burbuja y uno de mano: sin eso no hay nada que mostrar.", this);
+        Debug.LogWarning($"[TutorialShootDemo] '{name}' necesita dos colores de burbuja en 'Bubble Colors' y un sprite de mano: sin eso no hay nada que mostrar.", this);
         return false;
     }
 
@@ -148,19 +162,19 @@ public class TutorialShootDemo : MonoBehaviour
         // el orden en la jerarquía, no una propiedad que haya que recordar poner.
         for (int i = 0; i < dots; i++)
         {
-            var dot = Spawn("Dot", dotSprite != null ? dotSprite : bubbleSprites[0], size * dotSize);
+            var dot = Spawn("Dot", dotSprite != null ? dotSprite : SpriteAt(0), size * dotSize);
             dot.color = dotColor;
             _trail.Add(dot);
         }
 
         for (int i = 0; i < ROW.Length; i++)
         {
-            var bubble = Spawn($"Bubble{i}", bubbleSprites[ROW[i]], size);
+            var bubble = BubbleGlow.AddTo(Spawn($"Bubble{i}", SpriteAt(ROW[i]), size));
             Place(bubble, RowPos(i));
             _row.Add(bubble);
         }
 
-        _shot = Spawn("Shot", bubbleSprites[0], size);
+        _shot = BubbleGlow.AddTo(Spawn("Shot", SpriteAt(0), size));
         _hand = Spawn("Hand", handSprite, size * 1.5f);
     }
 

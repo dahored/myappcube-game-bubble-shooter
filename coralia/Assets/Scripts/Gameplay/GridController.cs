@@ -22,22 +22,6 @@ public class GridController : MonoBehaviour, IBoardView
     [Tooltip("Cada cuánto puede sonar y vibrar ese bonus como mucho. En un derrumbe de veinte burbujas los números salen cada 0,04 s: sin este espaciado serían veinte disparos de audio y veinte toques en medio segundo. Los que caen entremedio salen igual, mudos y sin vibración.")]
     [SerializeField] float dropScoreSoundInterval = 0.12f;
 
-    [Header("Sprites por color (arrastrar el sub-sprite bubble_X_0 de cada PNG)")]
-    [SerializeField] Sprite spriteRed;
-    [SerializeField] Sprite spriteBlue;
-    [SerializeField] Sprite spriteYellow;
-    [SerializeField] Sprite spriteGreen;
-    [SerializeField] Sprite spritePurple;
-    [SerializeField] Sprite spriteOrange;
-    [SerializeField] Sprite spritePink;
-    [SerializeField] Sprite spriteGrey;
-    [SerializeField] Sprite spriteBrown;
-    [SerializeField] Sprite spriteBlack;
-    [SerializeField] Sprite spriteRedWine;
-    [SerializeField] Sprite spriteMintGreen;
-    [SerializeField] Sprite spriteDarkBlue;
-    [SerializeField] Sprite spriteDarkGrey;
-
     [Header("Scroll de retirada (GDD: el grid se aleja del cañón cuando se llena)")]
     [Range(0f, 1f)]
     [SerializeField] float scrollTriggerRatio = 0.65f; // a qué % de la distancia techo→cañón empieza a retirarse (60-70% sugerido)
@@ -318,8 +302,16 @@ public class GridController : MonoBehaviour, IBoardView
     // En un solo sitio porque la pregunta sale por todas partes —la cola del cañón, el recuento
     // del Agua Clara, los vecinos de un comodín— y la que se olvidara de la mina ofrecería un
     // color que no existe o lo contaría como el más escaso.
+    // Una de rescate CON color cuenta como color: matchea y entra en la cola del cañón igual que
+    // cualquiera. Sin color es un contenedor y queda fuera de todo eso.
     static bool HasColor(BubbleView view) =>
-        view != null && !view.IsMine && view.ColorType != BubbleColor.Rainbow;
+        Matchable(view) && view.ColorType != BubbleColor.Rainbow;
+
+    // Si participa del match, sea del color que sea. Va aparte de HasColor porque la arcoíris SÍ
+    // matchea —es el comodín— pero no cuenta como un color que haya que suministrar: metida en
+    // la misma pregunta, el flood-fill dejaba de agrupar comodines y el poder se rompía.
+    static bool Matchable(BubbleView view) =>
+        view != null && !view.IsMine && (!view.IsCreature || view.CreatureMatches);
 
     // Colores del FRENTE del grid, repetidos según cuánto conviene ofrecer cada uno. La lista
     // sale con repeticiones a propósito: sortear un elemento al azar ya respeta los pesos.
@@ -402,19 +394,54 @@ public class GridController : MonoBehaviour, IBoardView
     {
         Clear();
 
-        Vector2Int creatureCell = new(-1, -1);
-        if (level.objective != null && level.objective.type == "rescue" && level.objective.creature_position?.Count == 2)
-        {
-            // creature_position es [fila, col] (ver LevelData.cs) -> Vector2Int(col, fila)
-            creatureCell = new Vector2Int(level.objective.creature_position[1], level.objective.creature_position[0]);
-        }
+        // Qué criatura hay en cada celda, si el nivel rescata algo. Se arma el mapa antes del
+        // recorrido en vez de preguntarlo por burbuja: el objetivo puede traer tres criaturas con
+        // varias celdas cada una, y buscar en esas listas por cada una de las ciento y pico
+        // burbujas del tablero es trabajo que no hace falta.
+        var creatures = new Dictionary<Vector2Int, (string holds, RescueBubbleCatalog.Recipe recipe, BubbleColor? match, BubbleColor? body)>();
 
+        if (level.objective != null)
+            foreach (var at in level.objective.Rescues())
+            {
+                if (at == null) continue;
+
+                // Sin 'color' escrito, el cuerpo sale del color con el que matchea: lo normal es
+                // querer las dos cosas iguales, y pedir que se escriban dos veces es pedir que se
+                // contradigan. 'color' queda como la excepción para una que se vea de un color y
+                // encaje con otro.
+                var match = at.Match();
+
+                creatures[at.Cell] = (at.Holds(), at.Recipe, match, at.Color() ?? match);
+            }
+
+        // Las de color primero, SALTANDO las celdas de rescate: ahí manda el objetivo, que trae su
+        // propio color. Pintándolas antes, la de rescate heredaba el color que la lista 'bubbles'
+        // tuviera escrito en esa celda y matcheaba como ese y no como el declarado (reportado por
+        // Diego: una verde que se llevaba las azules).
         foreach (var entry in level.bubbles)
         {
-            var cell  = new Vector2Int(entry.col, entry.row);
-            var color = BubbleColorExtensions.Parse(entry.color);
-            var view  = PlaceBubble(cell, color);
-            if (cell == creatureCell) view.SetCreatureMarker(true);
+            var cell = new Vector2Int(entry.col, entry.row);
+
+            if (creatures.ContainsKey(cell)) continue;
+
+            PlaceBubble(cell, BubbleColorExtensions.Parse(entry.color));
+        }
+
+        // Y después las de rescate, que se crean desde el objetivo y no desde 'bubbles': así una
+        // burbuja de rescate no necesita estar escrita en los dos sitios, que es donde empiezan
+        // las contradicciones.
+        foreach (var pair in creatures)
+        {
+            var trapped = pair.Value;
+
+            // Nace con el color del MATCH, que es el que el flood-fill mira. Sin match da igual
+            // con cuál: no matchea, no cuenta como color y nadie le pregunta.
+            var view = PlaceBubble(pair.Key, trapped.match ?? BubbleColor.Red);
+
+            // Y el cuerpo se pinta aparte, que puede ser otro — o ninguno.
+            if (trapped.body.HasValue) view.SetBody(SpriteFor(trapped.body.Value));
+
+            view.SetCreature(trapped.holds, trapped.recipe, trapped.match.HasValue, trapped.body.HasValue);
         }
     }
 
@@ -583,7 +610,11 @@ public class GridController : MonoBehaviour, IBoardView
         // Una mina ocupa la celda pero no responde a esta pregunta: quien quiera saber si hay
         // ALGO usa IsOccupied, y quien pregunte de qué color es se la salta sin más. Es lo que
         // la deja fuera de los grupos, de los recuentos y de las siembras sin tocar ninguno.
-        if (_cells.TryGetValue(cell, out var view) && !view.IsMine) { color = view.ColorType; return true; }
+        if (_cells.TryGetValue(cell, out var view) && Matchable(view))
+        {
+            color = view.ColorType;
+            return true;
+        }
 
         color = default;
         return false;
@@ -648,6 +679,24 @@ public class GridController : MonoBehaviour, IBoardView
     }
 
     public void RemoveBubble(Vector2Int cell) => _cells.Remove(cell);
+
+    // Dónde está esa celda EN EL MUNDO. Vale aunque su burbuja ya no esté: lo pide el rescate,
+    // que arranca su vuelo cuando la burbuja acaba de reventar.
+    //
+    // No basta con TransformPoint(CellToLocalPos(cell)): las burbujas se anclan al CENTRO del
+    // contenedor y la posición local se mide desde su PIVOTE, que acá está arriba. Sin corregir
+    // esa diferencia el punto sale medio contenedor desplazado — y como el pivote es cosa del
+    // montaje de la escena, la cuenta tiene que leerlo en vez de darlo por centrado.
+    public Vector3 WorldOf(Vector2Int cell)
+    {
+        var rt   = (RectTransform)transform;
+        var rect = rt.rect;
+
+        var local = HexGridMath.CellToLocalPos(cell)
+                  + new Vector2((0.5f - rt.pivot.x) * rect.width, (0.5f - rt.pivot.y) * rect.height);
+
+        return rt.TransformPoint(local);
+    }
 
     void Clear()
     {
@@ -747,7 +796,7 @@ public class GridController : MonoBehaviour, IBoardView
     public List<Vector2Int> FindConnectedSameColor(Vector2Int start)
     {
         var result = new List<Vector2Int>();
-        if (!TryGetBubble(start, out var startView) || startView.IsMine) return result;
+        if (!TryGetBubble(start, out var startView) || !Matchable(startView)) return result;
 
         var visited = new HashSet<Vector2Int> { start };
         var queue   = new Queue<Vector2Int>();
@@ -760,7 +809,7 @@ public class GridController : MonoBehaviour, IBoardView
             foreach (var n in HexGridMath.GetNeighbors(cell))
             {
                 if (visited.Contains(n) || !TryGetBubble(n, out var neighborView)) continue;
-                if (neighborView.IsMine) continue;
+                if (!Matchable(neighborView)) continue;
                 if (!startView.ColorType.LinksWith(neighborView.ColorType)) continue;
                 visited.Add(n);
                 queue.Enqueue(n);
@@ -801,26 +850,23 @@ public class GridController : MonoBehaviour, IBoardView
         return unreachable;
     }
 
-    public Sprite SpriteFor(BubbleColor color) => color switch
+    // El arte sale del BubbleCatalog. Antes eran catorce campos sueltos en este Inspector: con
+    // catorce, el que faltara salía en blanco en partida y no había forma de verlo antes — y el
+    // día que una burbuja quisiera dos cuadros había que tocar el componente del tablero para
+    // algo que es arte.
+    public Sprite SpriteFor(BubbleColor color)
     {
-        BubbleColor.Red       => spriteRed,
-        BubbleColor.Blue      => spriteBlue,
-        BubbleColor.Yellow    => spriteYellow,
-        BubbleColor.Green     => spriteGreen,
-        BubbleColor.Purple    => spritePurple,
-        BubbleColor.Orange    => spriteOrange,
-        BubbleColor.Pink      => spritePink,
-        BubbleColor.Grey      => spriteGrey,
-        BubbleColor.Brown     => spriteBrown,
-        BubbleColor.Black     => spriteBlack,
-        BubbleColor.RedWine   => spriteRedWine,
-        BubbleColor.MintGreen => spriteMintGreen,
-        BubbleColor.DarkBlue  => spriteDarkBlue,
-        BubbleColor.DarkGrey  => spriteDarkGrey,
-        // La arcoíris sale del catálogo y no de un campo de acá: es el arte del booster que la
-        // produce (BoosterCatalog, entrada Rainbow), y tenerlo además en el Inspector eran dos
-        // sitios para el mismo sprite — con el de acá sin asignar, la burbuja salía en blanco.
-        BubbleColor.Rainbow   => BoosterRules.BubbleSpriteFor(Booster.Rainbow),
-        _                     => null,
-    };
+        // La arcoíris sale del catálogo de PODERES: es el arte del booster que la produce, y
+        // tenerlo además en el de burbujas serían dos sitios para el mismo sprite.
+        if (color == BubbleColor.Rainbow) return BoosterRules.BubbleSpriteFor(Booster.Rainbow);
+
+        var art = BubbleCatalog.Sprite(color);
+
+        if (art == null)
+            Debug.LogWarning($"[GridController] '{color}' no tiene arte en Resources/BubbleCatalog: esas burbujas van a salir invisibles.", this);
+
+        return art;
+    }
+
+
 }

@@ -21,8 +21,8 @@ using UnityEngine.UI;
 // partida — mover 'Mine Radius' en el catálogo mueve también lo que se enseña.
 public class TutorialMineDemo : MonoBehaviour, IBoardView
 {
-    [Tooltip("Sprites de burbuja de colores DISTINTOS, dos o más. Son las que la mina se lleva por delante: con un solo color el estallido no se distingue de un match.")]
-    [SerializeField] Sprite[] bubbleSprites;
+    [Tooltip("Los colores con los que se dibuja esta demostración, elegidos de los que el juego ya tiene. El arte sale del BubbleCatalog: así una burbuja del tutorial no puede verse distinta de la del tablero, y cambiar el arte de un color lo cambia en los dos sitios.")]
+    [SerializeField] BubbleColor[] bubbleColors = { BubbleColor.Blue, BubbleColor.Red, BubbleColor.Yellow };
 
     [Header("Proporciones")]
     [Range(0.05f, 0.3f)]
@@ -59,7 +59,7 @@ public class TutorialMineDemo : MonoBehaviour, IBoardView
     // es un match corriente del jugador, no otro poder.
     static readonly Vector2Int[] MATCH = { new(1, 0), new(2, 0), new(3, 0) };
 
-    const int MATCH_COLOR = 0;   // índice en bubbleSprites
+    const int MATCH_COLOR = 0;   // índice en bubbleColors
 
     // El ancla de la geometría. Fija y en el centro de la fila de arriba, para que el tablero no
     // salte de sitio entre repeticiones.
@@ -86,6 +86,20 @@ public class TutorialMineDemo : MonoBehaviour, IBoardView
     // con la del tablero es enseñar mal.
     static Sprite MineSprite => BoosterRules.BubbleSpriteFor(Booster.Mine);
 
+
+    // El sprite de uno de los colores de arriba. El módulo vive acá y no en cada llamada: con
+    // diez demostraciones pidiéndolo, el que se olvide revienta con un índice fuera de rango.
+    Sprite SpriteAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? BubbleCatalog.Sprite(bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length])
+            : null;
+
+    // Y el color en sí, para lo que necesite saberlo y no solo dibujarlo.
+    BubbleColor ColorAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length]
+            : BubbleColor.Red;
+
     void OnEnable()
     {
         if (!Ready()) return;
@@ -101,9 +115,9 @@ public class TutorialMineDemo : MonoBehaviour, IBoardView
 
     bool Ready()
     {
-        if (bubbleSprites != null && bubbleSprites.Length >= 2 && MineSprite != null) return true;
+        if (bubbleColors != null && bubbleColors.Length >= 2 && MineSprite != null) return true;
 
-        Debug.LogWarning($"[TutorialMineDemo] '{name}' necesita al menos dos sprites de burbuja de colores distintos, y que BoosterCatalog tenga los 'Bubble Frames' de Plantar Bombas: sin eso no hay nada que mostrar.", this);
+        Debug.LogWarning($"[TutorialMineDemo] '{name}' necesita al menos dos colores de burbuja distintos en 'Bubble Colors', y que BoosterCatalog tenga los 'Bubble Frames' de Plantar Bombas: sin eso no hay nada que mostrar.", this);
         return false;
     }
 
@@ -119,7 +133,10 @@ public class TutorialMineDemo : MonoBehaviour, IBoardView
 
         if (!_colors.TryGetValue(cell, out int index)) return false;
 
-        color = (BubbleColor)(index % System.Enum.GetValues(typeof(BubbleColor)).Length);
+        // Ahora el color es el de verdad, el mismo que el nivel escribiría en su JSON: antes acá
+        // se colaba el índice del sprite disfrazado de color, y dos azules en huecos distintos del
+        // array se leían como colores distintos.
+        color = ColorAt(index);
         return true;
     }
 
@@ -207,7 +224,7 @@ public class TutorialMineDemo : MonoBehaviour, IBoardView
 
     void Place(Vector2Int cell, int color, float size)
     {
-        var bubble = Spawn($"Bubble{cell.x}_{cell.y}", bubbleSprites[color % bubbleSprites.Length], size);
+        var bubble = BubbleGlow.AddTo(Spawn($"Bubble{cell.x}_{cell.y}", SpriteAt(color), size));
 
         ((RectTransform)bubble.transform).anchoredPosition = CellPos(cell);
 
@@ -305,7 +322,7 @@ public class TutorialMineDemo : MonoBehaviour, IBoardView
 
             _colors[pair.Key] = _base[pair.Key];
 
-            bubble.sprite               = bubbleSprites[_base[pair.Key] % bubbleSprites.Length];
+            bubble.sprite               = SpriteAt(_base[pair.Key]);
             bubble.enabled              = true;
             bubble.color                = Color.white;
             bubble.transform.localScale = Vector3.one;

@@ -1,0 +1,128 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b939fccadf7940759aedc1865dd7206, type: 3}
+  m_Name: CreatureCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::CreatureCatalog
+  creatures:
+  - id: coqui
+    icon: {fileID: 21300000, guid: 8901ee5bcee8b4a31b87614367c68bb3, type: 3}
+    frames:
+    - {fileID: 21300000, guid: 8901ee5bcee8b4a31b87614367c68bb3, type: 3}
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: burbujin
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: lua
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: caracol
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: espina
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: aletita
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: glissa
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: chispin
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: lumi
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: marino
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: iris
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: perla
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  objects:
+  - id: pearl
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: shell
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: starfish
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: coral_shard
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: sea_glass
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: bottle
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: anchor
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: chest
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: key
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: crystal
+    icon: {fileID: 0}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  genericIcon: {fileID: -8212066693482842052, guid: 0864e55d1a7a14d8ab1a72eedbaeaedc, type: 3}

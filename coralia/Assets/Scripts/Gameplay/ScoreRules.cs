@@ -20,6 +20,31 @@ public static class ScoreRules
     public const int POINTS_PER_DROP           = 50;
     public const int POINTS_PER_REMAINING_SHOT = 1_000;
 
+    // Dónde cae la tercera estrella sobre la barra. Está también en ProgressScoreView y en
+    // LevelDifficultyEstimator: es la misma barra vista desde tres sitios.
+    public const float STAR_3_RATIO_OF_BAR = 0.90f;
+
+    // Lo que vale liberar UNO, cuando el nivel pide N.
+    //
+    // No es una cifra fija: es la barra entera repartida entre lo que el objetivo pide. Con un
+    // número fijo, dos rescates eran el 4% de una barra calculada para 184 burbujas, así que el
+    // objetivo del nivel apenas movía su propio marcador (reportado por Diego).
+    //
+    // Repartida así, CUMPLIR el objetivo llena la barra: dos rescates valen lo mismo que limpiar
+    // el tablero entero en un nivel de limpiar. Lo que se reviente de camino y los disparos que
+    // sobren suman por encima — no hacen falta para las tres estrellas, pero engordan el récord.
+    public static int RescueUnitScore(List<int> thresholds, int units)
+    {
+        if (units <= 0 || thresholds == null || thresholds.Count < 3) return 0;
+
+        float bar = thresholds[2] / STAR_3_RATIO_OF_BAR;
+
+        return Mathf.RoundToInt(bar / units);
+    }
+
+    public static int RescueScore(List<int> thresholds, int units, int freed) =>
+        Mathf.Max(0, freed) * RescueUnitScore(thresholds, units);
+
     // Cuánto vale UNA burbuja reventada con la racha en 'streak'. Streak 1 es el primer match;
     // el Max evita que un 0 (racha recién cortada) anule el puntaje del disparo que la reinicia.
     public static int PopValue(int streak) => POINTS_PER_POP_BASE * Mathf.Max(1, streak);
@@ -42,8 +67,15 @@ public static class ScoreRules
     //
     // Excepción del último tramo: con dos estrellas ya hechas jugando, el bonus completa la
     // tercera y sigue sumando sin límite. Ahí no hay escalón que saltarse.
-    public static int AllowedBonus(int gameplayScore, int earnedBonus, List<int> thresholds)
+    //
+    // En un nivel de RESCATE no se topa: ahí el jugador no puede terminar antes de resolver el
+    // objetivo, así que los disparos que le sobran son mérito y no un atajo. Topándolos, hacerlo
+    // perfecto y en seis disparos daba menos estrellas que hacerlo mal y en sesenta.
+    public static int AllowedBonus(int gameplayScore, int earnedBonus, List<int> thresholds,
+                                   bool rescue = false)
     {
+        if (rescue) return earnedBonus;
+
         if (thresholds == null || thresholds.Count < 3) return earnedBonus;
 
         int stars = 0;

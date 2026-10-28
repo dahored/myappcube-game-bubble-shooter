@@ -36,6 +36,38 @@ public class GameplayController : MonoBehaviour
 
     [Header("HUD")]
     [SerializeField] ProgressScoreView progressScore;
+
+    [Tooltip("El hub de objetivos del HUD: qué hay que conseguir en este nivel y cuánto falta. Opcional — sin él el nivel se juega igual, pero el jugador no ve qué le piden.")]
+    [SerializeField] ObjectiveHub objectiveHub;
+
+    [Tooltip("El destello al reventar una burbuja de rescate. Es el momento que el jugador vino a buscar, así que se separa del pop corriente: sin él, liberar una criatura se ve igual que reventar una burbuja cualquiera.\n\nMismo bloque que usan los poderes al estallar. Con 'Glow Size' en CERO usa el del estallido de la Bomba.")]
+    [SerializeField] Sparkle.Settings rescueSparkle = new();
+
+    [Tooltip("Lo que tarda lo rescatado en volar de su burbuja al hub, en segundos. El contador baja CUANDO LLEGA, así que esto es también lo que el número tarda en reaccionar.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 2f)]
+    [SerializeField] float rescueFlight = 0.55f;
+
+    [Tooltip("Cuánto se curva el vuelo, en tanto por uno de lo que recorre. El desvío va PERPENDICULAR al camino, así que curva igual suba recto o vaya en diagonal.\n\nEn CERO va derecho, que se lee como una interfaz moviendo un dato en vez de como algo que escapa.")]
+    [Range(0f, 0.8f)]
+    [SerializeField] float rescueBend = 0.3f;
+
+    [Tooltip("Cada cuánto suelta una chispa por el camino, en segundos. Es lo que convierte el vuelo en un rastro en vez de un icono que se desliza.\n\nCuanto más corto, más seguida sale la cola: si se espacia demasiado deja de ser un cometa y se ve como las cuentas de un collar.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 0.2f)]
+    [SerializeField] float rescueTrail = 0.012f;
+
+    [Tooltip("Lo grande que sale cada chispa de la estela, respecto a una burbuja. Hace falta más de lo que parece: la chispa de cuatro puntas gasta casi todo su ancho en brazos finos, y lo que de verdad brilla es el centro.\n\nCada una sale además con su propia variación, para que no se vean estampadas con el mismo sello.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 3f)]
+    [SerializeField] float rescueTrailSize = 1.6f;
+
+    [Tooltip("Cuánto aguanta encendida cada chispa antes de EMPEZAR a apagarse, en segundos. Es lo que decide si la estela se queda puesta mientras el icono viaja o si se deshace detrás de él.\n\nDespués de esto todavía tarda en irse del todo: el apagado va aparte y es siempre el mismo.\n\nEn CERO usa el valor por defecto.")]
+    [Range(0f, 2f)]
+    [SerializeField] float rescueTrailHold = 0.7f;
+
+    [Tooltip("De qué color es la estela. Con alfa en CERO usa blanco.")]
+    [SerializeField] Color rescueTrailColor = Color.white;
+
+    [Tooltip("El icono del objetivo 'limpia el tablero', donde lo que se cuenta son burbujas y no criaturas. Vacío usa el sprite del primer color del nivel.")]
+    [SerializeField] Sprite clearAllIcon;
     [SerializeField] TMP_Text          totalLivesText;  // vidas actuales al arrancar el nivel (GameDataWrapper/TotalLives)
     [SerializeField] TMP_Text          levelNumberText; // "LV {id}" del nivel actual (GameDataWrapper/LevelNumberLabel)
 
@@ -98,8 +130,25 @@ public class GameplayController : MonoBehaviour
     // El booster que acaba de presentarse y hay que dejar cargado en cuanto arranque el nivel.
     Booster _autoLoadBooster;
 
-    Vector2Int _creatureCell = new(-1, -1);
-    bool       _creatureFreed;
+    // Qué hay que rescatar y cuánto queda de cada cosa, en el mismo orden que los huecos del hub.
+    //
+    // La celda guarda a QUÉ objetivo pertenece y no solo que hay una criatura: con tres criaturas
+    // en el tablero, al reventar una hay que saber cuál de los tres contadores baja. Se arma al
+    // abrir y no se vuelve a tocar — las burbujas no cambian de celda, se van.
+    readonly List<string>       _targets   = new();
+    readonly List<int>          _remaining = new();
+
+    // Lo que el hub ENSEÑA ahora mismo, que va por detrás de _remaining a propósito.
+    //
+    // La cuenta de verdad baja al instante porque de ella depende si el nivel está ganado; el
+    // número de pantalla baja burbuja a burbuja, al ritmo de los pops. Con los dos juntos, un
+    // match de doce restaba doce de golpe mientras las burbujas todavía estaban reventando.
+    readonly List<int> _shown = new();
+    readonly Dictionary<Vector2Int, int> _creatureAt = new();
+
+    // Y con qué receta se montó cada una, para su estallido: cuando el vuelo arranca la burbuja
+    // ya reventó, así que no se le puede preguntar a ella.
+    readonly Dictionary<Vector2Int, RescueBubbleCatalog.Recipe> _recipeAt = new();
     bool       _levelEnded;
     bool       _isFirstAttempt; // nunca se había intentado este nivel antes de esta partida (issue #49)
     int        _noMoreShotsUsedCount; // cuántas veces ya se pagó la oferta en esta partida — sube el costo
@@ -153,6 +202,10 @@ public class GameplayController : MonoBehaviour
 
         int levelId = PlayerPrefs.GetInt("selected_level", 1);
         _level = LevelLoader.LoadById(levelId);
+
+        // Una tirada por partida. Lo que decide es a cuál de las burbujas igual de solas van las
+        // hijas de la Madre: sin esto, repetir el nivel las mandaba siempre al mismo sitio.
+        BoosterRules.Variety = Random.Range(1, int.MaxValue);
         if (_level == null)
         {
             Debug.LogError($"[GameplayController] No se encontró el nivel {levelId}");
@@ -177,11 +230,6 @@ public class GameplayController : MonoBehaviour
         _isFirstAttempt = !SaveManager.HasAttemptedLevel(levelId);
         if (!_isEditorTest) SaveManager.MarkLevelAttempted(levelId);
 
-        if (_level.objective != null && _level.objective.type == "rescue" && _level.objective.creature_position?.Count == 2)
-        {
-            // creature_position es [fila, col] (ver LevelData.cs) -> Vector2Int(col, fila)
-            _creatureCell = new Vector2Int(_level.objective.creature_position[1], _level.objective.creature_position[0]);
-        }
 
         // Se setean una sola vez acá — a diferencia de LivesPillView (Level Map), acá no hace
         // falta refrescar en vivo cada segundo: las vidas no cambian a mitad de una partida
@@ -195,6 +243,10 @@ public class GameplayController : MonoBehaviour
         if (levelNumberText) levelNumberText.text = $"LV {_level.id}";
 
         grid.SpawnFromLevel(_level);
+
+        // Después de poblar el grid: el objetivo cuenta lo que de verdad está en el tablero, no
+        // lo que el JSON dice que debería estar.
+        SetUpObjective();
         _shotsRemaining = _level.max_shots; // antes de cannon.Init() — necesita el conteo ya listo para el primer RefreshPreview
         cannon.Init(_level.available_colors, _shotsRemaining);
         cannon.OnBubbleLanded += OnBubbleLanded;
@@ -1875,11 +1927,10 @@ public class GameplayController : MonoBehaviour
 
         var removed = ResolveMatchAndDrop(landedCell);
 
-        // Una mina estalla con lo que le pasa al lado, y una burbuja que ATERRIZA pegada a ella
-        // es eso aunque el disparo no haya matcheado nada. Sin esto, el jugador podría apoyarse
-        // contra una mina y no pasaría nada — que es justo lo contrario de "es sensible".
-        removed.Add(landedCell);
-        AfterRemoval(removed);
+        // La aterrizada va APARTE y no dentro de 'removed': una mina estalla con lo que le pasa
+        // al lado y aterrizar es eso, pero si el disparo no matcheó esa burbuja se QUEDA — y
+        // metida en el montón de las que se fueron, el objetivo la descontaba igual.
+        AfterRemoval(removed, landedCell);
     }
 
     // El poder se pega, carga, y recién entonces estalla.
@@ -1937,6 +1988,542 @@ public class GameplayController : MonoBehaviour
         // Y que el cañón revise lo que tiene servido: el estallido pudo llevarse el último rojo
         // del tablero, y el relevo —que es quien normalmente pregunta— no corre al usar un poder.
         if (cannon) cannon.CheckAutoSwap();
+    }
+
+    // Un golpe es que reviente algo PEGADO a ella: da igual que se fuera en un match, en una
+    // explosión o que acabe de aterrizar. Cada golpe le quita la capa de fuera, y la que ya está
+    // a la vista queda liberada (GDD §2.2).
+    //
+    // Una sola burbuja no acusa dos golpes de la misma jugada: un match de doce que la rodea por
+    // tres lados es UN golpe, no tres, o tres capas se irían de una.
+    void HitRescuesTouching(HashSet<Vector2Int> touched, Vector2Int? landed = null)
+    {
+        if (_creatureAt.Count == 0) return;
+
+        var hit = new HashSet<Vector2Int>();
+
+        foreach (var cell in touched)
+            foreach (var around in HexGridMath.GetNeighbors(cell))
+                Consider(around);
+
+        if (landed.HasValue)
+            foreach (var around in HexGridMath.GetNeighbors(landed.Value))
+                Consider(around);
+
+        foreach (var cell in hit)
+            // El golpe se ve cuando revienta lo que lo causó, no antes: los pops de un racimo van
+            // escalonados y la capa que cae a destiempo se adelanta a su motivo.
+            StartCoroutine(HitRescue(cell, NearestPop(cell)));
+
+        // Esto es la regla del CONTENEDOR, el que no tiene color: lo abre lo que pase a su lado.
+        //
+        // La que sí tiene 'match' queda fuera a propósito: esa se abre entrando en un match de su
+        // color, y lo resuelve ResolveMatchAndDrop. Metida también acá, cualquier vecina que
+        // reventara se la llevaba — un match azul rescataba a la que pedía verdes (reportado por
+        // Diego).
+        void Consider(Vector2Int cell)
+        {
+            if (!_creatureAt.ContainsKey(cell))                           return;
+            if (!grid.TryGetBubble(cell, out var view) || view == null)   return;
+            if (view.CreatureMatches)                                     return;
+
+            hit.Add(cell);
+        }
+    }
+
+    IEnumerator HitRescue(Vector2Int cell, float delay)
+    {
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        if (!grid.TryGetBubble(cell, out var view) || view == null) yield break;
+
+        // Cuál es la capa que va a saltar con este golpe, para poder darle SU sonido. Se mira
+        // antes de romperla: después ya no queda rastro de cuál era.
+        int breaking = view.LayersLeft - 1;
+
+        // Con capas, el golpe se queda en el caparazón. Sin ellas, se la lleva.
+        if (!view.BreakLayer())
+        {
+            _recipeAt.TryGetValue(cell, out var shell);
+
+            AudioManager.Instance?.PlaySfx(RescueBubbleCatalog.LayerBurst(shell, breaking));
+            yield break;
+        }
+
+        // Y estalla como cualquier otra. Quitarla del registro a secas solo la saca de las
+        // cuentas: el objeto se quedaba en pantalla para siempre, sin reventar y sin destruirse
+        // (reportado por Diego).
+        view.PlayPopAnimation(0f, popClip);
+
+        grid.RemoveBubble(cell);
+
+        var freed = new HashSet<Vector2Int> { cell };
+
+        // Lo que colgaba de ella se cae: la criatura podía ser lo único que sostenía media rama,
+        // y sin esto se quedaría flotando en el agua.
+        CollapseFloating(freed);
+
+        AfterRemoval(freed);
+    }
+
+    // Cuándo revienta lo más cercano a esa celda. Es el instante en que la burbuja acusa el
+    // golpe: de los vecinos que se van, manda el PRIMERO.
+    float NearestPop(Vector2Int cell)
+    {
+        float at = float.MaxValue;
+
+        foreach (var around in HexGridMath.GetNeighbors(cell))
+            if (_poppedAt.TryGetValue(around, out float t)) at = Mathf.Min(at, t);
+
+        return at == float.MaxValue ? 0f : at;
+    }
+
+    // ---- El objetivo del nivel -------------------------------------------------------------
+
+    bool AllRescued
+    {
+        get
+        {
+            foreach (int left in _remaining) if (left > 0) return false;
+
+            return true;
+        }
+    }
+
+    // Qué pide este nivel, listo para contarlo y para enseñarlo. Se llama DESPUÉS de poblar el
+    // grid: una criatura escrita donde no hay burbuja no cuenta, o el nivel sería imposible de
+    // ganar y el hub pediría algo que no está.
+    void SetUpObjective()
+    {
+        _targets.Clear();
+        _remaining.Clear();
+        _shown.Clear();
+        _creatureAt.Clear();
+        _recipeAt.Clear();
+        _freed        = 0;
+        _rescueUnits  = 0;
+
+        // Se agrupan por lo que LLEVAN, no por la receta: tres coquíes en tres recetas distintas
+        // son un solo hueco con un 3, que es lo que el jugador entiende. Un hueco por receta le
+        // pediría distinguir "coquí bajo hielo" de "coquí suelto" como si fueran dos objetivos.
+        if (_level.objective != null)
+            foreach (var at in _level.objective.Rescues())
+            {
+                if (at == null || !grid.IsOccupied(at.Cell)) continue;   // sin burbuja no hay nada que contar
+
+                string holds = at.Holds();
+                int    index = _targets.IndexOf(holds);
+
+                if (index < 0)
+                {
+                    index = _targets.Count;
+                    _targets.Add(holds);
+                    _remaining.Add(0);
+                    _shown.Add(0);
+                }
+
+                _creatureAt[at.Cell] = index;
+                _recipeAt[at.Cell]   = at.Recipe;
+                _rescueUnits++;
+                _remaining[index]++;
+                _shown[index]++;
+            }
+
+        ShowObjective();
+    }
+
+    void ShowObjective()
+    {
+        if (objectiveHub == null) return;
+
+        var goals = new List<(Sprite icon, int total)>();
+
+        if (_targets.Count > 0)
+            for (int i = 0; i < _targets.Count; i++)
+                goals.Add((CreatureCatalog.Icon(_targets[i]), _remaining[i]));
+
+        // Sin rescate, lo que se cuenta son burbujas: el hub sirve igual para "limpia el tablero"
+        // y el jugador ve cuánto le queda en vez de deducirlo mirando.
+        else if (grid.CellCount > 0)
+        {
+            goals.Add((clearAllIcon != null ? clearAllIcon : grid.SpriteFor(FirstLevelColor()), grid.CellCount));
+            _shown.Add(grid.CellCount);
+        }
+
+        objectiveHub.Show(goals);
+    }
+
+    BubbleColor FirstLevelColor() =>
+        _level.available_colors != null && _level.available_colors.Count > 0
+            ? BubbleColorExtensions.Parse(_level.available_colors[0])
+            : BubbleColor.Red;
+
+    // Lo que esta remoción se llevó del objetivo. Baja el contador que toque y refresca su hueco.
+    void CountRescued(HashSet<Vector2Int> removed)
+    {
+        if (_shown.Count == 0) return;
+
+        foreach (var cell in removed)
+        {
+            // "Limpia el tablero": cuenta todas. Con rescate, solo las que llevaban criatura.
+            int index = 0;
+
+            if (_targets.Count > 0)
+            {
+                if (!_creatureAt.TryGetValue(cell, out index)) continue;
+
+                _creatureAt.Remove(cell);   // ya contada: una celda no libera dos veces
+
+                // La cuenta de verdad baja YA: de ella depende si el nivel está ganado, y
+                // esperar a la animación lo declararía a destiempo.
+                _remaining[index] = Mathf.Max(0, _remaining[index] - 1);
+
+                _freed++;
+
+            _recipeAt.TryGetValue(cell, out var recipe);
+
+                // Dos sonidos y no uno: el cristal que se rompe y el bicho que sale. Son dos
+                // cosas distintas y juntarlas en un clip obligaría a tener uno por criatura.
+                StartCoroutine(PlayClipAfter(RescueBubbleCatalog.Burst(recipe),            PopTime(cell)));
+                StartCoroutine(PlayClipAfter(CreatureCatalog.RescueClip(_targets[index]),  PopTime(cell)));
+
+                // El destello va en el MISMO sitio para los dos caminos —la que entra en un match
+                // y la que abre un vecino— porque los dos acaban acá. Puesto en cada uno serían
+                // dos efectos que mantener iguales.
+                StartCoroutine(SparkleAfter(HexGridMath.CellToLocalPos(cell),
+                                            rescueSparkle.glowSize > 0f ? rescueSparkle : bombSparkle,
+                                            PopTime(cell)));
+
+                // Lo rescatado VUELA al hub, y el número baja cuando llega. Que el contador se
+                // mueva solo, con la criatura todavía en el tablero, deja el objetivo y lo que
+                // pasa en pantalla como dos cosas sin relación — y lo que se compró con ese
+                // disparo es justamente la relación entre las dos (pedido de Diego).
+                // El punto lo da el grid, que es quien sabe cómo está montado su contenedor. No
+                // se le pregunta a la burbuja: para cuando esto corre ya salió de la lista.
+                StartCoroutine(FlyToHub(grid.WorldOf(cell), _targets[index], index, PopTime(cell)));
+                continue;
+            }
+
+            // Y el número de pantalla baja de uno en uno, cada uno cuando SU burbuja revienta. Se
+            // descuenta en vez de fijar un valor: las de un mismo objetivo revientan en cualquier
+            // orden, y fijando valores el número saltaría hacia atrás.
+            StartCoroutine(TickObjective(index, PopTime(cell)));
+        }
+    }
+
+    // El icono sale de la burbuja y se va al hub, dejando chispas. Vive en el canvas raíz y no en
+    // el tablero: el grid está recortado por arriba —lo tapa el panel del HUD— y un vuelo que
+    // sube hasta ahí se cortaría justo donde tiene que llegar.
+    IEnumerator FlyToHub(Vector3 fromWorld, string creatureId, int index, float delay)
+    {
+        _pendingTicks++;
+
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        _pendingTicks--;
+
+        var slot = objectiveHub != null ? objectiveHub.SlotAt(index) : null;
+        var icon = CreatureCatalog.Icon(creatureId);
+
+        // Sin hub o sin arte no hay vuelo que enseñar, pero el objetivo sí tiene que bajar: el
+        // efecto es el adorno, la cuenta es el juego.
+        if (slot == null || icon == null || shotsLabel == null || shotsLabel.canvas == null)
+        {
+            Land(index);
+            yield break;
+        }
+
+        var root = (RectTransform)shotsLabel.canvas.rootCanvas.transform;
+
+        // TODO el vuelo va en coordenadas de MUNDO, de punta a punta. Convertir a coordenadas del
+        // canvas obliga a acertar con el pivote y el anclaje de cada rect por el camino, y basta
+        // que uno no esté centrado para que el icono salga corrido de su burbuja — pasó dos veces
+        // (reportado por Diego). En mundo no hay nada que acertar: el punto es el punto.
+        Vector3 from = fromWorld;
+        Vector3 to   = slot.position;
+
+        var flyer = new GameObject("Rescued", typeof(RectTransform), typeof(Image)) { hideFlags = HideFlags.DontSave };
+        var rt    = (RectTransform)flyer.transform;
+
+        rt.SetParent(root, false);
+        rt.SetAsLastSibling();
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = Vector2.one * HexGridMath.BubbleDiameter;
+        rt.position  = from;
+
+        var image = flyer.GetComponent<Image>();
+
+        image.sprite         = icon;
+        image.raycastTarget  = false;
+        image.preserveAspect = true;
+
+        // Nace pequeño para que el crecimiento SE VEA. Naciendo a tamaño natural, el golpe de
+        // zoom es de 1 a 1,2 y en un icono de 90 píxeles eso no se nota (reportado por Diego).
+        rt.localScale = Vector3.one * RESCUE_POP_FROM;
+
+        // Lo vivo tiembla y lo de piedra no. Sale de en qué lista del catálogo esté: una perla
+        // o un cofre moviéndose como gelatina se leen como de goma, y un caracol que sube tieso
+        // parece un icono y no un bicho al que acaban de soltar.
+        bool jelly = CreatureCatalog.Creature(creatureId);
+
+        float time  = rescueFlight > 0f ? rescueFlight : DEFAULT_RESCUE_FLIGHT;
+        float trail = rescueTrail  > 0f ? rescueTrail  : DEFAULT_RESCUE_TRAIL;
+        float spark = 0f;
+
+        // Antes de salir: crece en el sitio y espera un instante. Es lo que separa "la burbuja
+        // reventó" de "esto de dentro se soltó" — saliendo disparado en el mismo frame, las dos
+        // cosas se leen como una sola y no se ve qué se rescató.
+        yield return Swell(rt, RESCUE_POP_TIME, RESCUE_POP_SCALE);
+
+        // Y donde lo de piedra se queda quieto un instante, lo vivo rebota. Es el mismo hueco de
+        // tiempo: el rebote no retrasa la salida, solo la llena.
+        if (jelly) yield return Wobble(rt, RESCUE_POP_HOLD + JELLY_EXTRA, RESCUE_POP_SCALE);
+        else       yield return new WaitForSeconds(RESCUE_POP_HOLD);
+
+        var mid = ControlPoint(from, to, fromWorld);
+
+        Vector3 last = from;
+
+        for (float t = 0f; t < time; t += Time.deltaTime)
+        {
+            float p = Mathf.Clamp01(t / time);
+
+            rt.position = Bezier(from, mid, to, p);
+
+            // Del tamaño del golpe al del hueco del hub: el zoom se gasta POR EL CAMINO, así que
+            // lo que llega arriba ya tiene el tamaño del icono y no da un salto al aterrizar.
+            float grow = Mathf.Lerp(RESCUE_POP_SCALE, 0.55f, p);
+
+            // El temblor va MULTIPLICANDO ese tamaño, no sustituyéndolo: así el bicho sigue
+            // encogiendo hacia el hueco del hub mientras tiembla, en vez de quedarse clavado.
+            rt.localScale = jelly ? Vector3.one * grow + Jelly.Pulse(t, JELLY_FLY) * grow
+                                  : Vector3.one * grow;
+
+            if ((spark += Time.deltaTime) >= trail)
+            {
+                spark = 0f;
+
+                // Hacia dónde va el icono en este instante, para poder esparcir las chispas a lo
+                // ANCHO del camino y no a lo largo. Sin esto el desvío salía en direcciones de la
+                // pantalla y la estela se leía como una raya (reportado por Diego).
+                Vector3 step = rt.position - last;
+                Vector3 side = step.sqrMagnitude > 0.0001f
+                             ? new Vector3(-step.y, step.x, 0f).normalized
+                             : Vector3.right;
+
+                // El ancho de la estela es el del icono: es lo que la hace una estela y no un
+                // hilo. Se mide del icono que vuela, así que encoger el icono encoge el rastro.
+                float width = rt.sizeDelta.x * rt.localScale.x;
+
+                // Un puñado cada vez, no una. Con una por tanda sale una hilera de cuentas; lo
+                // que parece polvo de estrellas es un grupito disperso en cada paso.
+                int many = Random.Range(TRAIL_PER_STEP, TRAIL_PER_STEP * 2 + 1);
+
+                for (int i = 0; i < many; i++)
+                {
+                    // A lo ancho, repartido por todo el ancho del icono; y un poco adelante o
+                    // atrás, para que el grupo no quede alineado en una fila perpendicular.
+                    Vector3 at = rt.position
+                               + side * (Random.Range(-0.5f, 0.5f) * width)
+                               + step.normalized * (Random.Range(-0.4f, 0.4f) * width);
+
+                    StartCoroutine(TrailMote(root, at));
+                }
+
+                // Las chispas nacen encima de todo y el icono se vuelve a subir detrás de ellas.
+                // Colocándolas por debajo había que fiarse de que nada en el canvas las tapara, y
+                // eso era justo lo que no se podía dar por sabido: no se veían (reportado por
+                // Diego, tres veces). Encima de todo no hay nada que suponer.
+                rt.SetAsLastSibling();
+            }
+
+            last = rt.position;
+
+            yield return null;
+        }
+
+        Destroy(flyer);
+        Land(index);
+    }
+
+    void Land(int index)
+    {
+        if (index >= _shown.Count) return;
+
+        _shown[index] = Mathf.Max(0, _shown[index] - 1);
+
+        objectiveHub?.SetRemaining(index, _shown[index]);
+        objectiveHub?.Bump(index);
+    }
+
+    // Un punto de luz que se queda atrás y se apaga. Son los que convierten el vuelo en un rastro.
+    //
+    // El sprite es el del faro y no el resplandor corriente: aquel es una gaussiana con el núcleo
+    // muy estrecho, y a veinte píxeles de ancho lo sólido eran tres — la estela entera se veía
+    // como un alfiler (reportado por Diego). El del faro tiene meseta: lo que se dibuja es casi
+    // todo el ancho que se le pide.
+    //
+    // Una chispa de las que quedan por el camino. No forman una franja sólida: son puntos de luz
+    // sueltos, de tamaños distintos y apartados del camino, que se encienden y se apagan — que es
+    // lo que hace el rastro del ejemplo que pasó Diego.
+    //
+    // Por eso la de cuatro puntas y no el disco de resplandor: un disco da un trazo de pintura y
+    // esto tiene que leerse como polvo de estrellas, con brillos que titilan.
+    //
+    IEnumerator TrailMote(RectTransform root, Vector3 at)
+    {
+        var go = new GameObject("RescueMote", typeof(RectTransform), typeof(Image)) { hideFlags = HideFlags.DontSave };
+        var rt = (RectTransform)go.transform;
+
+        // Cada una de su tamaño, y con mucha diferencia entre la mayor y la menor: lo que hace
+        // que un grupo se lea como polvo y no como un patrón es que no haya dos iguales.
+        float size = (rescueTrailSize > 0f ? rescueTrailSize : DEFAULT_TRAIL_SIZE)
+                   * HexGridMath.BubbleDiameter * Random.Range(0.3f, 1.3f);
+
+        rt.SetParent(root, false);
+        rt.SetAsLastSibling();
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = Vector2.one * size;
+
+        // El sitio ya viene repartido a lo ancho del camino desde el vuelo, que es el único que
+        // sabe hacia dónde va el icono en este instante.
+        rt.position = at;
+
+        // Y girada al azar, que cuatro puntas siempre en cruz delatan que es el mismo dibujo.
+        rt.localRotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 90f));
+
+        var image = go.GetComponent<Image>();
+        var tint  = rescueTrailColor.a > 0f ? rescueTrailColor : Color.white;
+
+        image.sprite        = SparkleTextures.Mote;
+        image.raycastTarget = false;
+
+        // La vida son dos tramos: lo que aguanta puesta y lo que tarda en irse. En segundos y no
+        // en fracción del vuelo, porque lo que se está ajustando acá es cuánto dura el rastro en
+        // pantalla, y eso no tiene por qué cambiar si un día el icono vuela más rápido.
+        float hold = rescueTrailHold > 0f ? rescueTrailHold : DEFAULT_TRAIL_HOLD;
+        float life = hold + TRAIL_FADE;
+
+        // Cada una empieza su titileo en un punto distinto del suyo. Arrancando todas a la vez,
+        // la estela entera late de golpe en lugar de centellear.
+        float phase = Random.Range(0f, 0.25f);
+
+        // Nace ENCENDIDA y a su tamaño. Antes subía de cero durante la primera parte de su vida,
+        // y eso son los primeros frames —los únicos en los que está pegada al icono y se la mira—
+        // dibujando algo transparente.
+        image.color   = tint;
+        rt.localScale = Vector3.one;
+
+        for (float t = 0f; t < life; t += Time.deltaTime)
+        {
+            if (image == null) yield break;
+
+            // Encendida del todo mientras dura la espera, y a partir de ahí bajando.
+            float lit = t < hold ? 1f : 1f - (t - hold) / TRAIL_FADE;
+
+            // Y encima titila, sin llegar a apagarse del todo en ningún momento del latido.
+            float twinkle = 0.8f + 0.2f * Mathf.Sin((t + phase) * TWINKLE_HZ * Mathf.PI * 2f);
+
+            image.color   = new Color(tint.r, tint.g, tint.b, tint.a * Mathf.Clamp01(lit) * twinkle);
+            rt.localScale = Vector3.one * Mathf.Lerp(0.4f, 1f, Mathf.Clamp01(lit));
+            yield return null;
+        }
+
+        if (go != null) Destroy(go);
+    }
+
+    // Más de una burbuja y media, que parece mucho y no lo es: la chispa de cuatro puntas gasta
+    // su ancho en brazos muy finos, así que de una imagen de 90 píxeles lo que de verdad brilla
+    // son los veinte del medio. A una burbuja todavía se veían chiquitas (reportado por Diego).
+    const float DEFAULT_TRAIL_SIZE = 1.6f;
+
+    // Cuánto aguanta encendida cada chispa y cuánto tarda en apagarse después, en segundos;
+    // cuántas suelta como MÍNIMO cada tanda (el máximo es el doble); y a qué ritmo titila.
+    const float DEFAULT_TRAIL_HOLD = 0.7f;
+    const float TRAIL_FADE         = 0.45f;
+    const int   TRAIL_PER_STEP     = 3;
+    const float TWINKLE_HZ         = 6f;
+
+    // El punto que curva el vuelo. El desvío va PERPENDICULAR al camino y no en los ejes de la
+    // pantalla: desplazándolo en vertical, una burbuja que queda justo debajo de su hueco movía
+    // el control sobre la propia recta y el vuelo salía derecho (reportado por Diego).
+    //
+    // Y se curva hacia AFUERA, al lado de la pantalla en el que esté la burbuja: la de la
+    // izquierda sale abriéndose por la izquierda y la de la derecha por la derecha. Hacia adentro
+    // cruzaría por encima del tablero, tapando lo que el jugador está mirando.
+    //
+    // El lado lo decide dónde ESTÁ la burbuja y no hacia dónde va: comparando origen y destino,
+    // una que queda casi debajo de su hueco los tiene a unos píxeles y el lado salía uno u otro
+    // por azar, así que dos rescates seguidos curvaban distinto sin motivo (reportado por Diego).
+    Vector3 ControlPoint(Vector3 from, Vector3 to, Vector3 fromWorld)
+    {
+        var   dir  = to - from;
+        float away = dir.magnitude * (rescueBend > 0f ? rescueBend : DEFAULT_RESCUE_BEND);
+
+        if (away <= 0f) return (from + to) * 0.5f;
+
+        var perp = new Vector3(-dir.y, dir.x, 0f).normalized;
+
+        // Hacia AFUERA, al lado de la pantalla donde está la burbuja. El lado se mira en
+        // píxeles de pantalla y no en el mundo: en mundo el centro depende de dónde esté el
+        // canvas, y en pantalla es siempre la mitad del ancho.
+        bool left = Camera.main != null
+            ? RectTransformUtility.WorldToScreenPoint(null, fromWorld).x < Screen.width * 0.5f
+            : from.x < to.x;
+
+        if (perp.x > 0f == left) perp = -perp;
+
+        return (from + to) * 0.5f + perp * away;
+    }
+
+    static Vector3 Bezier(Vector3 a, Vector3 b, Vector3 c, float t)
+    {
+        float u = 1f - t;
+
+        return u * u * a + 2f * u * t * b + t * t * c;
+    }
+
+    const float DEFAULT_RESCUE_FLIGHT = 0.55f;
+    const float DEFAULT_RESCUE_TRAIL  = 0.012f;
+    const float DEFAULT_RESCUE_BEND   = 0.3f;
+
+    // El golpe de salida: crece a 1,2 donde estaba, se queda un instante y recién entonces sale.
+    const float RESCUE_POP_FROM  = 0.45f;
+    const float RESCUE_POP_TIME  = 0.28f;
+    const float RESCUE_POP_SCALE = 1.2f;
+    const float RESCUE_POP_HOLD  = 0.12f;
+
+    // La gelatina: cuánto se deforma al salir y cuánto por el camino, y lo que se alarga la
+    // espera de salida para que el rebote quepa. El ritmo y la amortiguación están en 'Jelly'.
+    const float JELLY_POP   = 0.22f;
+    const float JELLY_FLY   = 0.10f;
+    const float JELLY_EXTRA = 0.25f;
+
+    // Cuántos descuentos hay agendados y todavía sin ocurrir. Es lo que convierte el número de
+    // pantalla en algo DERIVADO del tablero en vez de una cuenta paralela.
+    int _pendingTicks;
+
+    IEnumerator TickObjective(int index, float delay)
+    {
+        _pendingTicks++;
+
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        _pendingTicks--;
+
+        if (index >= _shown.Count) yield break;
+
+        // Limpiar el tablero: el número sale del grid, que es quien lo sabe, más los descuentos
+        // que faltan por verse. Así la animación escalona igual pero el valor no puede quedar
+        // desincronizado — y no lo quedaba por los pops sino por todo lo demás que mueve el
+        // tablero sin pasar por acá (reportado por Diego: decía 16 con treinta y pico puestas).
+        //
+        // Con rescate no sirve: lo que se cuenta son criaturas y el grid no sabe cuántas quedan.
+        _shown[index] = _targets.Count > 0
+            ? Mathf.Max(0, _shown[index] - 1)
+            : grid.CellCount + _pendingTicks;
+
+        objectiveHub?.SetRemaining(index, _shown[index]);
     }
 
     // Lo que hay que mirar después de cualquier remoción, venga de un match o de una explosión.
@@ -2118,6 +2705,21 @@ public class GameplayController : MonoBehaviour
 
     // Crece o vuelve, sin rebote: la vista previa tiene que leerse como un estado —"estas se van
     // a ir"— y un gesto con rebote se lee como que algo ya pasó.
+    // El rebote en el sitio, alrededor de un tamaño fijo. La fórmula está en 'Jelly', compartida
+    // con la burbuja: el bicho que tiembla esperando y el que tiembla al salir son el mismo.
+    static IEnumerator Wobble(RectTransform target, float time, float around)
+    {
+        for (float t = 0f; t < time; t += Time.deltaTime)
+        {
+            if (target == null) yield break;
+
+            target.localScale = Vector3.one * around + Jelly.Pulse(t, JELLY_POP) * around;
+            yield return null;
+        }
+
+        if (target != null) target.localScale = Vector3.one * around;
+    }
+
     static IEnumerator Swell(RectTransform target, float time, float to)
     {
         if (target == null) yield break;
@@ -2148,15 +2750,33 @@ public class GameplayController : MonoBehaviour
     // propio retraso— y se vacía al final, en AfterRemoval.
     readonly Dictionary<Vector2Int, float> _poppedAt = new();
 
-    void AfterRemoval(HashSet<Vector2Int> removed)
+    // Cuándo revienta esa celda. Si no reventó —una burbuja que ATERRIZA al lado de una mina
+    // también la enciende— va al instante: no hay nada que esperar.
+    float PopTime(Vector2Int cell) => _poppedAt.TryGetValue(cell, out float t) ? t : 0f;
+
+    void AfterRemoval(HashSet<Vector2Int> removed, Vector2Int? landed = null)
     {
         // Las minas primero, y la cadena ENTERA: una que estalla puede encender a la de al lado y
         // esa a la siguiente. Mirar si el nivel terminó a mitad de esa cadena sería decidirlo
         // sobre un tablero que todavía va a cambiar, y lo que la cadena se lleve cuenta igual
         // para la criatura y para el marcador.
-        DetonateMinesTouching(removed);
+        DetonateMinesTouching(removed, landed);
 
-        if (removed.Contains(_creatureCell)) _creatureFreed = true;
+        // Y lo que las burbujas de rescate acusen de todo eso: una capa por golpe, y la que se
+        // quede a la vista se libera. Va ANTES de contar, porque lo que libere entra en 'removed'
+        // y tiene que contarse como rescatado en esta misma jugada.
+        HitRescuesTouching(removed, landed);
+
+        CountRescued(removed);
+
+        // Un disparo que no matchea SUMA una burbuja al tablero, así que el objetivo de limpiarlo
+        // se aleja. Se refresca contra el grid en vez de sumar a mano: el mismo número derivado
+        // que usan los descuentos, para que no haya dos formas de calcularlo.
+        if (_targets.Count == 0 && landed.HasValue && grid.IsOccupied(landed.Value) && _shown.Count > 0)
+        {
+            _shown[0] = grid.CellCount + _pendingTicks;
+            objectiveHub?.SetRemaining(0, _shown[0]);
+        }
 
         if (progressScore != null) progressScore.SetScore(LiveScore, _level.star_thresholds);
 
@@ -2172,7 +2792,7 @@ public class GameplayController : MonoBehaviour
     // Una mina estalla por contacto y no por color: lo mismo da que la burbuja de al lado se haya
     // ido en un match, en una explosión o que acabe de llegar. Una sola regla y los tres casos
     // que pidió Diego —disparo, cadena y otra mina— salen de ella sin un caso especial cada uno.
-    void DetonateMinesTouching(HashSet<Vector2Int> touched)
+    void DetonateMinesTouching(HashSet<Vector2Int> touched, Vector2Int? landed = null)
     {
         // Cada mina con CUÁNDO se enciende: el instante en que revienta la primera vecina que se
         // va a su lado. Una mina pegada a la última del racimo espera a esa; estallando al tirar
@@ -2183,6 +2803,11 @@ public class GameplayController : MonoBehaviour
         foreach (var cell in touched)
             foreach (var around in HexGridMath.GetNeighbors(cell))
                 Queue(around, PopTime(cell));
+
+        // Y lo que acaba de llegar, que no se fue a ningún sitio pero igual la toca.
+        if (landed.HasValue)
+            foreach (var around in HexGridMath.GetNeighbors(landed.Value))
+                Queue(around, 0f);
 
         while (pending.Count > 0)
         {
@@ -2227,10 +2852,6 @@ public class GameplayController : MonoBehaviour
                 foreach (var around in HexGridMath.GetNeighbors(cell))
                     Queue(around, PopTime(cell));
         }
-
-        // Si la celda no reventó —una burbuja que ATERRIZA al lado también enciende— va al
-        // instante: no hay nada que esperar.
-        float PopTime(Vector2Int cell) => _poppedAt.TryGetValue(cell, out float t) ? t : 0f;
 
         // Se queda con el PRIMER contacto: dos vecinas que revientan a destiempo la encienden
         // cuando llega la primera, no cuando acaba la segunda.
@@ -2288,6 +2909,29 @@ public class GameplayController : MonoBehaviour
                     rainbowCell = cell;
                     break;
                 }
+
+        // Las de rescate que entraron en el grupo por su color NO se van con él si todavía tienen
+        // caparazón: el match les cuesta una capa y se quedan. Sin esto, un poder de rescate con
+        // tres capas se abriría de un solo match y el caparazón no significaría nada.
+        //
+        // Se sacan del grupo ANTES de puntuar y de reventar, no después: metidas en la cuenta
+        // sumarían puntos y pedirían un pop que no va a ocurrir.
+        for (int i = matched.Count - 1; i >= 0; i--)
+        {
+            if (!grid.TryGetBubble(matched[i], out var trapped) || trapped == null) continue;
+            if (!trapped.IsCreature || trapped.LayersLeft <= 0)                     continue;
+
+            StartCoroutine(HitRescue(matched[i], i * ChainStep(matched.Count, POP_CHAIN_DELAY)));
+            matched.RemoveAt(i);
+        }
+
+        if (matched.Count < GridController.MIN_MATCH)
+        {
+            // Quitadas las acorazadas puede no quedar match: el grupo era tres y dos eran
+            // caparazón. El golpe ya se dio, pero no hay nada que reventar.
+            _comboStreak = 0;
+            return removed;
+        }
 
         _comboStreak++;
 
@@ -2474,6 +3118,13 @@ public class GameplayController : MonoBehaviour
         int firstTraveler = hit.Count - BoosterRules.TravelersOf(booster);
         int sent          = 0;
 
+        // Lo que cada hija se lleva DE PROPINA al caer: las de su color que estuvieran pegadas a
+        // su objetivo. Se apunta acá y se resuelve después del bucle porque hay que mirarlo con
+        // el tablero tal como está en ese momento —las hijas van al final de la lista, así que
+        // para entonces el racimo del impacto ya salió— y reventarlo dentro cambiaría lo que el
+        // propio bucle va a encontrar.
+        var alongside = new List<(Vector2Int cell, float at)>();
+
         for (int i = 0; i < hit.Count; i++)
         {
             var cell = hit[i];
@@ -2499,6 +3150,25 @@ public class GameplayController : MonoBehaviour
                                      HexGridMath.CellToLocalPos(hit[0]),
                                      HexGridMath.CellToLocalPos(cell),
                                      sprite, travel, sent++);
+
+                // Y el racimo de ese objetivo, si lo tiene. Empieza cuando la hija aterriza, no
+                // al disparar el poder: lo que se lleva el grupo es ella al caer, y adelantarlo
+                // se vería como burbujas desapareciendo solas al otro lado del tablero.
+                if (BoosterRules.ChildrenMatch(booster))
+                {
+                    // 'FindConnectedSameColor' sale en anchura desde el objetivo, así que la
+                    // lista ya viene ordenada de la más cercana a la más lejana. Eso es lo que
+                    // hace que el racimo reviente EN CADENA, igual que un match disparado, en vez
+                    // de desaparecer de golpe (pedido de Diego).
+                    var friends  = grid.FindConnectedSameColor(cell);
+                    float chain  = ChainStep(friends.Count, POP_CHAIN_DELAY);
+                    int   link   = 1;
+
+                    if (friends.Count >= BoosterRules.CHILD_MIN_MATCH)
+                        foreach (var friend in friends)
+                            if (friend != cell && !removed.Contains(friend) && !hit.Contains(friend))
+                                alongside.Add((friend, at + link++ * chain));
+                }
             }
 
             if (grid.TryGetBubble(cell, out var view))
@@ -2536,6 +3206,23 @@ public class GameplayController : MonoBehaviour
 
             TravelingBubble.Send((RectTransform)grid.transform, HexGridMath.CellToLocalPos(hit[0]), away, spare, travel, extra);
             StartCoroutine(PopInOpenWater(away, travel.TotalFor(extra), art));
+        }
+
+        // Y ahora sí lo que las hijas se llevaron de propina. Fuera del bucle de arriba para no
+        // modificar el tablero mientras ese lo recorre.
+        foreach (var (cell, at) in alongside)
+        {
+            if (!removed.Add(cell)) continue;   // dos hijas pueden rozar el mismo racimo
+
+            if (grid.TryGetBubble(cell, out var view)) view.PlayPopAnimation(at, popClip);
+
+            grid.SpawnScorePopup(cell, popValue, at, ScorePopup.POP_LIFETIME);
+            grid.RemoveBubble(cell);
+
+            _poppedAt[cell] = at;
+
+            _bubblesPopped++;
+            _popScore += popValue;
         }
 
         _bubblesPopped += hit.Count;
@@ -2629,6 +3316,8 @@ public class GameplayController : MonoBehaviour
             grid.SpawnDropScorePopup(cell, ScoreRules.POINTS_PER_DROP, delay + i * step);
             grid.RemoveBubble(cell);
             removed.Add(cell);
+
+            _poppedAt[cell] = delay + i * step;
         }
         _bubblesDropped += collapsing.Count;
 
@@ -2730,7 +3419,7 @@ public class GameplayController : MonoBehaviour
         // corrutina vieja igual va a terminar y cerrar el nivel con los disparos recién pagados.
         if (_levelEnded || _endingPending) return;
 
-        bool objectiveMet = _level.objective.type == "rescue" ? _creatureFreed : grid.CellCount == 0;
+        bool objectiveMet = _targets.Count > 0 ? AllRescued : grid.CellCount == 0;
         if (objectiveMet) { _endingPending = true; StartCoroutine(EndLevelAfterAnimations(true)); return; }
 
         if (_shotsRemaining <= 0)
@@ -2781,7 +3470,8 @@ public class GameplayController : MonoBehaviour
             // que no se ganó jugando (ver ScoreRules.AllowedBonus).
             _victoryBonus = ScoreRules.AllowedBonus(LiveScore,
                                                     ScoreRules.RemainingShotsScore(_shotsRemaining),
-                                                    _level.star_thresholds);
+                                                    _level.star_thresholds,
+                                                    _targets.Count > 0);
             int score  = LiveScore + _victoryBonus;
 
             // Con el total, bonus incluido: los disparos que sobran también cuentan para las
@@ -2915,7 +3605,13 @@ public class GameplayController : MonoBehaviour
     // (depende de cuántos disparos quedaron), así que mostrarlo en vivo en ProgressScoreView
     // haría que la barra subiera/bajara de forma rara mientras se juega. El salto final se ve
     // en el contador animado de WinPanel, no acá.
-    int LiveScore => _popScore + ScoreRules.DropScore(_bubblesDropped);
+    // Lo rescatado cuenta en vivo, no al ganar: la barra tiene que moverse CUANDO el jugador
+    // libera algo, que es el momento en que siente que avanzó.
+    int LiveScore => _popScore + ScoreRules.DropScore(_bubblesDropped)
+                   + ScoreRules.RescueScore(_level?.star_thresholds, _rescueUnits, _freed);
+
+    int _freed;        // cuántos se liberaron ya
+    int _rescueUnits;  // cuántos pide el nivel: es lo que reparte la barra entre ellos
 
     // GDD §4.2 — estrellas según star_thresholds del nivel (calibrados a mano por playtesting,
     // no por fórmula). 0 a 3 estrellas.

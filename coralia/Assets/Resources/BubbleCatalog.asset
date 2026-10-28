@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2e5a3c1fb4624c908e52759dfa1dbbf, type: 3}
+  m_Name: BubbleCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::BubbleCatalog
+  entries:
+  - color: 0
+    frames:
+    - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
+    framesPerSecond: 8
+  - color: 1
+    frames:
+    - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
+    framesPerSecond: 8
+  - color: 2
+    frames:
+    - {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
+    framesPerSecond: 8
+  - color: 3
+    frames:
+    - {fileID: 8811693040233011940, guid: 68cdda231e47a4010b309c4a6f26f53f, type: 3}
+    framesPerSecond: 8
+  - color: 4
+    frames:
+    - {fileID: 9019597055475163029, guid: a530fa5ac93114ff38b5fe1670151f1f, type: 3}
+    framesPerSecond: 8
+  - color: 5
+    frames:
+    - {fileID: -2563078757209599538, guid: 962be93758c2d4080a44b80e92a21aaa, type: 3}
+    framesPerSecond: 8
+  - color: 6
+    frames:
+    - {fileID: 5074852396300620008, guid: f16473d74744a4d8d8aa139a9337769d, type: 3}
+    framesPerSecond: 8
+  - color: 7
+    frames:
+    - {fileID: -1514059717520786615, guid: 2d8e4b2a772734cecbf5542c40b518c0, type: 3}
+    framesPerSecond: 8
+  - color: 8
+    frames:
+    - {fileID: 6725811554093843528, guid: 99b886289eea64ca5a921bd8ad7ec42f, type: 3}
+    framesPerSecond: 8
+  - color: 9
+    frames:
+    - {fileID: 5163298447526876354, guid: 2a6daf1afa2764d2498912c1b88244b2, type: 3}
+    framesPerSecond: 8
+  - color: 10
+    frames:
+    - {fileID: 63477837004811846, guid: eb0f70c6b0d7f41d7ad065eb2008de5d, type: 3}
+    framesPerSecond: 8
+  - color: 11
+    frames:
+    - {fileID: 5547376898668789171, guid: 13fd4b4a4e05042eebd4a5aa316ece11, type: 3}
+    framesPerSecond: 8
+  - color: 12
+    frames:
+    - {fileID: 1777979291482398335, guid: 11e7bf195f63049d497eced4e853f1b5, type: 3}
+    framesPerSecond: 8
+  - color: 13
+    frames:
+    - {fileID: 4248598887970464769, guid: 60fb68342afc44cae95be79e156235cf, type: 3}
+    framesPerSecond: 8
+  sharedGlow: {fileID: 1505006969088389832, guid: 80daac24c790b47e09242751639cec7c, type: 3}
+  glowAsLayer: 1

@@ -23,8 +23,8 @@ using UnityEngine.UI;
 // esto enseña es una fila completa, y una que se saliera por los lados no enseñaría nada.
 public class TutorialElectricRayDemo : MonoBehaviour
 {
-    [Tooltip("Sprites de burbuja de colores DISTINTOS, tres o más. Lo que se enseña es que a la raya el color le da igual, así que mientras más variados, mejor.")]
-    [SerializeField] Sprite[] bubbleSprites;
+    [Tooltip("Los colores con los que se dibuja esta demostración, elegidos de los que el juego ya tiene. El arte sale del BubbleCatalog: así una burbuja del tutorial no puede verse distinta de la del tablero, y cambiar el arte de un color lo cambia en los dos sitios.")]
+    [SerializeField] BubbleColor[] bubbleColors = { BubbleColor.Blue, BubbleColor.Red, BubbleColor.Yellow };
 
     [Tooltip("La mano que apunta. La misma que usan los demás tutoriales: conviene que sea la misma para que el gesto se reconozca de uno al otro.")]
     [SerializeField] Sprite handSprite;
@@ -93,6 +93,20 @@ public class TutorialElectricRayDemo : MonoBehaviour
     Coroutine     _loop;
     float         _builtFor;
 
+
+    // El sprite de uno de los colores de arriba. El módulo vive acá y no en cada llamada: con
+    // diez demostraciones pidiéndolo, el que se olvide revienta con un índice fuera de rango.
+    Sprite SpriteAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? BubbleCatalog.Sprite(bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length])
+            : null;
+
+    // Y el color en sí, para lo que necesite saberlo y no solo dibujarlo.
+    BubbleColor ColorAt(int index) =>
+        bubbleColors != null && bubbleColors.Length > 0
+            ? bubbleColors[((index % bubbleColors.Length) + bubbleColors.Length) % bubbleColors.Length]
+            : BubbleColor.Red;
+
     void OnEnable()
     {
         if (!Ready()) return;
@@ -110,9 +124,9 @@ public class TutorialElectricRayDemo : MonoBehaviour
 
     bool Ready()
     {
-        if (bubbleSprites != null && bubbleSprites.Length >= 3 && RaySprite != null) return true;
+        if (bubbleColors != null && bubbleColors.Length >= 3 && RaySprite != null) return true;
 
-        Debug.LogWarning($"[TutorialElectricRayDemo] '{name}' necesita al menos tres sprites de burbuja de colores distintos, y que BoosterCatalog tenga el arte de la Raya Eléctrica: sin eso no hay nada que mostrar.", this);
+        Debug.LogWarning($"[TutorialElectricRayDemo] '{name}' necesita al menos tres colores de burbuja distintos en 'Bubble Colors', y que BoosterCatalog tenga el arte de la Raya Eléctrica: sin eso no hay nada que mostrar.", this);
         return false;
     }
 
@@ -169,7 +183,7 @@ public class TutorialElectricRayDemo : MonoBehaviour
         for (int col = 0; col < HexGridMath.ColsInRow(row); col++)
         {
             var cell   = new Vector2Int(col, row);
-            var bubble = Spawn($"Bubble{col}_{row}", bubbleSprites[(col + row * 2) % bubbleSprites.Length], size);
+            var bubble = BubbleGlow.AddTo(Spawn($"Bubble{col}_{row}", SpriteAt((col + row * 2)), size));
 
             Place(bubble, CellPos(cell));
             _cluster[cell] = bubble;
