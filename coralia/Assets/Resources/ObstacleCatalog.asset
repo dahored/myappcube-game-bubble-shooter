@@ -13,18 +13,18 @@ MonoBehaviour:
   m_Name: ObstacleCatalog
   m_EditorClassIdentifier: 
   entries:
-  - id: hielo
+  - id: ice
     layers: []
     breakClip: {fileID: 0}
   - id: metal
     layers: []
     breakClip: {fileID: 0}
-  - id: madera
+  - id: wood
     layers: []
     breakClip: {fileID: 0}
-  - id: piedra
+  - id: stone
     layers: []
     breakClip: {fileID: 0}
-  - id: cristal
+  - id: glass
     layers: []
     breakClip: {fileID: 0}

@@ -22,7 +22,7 @@ public class ObstacleCatalog : ScriptableObject
     [System.Serializable]
     public class Entry
     {
-        [Tooltip("Cómo lo nombran las recetas. Texto libre en minúsculas y sin espacios ('hielo', 'metal').\n\nElegir uno ESTABLE: cambiarlo deja sin caparazón a toda receta que ya lo escribió.")]
+        [Tooltip("Cómo lo nombran las recetas. Texto libre en minúsculas y sin espacios, igual que los sprites: 'ice', 'metal', 'wood', 'stone', 'glass'.\n\nElegir uno ESTABLE: cambiarlo deja sin caparazón a toda receta que ya lo escribió.")]
         public string id;
 
         [Tooltip("Los estados del material, de DENTRO hacia afuera: primero los fragmentos sueltos, luego el anillo roto, y al final la esfera entera.\n\nEse orden es el de los nombres de los sprites ('bubble_ice_1', '_2', '_3') y al revés del de rotura: lo que se ve al empezar es el ÚLTIMO de la lista, porque se dibuja encima de todos.")]
