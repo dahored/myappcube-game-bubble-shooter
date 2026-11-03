@@ -122,6 +122,8 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         RefreshColorSkin();
         RefreshGlow();
 
+        StopNudge();
+
         var rt = (RectTransform)transform;
         rt.anchoredPosition = HexGridMath.CellToLocalPos(cell);
     }
@@ -385,6 +387,12 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
     const float BLINK_MIN = 2.5f;
     const float BLINK_MAX = 5.5f;
 
+    // Lo que tarda el empujón en deshacerse.
+    const float NUDGE_TIME = 0.3f;
+
+    Coroutine _nudge;
+    Vector2   _nudgeHome;
+
     void Update()
     {
         if (creatureIcon == null || !creatureIcon.gameObject.activeSelf) return;
@@ -599,6 +607,60 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
 
         rt.anchoredPosition = target;
         EndAnimation();
+    }
+
+    // El empujón de cuando algo se pega al lado: la burbuja cede en esa dirección y vuelve.
+    //
+    // NO entra en AnimatingCount, a diferencia del resto: el desplazamiento es relativo a su
+    // celda, así que el tablero puede desplazarse debajo sin que se vea cortado, y contarlo
+    // congelaría el scroll en cada disparo que no hace match.
+    public void PlayNudge(Vector2 offset)
+    {
+        // Una animación de verdad manda sobre esto: ella escribe la posición y la deja donde
+        // toque, y las dos a la vez se pelean por el mismo campo.
+        if (_animating) return;
+
+        // El reposo se guarda UNA sola vez. Guardándolo en cada empujón, la burbuja que recibe
+        // dos seguidos tomaría por sitio suyo una posición ya desplazada, y el tablero se iría
+        // descuadrando disparo a disparo sin que se note hasta mucho después.
+        if (_nudge != null) StopCoroutine(_nudge);
+        else                _nudgeHome = ((RectTransform)transform).anchoredPosition;
+
+        _nudge = StartCoroutine(Nudge(offset));
+    }
+
+    void StopNudge()
+    {
+        if (_nudge == null) return;
+
+        StopCoroutine(_nudge);
+        _nudge = null;
+    }
+
+    IEnumerator Nudge(Vector2 offset)
+    {
+        var rt = (RectTransform)transform;
+
+        for (float t = 0f; t < NUDGE_TIME; t += Time.deltaTime)
+        {
+            // Si a mitad le toca caer, reventar o deslizarse, se suelta sin restaurar: esa
+            // animación ya se encarga de dejar la burbuja donde corresponde.
+            if (_animating)
+            {
+                _nudge = null;
+                yield break;
+            }
+
+            float p = Mathf.Clamp01(t / NUDGE_TIME);
+
+            // Sale de golpe y vuelve despacio. Al revés se leería como que la burbuja se
+            // estira sola, no como que algo la empujó.
+            rt.anchoredPosition = _nudgeHome + offset * ((1f - p) * (1f - p));
+            yield return null;
+        }
+
+        rt.anchoredPosition = _nudgeHome;
+        _nudge = null;
     }
 
     const float SLIDE_MIN_TIME = 0.22f;

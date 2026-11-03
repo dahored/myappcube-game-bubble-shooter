@@ -1927,10 +1927,41 @@ public class GameplayController : MonoBehaviour
 
         var removed = ResolveMatchAndDrop(landedCell);
 
+        // Sin match la burbuja se queda pegada, y el sector cede un poco. Solo sin match: con
+        // uno lo que se ve es el racimo reventando, y las dos cosas a la vez se pisan.
+        if (removed.Count == 0) NudgeAround(landedCell);
+
         // La aterrizada va APARTE y no dentro de 'removed': una mina estalla con lo que le pasa
         // al lado y aterrizar es eso, pero si el disparo no matcheó esa burbuja se QUEDA — y
         // metida en el montón de las que se fueron, el objetivo la descontaba igual.
         AfterRemoval(removed, landedCell);
+    }
+
+    // Cuánto cede la burbuja de al lado, en píxeles, y hasta qué anillo llega el empujón.
+    const float NUDGE_PUSH  = 6f;
+    const int   NUDGE_RINGS = 3;
+
+    // Las de alrededor se apartan de la que acaba de pegarse, y cuanto más lejos, menos: a doble
+    // distancia, la mitad. Sin esa caída el sector entero se desplaza en bloque y se lee como un
+    // fallo del tablero en vez de como una red que cede.
+    void NudgeAround(Vector2Int cell)
+    {
+        var center = HexGridMath.CellToLocalPos(cell);
+
+        foreach (var around in HexGridMath.CellsWithinRadius(cell, NUDGE_RINGS))
+        {
+            if (around == cell)                                            continue;
+            if (!grid.TryGetBubble(around, out var view) || view == null)   continue;
+
+            var   away = HexGridMath.CellToLocalPos(around) - center;
+            float dist = away.magnitude;
+
+            if (dist < 1f) continue;
+
+            // Dividido por la distancia DOS veces: una para normalizar la dirección y otra
+            // para que el empujón se apague con la lejanía.
+            view.PlayNudge(away * (NUDGE_PUSH * HexGridMath.BubbleDiameter / (dist * dist)));
+        }
     }
 
     // El poder se pega, carga, y recién entonces estalla.
