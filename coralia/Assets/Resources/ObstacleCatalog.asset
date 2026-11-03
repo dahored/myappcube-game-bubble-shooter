@@ -14,17 +14,32 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   entries:
   - id: ice
-    layers: []
-    breakClip: {fileID: 0}
+    layers:
+    - {fileID: 21300000, guid: a9b7691c4496f48b2b9d1fed38c8c0e1, type: 3}
+    - {fileID: 21300000, guid: 4bdd859ed6d214243836664bedae0168, type: 3}
+    - {fileID: 21300000, guid: ea4795460cc1142e3abea21c3e1974d5, type: 3}
+    breakClip: {fileID: 8300000, guid: 73a0cad549270403b946b911cefa9aed, type: 3}
   - id: metal
-    layers: []
+    layers:
+    - {fileID: 21300000, guid: a5b2578a3a0d1416191d288d6d89b143, type: 3}
+    - {fileID: 21300000, guid: 590318cb6c47342c287c10194551d839, type: 3}
+    - {fileID: 21300000, guid: 4c663910773a444efbb4f691cb86589c, type: 3}
     breakClip: {fileID: 0}
   - id: wood
-    layers: []
-    breakClip: {fileID: 0}
+    layers:
+    - {fileID: 21300000, guid: b0203d33a9c4c44ee890e159d0b7b92b, type: 3}
+    - {fileID: 21300000, guid: c17c3e18c812b412189c279b25638acc, type: 3}
+    - {fileID: 21300000, guid: e45053b82dd524b409dc8aa2777ae0bc, type: 3}
+    breakClip: {fileID: 8300000, guid: f69246fb1c7ff45e48f6ea26d79bfe5c, type: 3}
   - id: stone
-    layers: []
+    layers:
+    - {fileID: 21300000, guid: 1e5381a9cb11f44448923617bc97a060, type: 3}
+    - {fileID: 21300000, guid: e5203dc49a79a42799c8c89da3e1c2f6, type: 3}
+    - {fileID: 21300000, guid: ec26f9de3d88e4d479c09073dc13c002, type: 3}
     breakClip: {fileID: 0}
   - id: glass
-    layers: []
-    breakClip: {fileID: 0}
+    layers:
+    - {fileID: 21300000, guid: 47e0b7a8602f645d0ab213673edea412, type: 3}
+    - {fileID: 21300000, guid: ca97111d442e7407e9bbedb44edb7f7e, type: 3}
+    - {fileID: 21300000, guid: 2d73eb1ff902d40038a6d1edbc659703, type: 3}
+    breakClip: {fileID: 8300000, guid: 73a0cad549270403b946b911cefa9aed, type: 3}
