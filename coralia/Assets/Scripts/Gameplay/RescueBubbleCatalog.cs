@@ -44,7 +44,7 @@ public class RescueBubbleCatalog : ScriptableObject
         [ObstacleId]
         public string obstacle;
 
-        [Tooltip("Cuántos golpes cuesta abrirla. Se usan las capas más GRUESAS del material: dos son la esfera entera y el anillo, no los fragmentos.\n\nCero la deja sin caparazón, igual que dejar el material vacío.")]
+        [Tooltip("Cuántos golpes cuesta abrirla. Se usan las PRIMERAS capas del material, que van de menos a más: uno arranca hecho pedazos y tres arranca entero, así el grosor se ve sin tener que golpearlo.\n\nCero la deja sin caparazón, igual que dejar el material vacío.")]
         [Range(0, ObstacleCatalog.MAX_LAYERS)]
         public int layers;
 

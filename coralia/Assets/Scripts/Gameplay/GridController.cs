@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -310,8 +311,14 @@ public class GridController : MonoBehaviour, IBoardView
     // Si participa del match, sea del color que sea. Va aparte de HasColor porque la arcoíris SÍ
     // matchea —es el comodín— pero no cuenta como un color que haya que suministrar: metida en
     // la misma pregunta, el flood-fill dejaba de agrupar comodines y el poder se rompía.
+    //
+    // Y lo ACORAZADO tampoco matchea mientras le queden capas: su color está tapado, y un color
+    // que no se ve no puede pedirle al jugador que lo junte. Sin esto, dos grupos rojos separados
+    // por un obstáculo rojo se unían a través de él y reventaban los dos — el jugador veía dos
+    // grupos sueltos y un caparazón gris en medio. Cuando cae la última capa el color aparece y
+    // vuelve a matchear como cualquiera (pedido de Diego).
     static bool Matchable(BubbleView view) =>
-        view != null && !view.IsMine && (!view.IsCreature || view.CreatureMatches);
+        view != null && !view.IsMine && view.LayersLeft <= 0 && (!view.IsCreature || view.CreatureMatches);
 
     // Colores del FRENTE del grid, repetidos según cuánto conviene ofrecer cada uno. La lista
     // sale con repeticiones a propósito: sortear un elemento al azar ya respeta los pesos.
@@ -390,6 +397,46 @@ public class GridController : MonoBehaviour, IBoardView
         return false;
     }
 
+    // El respiro entre un caparazón asentado y el siguiente saliendo, y lo máximo que puede durar
+    // la tanda entera.
+    const float SHELL_INTRO_GAP = 0.1f;
+    const float SHELL_INTRO_MAX = 3f;
+
+    // Los caparazones llegan UNO DETRÁS DE OTRO, no todos de golpe: a la vez son un efecto, y en
+    // fila son alguien repartiéndolos por el tablero. Cada uno llega, se asienta y suena antes de
+    // que salga el siguiente.
+    //
+    // De arriba abajo y de izquierda a derecha, que es como se lee un tablero. En el orden del
+    // diccionario el escalonamiento salía disperso y no se entendía que fueran una secuencia.
+    public IEnumerator PlayShellIntros()
+    {
+        var shelled = new List<BubbleView>();
+
+        foreach (var pair in _cells)
+            if (pair.Value != null && pair.Value.LayersLeft > 0) shelled.Add(pair.Value);
+
+        if (shelled.Count == 0) yield break;
+
+        shelled.Sort((a, b) => a.Cell.y != b.Cell.y ? a.Cell.y.CompareTo(b.Cell.y)
+                                                    : a.Cell.x.CompareTo(b.Cell.x));
+
+        // Uno entero por turno, salvo que sean tantos que la apertura se haga eterna: pasado el
+        // tope, el paso se comprime y empiezan a solaparse. Un nivel con tres obstáculos los
+        // enseña de uno en uno; uno con quince no puede tener al jugador esperando ocho segundos.
+        float step = BubbleView.INTRO_TIME + SHELL_INTRO_GAP;
+
+        if (shelled.Count * step > SHELL_INTRO_MAX) step = SHELL_INTRO_MAX / shelled.Count;
+
+        for (int i = 0; i < shelled.Count; i++)
+        {
+            shelled[i].PlayShellIntro(0f);
+
+            // Se espera a que termine el último: lo que venga detrás —el control del jugador— no
+            // debe pisarse con esto.
+            yield return new WaitForSeconds(i == shelled.Count - 1 ? BubbleView.INTRO_TIME : step);
+        }
+    }
+
     public void SpawnFromLevel(LevelData level)
     {
         Clear();
@@ -398,7 +445,7 @@ public class GridController : MonoBehaviour, IBoardView
         // recorrido en vez de preguntarlo por burbuja: el objetivo puede traer tres criaturas con
         // varias celdas cada una, y buscar en esas listas por cada una de las ciento y pico
         // burbujas del tablero es trabajo que no hace falta.
-        var creatures = new Dictionary<Vector2Int, (string holds, RescueBubbleCatalog.Recipe recipe, BubbleColor? match, BubbleColor? body)>();
+        var creatures = new Dictionary<Vector2Int, (CellPos at, BubbleColor? match, BubbleColor? body)>();
 
         if (level.objective != null)
             foreach (var at in level.objective.Rescues())
@@ -411,7 +458,29 @@ public class GridController : MonoBehaviour, IBoardView
                 // encaje con otro.
                 var match = at.Match();
 
-                creatures[at.Cell] = (at.Holds(), at.Recipe, match, at.Color() ?? match);
+                creatures[at.Cell] = (at, match, at.Color() ?? match);
+            }
+
+        // Y los obstáculos, que son burbujas de color con caparazón y nada dentro.
+        //
+        // Acá manda el COLOR y no el match, al revés que en el rescate: un obstáculo ES una
+        // burbuja normal tapada, así que en cuanto cae su última capa se la lleva un match de su
+        // color como a cualquier otra. 'match' escrito aparte sigue valiendo, para uno que se vea
+        // de un color y encaje con otro.
+        if (level.obstacles != null)
+            foreach (var at in level.obstacles)
+            {
+                if (at == null) continue;
+
+                var color = at.Color();
+
+                if (!color.HasValue && !at.Match().HasValue)
+                {
+                    Debug.LogWarning($"[GridController] El obstáculo de la celda {at.Cell} no dice de qué color es: una vez destapado no va a encajar con nada y el nivel se queda sin terminar.");
+                    continue;
+                }
+
+                creatures[at.Cell] = (at, at.Match() ?? color, color);
             }
 
         // Las de color primero, SALTANDO las celdas de rescate: ahí manda el objetivo, que trae su
@@ -432,16 +501,26 @@ public class GridController : MonoBehaviour, IBoardView
         // las contradicciones.
         foreach (var pair in creatures)
         {
-            var trapped = pair.Value;
+            var (at, match, body) = pair.Value;
 
             // Nace con el color del MATCH, que es el que el flood-fill mira. Sin match da igual
             // con cuál: no matchea, no cuenta como color y nadie le pregunta.
-            var view = PlaceBubble(pair.Key, trapped.match ?? BubbleColor.Red);
+            var view = PlaceBubble(pair.Key, match ?? BubbleColor.Red);
 
             // Y el cuerpo se pinta aparte, que puede ser otro — o ninguno.
-            if (trapped.body.HasValue) view.SetBody(SpriteFor(trapped.body.Value));
+            if (body.HasValue) view.SetBody(SpriteFor(body.Value));
 
-            view.SetCreature(trapped.holds, trapped.recipe, trapped.match.HasValue, trapped.body.HasValue);
+            view.SetCreature(at.Holds(), at.Recipe, match.HasValue, body.HasValue);
+
+            // SetCreature ya le puso el caparazón de su receta. Esto es solo para la celda que
+            // escribió el suyo, que manda sobre aquel — y es el único que tiene un obstáculo,
+            // porque no hay receta de la que sacarlo.
+            if (at.HasOwnShell) view.SetShell(at.Shell(), at.ShellClip());
+
+            // El caparazón se esconde YA, antes del primer frame: llega al final de la
+            // presentación del nivel, no mientras el telón todavía está subiendo
+            // (GameplayController.OpenLevel).
+            view.HideShellForIntro();
         }
     }
 
@@ -593,7 +672,7 @@ public class GridController : MonoBehaviour, IBoardView
     // tiene que VERSE bajar, o el salto parece un error de dibujo.
     //
     // Devuelve cuánto tarda la caída, o cero si no se pudo mudar.
-    public float SlideBubbleTo(BubbleView view, Vector2Int cell, float delay = 0f)
+    public float SlideBubbleTo(BubbleView view, Vector2Int cell, float delay = 0f, AudioClip landClip = null)
     {
         if (view == null || _cells.ContainsKey(cell)) return 0f;
 
@@ -601,7 +680,7 @@ public class GridController : MonoBehaviour, IBoardView
         _cells[cell] = view;
         view.SetCell(cell);
 
-        return view.PlaySlideTo(HexGridMath.CellToLocalPos(cell), delay);
+        return view.PlaySlideTo(HexGridMath.CellToLocalPos(cell), delay, landClip);
     }
 
     void SubscribeBubbleInput(BubbleView view)

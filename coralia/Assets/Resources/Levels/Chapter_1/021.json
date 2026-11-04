@@ -16,7 +16,11 @@
         1230,
         1700
     ],
-    "obstacles": [],
+    "obstacles": [
+        { "row": 6, "col": 1, "color": "red", "obstacle": "ice", "layers": 3 },
+        { "row": 6, "col": 8, "color": "red", "obstacle": "metal", "layers": 2 },
+        { "row": 7, "col": 5, "color": "yellow", "obstacle": "stone", "layers": 1 }
+    ],
     "objective": {
         "type": "clear_all",
         "creature_id": "",
@@ -245,11 +249,6 @@
         },
         {
             "row": 6,
-            "col": 1,
-            "color": "red"
-        },
-        {
-            "row": 6,
             "col": 2,
             "color": "red"
         },
@@ -280,11 +279,6 @@
         },
         {
             "row": 6,
-            "col": 8,
-            "color": "red"
-        },
-        {
-            "row": 6,
             "col": 9,
             "color": "red"
         },
@@ -311,11 +305,6 @@
         {
             "row": 7,
             "col": 4,
-            "color": "yellow"
-        },
-        {
-            "row": 7,
-            "col": 5,
             "color": "yellow"
         },
         {

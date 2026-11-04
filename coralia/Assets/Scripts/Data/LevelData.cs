@@ -32,7 +32,14 @@ public class LevelData
     public float rainbow_chance;
     public List<string> available_colors;
     public List<int> star_thresholds; // [1 estrella, 2 estrellas, 3 estrellas]
-    public List<string> obstacles;
+    // Los obstáculos del tablero: burbujas de color con caparazón y SIN nada dentro. Van aparte
+    // de 'bubbles' porque llevan más que un color, y aparte del objetivo porque no son uno — un
+    // obstáculo estorba, no se rescata, y metido en 'objective.rescues' saldría en el hub y
+    // habría que destaparlo para ganar.
+    //
+    // Era List<string> y no la leía nadie: estaba escrita como "[]" en los 210 niveles y nunca
+    // llegó a significar nada.
+    public List<CellPos> obstacles;
     // Qué tutoriales explica este nivel, por id (los mismos que lista TutorialPanel). Van en el
     // JSON y no en código porque son una decisión de diseño de niveles: qué mecánica aparece en
     // cuál. El panel ya se encarga de no repetirlos, así que escribir el mismo id en varios
@@ -127,9 +134,36 @@ public class CellPos
     [RescuableId]
     public string holds;
 
+    // De qué es el caparazón y cuántos golpes cuesta. Escritos acá mandan sobre los de la
+    // receta, igual que 'holds'.
+    //
+    // Un obstáculo los escribe siempre, porque no tiene receta: material y grosor son su
+    // definición entera, y una receta para guardar dos datos serían quince entradas huecas en
+    // el catálogo de rescates para decir "hielo de tres".
+    [ObstacleId]
+    public string obstacle;
+
+    [Range(0, ObstacleCatalog.MAX_LAYERS)]
+    public int layers;
+
     public Vector2Int Cell => new(col, row);
 
     public RescueBubbleCatalog.Recipe Recipe => RescueBubbleCatalog.Get(bubble);
+
+    // Si esta celda escribió su propio caparazón. Lo que escribe la celda manda sobre lo que
+    // diga su receta, igual que con 'holds': la receta es el caso normal y la celda la excepción.
+    public bool HasOwnShell => !string.IsNullOrWhiteSpace(obstacle);
+
+    // Las capas del caparazón, ya resueltas. Vacío es sin caparazón.
+    public Sprite[] Shell() =>
+        HasOwnShell ? ObstacleCatalog.Layers(obstacle, layers)
+                 : Recipe?.Layers() ?? Array.Empty<Sprite>();
+
+    // Lo que suena al romperse una de sus capas. Lo pone el MATERIAL: romper hielo suena a hielo
+    // sin que importe qué haya debajo.
+    public AudioClip ShellClip() =>
+        HasOwnShell ? ObstacleCatalog.BreakClip(obstacle)
+                 : RescueBubbleCatalog.LayerBurst(Recipe);
 
     // Los dos colores, ya parseados. Null cuando no se declaró ninguno.
     public BubbleColor? Color() => Parse(color, "color");

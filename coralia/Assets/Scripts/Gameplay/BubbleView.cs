@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Solo.MOST_IN_ONE;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -83,6 +84,11 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
 
     // Cuántos golpes le quedan a su caparazón. Cero es "a la vista": el siguiente golpe la libera.
     public int LayersLeft { get; private set; }
+
+    // Lo que suena al romperse una de sus capas. Lo guarda la BURBUJA y no quien la golpea
+    // porque el caparazón le llega por dos caminos —la receta de un rescate y la celda de un
+    // obstáculo suelto— y preguntárselo a la receta deja al obstáculo mudo, que no tiene.
+    public AudioClip LayerClip { get; private set; }
 
     // Si además de llevar criatura TIENE color, y entonces matchea como una burbuja normal. Lo
     // decide el nivel al colocarla, no la receta: la misma criatura puede ir suelta en un nivel y
@@ -214,17 +220,60 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         _recipe = recipe;
         RefreshGlow();
 
-        // Las capas se dibujan de dentro hacia afuera: la primera de la lista queda pegada a la
-        // criatura y la última encima de todas, que es la primera que se cae.
-        var layers = IsCreature && recipe != null ? recipe.Layers() : System.Array.Empty<Sprite>();
+        SetShell(recipe != null ? recipe.Layers() : System.Array.Empty<Sprite>(),
+                 RescueBubbleCatalog.LayerBurst(recipe));
 
-        LayersLeft = layers.Length;
+        if (IsCreature && !draws)
+            Debug.LogWarning($"[BubbleView] La criatura '{creatureId}' no tiene arte en ningún catálogo ni icono genérico: la burbuja que la encierra se va a ver vacía.", this);
+    }
+
+    // Le pone el caparazón: las capas que lo forman y lo que suena al romperse una.
+    //
+    // Va aparte de SetCreature porque el caparazón NO es de la criatura. Una burbuja de color
+    // puede llevarlo sin nada dentro —eso es un obstáculo— y una criatura puede ir suelta sin
+    // él. Metido dentro de SetCreature, el obstáculo tendría que fingir que lleva algo.
+    //
+    // Las capas se visten de dentro hacia afuera: la primera de la lista queda pegada a lo que
+    // haya debajo y la última encima de todas, que es la primera que se cae.
+    public void SetShell(Sprite[] layers, AudioClip breakClip)
+    {
+        // Se construye las suyas: un obstáculo suelto no pasa por SetCreature, y dependiendo de
+        // que otro las hubiera hecho antes se quedaría sin caparazón según por dónde lo monten.
+        BuildLayers();
+
+        layers    = layers ?? System.Array.Empty<Sprite>();
+        LayerClip = breakClip;
+
+        if (_shells == null) { LayersLeft = 0; return; }
+
+        // Más capas que huecos no se cuentan: una que no se dibuja sería un golpe invisible.
+        LayersLeft = Mathf.Min(layers.Length, _shells.Length);
 
         for (int i = 0; i < _shells.Length; i++)
             Dress(_shells[i], i < layers.Length ? layers[i] : null);
 
-        if (IsCreature && !draws)
-            Debug.LogWarning($"[BubbleView] La criatura '{creatureId}' no tiene arte en ningún catálogo ni icono genérico: la burbuja que la encierra se va a ver vacía.", this);
+        ShadeBody();
+    }
+
+    // Lo apagado que queda el cuerpo debajo del caparazón.
+    const float SHELL_SHADE = 0.5f;
+
+    // El color de debajo se ve APAGADO mientras quede caparazón, y recupera su brillo al quedar
+    // destapado.
+    //
+    // Las capas finas dejan ver el color por los huecos, y a brillo pleno eso se lee como una
+    // burbuja normal medio tapada: el jugador va a buscarle su color y resulta que la abre
+    // cualquier match. Apagado se entiende que está ahí pero todavía no cuenta — y el cambio de
+    // apagado a encendido es justo lo que avisa de que ya se puede matchear (pedido de Diego).
+    void ShadeBody() => ShadeBody(LayersLeft > 0 ? SHELL_SHADE : 1f);
+
+    void ShadeBody(float lit)
+    {
+        if (bubbleImage == null) return;
+
+        var c = bubbleImage.color;
+
+        bubbleImage.color = new Color(lit, lit, lit, c.a);
     }
 
     // Le quita una capa. Devuelve si con eso quedó a la vista, que es cuando el siguiente golpe
@@ -243,33 +292,216 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
             StartCoroutine(ShatterLayer(_shells[outer]));
 
         LayersLeft--;
+
+        ShadeBody();
+
         return LayersLeft <= 0;
     }
 
-    // La capa se va creciendo y desvaneciéndose: encogerse se lee como que se guarda, y lo que
-    // tiene que leerse es que se rompió.
+    // Lo que tarda una capa en romperse. Público porque quien encadene algo DETRÁS de la rotura
+    // —el traslado de lo que se queda sin techo— necesita saber cuándo termina.
+    public const float SHATTER_TIME = 0.25f;
+
+    // Cuántos trozos saltan de una capa y a qué velocidad. Son más grandes y más lentos que los
+    // del pop de una burbuja: aquello es agua que revienta y esto son pedazos de roca.
+    const int   SHARD_COUNT = 7;
+    const float SHARD_SIZE  = 34f;  // px
+    const float SHARD_SPEED = 190f; // px/s
+    const float SHARD_LIFE  = 0.45f;
+
+    // Lo que la burbuja se sacude al acusar el golpe, y cuánto dura.
+    const float JOLT_SHAKE = 5f;    // px
+    const float JOLT_TIME  = 0.14f;
+
+    // La capa no se desvanece y ya: se parte.
+    //
+    // Tres cosas a la vez, y las tres hacen falta. La burbuja se sacude —el golpe lo recibe ELLA,
+    // no solo su cáscara—, la capa salta hacia fuera girando, y de ella salen pedazos que se
+    // dispersan. Con solo el fundido, tres capas eran la misma imagen aclarándose tres veces y no
+    // se leía que algo se hubiera roto (pedido de Diego).
     IEnumerator ShatterLayer(Image layer)
     {
-        const float TIME = 0.25f;
-
         var rt = (RectTransform)layer.transform;
+
+        Shards(layer);
+        StartCoroutine(Jolt());
+
+        const float TIME = SHATTER_TIME;
+
+        // Hacia dónde se abre esta capa. Al azar por capa, para que las tres de un mismo
+        // caparazón no se rompan calcadas.
+        float spin = Random.Range(-28f, 28f);
 
         for (float t = 0f; t < TIME; t += Time.deltaTime)
         {
             float p = Mathf.Clamp01(t / TIME);
 
-            rt.localScale = Vector3.one * (1f + 0.35f * p);
-            layer.color   = new Color(1f, 1f, 1f, 1f - p);
+            // Salta de golpe y se va apagando: el crecimiento se gasta pronto —raíz, no lineal—
+            // y la opacidad aguanta un poco más, así se ve ROMPERSE y no sólo desaparecer.
+            rt.localScale       = Vector3.one * (1f + 0.5f * Mathf.Sqrt(p));
+            rt.localEulerAngles = new Vector3(0f, 0f, spin * p);
+            layer.color         = new Color(1f, 1f, 1f, 1f - p * p);
             yield return null;
         }
 
-        rt.localScale = Vector3.one;
-        layer.color   = Color.white;
+        rt.localScale       = Vector3.one;
+        rt.localEulerAngles = Vector3.zero;
+        layer.color         = Color.white;
 
         // El COMPONENTE y no el objeto: es el mismo interruptor que usa Dress, y apagando el
         // objeto una capa vuelta a vestir se quedaría invisible mientras LayersLeft dice que
         // está puesta.
         layer.enabled = false;
+    }
+
+    // La entrada del caparazón al empezar el nivel.
+    public const float INTRO_TIME  = 0.3f;
+    const        float INTRO_SCALE = 3.2f;   // de qué tamaño llega, o sea cuán "de frente" viene
+
+    List<Image> _introHidden;
+
+    // Esconde el caparazón para que llegue después, cuando el nivel ya esté presentado.
+    //
+    // Va SEPARADO de la llegada porque los dos momentos no son el mismo: esconder tiene que pasar
+    // mientras se arma el tablero, antes del primer frame dibujado, y llegar tiene que pasar al
+    // final de la presentación. Juntos, o el obstáculo abría ya montado o se esfumaba a mitad de
+    // la apertura para volver a entrar (reportado por Diego).
+    public void HideShellForIntro()
+    {
+        if (_shells == null || LayersLeft <= 0) return;
+
+        _introHidden = new List<Image>();
+
+        // A brillo pleno mientras el caparazón no está puesto. Apagado desde el principio, la
+        // burbuja abría el nivel oscura sin que nada explicara por qué (reportado por Diego).
+        ShadeBody(1f);
+
+        foreach (var shell in _shells)
+            if (shell != null && shell.enabled)
+            {
+                shell.color = new Color(1f, 1f, 1f, 0f);
+                ((RectTransform)shell.transform).localScale = Vector3.one * INTRO_SCALE;
+                _introHidden.Add(shell);
+            }
+    }
+
+    // El caparazón llega: viene de frente, grande y transparente, y se asienta sobre la burbuja.
+    // Al llegar suena el material y la burbuja acusa el peso.
+    //
+    // No es adorno: un obstáculo que ya está puesto cuando se levanta el telón es parte del
+    // decorado, y uno que llega delante del jugador es algo que le han puesto ahí. Lo segundo es
+    // lo que hace que se fije en él antes de disparar (pedido de Diego).
+    public void PlayShellIntro(float delay)
+    {
+        if (_introHidden == null || _introHidden.Count == 0) return;
+
+        StartCoroutine(ShellIntro(delay));
+    }
+
+    IEnumerator ShellIntro(float delay)
+    {
+        var shown = _introHidden;
+
+        _introHidden = null;
+
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        for (float t = 0f; t < INTRO_TIME; t += Time.deltaTime)
+        {
+            float p = Mathf.Clamp01(t / INTRO_TIME);
+
+            // Frena al llegar, en vez de caer a plomo: una cúbica invertida deja casi todo el
+            // recorrido en el primer tercio del tiempo y el resto es el asiento.
+            float e = 1f - Mathf.Pow(1f - p, 3f);
+
+            float scale = Mathf.Lerp(INTRO_SCALE, 1f, e);
+
+            foreach (var shell in shown)
+            {
+                ((RectTransform)shell.transform).localScale = Vector3.one * scale;
+                shell.color = new Color(1f, 1f, 1f, e);
+            }
+
+            // El color de debajo se apaga AL MISMO RITMO: es el caparazón posándose lo que lo
+            // tapa, así que las dos cosas son una sola y tienen que ir juntas.
+            ShadeBody(Mathf.Lerp(1f, SHELL_SHADE, e));
+
+            yield return null;
+        }
+
+        foreach (var shell in shown)
+        {
+            ((RectTransform)shell.transform).localScale = Vector3.one;
+            shell.color = Color.white;
+        }
+
+        ShadeBody();
+
+        // Y el golpe de asentarse, con el sonido del material: es lo que convierte el aterrizaje
+        // en algo que ocurrió y no en una imagen que apareció.
+        AudioManager.Instance?.PlaySfx(LayerClip);
+
+        yield return Jolt();
+    }
+
+    // Los pedazos que saltan de una capa al romperse. Llevan el sprite de la PROPIA capa, así
+    // que el hielo suelta astillas de hielo y la piedra cascotes, sin un set de partículas por
+    // material: el arte que ya está puesto sirve para las dos cosas.
+    //
+    // Cuelgan del padre del grid y no de la burbuja, igual que los del pop: dentro de ella, lo
+    // que se mueva o se destruya después se los lleva a mitad de vuelo.
+    void Shards(Image layer)
+    {
+        if (layer == null || layer.sprite == null) return;
+
+        var parent = transform.parent;
+        var origin = ((RectTransform)transform).anchoredPosition;
+
+        for (int i = 0; i < SHARD_COUNT; i++)
+        {
+            var go = new GameObject("Shard", typeof(RectTransform), typeof(Image));
+            var rt = (RectTransform)go.transform;
+
+            rt.SetParent(parent, false);
+            rt.anchoredPosition = origin;
+            rt.sizeDelta        = Vector2.one * SHARD_SIZE * Random.Range(0.7f, 1.3f);
+            rt.localEulerAngles = new Vector3(0f, 0f, Random.Range(0f, 360f));
+
+            var img = go.GetComponent<Image>();
+
+            img.sprite        = layer.sprite;
+            img.raycastTarget = false;
+
+            // Repartidos en círculo con un poco de desorden: a ángulos exactos salen en estrella
+            // y eso se lee como un efecto, no como algo que se partió.
+            float   angle = (360f / SHARD_COUNT) * i + Random.Range(-22f, 22f);
+            Vector2 dir   = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+
+            go.AddComponent<PopParticle>().Init(origin, dir * SHARD_SPEED * Random.Range(0.7f, 1.3f), SHARD_LIFE);
+        }
+    }
+
+    // El tirón de acusar el golpe: la burbuja se sacude en el sitio y vuelve.
+    //
+    // En la ESCALA y no en la posición: la posición ya la escriben el traslado y el empujón, y
+    // una sacudida que se pelee con ellos deja la burbuja descuadrada en su celda.
+    IEnumerator Jolt()
+    {
+        var start = transform.localScale;
+
+        for (float t = 0f; t < JOLT_TIME; t += Time.deltaTime)
+        {
+            float p = Mathf.Clamp01(t / JOLT_TIME);
+
+            // Se achata y se ensancha a la vez, y el temblor se apaga con el tiempo: el volumen
+            // se conserva, que es lo que hace que parezca que encajó un golpe y no que creció.
+            float squash = JOLT_SHAKE / 100f * Mathf.Sin(p * Mathf.PI * 3f) * (1f - p);
+
+            transform.localScale = new Vector3(start.x * (1f + squash), start.y * (1f - squash), start.z);
+            yield return null;
+        }
+
+        transform.localScale = start;
     }
 
     // Las capas se CREAN acá y no se piden en el Inspector: su arte ya sale del catálogo, así
@@ -570,14 +802,14 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
     // Misma gravedad que la caída de verdad: son el mismo gesto visto dos veces, y con tiempos
     // distintos una de las dos se sentiría falsa.
     //
-    // Devuelve cuánto tarda en llegar, que es lo que necesita saber quien la manda: el golpe
-    // del aterrizaje —la capa que salta, su sonido— tiene que ocurrir CUANDO llega, y sin esto
-    // habría que adivinarlo con un número escrito aparte.
-    public float PlaySlideTo(Vector2 localPos, float delay = 0f)
+    // Devuelve lo que dura el RECORRIDO, sin contar lo que se encoge antes de soltarse ni el
+    // rebote de aterrizar. Hoy no lo usa nadie: la capa que salta ya no espera a que aterrice,
+    // salta antes de moverse (ver GameplayController.ClingOn).
+    public float PlaySlideTo(Vector2 localPos, float delay = 0f, AudioClip landClip = null)
     {
         float time = SlideTime(((RectTransform)transform).anchoredPosition, localPos);
 
-        StartCoroutine(SlideTo(localPos, delay, time));
+        StartCoroutine(SlideTo(localPos, delay, time, landClip));
         return time;
     }
 
@@ -586,7 +818,60 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
     public static float SlideTime(Vector2 from, Vector2 to) =>
         Mathf.Max(SLIDE_MIN_TIME, DropDuration(Vector2.Distance(from, to)));
 
-    IEnumerator SlideTo(Vector2 target, float delay, float time)
+    // Lo que dura el aterrizaje y cuánto se achata al tocar.
+    const float LAND_TIME   = 0.2f;
+    const float LAND_SQUASH = 0.18f;
+
+    // Cuánto se aparta el recorrido de la línea recta, en fracción de lo que mide el salto.
+    const float SLIDE_BEND = 0.22f;
+
+    // La estela: cada cuánto suelta, cuántas por vez, de qué tamaño, lo que suben y lo que duran.
+    //
+    // Van varias por paso y no una: con una por tanda sale una hilera de cuentas, y lo que tiene
+    // que leerse es un borboteo (pedido de Diego).
+    const float TRAIL_EVERY = 0.02f;
+    const int   TRAIL_PER   = 3;
+    const float TRAIL_SIZE  = 26f;  // px
+    const float TRAIL_RISE  = 70f;  // px/s
+    const float TRAIL_LIFE  = 0.8f;
+    const float TRAIL_ALPHA = 1f;
+
+    // Una burbujita del rastro, en el sitio por el que acaba de pasar.
+    //
+    // Cuelga del padre del grid y no de la burbuja, igual que los pedazos de una capa: dentro de
+    // ella, moverse se las llevaría consigo y dejarían de ser un rastro para ser un adorno que
+    // viaja pegado.
+    void TrailBubble(Vector2 at)
+    {
+        var sprite = BubbleCatalog.TrailBubble;
+
+        if (sprite == null) return;
+
+        var go = new GameObject("Trail", typeof(RectTransform), typeof(Image)) { hideFlags = HideFlags.DontSave };
+        var rt = (RectTransform)go.transform;
+
+        rt.SetParent(transform.parent, false);
+        // Repartidas a lo ANCHO de la burbuja que pasa: amontonadas en su centro se leen como un
+        // punto que parpadea, y lo que tiene que verse es un reguero del grosor de lo que baja.
+        rt.anchoredPosition = at + new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f))
+                                 * (HexGridMath.BubbleDiameter * 0.4f);
+        rt.sizeDelta        = Vector2.one * TRAIL_SIZE * Random.Range(0.55f, 1.35f);
+
+        var img = go.GetComponent<Image>();
+
+        img.sprite         = sprite;
+        img.raycastTarget  = false;
+        img.preserveAspect = true;
+        img.color          = new Color(1f, 1f, 1f, TRAIL_ALPHA);
+
+        // Suben, que es lo que hace el aire en el agua, con algo de deriva para que no salgan
+        // todas en columna.
+        var drift = new Vector2(Random.Range(-28f, 28f), TRAIL_RISE * Random.Range(0.6f, 1.4f));
+
+        go.AddComponent<PopParticle>().Init(rt.anchoredPosition, drift, TRAIL_LIFE * Random.Range(0.7f, 1.2f));
+    }
+
+    IEnumerator SlideTo(Vector2 target, float delay, float time, AudioClip landClip)
     {
         BeginAnimation();   // cuenta desde ya: el grid no debe moverse mientras esta espera su turno
 
@@ -594,18 +879,82 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
 
         var     rt    = (RectTransform)transform;
         Vector2 start = rt.anchoredPosition;
+        Vector3 scale = rt.localScale;
+
+        // Se encoge un poco ANTES de soltarse. Es media décima de nada, pero es lo que hace que
+        // se lea como que se deja caer en vez de como que la movieron: toda caída empieza con
+        // algo juntando fuerzas.
+        const float COIL_TIME = 0.08f;
+
+        for (float t = 0f; t < COIL_TIME; t += Time.deltaTime)
+        {
+            float p = Mathf.Clamp01(t / COIL_TIME);
+
+            rt.localScale = new Vector3(scale.x * (1f + 0.07f * p), scale.y * (1f - 0.07f * p), scale.z);
+            yield return null;
+        }
+
+        // La curva del recorrido: el punto de control del arco, a un lado de la recta.
+        //
+        // Se desvía hacia la izquierda o hacia la derecha al azar, para que dos burbujas que
+        // bajan a la vez no dibujen la misma curva — en espejo se leen como una animación y no
+        // como dos cosas escurriéndose.
+        Vector2 straight = target - start;
+        Vector2 side     = new Vector2(-straight.y, straight.x).normalized * (Random.value < 0.5f ? -1f : 1f);
+        Vector2 mid      = (start + target) * 0.5f + side * (straight.magnitude * SLIDE_BEND);
+
+        float dropped = 0f;
 
         for (float t = 0f; t < time; t += Time.deltaTime)
         {
             // Cuadrática y no lineal, para que acelere como cualquier cosa que se suelta: a
             // velocidad constante parece que la arrastraron.
             float p = Mathf.Clamp01(t / time);
+            float e = p * p;
 
-            rt.anchoredPosition = Vector2.Lerp(start, target, p * p);
+            // Por un arco y no en línea recta: lo que baja por el agua se escurre entre lo que
+            // tiene al lado, y una recta de celda a celda se lee como un salto de cuadrícula.
+            // Es la misma curva que hace lo rescatado camino del hub (pedido de Diego).
+            float u = 1f - e;
+
+            rt.anchoredPosition = u * u * start + 2f * u * e * mid + e * e * target;
+
+            // Y se estira en el sentido de la caída mientras va cogiendo velocidad.
+            rt.localScale = new Vector3(scale.x * (1f - 0.09f * p), scale.y * (1f + 0.09f * p), scale.z);
+
+            // La estela: va soltando burbujitas por donde pasa, que suben y se deshacen.
+            if ((dropped += Time.deltaTime) >= TRAIL_EVERY)
+            {
+                dropped = 0f;
+
+                int many = Random.Range(TRAIL_PER, TRAIL_PER * 2);
+
+                for (int i = 0; i < many; i++) TrailBubble(rt.anchoredPosition);
+            }
+
             yield return null;
         }
 
         rt.anchoredPosition = target;
+
+        // El golpe suena CUANDO toca, no al soltarse: es el impacto lo que hace ruido.
+        AudioManager.Instance?.PlaySfx(landClip);
+
+        // El aterrizaje: se achata contra el suelo y vuelve rebotando. Sin esto la burbuja
+        // llegaba y se quedaba clavada, que es lo que hace que una caída se sienta sin peso.
+        for (float t = 0f; t < LAND_TIME; t += Time.deltaTime)
+        {
+            float p = Mathf.Clamp01(t / LAND_TIME);
+
+            // Un rebote que se apaga: arranca achatada del todo y oscila cada vez menos hasta
+            // quedarse quieta.
+            float squash = LAND_SQUASH * Mathf.Cos(p * Mathf.PI * 2.2f) * (1f - p);
+
+            rt.localScale = new Vector3(scale.x * (1f + squash), scale.y * (1f - squash), scale.z);
+            yield return null;
+        }
+
+        rt.localScale = scale;
         EndAnimation();
     }
 

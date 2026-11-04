@@ -35,7 +35,7 @@ public class ObjectiveHub : MonoBehaviour
 
     // Lo que hay que conseguir, de una a tres cosas. De más se descartan con aviso: el cuarto no
     // cabe, y callarlo dejaría un objetivo que el jugador no puede ver pero sí tiene que cumplir.
-    public void Show(IReadOnlyList<(Sprite icon, int total)> goals)
+    public void Show(IReadOnlyList<(Sprite icon, Sprite glow, int total)> goals)
     {
         _shown = goals != null ? Mathf.Min(goals.Count, items.Length) : 0;
 
@@ -50,7 +50,7 @@ public class ObjectiveHub : MonoBehaviour
 
             if (items[i].gameObject.activeSelf != on) items[i].gameObject.SetActive(on);
 
-            if (on) items[i].Show(goals[i].icon, goals[i].total);
+            if (on) items[i].Show(goals[i].icon, goals[i].glow, goals[i].total);
         }
 
         if (hideWhenEmpty && gameObject.activeSelf != (_shown > 0)) gameObject.SetActive(_shown > 0);

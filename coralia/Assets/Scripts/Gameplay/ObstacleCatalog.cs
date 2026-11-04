@@ -62,9 +62,15 @@ public class ObstacleCatalog : ScriptableObject
 
     public bool Has(string id) => EntryFor(id) != null;
 
-    // Las 'count' capas más GRUESAS del material, no las primeras: un caparazón de dos golpes
-    // es la esfera entera y el anillo, y empezar por los fragmentos lo dejaría ya roto antes de
-    // que nadie lo tocara.
+    // Las 'count' PRIMERAS capas del material, en el orden en que están puestas en el catálogo.
+    //
+    // Las capas van de menos a más: fragmentos sueltos, anillo, esfera entera. Así el grosor se
+    // ve de un vistazo —uno arranca hecho pedazos y tres arranca entero— y el jugador sabe
+    // cuántos golpes le cuesta antes de gastar el primero. Tomando las últimas, los tres grosores
+    // arrancaban iguales y solo se distinguían golpeándolos (pedido de Diego).
+    //
+    // Se ROMPEN al revés, de la última a la primera, que es lo que deja ver cómo se desmorona:
+    // entera, anillo, fragmentos.
     //
     // Devueltas de dentro hacia afuera, que es el orden en que las dibuja BubbleView.
     public Sprite[] LayersFor(string id, int count)
@@ -84,7 +90,7 @@ public class ObstacleCatalog : ScriptableObject
         // El aviso lo da OnValidate, que es donde se puede arreglar.
         int take = Mathf.Min(count, available.Count);
 
-        return available.GetRange(available.Count - take, take).ToArray();
+        return available.GetRange(0, take).ToArray();
     }
 
     public AudioClip BreakClipFor(string id) => EntryFor(id)?.breakClip;
