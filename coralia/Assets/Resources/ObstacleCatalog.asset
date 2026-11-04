@@ -24,7 +24,7 @@ MonoBehaviour:
     - {fileID: 21300000, guid: a5b2578a3a0d1416191d288d6d89b143, type: 3}
     - {fileID: 21300000, guid: 590318cb6c47342c287c10194551d839, type: 3}
     - {fileID: 21300000, guid: 4c663910773a444efbb4f691cb86589c, type: 3}
-    breakClip: {fileID: 0}
+    breakClip: {fileID: 8300000, guid: 511f7979019ca440db5c9df89b8379f5, type: 3}
   - id: wood
     layers:
     - {fileID: 21300000, guid: b0203d33a9c4c44ee890e159d0b7b92b, type: 3}
@@ -36,7 +36,7 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 1e5381a9cb11f44448923617bc97a060, type: 3}
     - {fileID: 21300000, guid: e5203dc49a79a42799c8c89da3e1c2f6, type: 3}
     - {fileID: 21300000, guid: ec26f9de3d88e4d479c09073dc13c002, type: 3}
-    breakClip: {fileID: 0}
+    breakClip: {fileID: 8300000, guid: 8acf14d14b04f4d1c985622171e22490, type: 3}
   - id: glass
     layers:
     - {fileID: 21300000, guid: 47e0b7a8602f645d0ab213673edea412, type: 3}
