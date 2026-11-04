@@ -26,11 +26,55 @@ public class ObjectiveItemView : MonoBehaviour
         if (total == null) Debug.LogWarning($"[ObjectiveItemView] Falta asignar 'Total' en {name}: el objetivo va a salir sin número.", this);
     }
 
-    public void Show(Sprite sprite, int remaining)
+    // 'glow' es el brillo del cristal, que va DELANTE del icono. Solo lo lleva lo que se dibuja
+    // como una burbuja: una criatura en el hub sale suelta, sin burbuja alrededor y sin brillo.
+    public void Show(Sprite sprite, Sprite glow, int remaining)
     {
         if (icon != null && sprite != null) icon.sprite = sprite;
 
+        Dress(glow);
+
         SetRemaining(remaining);
+    }
+
+    Image _glow;
+
+    // El brillo se crea acá y no se pide en el prefab: es la misma decisión que toma la burbuja
+    // con sus capas (BubbleView.BuildLayers). Pedirlo en el Inspector obligaría a montarlo en
+    // cada hueco a mano, y el que se olvidara saldría plano sin que nada avise.
+    void Dress(Sprite glow)
+    {
+        if (glow == null)
+        {
+            if (_glow != null) _glow.enabled = false;
+            return;
+        }
+
+        if (_glow == null)
+        {
+            var go = new GameObject("Glow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image))
+            {
+                hideFlags = HideFlags.DontSave,
+            };
+
+            var rt = (RectTransform)go.transform;
+
+            // Cuelga del ICONO y no del hueco: así hereda su tamaño y su sitio, que es lo que el
+            // Inspector ya ajustó. Colgado del hueco taparía también el número.
+            rt.SetParent(icon != null ? icon.transform : transform, false);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+
+            _glow = go.GetComponent<Image>();
+            _glow.raycastTarget = false;
+        }
+
+        _glow.sprite  = glow;
+        _glow.enabled = true;
+
+        // Siempre el último, que es lo que lo deja DELANTE del icono.
+        _glow.transform.SetAsLastSibling();
     }
 
     // El golpe de recibir algo. Va aparte del número: lo que se nota no es que ponga un dígito
@@ -87,6 +131,10 @@ public class ObjectiveItemView : MonoBehaviour
             float lit = doneTint > 0f ? doneTint : 1f;
 
             icon.color = new Color(c.r, c.g, c.b, done ? lit : 1f);
+
+            // El brillo se apaga CON el icono: quedándose entero sobre un icono a medias, lo
+            // cumplido se leería como un reflejo flotando solo.
+            if (_glow != null) _glow.color = icon.color;
         }
 
         if (doneState != null && doneState.activeSelf != done) doneState.SetActive(done);

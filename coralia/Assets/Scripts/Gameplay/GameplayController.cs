@@ -87,6 +87,9 @@ public class GameplayController : MonoBehaviour
     [SerializeField] AudioClip popClip;
     [SerializeField] AudioClip dropClip;
 
+    [Tooltip("El golpe de lo acorazado al posarse en su celda nueva, cuando se queda sin techo y se traslada en vez de caer.\n\nOpcional: vacío lo deja bajar en silencio.")]
+    [SerializeField] AudioClip slideLandClip;
+
     [Header("Bomba de Coral (booster)")]
     [Tooltip("El destello de la explosión, en el centro del impacto. Es lo único que distingue a la bomba de un match grande antes de que las burbujas empiecen a reventar.")]
     [SerializeField] Sparkle.Settings bombSparkle = new();
@@ -149,6 +152,15 @@ public class GameplayController : MonoBehaviour
     // Y con qué receta se montó cada una, para su estallido: cuando el vuelo arranca la burbuja
     // ya reventó, así que no se le puede preguntar a ella.
     readonly Dictionary<Vector2Int, RescueBubbleCatalog.Recipe> _recipeAt = new();
+
+    // Lo acorazado que ya perdió una capa en ESTA jugada. Un disparo cuesta UNA capa, y a lo
+    // mismo le llegan dos reglas distintas: el match que pasa al lado y el traslado de quedarse
+    // sin techo. Cobrando las dos, un solo disparo se llevaba dos capas de un hielo de tres
+    // (reportado por Diego).
+    //
+    // Va por VISTA y no por celda a propósito: lo que se agarra cambia de celda a mitad de la
+    // jugada, y con la celda vieja de clave volvería a pagar en su sitio nuevo.
+    readonly HashSet<BubbleView> _layerHitThisShot = new();
     bool       _levelEnded;
     bool       _isFirstAttempt; // nunca se había intentado este nivel antes de esta partida (issue #49)
     int        _noMoreShotsUsedCount; // cuántas veces ya se pagó la oferta en esta partida — sube el costo
@@ -302,6 +314,15 @@ public class GameplayController : MonoBehaviour
 
         if (preview) yield return gridIntro.Play();
         yield return cannon.RevealCurrent();
+
+        // Y entonces los caparazones, con el tablero quieto y la burbuja ya en el cañón.
+        //
+        // DESPUÉS de la burbuja y no antes: la apertura va de lejos a cerca —el tablero, el arma,
+        // y al final lo que hay que resolver— y metidos en medio cortaban esa línea. Puestos al
+        // armar el nivel ni siquiera se veían, porque el telón todavía estaba abajo (reportado
+        // por Diego).
+        yield return grid.PlayShellIntros();
+
         yield return ExplainMechanics();
 
         // Y ahora sí, lo que cada poder de inicio tiene que ENSEÑAR, uno detrás de otro.
@@ -2029,34 +2050,48 @@ public class GameplayController : MonoBehaviour
     // tres lados es UN golpe, no tres, o tres capas se irían de una.
     void HitRescuesTouching(HashSet<Vector2Int> touched, Vector2Int? landed = null)
     {
-        if (_creatureAt.Count == 0) return;
-
         var hit = new HashSet<Vector2Int>();
 
+        // Lo que REVENTÓ: hubo match al lado, y eso alcanza tanto al caparazón como al contenedor.
         foreach (var cell in touched)
             foreach (var around in HexGridMath.GetNeighbors(cell))
-                Consider(around);
+                Consider(around, byMatch: true);
 
+        // Y donde se PEGÓ el disparo, que no es lo mismo: pegarse no es hacer match. Solo abre al
+        // contenedor, que es su regla. Al caparazón no lo toca — si lo tocara, tres burbujas
+        // pegadas al lado lo abrirían sin haber hecho un solo match.
         if (landed.HasValue)
             foreach (var around in HexGridMath.GetNeighbors(landed.Value))
-                Consider(around);
+                Consider(around, byMatch: false);
 
         foreach (var cell in hit)
             // El golpe se ve cuando revienta lo que lo causó, no antes: los pops de un racimo van
             // escalonados y la capa que cae a destiempo se adelanta a su motivo.
             StartCoroutine(HitRescue(cell, NearestPop(cell)));
 
-        // Esto es la regla del CONTENEDOR, el que no tiene color: lo abre lo que pase a su lado.
-        //
-        // La que sí tiene 'match' queda fuera a propósito: esa se abre entrando en un match de su
-        // color, y lo resuelve ResolveMatchAndDrop. Metida también acá, cualquier vecina que
-        // reventara se la llevaba — un match azul rescataba a la que pedía verdes (reportado por
-        // Diego).
-        void Consider(Vector2Int cell)
+        void Consider(Vector2Int cell, bool byMatch)
         {
-            if (!_creatureAt.ContainsKey(cell))                           return;
-            if (!grid.TryGetBubble(cell, out var view) || view == null)   return;
-            if (view.CreatureMatches)                                     return;
+            if (!grid.TryGetBubble(cell, out var view) || view == null) return;
+
+            // Lo ACORAZADO cede ante cualquier match que pase al lado, sea del color que sea. El
+            // caparazón tapa el color, así que pedirle al jugador que lo matchee por el suyo es
+            // pedirle que lo adivine (reportado por Diego). Cuando cae la última capa el color
+            // queda a la vista y ahí sí vuelve a mandar el color.
+            if (view.LayersLeft > 0)
+            {
+                if (byMatch && _layerHitThisShot.Add(view)) hit.Add(cell);
+                return;
+            }
+
+            // Y esto es la regla del CONTENEDOR ya destapado, el que no tiene color: lo abre lo
+            // que pase a su lado.
+            //
+            // El que sí tiene 'match' queda fuera a propósito: ese se abre entrando en un match de
+            // su color, y lo resuelve ResolveMatchAndDrop. Metido también acá, cualquier vecina
+            // que reventara se lo llevaba — un match azul rescataba al que pedía verdes
+            // (reportado por Diego).
+            if (!_creatureAt.ContainsKey(cell)) return;
+            if (view.CreatureMatches)           return;
 
             hit.Add(cell);
         }
@@ -2069,11 +2104,14 @@ public class GameplayController : MonoBehaviour
         if (!grid.TryGetBubble(cell, out var view) || view == null) yield break;
 
         // Con capas, el golpe se queda en el caparazón. Sin ellas, se la lleva.
-        if (!view.BreakLayer())
-        {
-            _recipeAt.TryGetValue(cell, out var shell);
+        bool bare = view.BreakLayer();
 
-            AudioManager.Instance?.PlaySfx(RescueBubbleCatalog.LayerBurst(shell));
+        // Pero un OBSTÁCULO no se lleva: destaparlo no es liberarlo. Lo que queda es la burbuja
+        // de color que el caparazón tapaba, y de esa se encarga un match de su color como de
+        // cualquier otra del tablero. Solo lo que lleva algo dentro se abre al quedar a la vista.
+        if (!bare || !view.IsCreature)
+        {
+            AudioManager.Instance?.PlaySfx(view.LayerClip);
             yield break;
         }
 
@@ -2163,17 +2201,27 @@ public class GameplayController : MonoBehaviour
     {
         if (objectiveHub == null) return;
 
-        var goals = new List<(Sprite icon, int total)>();
+        var goals = new List<(Sprite icon, Sprite glow, int total)>();
 
+        // Lo rescatado sale SUELTO en el hub: es el bicho, no la burbuja que lo encerraba. Por eso
+        // va sin brillo — el brillo es del cristal, y ahí ya no hay cristal.
         if (_targets.Count > 0)
             for (int i = 0; i < _targets.Count; i++)
-                goals.Add((Rescuable.Icon(_targets[i]), _remaining[i]));
+                goals.Add((Rescuable.Icon(_targets[i]), null, _remaining[i]));
 
         // Sin rescate, lo que se cuenta son burbujas: el hub sirve igual para "limpia el tablero"
         // y el jugador ve cuánto le queda en vez de deducirlo mirando.
+        //
+        // Y ESA sí lleva brillo, porque lo que se dibuja es una burbuja. Sin él sale plana al lado
+        // de las del tablero, que lo llevan como capa aparte (reportado por Diego).
         else if (grid.CellCount > 0)
         {
-            goals.Add((clearAllIcon != null ? clearAllIcon : grid.SpriteFor(FirstLevelColor()), grid.CellCount));
+            bool bubble = clearAllIcon == null;
+
+            goals.Add((bubble ? grid.SpriteFor(FirstLevelColor()) : clearAllIcon,
+                       bubble ? BubbleCatalog.Glow : null,
+                       grid.CellCount));
+
             _shown.Add(grid.CellCount);
         }
 
@@ -2897,6 +2945,8 @@ public class GameplayController : MonoBehaviour
     {
         var removed = new HashSet<Vector2Int>();
 
+        _layerHitThisShot.Clear();
+
         // Hay que preguntarlo ANTES de resolverla: un instante después ya es de otro color y no
         // queda rastro de que el estallido lo provocó un comodín.
         bool wasRainbow = grid.TryGetBubble(landedCell, out var landed) && landed.ColorType == BubbleColor.Rainbow;
@@ -2937,28 +2987,11 @@ public class GameplayController : MonoBehaviour
                     break;
                 }
 
-        // Las de rescate que entraron en el grupo por su color NO se van con él si todavía tienen
-        // caparazón: el match les cuesta una capa y se quedan. Sin esto, un poder de rescate con
-        // tres capas se abriría de un solo match y el caparazón no significaría nada.
-        //
-        // Se sacan del grupo ANTES de puntuar y de reventar, no después: metidas en la cuenta
-        // sumarían puntos y pedirían un pop que no va a ocurrir.
-        for (int i = matched.Count - 1; i >= 0; i--)
-        {
-            if (!grid.TryGetBubble(matched[i], out var trapped) || trapped == null) continue;
-            if (!trapped.IsCreature || trapped.LayersLeft <= 0)                     continue;
-
-            StartCoroutine(HitRescue(matched[i], i * ChainStep(matched.Count, POP_CHAIN_DELAY)));
-            matched.RemoveAt(i);
-        }
-
-        if (matched.Count < GridController.MIN_MATCH)
-        {
-            // Quitadas las acorazadas puede no quedar match: el grupo era tres y dos eran
-            // caparazón. El golpe ya se dio, pero no hay nada que reventar.
-            _comboStreak = 0;
-            return removed;
-        }
+        // Acá se sacaban del grupo las acorazadas, para que el match les costara una capa en vez
+        // de llevárselas. Ya no hace falta: lo acorazado NO entra en el grupo, porque su color
+        // está tapado y no matchea (GridController.Matchable). La capa se la quita
+        // HitRescuesTouching por ser vecina de lo que revienta, que es la misma regla venga el
+        // match del color que venga.
 
         _comboStreak++;
 
@@ -3064,6 +3097,8 @@ public class GameplayController : MonoBehaviour
     {
         var removed = new HashSet<Vector2Int>();
         var art     = BoosterRules.ArtFor(booster);
+
+        _layerHitThisShot.Clear();
 
         // Las mismas celdas que la mira acaba de marcar. El orden lo da CellsHitBy —anillos para
         // la bomba, de un extremo al otro para la raya— y el índice ya sirve para escalonar la
@@ -3339,15 +3374,21 @@ public class GameplayController : MonoBehaviour
         // Sin esto el derrumbe regalaba el rescate entero: tres capas deshechas por suerte, con
         // un caparazón que solo significaba algo cuando el golpe venía de un disparo.
         //
-        // La ÚLTIMA capa no se agarra: romperla es exactamente lo que libera, igual que el último
-        // golpe de un match (ver HitRescue). Así tres capas son tres desprendimientos y una es
-        // uno — el caparazón cuesta lo mismo venga el golpe de donde venga.
+        // La ÚLTIMA capa no se agarra CUANDO LLEVA ALGO DENTRO: romperla es exactamente lo que
+        // libera, igual que el último golpe de un match (ver HitRescue). Así tres capas son tres
+        // desprendimientos y una es uno — el caparazón cuesta lo mismo venga el golpe de donde
+        // venga.
+        //
+        // Un OBSTÁCULO sí se agarra con su última capa, porque destaparlo no lo libera: debajo
+        // queda la burbuja de color. Soltándolo con el resto, un obstáculo a medio abrir se caía
+        // al tumbar lo que tenía encima y el caparazón que le quedaba no servía de nada
+        // (reportado por Diego).
         var clinging = new List<(Vector2Int from, BubbleView view)>();
 
         for (int i = collapsing.Count - 1; i >= 0; i--)
         {
             if (!grid.TryGetBubble(collapsing[i], out var shelled) || shelled == null) continue;
-            if (!shelled.IsCreature || shelled.LayersLeft <= 1)                        continue;
+            if (shelled.LayersLeft <= (shelled.IsCreature ? 1 : 0))                    continue;
 
             clinging.Add((collapsing[i], shelled));
 
@@ -3412,21 +3453,39 @@ public class GameplayController : MonoBehaviour
 
             _recipeAt.TryGetValue(from, out var recipe);
 
-            float fall = grid.SlideBubbleTo(view, landing.Value, delay);
+            // La capa salta ANTES de moverse, y el traslado espera a que termine.
+            //
+            // El orden es lo que cuenta la historia: se queda quieta donde estaba mientras lo de
+            // alrededor se desploma, acusa el golpe ahí, y solo entonces baja. Rompiéndola al
+            // aterrizar parecía que el golpe se lo daba el suelo, cuando lo que se lo dio fue
+            // quedarse sin nada encima (pedido de Diego).
+            //
+            // Se traslada siempre, pero la capa solo la paga una vez por jugada: alcanzada
+            // además por el match de al lado, ya la perdió ahí.
+            float shed = 0f;
+
+            if (_layerHitThisShot.Add(view))
+            {
+                StartCoroutine(ShedLayer(view, delay));
+                shed = BubbleView.SHATTER_TIME;
+            }
+
+            // El golpe de posarse suena SIEMPRE, también cuando acaba de perder una capa. Los dos
+            // sonidos no se pisan: la capa salta antes de moverse y esto es al final del viaje,
+            // así que entre uno y otro hay medio segundo largo. Callándolo cuando había rotura
+            // —que es casi siempre— el aterrizaje no se oía nunca (reportado por Diego).
+            grid.SlideBubbleTo(view, landing.Value, delay + shed, slideLandClip);
 
             // Las dos tablas van POR CELDA, así que la mudanza hay que escribirla también en
             // ellas: con la clave vieja la criatura dejaba de contar para el objetivo y el nivel
             // se volvía imposible de ganar.
             if (_creatureAt.Remove(from, out int index)) _creatureAt[landing.Value] = index;
             if (_recipeAt.Remove(from))                  _recipeAt[landing.Value]   = recipe;
-
-            StartCoroutine(ShedLayerOnLanding(view, recipe, delay + fall));
         }
     }
 
-    // La capa salta CUANDO ATERRIZA y no al desprenderse: el golpe es el aterrizaje, y romperla
-    // antes deja el cristal sonando con la burbuja todavía en el aire.
-    IEnumerator ShedLayerOnLanding(BubbleView view, RescueBubbleCatalog.Recipe recipe, float delay)
+    // La capa que se pierde por quedarse sin techo, en el sitio donde estaba y antes de bajar.
+    IEnumerator ShedLayer(BubbleView view, float delay)
     {
         if (delay > 0f) yield return new WaitForSeconds(delay);
 
@@ -3434,7 +3493,9 @@ public class GameplayController : MonoBehaviour
 
         view.BreakLayer();
 
-        AudioManager.Instance?.PlaySfx(RescueBubbleCatalog.LayerBurst(recipe));
+        // El sonido se lo pide a la BURBUJA y no a la receta: un obstáculo suelto no tiene
+        // receta, y preguntándosela a ella se caía en silencio.
+        AudioManager.Instance?.PlaySfx(view.LayerClip);
     }
 
     // Acompaña la cadena con un golpe de temblor por burbuja, con los mismos tiempos que se le

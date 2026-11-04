@@ -8940,6 +8940,7 @@ MonoBehaviour:
   victoryShotDuration: 0.12
   popClip: {fileID: 8300000, guid: a3ff1106d6ce7426eb2237d5eb16c975, type: 3}
   dropClip: {fileID: 8300000, guid: 623dd2417b6e64d6f95b775bd8b1224e, type: 3}
+  slideLandClip: {fileID: 8300000, guid: c7dedf86139a64120863749791367c6c, type: 3}
   bombSparkle:
     glowColor: {r: 1, g: 0.93, b: 0.72, a: 0.85}
     glowSize: 300
