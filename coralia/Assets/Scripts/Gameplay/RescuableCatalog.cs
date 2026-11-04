@@ -28,10 +28,10 @@ public abstract class RescuableCatalog : ScriptableObject
         [Tooltip("El icono del hub de objetivos, arriba. Pequeño y plano: se ve a 60 píxeles junto a un número.")]
         public Sprite icon;
 
-        [Tooltip("Cómo se ve DENTRO de la burbuja que lo atrapa, en el tablero.\n\nUn solo sprite se queda quieto; varios se pasan en bucle a 'Frames Per Second'. Vacío usa el icono, que siempre se ve mejor que nada.")]
+        [Tooltip("Cómo se ve DENTRO de la burbuja que lo atrapa, en el tablero.\n\nUn solo sprite se queda quieto. Varios son el PARPADEO, en este orden: ojo abierto, medio, cerrado. El primero es el de reposo —el que se ve casi todo el tiempo— y los demás solo asoman en el instante del parpadeo, que vuelve por donde fue.\n\nVacío usa el icono, que siempre se ve mejor que nada.")]
         public Sprite[] frames;
 
-        [Tooltip("A cuántos cuadros por segundo pasan los de arriba. Solo cuenta con más de uno.")]
+        [Tooltip("Lo que DURA el parpadeo, no cada cuánto ocurre. Eso último es un rato al azar entre 2,5 y 5,5 segundos, distinto en cada burbuja, y va en código porque es igual para todas.\n\nA 10 el gesto dura unos 300 ms, que es un parpadeo tranquilo y es por donde conviene empezar. A 20 dura 150 ms, como uno de verdad, pero se lee nervioso. A 4 dura casi un segundo y parece sueño. Solo cuenta con más de un cuadro.")]
         [Range(1f, 24f)]
         public float framesPerSecond = 8f;
 

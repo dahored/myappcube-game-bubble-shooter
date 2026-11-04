@@ -21,8 +21,9 @@
     "objective": {
         "type": "rescue",
         "rescues": [
-            { "row": 18, "col": 4, "bubble": "test", "match":"blue" },
-            { "row": 18, "col": 7, "bubble": "test", "match":"yellow" }
+            { "row": 18, "col": 4, "bubble": "turtle_simple", "match":"blue" },
+            { "row": 18, "col": 7, "bubble": "turtle_simple", "match":"yellow" },
+            { "row": 11, "col": 2, "bubble": "turtle_simple" }
         ]
     },
     "bubbles": [

@@ -127,8 +127,6 @@ public class CellPos
     [RescuableId]
     public string holds;
 
-    public const int MAX_LAYERS = 3;
-
     public Vector2Int Cell => new(col, row);
 
     public RescueBubbleCatalog.Recipe Recipe => RescueBubbleCatalog.Get(bubble);

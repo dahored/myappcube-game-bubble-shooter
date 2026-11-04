@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fcf54a097adf04babb32784dd000f2c2, type: 3}
   m_Name: BoosterCatalog
   m_EditorClassIdentifier: Assembly-CSharp::BoosterCatalog
-  sharedGlow: {fileID: 1505006969088389832, guid: 80daac24c790b47e09242751639cec7c, type: 3}
+  sharedGlow: {fileID: 21300000, guid: 80daac24c790b47e09242751639cec7c, type: 3}
   entries:
   - booster: 1
     family: 0
     icon: {fileID: 3513427453089786545, guid: bec15bc44fcc54ea4b6b2957c94a26d7, type: 3}
     bubbleFrames:
-    - {fileID: 2071403333483728115, guid: 889049995aa1941448d12b0865c537d2, type: 3}
-    - {fileID: 8661716057833069622, guid: 5d25dcddc5c2b4ea4a2c7c2c52714122, type: 3}
+    - {fileID: 21300000, guid: 889049995aa1941448d12b0865c537d2, type: 3}
+    - {fileID: 21300000, guid: 5d25dcddc5c2b4ea4a2c7c2c52714122, type: 3}
     spin: 0
     framesPerSecond: 8
     liquidFill: 0
@@ -184,7 +184,7 @@ MonoBehaviour:
     family: 1
     icon: {fileID: 4902880346416369736, guid: 0695fb9db43ad40b4a6fcfba15f25710, type: 3}
     bubbleFrames:
-    - {fileID: 7416691928268232256, guid: cd4e4136d804f443b88d74e25ee17f0f, type: 3}
+    - {fileID: 21300000, guid: cd4e4136d804f443b88d74e25ee17f0f, type: 3}
     spin: -1440
     framesPerSecond: 12
     liquidFill: 0
@@ -349,7 +349,7 @@ MonoBehaviour:
     family: 0
     icon: {fileID: -6290130234613533394, guid: 89c030c9acc42442982059f279296a2d, type: 3}
     bubbleFrames:
-    - {fileID: -1032720602377991539, guid: 915236230473b41e39179f0aea8474ae, type: 3}
+    - {fileID: 21300000, guid: 915236230473b41e39179f0aea8474ae, type: 3}
     spin: 0
     framesPerSecond: 1
     liquidFill: 0
@@ -514,7 +514,7 @@ MonoBehaviour:
     family: 0
     icon: {fileID: 2678159376878377252, guid: 2a2462ecce93c441f92f3278165bb4ee, type: 3}
     bubbleFrames:
-    - {fileID: 3825108340541979968, guid: 10d02dd5f5b824196a1e3e6ff89afa6f, type: 3}
+    - {fileID: 21300000, guid: 2a6daf1afa2764d2498912c1b88244b2, type: 3}
     spin: 0
     framesPerSecond: 1
     liquidFill: 0
@@ -526,9 +526,9 @@ MonoBehaviour:
     liquidSwayHz: 0.45
     bubbleOrbit:
       sprites:
-      - {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
-      - {fileID: 7296779971795697986, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
-      - {fileID: 5573322058532531375, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
+      - {fileID: 21300000, guid: f13798fe36caf4cc6a01b41573136eda, type: 3}
+      - {fileID: 21300000, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
+      - {fileID: 21300000, guid: e19bd62b08b1347f2b854843cf8d0767, type: 3}
       radius: 0.17
       radiusMax: 0.25
       size: 0.3
@@ -1174,7 +1174,7 @@ MonoBehaviour:
     family: 0
     icon: {fileID: 2282136319279139012, guid: d6f8ef640629e47328fe1071d85d7ae2, type: 3}
     bubbleFrames:
-    - {fileID: 463396256857311206, guid: b31c280fd51494deeb89c5553d55e9f0, type: 3}
+    - {fileID: 21300000, guid: b31c280fd51494deeb89c5553d55e9f0, type: 3}
     spin: 0
     framesPerSecond: 1
     liquidFill: 0.5
@@ -1339,7 +1339,7 @@ MonoBehaviour:
     family: 1
     icon: {fileID: 4265560667516233302, guid: 01844773e403a4f5cb99212eb74ffc54, type: 3}
     bubbleFrames:
-    - {fileID: 3825108340541979968, guid: 10d02dd5f5b824196a1e3e6ff89afa6f, type: 3}
+    - {fileID: 21300000, guid: 2a6daf1afa2764d2498912c1b88244b2, type: 3}
     spin: 0
     framesPerSecond: 12
     liquidFill: 0

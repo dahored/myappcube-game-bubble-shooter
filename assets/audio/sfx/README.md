@@ -21,4 +21,8 @@ dragon-studio-glass-breaking-386153 -> breaking_glass
 dragon-studio-waterdrop-406639 -> waterdrop
 freesound_community-beep-104060 -> mine_beep
 benkirb-shine-9-268911 -> shine_9
+spinopel-break-the-glass-456388 -> break_glass_ice
+freesound_community-wood-crack-1-105890 (1) (mp3cut.net) -> break_wood
+floraphonic-metal-hit-95-200424 -> break_metal
+freesound_community-crate-break-1-93926 -> break_stone
 

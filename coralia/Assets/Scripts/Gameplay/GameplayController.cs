@@ -1927,10 +1927,41 @@ public class GameplayController : MonoBehaviour
 
         var removed = ResolveMatchAndDrop(landedCell);
 
+        // Sin match la burbuja se queda pegada, y el sector cede un poco. Solo sin match: con
+        // uno lo que se ve es el racimo reventando, y las dos cosas a la vez se pisan.
+        if (removed.Count == 0) NudgeAround(landedCell);
+
         // La aterrizada va APARTE y no dentro de 'removed': una mina estalla con lo que le pasa
         // al lado y aterrizar es eso, pero si el disparo no matcheó esa burbuja se QUEDA — y
         // metida en el montón de las que se fueron, el objetivo la descontaba igual.
         AfterRemoval(removed, landedCell);
+    }
+
+    // Cuánto cede la burbuja de al lado, en píxeles, y hasta qué anillo llega el empujón.
+    const float NUDGE_PUSH  = 6f;
+    const int   NUDGE_RINGS = 3;
+
+    // Las de alrededor se apartan de la que acaba de pegarse, y cuanto más lejos, menos: a doble
+    // distancia, la mitad. Sin esa caída el sector entero se desplaza en bloque y se lee como un
+    // fallo del tablero en vez de como una red que cede.
+    void NudgeAround(Vector2Int cell)
+    {
+        var center = HexGridMath.CellToLocalPos(cell);
+
+        foreach (var around in HexGridMath.CellsWithinRadius(cell, NUDGE_RINGS))
+        {
+            if (around == cell)                                            continue;
+            if (!grid.TryGetBubble(around, out var view) || view == null)   continue;
+
+            var   away = HexGridMath.CellToLocalPos(around) - center;
+            float dist = away.magnitude;
+
+            if (dist < 1f) continue;
+
+            // Dividido por la distancia DOS veces: una para normalizar la dirección y otra
+            // para que el empujón se apague con la lejanía.
+            view.PlayNudge(away * (NUDGE_PUSH * HexGridMath.BubbleDiameter / (dist * dist)));
+        }
     }
 
     // El poder se pega, carga, y recién entonces estalla.
@@ -2037,16 +2068,12 @@ public class GameplayController : MonoBehaviour
 
         if (!grid.TryGetBubble(cell, out var view) || view == null) yield break;
 
-        // Cuál es la capa que va a saltar con este golpe, para poder darle SU sonido. Se mira
-        // antes de romperla: después ya no queda rastro de cuál era.
-        int breaking = view.LayersLeft - 1;
-
         // Con capas, el golpe se queda en el caparazón. Sin ellas, se la lleva.
         if (!view.BreakLayer())
         {
             _recipeAt.TryGetValue(cell, out var shell);
 
-            AudioManager.Instance?.PlaySfx(RescueBubbleCatalog.LayerBurst(shell, breaking));
+            AudioManager.Instance?.PlaySfx(RescueBubbleCatalog.LayerBurst(shell));
             yield break;
         }
 
@@ -3383,10 +3410,6 @@ public class GameplayController : MonoBehaviour
                 continue;
             }
 
-            // Cuál es la capa que salta, antes de romperla: después no queda rastro de cuál era,
-            // y es con eso con lo que se busca su sonido.
-            int breaking = view.LayersLeft - 1;
-
             _recipeAt.TryGetValue(from, out var recipe);
 
             float fall = grid.SlideBubbleTo(view, landing.Value, delay);
@@ -3397,13 +3420,13 @@ public class GameplayController : MonoBehaviour
             if (_creatureAt.Remove(from, out int index)) _creatureAt[landing.Value] = index;
             if (_recipeAt.Remove(from))                  _recipeAt[landing.Value]   = recipe;
 
-            StartCoroutine(ShedLayerOnLanding(view, recipe, breaking, delay + fall));
+            StartCoroutine(ShedLayerOnLanding(view, recipe, delay + fall));
         }
     }
 
     // La capa salta CUANDO ATERRIZA y no al desprenderse: el golpe es el aterrizaje, y romperla
     // antes deja el cristal sonando con la burbuja todavía en el aire.
-    IEnumerator ShedLayerOnLanding(BubbleView view, RescueBubbleCatalog.Recipe recipe, int breaking, float delay)
+    IEnumerator ShedLayerOnLanding(BubbleView view, RescueBubbleCatalog.Recipe recipe, float delay)
     {
         if (delay > 0f) yield return new WaitForSeconds(delay);
 
@@ -3411,7 +3434,7 @@ public class GameplayController : MonoBehaviour
 
         view.BreakLayer();
 
-        AudioManager.Instance?.PlaySfx(RescueBubbleCatalog.LayerBurst(recipe, breaking));
+        AudioManager.Instance?.PlaySfx(RescueBubbleCatalog.LayerBurst(recipe));
     }
 
     // Acompaña la cadena con un golpe de temblor por burbuja, con los mismos tiempos que se le

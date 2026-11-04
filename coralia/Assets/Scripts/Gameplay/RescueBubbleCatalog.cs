@@ -33,65 +33,28 @@ public class RescueBubbleCatalog : ScriptableObject
         [Tooltip("El brillo del cristal, DELANTE de todo. Vacío usa el 'Shared Glow' de abajo, que es lo normal: el brillo es de la burbuja y no de lo que lleve.")]
         public Sprite glow;
 
-        // Tres campos y no una lista: el tope son tres y así el Inspector lo dice solo, sin que
-        // haya que acordarse de la regla ni avisar de una cuarta que no se va a dibujar.
-        //
-        // De dentro hacia afuera, y los huecos no se saltan: una capa 2 con la 1 vacía se lee
-        // como un error al montarla, no como "quiero solo la de fuera".
         [Tooltip("Lo que suena al reventar ESTA burbuja. Opcional: vacío usa el 'Shared Burst Clip' de abajo, y si tampoco hay, el pop corriente.\n\nVa aparte del 'Rescue Clip' de la criatura: uno es el cristal rompiéndose y el otro el bicho saliendo. Suenan los dos.")]
         public AudioClip burstClip;
 
-        [Tooltip("La capa más pegada a la criatura, la ÚLTIMA en romperse. Cada capa es UN golpe.")]
-        public Sprite layer1;
+        // El material y el grosor, en vez de los tres sprites sueltos que había antes. Los
+        // sprites salen del ObstacleCatalog: así cambiar el arte del hielo se hace una vez y no
+        // en las quince recetas que lo usan, donde la que se olvidara quedaría distinta sin que
+        // nada avise.
+        [Tooltip("De qué está hecho el caparazón. Vacío la deja sin caparazón: se abre al primer golpe.")]
+        [ObstacleId]
+        public string obstacle;
 
-        [Tooltip("Lo que suena al romperse ESTA capa. Vacío usa el 'Burst Clip' de arriba, y si tampoco hay, el 'Shared Burst Clip'.")]
-        public AudioClip layer1Clip;
+        [Tooltip("Cuántos golpes cuesta abrirla. Se usan las capas más GRUESAS del material: dos son la esfera entera y el anillo, no los fragmentos.\n\nCero la deja sin caparazón, igual que dejar el material vacío.")]
+        [Range(0, ObstacleCatalog.MAX_LAYERS)]
+        public int layers;
 
-        [Tooltip("La de en medio. Vacía si solo lleva una.")]
-        public Sprite layer2;
-
-        [Tooltip("Lo que suena al romperse ESTA capa. Vacío usa el 'Burst Clip' de arriba, y si tampoco hay, el 'Shared Burst Clip'.")]
-        public AudioClip layer2Clip;
-
-        [Tooltip("La de fuera, la PRIMERA en romperse.")]
-        public Sprite layer3;
-
-        [Tooltip("Lo que suena al romperse ESTA capa. Vacío usa el 'Burst Clip' de arriba, y si tampoco hay, el 'Shared Burst Clip'.")]
-        public AudioClip layer3Clip;
-
-        // Cuánto cuesta abrirla: tantos golpes como capas tenga puestas.
-        public int Hits => (layer1 != null ? 1 : 0) + (layer2 != null ? 1 : 0) + (layer3 != null ? 1 : 0);
+        // Cuánto cuesta abrirla DE VERDAD: un material sin arte puesto no da golpes, por mucho
+        // que la receta pida tres.
+        public int Hits => Layers().Length;
 
         // De DENTRO hacia afuera, que es el orden en que se dibujan: la primera de la lista va
         // pegada a la criatura y la última queda encima de todas, que es la que se rompe primero.
-        //
-        // Iba al revés, y como las capas se dibujan en el orden de la lista, la 1 —la que el
-        // Inspector llama "la más pegada a la criatura"— acababa por fuera y caía antes que la 3.
-        public Sprite[] Layers()
-        {
-            var list = new List<Sprite>(3);
-
-            if (layer1 != null) list.Add(layer1);
-            if (layer2 != null) list.Add(layer2);
-            if (layer3 != null) list.Add(layer3);
-
-            return list.ToArray();
-        }
-
-        // Los clips de esas mismas capas, EN EL MISMO ORDEN. Van en una lista aparte y no junto
-        // al sprite porque lo que recorre el juego es la lista de capas puestas, no los campos:
-        // así el clip de la capa que se rompe se busca con el mismo índice y no hay nada que
-        // emparejar a mano.
-        public AudioClip[] LayerClips()
-        {
-            var list = new List<AudioClip>(3);
-
-            if (layer1 != null) list.Add(layer1Clip);
-            if (layer2 != null) list.Add(layer2Clip);
-            if (layer3 != null) list.Add(layer3Clip);
-
-            return list.ToArray();
-        }
+        public Sprite[] Layers() => ObstacleCatalog.Layers(obstacle, layers);
     }
 
     [Tooltip("Una receta por combinación que uses de verdad, no una por criatura.")]
@@ -107,21 +70,20 @@ public class RescueBubbleCatalog : ScriptableObject
 
     public AudioClip BurstFor(Recipe recipe) => recipe?.burstClip != null ? recipe.burstClip : sharedBurstClip;
 
-    // Lo que suena al romperse la capa número 'index' de esa receta, contando desde la de dentro.
-    // Sin clip propio cae en el de la receta, y sin ese en el común: una capa siempre suena.
-    public AudioClip LayerBurstFor(Recipe recipe, int index)
+    // Lo que suena al romperse una capa. Lo pone el MATERIAL y no la receta: romper hielo suena
+    // a hielo, sin que importe qué haya debajo. Sin clip propio cae en el de la receta, y sin
+    // ese en el común — una capa siempre suena.
+    public AudioClip LayerBurstFor(Recipe recipe)
     {
-        var clips = recipe != null ? recipe.LayerClips() : null;
+        var clip = recipe != null ? ObstacleCatalog.BreakClip(recipe.obstacle) : null;
 
-        return clips != null && index >= 0 && index < clips.Length && clips[index] != null
-             ? clips[index]
-             : BurstFor(recipe);
+        return clip != null ? clip : BurstFor(recipe);
     }
 
     public static AudioClip Burst(Recipe recipe) => Instance != null ? Instance.BurstFor(recipe) : null;
 
-    public static AudioClip LayerBurst(Recipe recipe, int index) =>
-        Instance != null ? Instance.LayerBurstFor(recipe, index) : null;
+    public static AudioClip LayerBurst(Recipe recipe) =>
+        Instance != null ? Instance.LayerBurstFor(recipe) : null;
 
     public static Sprite Glow(Recipe recipe) => Instance != null ? Instance.GlowFor(recipe) : null;
 
@@ -193,12 +155,14 @@ public class RescueBubbleCatalog : ScriptableObject
             if (!string.IsNullOrWhiteSpace(recipe.holds) && !Rescuable.Exists(recipe.holds))
                 Debug.LogWarning($"[RescueBubbleCatalog] '{recipe.id}' lleva '{recipe.holds}' y eso no está ni en el CreatureCatalog ni en el ObjectCatalog.", this);
 
-            // Un hueco salteado es un error de montaje: las capas van de dentro hacia afuera y
-            // dejar la 1 vacía con la 2 puesta no significa nada.
-            if (recipe.layer1 == null && (recipe.layer2 != null || recipe.layer3 != null))
-                Debug.LogWarning($"[RescueBubbleCatalog] '{recipe.id}' tiene capas puestas pero la 'Layer 1' vacía: las capas se llenan desde la primera.", this);
-            else if (recipe.layer2 == null && recipe.layer3 != null)
-                Debug.LogWarning($"[RescueBubbleCatalog] '{recipe.id}' tiene 'Layer 3' con la 2 vacía: las capas se llenan en orden.", this);
+            // Pedir capas de un material que no existe deja la burbuja sin caparazón, y eso se
+            // ve jugando y no acá: la criatura se abre al primer golpe sin que nada lo explique.
+            if (recipe.layers > 0 && string.IsNullOrWhiteSpace(recipe.obstacle))
+                Debug.LogWarning($"[RescueBubbleCatalog] '{recipe.id}' pide {recipe.layers} capa(s) pero no dice de qué material: va a salir sin caparazón.", this);
+            else if (!string.IsNullOrWhiteSpace(recipe.obstacle) && !ObstacleCatalog.Exists(recipe.obstacle))
+                Debug.LogWarning($"[RescueBubbleCatalog] '{recipe.id}' pide el material '{recipe.obstacle}' y eso no está en el ObstacleCatalog.", this);
+            else if (recipe.layers > 0 && recipe.Hits < recipe.layers)
+                Debug.LogWarning($"[RescueBubbleCatalog] '{recipe.id}' pide {recipe.layers} capa(s) de '{recipe.obstacle}' y ese material solo tiene {recipe.Hits}: se queda en {recipe.Hits}.", this);
         }
     }
 #endif

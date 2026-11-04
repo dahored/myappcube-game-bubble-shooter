@@ -122,6 +122,8 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         RefreshColorSkin();
         RefreshGlow();
 
+        StopNudge();
+
         var rt = (RectTransform)transform;
         rt.anchoredPosition = HexGridMath.CellToLocalPos(cell);
     }
@@ -182,6 +184,12 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         _creatureFps    = IsCreature ? Rescuable.Fps(creatureId)    : 0f;
         _creatureFrame  = 0;
         _creatureTime   = 0f;
+        _blinkStep      = 0;
+
+        // El primer parpadeo se hace esperar un rato distinto en cada burbuja, igual que la
+        // respiración. Con la misma espera, las tres tortugas de un tablero parpadean al
+        // unísono y eso se lee como un efecto, no como tres bichos (reportado por Diego).
+        _blinkWait      = Random.Range(0f, BLINK_MAX);
 
         if (creatureIcon == null) return;
 
@@ -361,12 +369,29 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
     float    _creatureFps;
     int      _creatureFrame;
     float    _creatureTime;
+    float    _blinkWait;
+    int      _blinkStep;
     bool     _breathes;
     float    _breathTime;
 
     // Cuánto se deforma al respirar. Muy poco a propósito: tiene que notarse que está vivo sin
     // que parezca que se está retorciendo.
     const float BREATH = 0.06f;
+
+    // Cada cuánto parpadea. Los cuadros de una criatura NO son un bucle: son ojo abierto, medio
+    // y cerrado, y pasados en bucle la tortuga parpadea una vez por segundo sin descanso — que
+    // se lee como un GIF y no como un bicho esperando a que lo saquen (reportado por Diego).
+    //
+    // Va en código y no en el catálogo porque es lo mismo para todas: lo que cambia de una a
+    // otra es el arte, no cada cuánto abre los ojos.
+    const float BLINK_MIN = 2.5f;
+    const float BLINK_MAX = 5.5f;
+
+    // Lo que tarda el empujón en deshacerse.
+    const float NUDGE_TIME = 0.3f;
+
+    Coroutine _nudge;
+    Vector2   _nudgeHome;
 
     void Update()
     {
@@ -384,18 +409,45 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
 
         if (_creatureFrames == null || _creatureFrames.Length < 2 || _creatureFps <= 0f) return;
 
+        // En reposo —ojos abiertos, el primer cuadro— hasta que toque el siguiente parpadeo. El
+        // gesto dura un suspiro y la espera son segundos: es la espera la que hace que parezca
+        // un parpadeo en vez de una animación.
+        if (_blinkStep == 0)
+        {
+            _blinkWait -= Time.deltaTime;
+
+            if (_blinkWait > 0f) return;
+
+            _blinkStep    = 1;
+            _creatureTime = 0f;
+        }
+
         _creatureTime += Time.deltaTime;
 
         float step = 1f / _creatureFps;
 
+        // El párpado sube POR DONDE BAJÓ: el cuadro del medio se pasa dos veces, una al cerrar y
+        // otra al abrir. En círculo —que es como iba— el ojo se cerraba en dos pasos y se abría
+        // de golpe en uno.
+        int span = (_creatureFrames.Length - 1) * 2;
+
         // Se descuenta en vez de ponerlo a cero: con un fps alto y un frame largo pueden tocar
-        // dos pasos de una, y reiniciando se perdería uno y la animación iría más lenta de lo
-        // que dice el catálogo.
-        while (_creatureTime >= step)
+        // dos pasos de una, y reiniciando se perdería uno y el parpadeo iría más lento de lo que
+        // dice el catálogo.
+        while (_creatureTime >= step && _blinkStep > 0)
         {
             _creatureTime -= step;
-            _creatureFrame = (_creatureFrame + 1) % _creatureFrames.Length;
+            _blinkStep++;
+
+            if (_blinkStep < span) continue;
+
+            // Cerrado el gesto, vuelve al reposo y se sortea la siguiente espera. Sorteada cada
+            // vez y no una sola, porque si no las que arrancaron juntas se quedan juntas.
+            _blinkStep = 0;
+            _blinkWait = Random.Range(BLINK_MIN, BLINK_MAX);
         }
+
+        _creatureFrame = _blinkStep < _creatureFrames.Length ? _blinkStep : span - _blinkStep;
 
         creatureIcon.sprite = _creatureFrames[_creatureFrame];
     }
@@ -555,6 +607,60 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
 
         rt.anchoredPosition = target;
         EndAnimation();
+    }
+
+    // El empujón de cuando algo se pega al lado: la burbuja cede en esa dirección y vuelve.
+    //
+    // NO entra en AnimatingCount, a diferencia del resto: el desplazamiento es relativo a su
+    // celda, así que el tablero puede desplazarse debajo sin que se vea cortado, y contarlo
+    // congelaría el scroll en cada disparo que no hace match.
+    public void PlayNudge(Vector2 offset)
+    {
+        // Una animación de verdad manda sobre esto: ella escribe la posición y la deja donde
+        // toque, y las dos a la vez se pelean por el mismo campo.
+        if (_animating) return;
+
+        // El reposo se guarda UNA sola vez. Guardándolo en cada empujón, la burbuja que recibe
+        // dos seguidos tomaría por sitio suyo una posición ya desplazada, y el tablero se iría
+        // descuadrando disparo a disparo sin que se note hasta mucho después.
+        if (_nudge != null) StopCoroutine(_nudge);
+        else                _nudgeHome = ((RectTransform)transform).anchoredPosition;
+
+        _nudge = StartCoroutine(Nudge(offset));
+    }
+
+    void StopNudge()
+    {
+        if (_nudge == null) return;
+
+        StopCoroutine(_nudge);
+        _nudge = null;
+    }
+
+    IEnumerator Nudge(Vector2 offset)
+    {
+        var rt = (RectTransform)transform;
+
+        for (float t = 0f; t < NUDGE_TIME; t += Time.deltaTime)
+        {
+            // Si a mitad le toca caer, reventar o deslizarse, se suelta sin restaurar: esa
+            // animación ya se encarga de dejar la burbuja donde corresponde.
+            if (_animating)
+            {
+                _nudge = null;
+                yield break;
+            }
+
+            float p = Mathf.Clamp01(t / NUDGE_TIME);
+
+            // Sale de golpe y vuelve despacio. Al revés se leería como que la burbuja se
+            // estira sola, no como que algo la empujó.
+            rt.anchoredPosition = _nudgeHome + offset * ((1f - p) * (1f - p));
+            yield return null;
+        }
+
+        rt.anchoredPosition = _nudgeHome;
+        _nudge = null;
     }
 
     const float SLIDE_MIN_TIME = 0.22f;
