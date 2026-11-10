@@ -15,6 +15,11 @@ public class ObjectCatalog : RescuableCatalog
 {
     public const string RESOURCE_PATH = "ObjectCatalog";
 
+    // Una perla bajo 'creature.pearl.name' le pide a quien traduce que entienda por qué una perla
+    // es una criatura. Y con un solo prefijo, 'perla' (criatura) y 'pearl' (objeto) acabarían a un
+    // dedazo de pisarse.
+    protected override string KeyPrefix => "object";
+
     static ObjectCatalog _instance;
     static bool          _looked;
 

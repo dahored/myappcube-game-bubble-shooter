@@ -120,6 +120,21 @@ public class ObstacleCatalog : ScriptableObject
 
     public static AudioClip BreakClip(string id) => Instance != null ? Instance.BreakClipFor(id) : null;
 
+    // Cómo se llama este material, traducido. Lo piden los tutoriales y cualquier texto que tenga
+    // que nombrarlo —"rompe el hielo"— y sin esto diría "ice" en los seis idiomas.
+    //
+    // Misma fórmula que el resto del proyecto: la clave sale del id y el nombre sale del CSV, en
+    // vez de un campo en el asset que nadie traduce.
+    public string NameKeyFor(string id) => $"obstacle.{id}.name";
+
+    public static string NameKey(string id) =>
+        Instance != null ? Instance.NameKeyFor(id) : $"obstacle.{id}.name";
+
+    // Con el id crudo de reserva, igual que los rescatables: en pantalla es peor un hueco que un
+    // "ice" sin traducir, que al menos dice cuál falta.
+    public static string Name(string id) =>
+        string.IsNullOrEmpty(id) ? "" : LocaleManager.Get(NameKey(id), id);
+
     public static bool Exists(string id) => Instance != null && Instance.Has(id);
 
     public static string[] All => Instance != null ? Instance.Ids : System.Array.Empty<string>();

@@ -347,3 +347,29 @@ ui.booster.locked,Se desbloquea en el nivel {0},Unlocks at level {0},Si sblocca 
 ui.booster.locked_soon,Se desbloquea más adelante,Unlocks later on,Si sblocca più avanti,Se débloque plus tard,Wird später freigeschaltet,Desbloqueia mais à frente
 ui.tutorial.bomb.title,¡La Bomba de Coral!,The Coral Bomb!,La Bomba di Corallo!,La Bombe de Corail !,Die Korallenbombe!,A Bomba de Coral!
 ui.tutorial.bomb.body,Revienta todo lo que la rodea sin importar el color.,Blows up everything around it whatever the color.,Fa esplodere tutto intorno a prescindere dal colore.,Fait exploser tout autour quelle que soit la couleur.,Sprengt alles ringsum egal welche Farbe.,Rebenta tudo à volta seja qual for a cor.
+creature.turtle.name,Tortuga,Turtle,Tartaruga,Tortue,Schildkröte,Tartaruga
+object.antique_chest.name,Cofre antiguo,Antique Chest,Forziere antico,Coffre ancien,Antike Truhe,Baú antigo
+object.glass_bottle.name,Botella de cristal,Glass Bottle,Bottiglia di vetro,Bouteille en verre,Glasflasche,Garrafa de vidro
+object.antique_compass.name,Brújula antigua,Antique Compass,Bussola antica,Boussole ancienne,Antiker Kompass,Bússola antiga
+object.rusted_anchor.name,Ancla oxidada,Rusted Anchor,Ancora arrugginita,Ancre rouillée,Rostiger Anker,Âncora enferrujada
+object.ships_helm.name,Timón del barco,Ship's Helm,Timone della nave,Barre du navire,Steuerrad,Leme do navio
+object.antique_map.name,Mapa antiguo,Antique Map,Mappa antica,Carte ancienne,Antike Karte,Mapa antigo
+object.rusted_key.name,Llave oxidada,Rusted Key,Chiave arrugginita,Clé rouillée,Rostiger Schlüssel,Chave enferrujada
+object.sunken_barrel.name,Barril hundido,Sunken Barrel,Barile affondato,Tonneau englouti,Versunkenes Fass,Barril afundado
+object.sunken_cannon.name,Cañón hundido,Sunken Cannon,Cannone affondato,Canon englouti,Versunkene Kanone,Canhão afundado
+object.stone_tablet.name,Tablilla de piedra,Stone Tablet,Tavoletta di pietra,Tablette de pierre,Steintafel,Tábua de pedra
+object.ancient_amphora.name,Ánfora antigua,Ancient Amphora,Anfora antica,Amphore ancienne,Antike Amphore,Ânfora antiga
+object.old_helmet.name,Yelmo antiguo,Old Helmet,Elmo antico,Heaume ancien,Alter Helm,Elmo antigo
+object.shipwreck_plank.name,Tablón del naufragio,Shipwreck Plank,Asse del relitto,Planche d'épave,Wrackplanke,Tábua do naufrágio
+object.antique_diving_helmet.name,Escafandra antigua,Antique Diving Helmet,Scafandro antico,Scaphandre ancien,Antiker Taucherhelm,Escafandro antigo
+object.sunken_lantern.name,Farol sumergido,Sunken Lantern,Lanterna sommersa,Lanterne immergée,Versunkene Laterne,Lanterna submersa
+object.pocket_watch.name,Reloj de bolsillo,Pocket Watch,Orologio da tasca,Montre de poche,Taschenuhr,Relógio de bolso
+object.ships_bell.name,Campana del barco,Ship's Bell,Campana della nave,Cloche du navire,Schiffsglocke,Sino do navio
+object.underwater_crystal.name,Cristal submarino,Underwater Crystal,Cristallo sottomarino,Cristal sous-marin,Unterwasserkristall,Cristal submarino
+object.giant_shell.name,Concha gigante,Giant Shell,Conchiglia gigante,Coquillage géant,Riesenmuschel,Concha gigante
+object.fragment_ruin.name,Arco en ruinas,Ruined Arch,Arco in rovina,Arche en ruine,Verfallener Bogen,Arco em ruínas
+obstacle.ice.name,Hielo,Ice,Ghiaccio,Glace,Eis,Gelo
+obstacle.metal.name,Metal,Metal,Metallo,Métal,Metall,Metal
+obstacle.wood.name,Madera,Wood,Legno,Bois,Holz,Madeira
+obstacle.stone.name,Piedra,Stone,Pietra,Pierre,Stein,Pedra
+obstacle.glass.name,Vidrio,Glass,Vetro,Verre,Glas,Vidro

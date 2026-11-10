@@ -13,53 +13,103 @@ MonoBehaviour:
   m_Name: ObjectCatalog
   m_EditorClassIdentifier: Assembly-CSharp::ObjectCatalog
   entries:
-  - id: pearl
-    icon: {fileID: 0}
+  - id: antique_chest
+    icon: {fileID: 21300000, guid: a0d1bb0237adb4004b4833e43ae50c99, type: 3}
     frames: []
     framesPerSecond: 8
     rescueClip: {fileID: 0}
-  - id: shell
-    icon: {fileID: 0}
+  - id: glass_bottle
+    icon: {fileID: 21300000, guid: 603ce8fbeb4564394b94c8109d1e9ad2, type: 3}
     frames: []
     framesPerSecond: 8
     rescueClip: {fileID: 0}
-  - id: starfish
-    icon: {fileID: 0}
+  - id: antique_compass
+    icon: {fileID: 21300000, guid: 32274f2b491fe4b2e829575bf451a1c4, type: 3}
     frames: []
     framesPerSecond: 8
     rescueClip: {fileID: 0}
-  - id: coral_shard
-    icon: {fileID: 0}
+  - id: rusted_anchor
+    icon: {fileID: 21300000, guid: 76328fc3d17204d62af18739bb789309, type: 3}
     frames: []
     framesPerSecond: 8
     rescueClip: {fileID: 0}
-  - id: sea_glass
-    icon: {fileID: 0}
+  - id: ships_helm
+    icon: {fileID: 21300000, guid: 18c9f817d82804c4f92c99f31e5e88ae, type: 3}
     frames: []
     framesPerSecond: 8
     rescueClip: {fileID: 0}
-  - id: bottle
-    icon: {fileID: 0}
+  - id: antique_map
+    icon: {fileID: 21300000, guid: cb8cdc54dff9b4fcbb7bc65cc6485030, type: 3}
     frames: []
     framesPerSecond: 8
     rescueClip: {fileID: 0}
-  - id: anchor
-    icon: {fileID: 0}
+  - id: rusted_key
+    icon: {fileID: 21300000, guid: c6bd736199f71418a8fa30c5fbb80eea, type: 3}
     frames: []
     framesPerSecond: 8
     rescueClip: {fileID: 0}
-  - id: chest
-    icon: {fileID: 0}
+  - id: sunken_barrel
+    icon: {fileID: 21300000, guid: da7c63f6f330e41739eb730faf3137ef, type: 3}
     frames: []
     framesPerSecond: 8
     rescueClip: {fileID: 0}
-  - id: key
-    icon: {fileID: 0}
+  - id: sunken_cannon
+    icon: {fileID: 21300000, guid: 5b2cbeec9482d49f79fdf56204cdc79a, type: 3}
     frames: []
     framesPerSecond: 8
     rescueClip: {fileID: 0}
-  - id: crystal
-    icon: {fileID: 0}
+  - id: stone_tablet
+    icon: {fileID: 21300000, guid: eb53efc5336bb4b62bf8463d610817d5, type: 3}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: ancient_amphora
+    icon: {fileID: 21300000, guid: 96d8683b776f049bb9547c609ebcd75e, type: 3}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: old_helmet
+    icon: {fileID: 21300000, guid: 043cf327437f54ebba370144770c6044, type: 3}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: shipwreck_plank
+    icon: {fileID: 21300000, guid: af8593323aa79419fa066e6d7d87cb92, type: 3}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: antique_diving_helmet
+    icon: {fileID: 21300000, guid: 5bebc9926f31f4226a91c127c8fb183b, type: 3}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: sunken_lantern
+    icon: {fileID: 21300000, guid: 4fc60a7ff144c43e981d9c10037ef5ba, type: 3}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: pocket_watch
+    icon: {fileID: 21300000, guid: 8fcf9b4dfe32e487daa43f26381a52e1, type: 3}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: ships_bell
+    icon: {fileID: 21300000, guid: dd6842851a08948588ce1ecb863cccc3, type: 3}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: underwater_crystal
+    icon: {fileID: 21300000, guid: afb7115f3bc7d42acb1bbdcb093095ab, type: 3}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: giant_shell
+    icon: {fileID: 21300000, guid: 19aa458fa165e41829d15a71f23329c4, type: 3}
+    frames: []
+    framesPerSecond: 8
+    rescueClip: {fileID: 0}
+  - id: fragment_ruin
+    icon: {fileID: 21300000, guid: dcbbe6c02055143b7ba3f05268910f4a, type: 3}
     frames: []
     framesPerSecond: 8
     rescueClip: {fileID: 0}
