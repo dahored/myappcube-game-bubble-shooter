@@ -62,9 +62,15 @@ public class ObstacleCatalog : ScriptableObject
 
     public bool Has(string id) => EntryFor(id) != null;
 
-    // Las 'count' capas más GRUESAS del material, no las primeras: un caparazón de dos golpes
-    // es la esfera entera y el anillo, y empezar por los fragmentos lo dejaría ya roto antes de
-    // que nadie lo tocara.
+    // Las 'count' PRIMERAS capas del material, en el orden en que están puestas en el catálogo.
+    //
+    // Las capas van de menos a más: fragmentos sueltos, anillo, esfera entera. Así el grosor se
+    // ve de un vistazo —uno arranca hecho pedazos y tres arranca entero— y el jugador sabe
+    // cuántos golpes le cuesta antes de gastar el primero. Tomando las últimas, los tres grosores
+    // arrancaban iguales y solo se distinguían golpeándolos (pedido de Diego).
+    //
+    // Se ROMPEN al revés, de la última a la primera, que es lo que deja ver cómo se desmorona:
+    // entera, anillo, fragmentos.
     //
     // Devueltas de dentro hacia afuera, que es el orden en que las dibuja BubbleView.
     public Sprite[] LayersFor(string id, int count)
@@ -84,7 +90,7 @@ public class ObstacleCatalog : ScriptableObject
         // El aviso lo da OnValidate, que es donde se puede arreglar.
         int take = Mathf.Min(count, available.Count);
 
-        return available.GetRange(available.Count - take, take).ToArray();
+        return available.GetRange(0, take).ToArray();
     }
 
     public AudioClip BreakClipFor(string id) => EntryFor(id)?.breakClip;
@@ -113,6 +119,21 @@ public class ObstacleCatalog : ScriptableObject
         Instance != null ? Instance.LayersFor(id, count) : System.Array.Empty<Sprite>();
 
     public static AudioClip BreakClip(string id) => Instance != null ? Instance.BreakClipFor(id) : null;
+
+    // Cómo se llama este material, traducido. Lo piden los tutoriales y cualquier texto que tenga
+    // que nombrarlo —"rompe el hielo"— y sin esto diría "ice" en los seis idiomas.
+    //
+    // Misma fórmula que el resto del proyecto: la clave sale del id y el nombre sale del CSV, en
+    // vez de un campo en el asset que nadie traduce.
+    public string NameKeyFor(string id) => $"obstacle.{id}.name";
+
+    public static string NameKey(string id) =>
+        Instance != null ? Instance.NameKeyFor(id) : $"obstacle.{id}.name";
+
+    // Con el id crudo de reserva, igual que los rescatables: en pantalla es peor un hueco que un
+    // "ice" sin traducir, que al menos dice cuál falta.
+    public static string Name(string id) =>
+        string.IsNullOrEmpty(id) ? "" : LocaleManager.Get(NameKey(id), id);
 
     public static bool Exists(string id) => Instance != null && Instance.Has(id);
 

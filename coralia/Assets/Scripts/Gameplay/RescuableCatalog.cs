@@ -38,10 +38,16 @@ public abstract class RescuableCatalog : ScriptableObject
         [Tooltip("Lo que suena al liberarlo. Es el momento que el jugador vino a buscar: sin sonido propio se confunde con una burbuja más que revienta.")]
         public AudioClip rescueClip;
 
-        // El nombre sale de las traducciones y no de un campo: escribirlo acá sería la versión
-        // que nadie traduce. La clave se deriva del id, igual que la de los niveles.
-        public string NameKey => $"creature.{id}.name";
     }
+
+    // Bajo qué familia de claves se traducen los nombres de este catálogo. Lo pone el CATÁLOGO y
+    // no la entrada: una entrada suelta no sabe en cuál de los dos está, y el prefijo es
+    // justamente lo que los distingue.
+    protected virtual string KeyPrefix => "creature";
+
+    // El nombre sale de las traducciones y no de un campo del asset: escrito ahí sería la versión
+    // que nadie traduce. La clave se deriva del id, igual que la de los niveles y los capítulos.
+    public string NameKeyFor(string id) => $"{KeyPrefix}.{id}.name";
 
     // 'creatures' era como se llamaba cuando criaturas y objetos vivían en el mismo asset. El
     // nombre viejo se declara para que Unity migre solo lo que ya estaba escrito: sin esto, los

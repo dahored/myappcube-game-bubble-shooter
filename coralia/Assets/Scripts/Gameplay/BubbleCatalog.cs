@@ -40,7 +40,14 @@ public class BubbleCatalog : ScriptableObject
     [Tooltip("Marcado: el brillo se dibuja como CAPA encima del cuerpo. Para eso los cuerpos tienen que estar exportados PLANOS, sin el brillo pintado dentro.\n\nDesmarcado (lo de ahora): cada cuerpo trae su propio brillo y la capa no se dibuja. Encenderlo con los sprites de hoy deja dos brillos encima.")]
     [SerializeField] bool glowAsLayer;
 
+    [Tooltip("La burbujita que va dejando atrás lo que se desplaza por el tablero.\n\nOpcional: vacío usa el brillo del cristal de arriba, que a tamaño pequeño ya se lee como una burbuja de aire. Un sprite propio queda mejor si lo tienes.")]
+    [SerializeField] Sprite trailSprite;
+
     public Sprite SharedGlow => glowAsLayer ? sharedGlow : null;
+
+    // El brillo sirve de relleno aunque 'glowAsLayer' esté apagado: ahí lo que no se quiere es
+    // una capa de brillo ENCIMA de cada burbuja, no que el sprite deje de existir.
+    public Sprite Trail => trailSprite != null ? trailSprite : sharedGlow;
 
     public Entry EntryFor(BubbleColor color)
     {
@@ -93,6 +100,7 @@ public class BubbleCatalog : ScriptableObject
     public static Sprite[] Frames(BubbleColor color) => Instance != null ? Instance.FramesFor(color) : System.Array.Empty<Sprite>();
     public static float    Fps(BubbleColor color)    => Instance != null ? Instance.FpsFor(color)    : 8f;
     public static Sprite   Glow                      => Instance != null ? Instance.SharedGlow        : null;
+    public static Sprite   TrailBubble               => Instance != null ? Instance.Trail             : null;
 
 #if UNITY_EDITOR
     void OnValidate()

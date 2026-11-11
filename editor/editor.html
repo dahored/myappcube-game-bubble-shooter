@@ -1,0 +1,2184 @@
+<title>Taller de Niveles Coralia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* Aplicacion de una pantalla: nada hace scroll salvo la lista de niveles y la ficha.
+   El tablero se escala al hueco que le queda, de ancho Y de alto, asi que el nivel
+   entero se ve siempre sin mover nada.
+   El lienzo conserva su fondo oscuro en los dos temas, como un editor de imagen: los
+   sprites se dibujaron para verse sobre el agua, no sobre papel blanco. */
+:root {
+  --bg: #eef2f6; --panel: #ffffff; --panel-2: #f4f7fa; --line: #d7dfe8;
+  --ink: #16202c; --muted: #5c6b7e; --accent: #0b7c8c; --accent-in: #ffffff;
+  --warn: #935514; --warn-bg: #fdf3e4; --bad: #a82f38; --bad-bg: #fdedee; --ok: #1d7549;
+  --board: #16202b; --grid: rgba(255,255,255,.075);
+  --display: "Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f161d; --panel: #18212b; --panel-2: #1e2834; --line: #2b3744;
+    --ink: #e6edf5; --muted: #93a4b7; --accent: #37b6c6; --accent-in: #052229;
+    --warn: #e2a263; --warn-bg: #2d2416; --bad: #ef7079; --bad-bg: #321a1d; --ok: #5fc894;
+    --board: #121a23; --grid: rgba(255,255,255,.065);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f161d; --panel: #18212b; --panel-2: #1e2834; --line: #2b3744;
+  --ink: #e6edf5; --muted: #93a4b7; --accent: #37b6c6; --accent-in: #052229;
+  --warn: #e2a263; --warn-bg: #2d2416; --bad: #ef7079; --bad-bg: #321a1d; --ok: #5fc894;
+  --board: #121a23; --grid: rgba(255,255,255,.065);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--display); font-size: 13.5px; line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+button, select, input, textarea { font: inherit; color: inherit; }
+
+.app {
+  height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr);
+  padding-left: max(10px, env(safe-area-inset-left, 0px));
+  padding-right: max(10px, env(safe-area-inset-right, 0px));
+  padding-block: 9px 10px; gap: 9px;
+}
+
+/* ---------------------------------------------------------------- cabecera */
+
+.top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.brand { display: flex; align-items: baseline; gap: 8px; }
+.brand h1 { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -.015em; white-space: nowrap; }
+.brand .sub { color: var(--muted); font-size: 11.5px; }
+.now {
+  font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 7px; padding: 4px 9px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46vw;
+}
+.now b { color: var(--ink); font-weight: 600; }
+.now .mod { color: var(--warn); }
+.top .spacer { flex: 1 1 auto; }
+.bar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+.btn {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 8px;
+  padding: 5px 10px; cursor: pointer; font-size: 12.5px; font-weight: 500; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-in); }
+.btn[disabled] { opacity: .4; cursor: default; border-color: var(--line); }
+
+/* ---------------------------------------------------------------- columnas */
+
+/* La pantalla en seis partes: una para la lista, tres para el tablero, dos para las
+   herramientas y la ficha. El tablero se lleva la mitad, que es donde esta el trabajo. */
+.cols {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(0, 3fr) minmax(290px, 2fr);
+  gap: 9px; min-height: 0;
+}
+.col { display: flex; flex-direction: column; gap: 9px; min-height: 0; min-width: 0; }
+
+.pane {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 10px; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column;
+}
+.pane.grow { flex: 1 1 auto; }
+.pane h2 {
+  margin: 0 0 7px; font-size: 10px; font-weight: 600; flex: none;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: baseline; gap: 6px;
+}
+.pane h2 .r { margin-left: auto; font-family: var(--mono); letter-spacing: 0; }
+.scroll { overflow-y: auto; min-height: 0; flex: 1 1 auto; }
+
+/* ---------------------------------------------------------------- pincel */
+
+.tabs { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none; }
+.tabs button {
+  border: 0; background: var(--panel); padding: 5px 6px; cursor: pointer; flex: 1 1 0;
+  font-size: 12.5px; font-weight: 500; border-right: 1px solid var(--line);
+}
+.tabs button:last-child { border-right: 0; }
+.tabs button[aria-pressed="true"] { background: var(--accent); color: var(--accent-in); }
+
+.picker { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.pick {
+  width: 32px; height: 32px; border-radius: 8px; cursor: pointer; padding: 2px;
+  border: 2px solid transparent; background: var(--panel-2); flex: none;
+  display: grid; place-items: center; position: relative;
+}
+.pick img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.pick[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pick .lay {
+  position: absolute; right: -1px; bottom: -2px;
+  font-family: var(--mono); font-size: 9px; font-weight: 500;
+  background: var(--panel); border-radius: 4px; padding: 0 3px; line-height: 1.4;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+/* Una fila por material y una columna por grosor, con el sprite que de verdad se pone:
+   el boton ES la vista previa. El hielo de una capa arranca hecho pedazos y el de tres
+   entero, asi que el grosor se ve sin leer un numero. */
+.shells {
+  display: grid; grid-template-columns: auto repeat(3, 1fr);
+  gap: 3px 5px; align-items: center;
+}
+.shells .ml { font-size: 10.5px; color: var(--muted); text-transform: capitalize; justify-self: end; }
+.shells .pick { width: 100%; max-width: 38px; height: 34px; }
+.shells .bare { grid-column: 2 / -1; justify-self: start; }
+
+.holdsgrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 3px; background: var(--panel-2); border-radius: 8px; padding: 5px;
+  max-height: 136px; overflow-y: auto;
+}
+.holdsgrid .pick { width: 100%; height: 34px; background: none; }
+.gl { grid-column: 1 / -1; font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); padding: 1px 2px 0; }
+
+.hint {
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  background: var(--panel-2); border-radius: 7px; padding: 4px 7px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.brushbar { display: flex; flex-direction: column; gap: 7px; }
+
+/* ---------------------------------------------------------------- niveles */
+
+#search {
+  width: 100%; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 5px 8px; margin-bottom: 6px; font-size: 12.5px; flex: none;
+}
+.chap {
+  display: flex; align-items: center; gap: 5px; width: 100%;
+  background: none; border: 0; cursor: pointer; padding: 5px 3px;
+  font-size: 11.5px; font-weight: 600; color: var(--muted); text-align: left;
+  position: sticky; top: 0; background: var(--panel); z-index: 1;
+}
+.chap .caret { font-size: 8px; transition: transform .15s; flex: none; }
+.chap[aria-expanded="false"] .caret { transform: rotate(-90deg); }
+.chap .count { margin-left: auto; font-family: var(--mono); font-size: 10px; opacity: .7; }
+
+.lvl {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 3px 7px; border-radius: 6px; cursor: pointer;
+  border: 0; background: none; text-align: left; color: inherit;
+}
+.lvl:hover { background: var(--panel-2); }
+.lvl[aria-current="true"] { background: var(--accent); color: var(--accent-in); }
+.lvl .n { font-family: var(--mono); font-size: 10.5px; opacity: .75; font-variant-numeric: tabular-nums; flex: none; }
+.lvl .t { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lvl .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); margin-left: auto; flex: none; }
+.lvl .tag { margin-left: auto; font-size: 9px; letter-spacing: .05em; opacity: .6; flex: none; }
+
+/* ---------------------------------------------------------------- tablero */
+
+.boardpane { padding: 8px; }
+.ctl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; flex: none; margin-bottom: 7px; }
+.ctl label { color: var(--muted); }
+input[type="number"], input[type="text"], select {
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 3px 6px; min-width: 0;
+}
+.boardwrap {
+  flex: 1 1 auto; min-height: 0; border-radius: var(--r); background: var(--board);
+  display: grid; overflow: auto; padding: 6px;
+  /* 'safe' centra mientras entra y se pega al borde cuando no: con el centrado normal, un
+     tablero mas grande que la caja deja el principio por fuera del area que se puede
+     desplazar y no hay forma de llegar a el. */
+  justify-content: center; align-content: center;
+  justify-content: safe center; align-content: safe center;
+}
+canvas#board { display: block; touch-action: none; cursor: crosshair; }
+/* Juntos y pegados: son un mando, no tres botones sueltos. El del medio enseña a cuánto
+   está y vuelve al ajuste automático, que es lo que se quiere casi siempre. */
+.zoom { display: flex; }
+.zoom .btn { border-radius: 0; margin-left: -1px; }
+.zoom .btn:first-child { border-radius: 8px 0 0 8px; margin-left: 0; }
+.zoom .btn:last-child  { border-radius: 0 8px 8px 0; }
+#zoom-fit { font-family: var(--mono); font-size: 11px; min-width: 52px; font-variant-numeric: tabular-nums; }
+#zoom-fit[aria-pressed="false"] { background: var(--accent); border-color: var(--accent); color: var(--accent-in); }
+
+.legend { display: flex; gap: 11px; flex-wrap: wrap; font-size: 10.5px; color: var(--muted); margin-top: 6px; flex: none; }
+.legend b { color: var(--ink); font-weight: 600; }
+
+/* ---------------------------------------------------------------- ficha */
+
+.ptabs { display: flex; gap: 1px; margin-bottom: 8px; border-bottom: 1px solid var(--line); flex: none; }
+.ptabs button {
+  border: 0; background: none; cursor: pointer; padding: 4px 4px; flex: 1 1 0;
+  font-size: 11px; font-weight: 500; color: var(--muted);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.ptabs button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.ptabs .badge {
+  display: inline-block; min-width: 15px; padding: 0 4px; margin-left: 3px;
+  border-radius: 9px; font-size: 9.5px; font-family: var(--mono);
+  background: var(--bad); color: #fff;
+}
+.ptabs .badge.warn { background: var(--warn); }
+
+.field { display: grid; grid-template-columns: 94px minmax(0,1fr); gap: 5px; align-items: center; margin-bottom: 5px; }
+.field > label { color: var(--muted); font-size: 12px; }
+.field input, .field select { width: 100%; }
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+
+.chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.chip {
+  border: 1px solid var(--line); background: var(--panel-2); border-radius: 18px;
+  padding: 2px 8px 2px 3px; font-size: 11px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--accent-in); }
+.chip img { width: 15px; height: 15px; display: block; }
+/* Cuántos niveles lo explican ya. Dentro del chip y no al lado para que se lea como parte
+   de él: lo que cuenta no es el tutorial, es cuántas veces se usó. */
+.chip .n {
+  font-family: var(--mono); font-size: 9.5px; font-weight: 500; line-height: 1;
+  background: var(--line); color: var(--muted); border-radius: 9px; padding: 2px 5px;
+}
+.chip[aria-pressed="true"] .n { background: color-mix(in srgb, #000 22%, transparent); color: inherit; }
+
+.sep { height: 1px; background: var(--line); margin: 10px 0; border: 0; }
+.pane h2.inline { margin: 12px 0 6px; }
+
+.issue { border-radius: 8px; padding: 5px 8px; font-size: 11.5px; margin-bottom: 4px; border: 1px solid; }
+.issue.bad  { background: var(--bad-bg);  border-color: var(--bad);  color: var(--bad); }
+.issue.warn { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+.issue.ok   { color: var(--ok); border-color: transparent; background: none; padding-left: 0; }
+
+.cellrow {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 10.5px;
+  padding: 2px 0; border-bottom: 1px solid var(--line);
+}
+.cellrow:last-child { border-bottom: 0; }
+.cellrow img { width: 19px; height: 19px; flex: none; }
+.cellrow .x { margin-left: auto; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 3px; font-size: 14px; line-height: 1; }
+.cellrow .x:hover { color: var(--bad); }
+
+/* ------------------------------------------------- boosters, tutoriales, balance */
+
+.slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.menu { position: relative; min-width: 0; }
+.slot {
+  width: 100%; border: 1px dashed var(--line); border-radius: 9px; background: var(--panel-2);
+  padding: 6px 4px; display: grid; gap: 3px; justify-items: center; cursor: pointer;
+  font-size: 10px; color: var(--muted); text-align: center; min-height: 60px;
+}
+.slot img { width: 26px; height: 26px; object-fit: contain; }
+.slot .big { font-size: 17px; line-height: 1; }
+.slot span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.slot.on { border-style: solid; border-color: var(--accent); color: var(--ink); }
+.slot.unknown { border-style: solid; border-color: var(--bad); color: var(--bad); }
+
+.pop {
+  position: absolute; z-index: 20; top: 100%; left: 0; min-width: 160px; margin-top: 3px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+  box-shadow: 0 8px 22px rgba(0,0,0,.25); padding: 4px; max-height: 220px; overflow-y: auto;
+}
+.pop button {
+  display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: none;
+  padding: 4px 6px; border-radius: 6px; cursor: pointer; font-size: 11.5px;
+  text-align: left; color: inherit; white-space: nowrap;
+}
+.pop button:hover { background: var(--panel-2); }
+.pop img { width: 18px; height: 18px; object-fit: contain; flex: none; }
+
+.kv { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 3px 9px; font-size: 11.5px; margin: 0 0 8px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-family: var(--mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+.kv dd em { font-style: normal; color: var(--muted); }
+.kv dd b { font-family: var(--display); font-size: 11.5px; }
+.row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.row .lab { color: var(--muted); font-size: 11px; }
+.btn.mini { font-size: 11px; padding: 3px 7px; }
+.dif.ok { color: var(--ok); } .dif.warn { color: var(--warn); } .dif.bad { color: var(--bad); }
+.note { font-size: 10.5px; color: var(--muted); line-height: 1.45; margin: 6px 0 0; }
+.note b { color: var(--ink); font-weight: 600; }
+.note.warn { color: var(--warn); }
+
+textarea#json {
+  width: 100%; flex: 1 1 auto; min-height: 120px; resize: none;
+  font-family: var(--mono); font-size: 10px; line-height: 1.5;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 7px;
+}
+.path {
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  background: var(--panel-2); border-radius: 7px; padding: 4px 7px;
+  margin-bottom: 6px; overflow-x: auto; white-space: nowrap; flex: none;
+}
+.tabbody { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; overflow-y: auto; }
+.tabbody[hidden] { display: none; }
+
+.empty { color: var(--muted); font-size: 12px; }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--bg);
+  padding: 8px 15px; border-radius: 20px; font-size: 12.5px; font-weight: 500;
+  z-index: 50; pointer-events: none; opacity: 0; transition: opacity .18s;
+  max-width: 80vw; text-align: center;
+}
+.toast.show { opacity: 1; }
+
+/* Estrecho: el tablero manda y lo demas pasa a cajones que se abren sobre el, en vez de
+   apilarse y empujarlo fuera de la pantalla. Se esconde ANTES la lista que el pincel: la
+   lista se toca al cambiar de nivel y el pincel a cada clic. */
+.drawerbtn { display: none; }
+@media (max-width: 1120px) {
+  .cols { grid-template-columns: minmax(0, 3fr) minmax(290px, 2fr); }
+  .col.left {
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 30;
+    width: min(290px, 86vw); padding: 10px; overflow-y: auto;
+    background: var(--panel); border-right: 1px solid var(--line);
+    box-shadow: 0 0 24px rgba(0,0,0,.3);
+    transform: translateX(-100%); transition: transform .18s;
+  }
+  .col.left.open { transform: none; }
+  #toggle-left { display: inline-block; }
+}
+@media (max-width: 780px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .col.right {
+    position: fixed; top: 0; bottom: 0; right: 0; z-index: 30;
+    width: min(340px, 90vw); padding: 10px; overflow-y: auto;
+    background: var(--panel); border-left: 1px solid var(--line);
+    box-shadow: 0 0 24px rgba(0,0,0,.3);
+    transform: translateX(100%); transition: transform .18s;
+  }
+  .col.right.open { transform: none; }
+  #toggle-right { display: inline-block; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Taller de Niveles</h1>
+      <span class="sub">Coralia</span>
+    </div>
+    <div class="now" id="now">—</div>
+    <div class="spacer"></div>
+    <div class="bar">
+      <button class="btn drawerbtn" id="toggle-left">Niveles</button>
+      <button class="btn drawerbtn" id="toggle-right">Pincel</button>
+      <input type="file" id="pick" accept=".json,application/json" multiple hidden>
+      <button class="btn" id="open">Abrir…</button>
+      <button class="btn" id="nuevo">Nuevo</button>
+      <button class="btn" id="revert">Descartar</button>
+      <button class="btn primary" id="save">Guardar</button>
+    </div>
+  </header>
+
+  <div class="cols">
+    <!-- ------------------------------------------------ niveles -->
+    <div class="col left" id="col-left">
+      <section class="pane grow">
+        <h2>Niveles <span class="r" id="count"></span></h2>
+        <input type="text" id="search" placeholder="Buscar nombre o id…" aria-label="Buscar nivel">
+        <div class="scroll" id="tree"><p class="empty">Cargando…</p></div>
+      </section>
+    </div>
+
+    <!-- ------------------------------------------------ tablero -->
+    <section class="pane boardpane">
+      <div class="ctl">
+        <button class="btn" id="undo" title="Ctrl+Z">Deshacer</button>
+        <button class="btn" id="redo" title="Ctrl+Mayús+Z">Rehacer</button>
+        <button class="btn" id="mirror" title="Refleja la mitad izquierda sobre la derecha">Espejar</button>
+        <button class="btn" id="clear">Vaciar</button>
+        <span class="spacer" style="flex:1 1 auto"></span>
+        <div class="zoom">
+          <button class="btn" id="zoom-out" title="Alejar (Ctrl + rueda)">−</button>
+          <button class="btn" id="zoom-fit" title="Ajustar a la caja" aria-pressed="true">100%</button>
+          <button class="btn" id="zoom-in" title="Acercar (Ctrl + rueda)">+</button>
+        </div>
+        <label for="rows">Filas</label>
+        <input type="number" id="rows" min="1" max="60" value="12" style="width:54px"
+               title="Cuántas filas se dibujan. El juego no tiene tope: el tablero crece hacia abajo.">
+      </div>
+
+      <div class="boardwrap" id="boardwrap">
+        <canvas id="board" width="400" height="300"></canvas>
+      </div>
+
+      <div class="legend">
+        <span><b>Clic</b> pinta</span>
+        <span><b>Clic derecho</b> borra</span>
+        <span><b>Arrastrar</b> solo Burbuja</span>
+        <span><b>B·O·R</b> cambia pincel</span>
+        <span><b>Rayas</b> cae al empezar</span>
+        <span><b>Rueda</b> baja si no entra</span>
+        <span><b>Ctrl+rueda</b> acerca</span>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------ pincel y ficha -->
+    <div class="col right" id="col-right">
+      <section class="pane">
+        <h2>Pincel</h2>
+        <div class="brushbar">
+          <div class="tabs" id="tabs" role="group" aria-label="Qué pinta el clic">
+            <button data-brush="color"    aria-pressed="true">Burbuja</button>
+            <button data-brush="obstacle" aria-pressed="false">Obstáculo</button>
+            <button data-brush="rescue"   aria-pressed="false">Rescate</button>
+          </div>
+          <div class="picker" id="colors"></div>
+          <div class="field" id="recipewrap" hidden style="margin:0">
+            <label for="recipe">Receta</label>
+            <select id="recipe"></select>
+          </div>
+          <div class="shells" id="shells" hidden></div>
+          <div id="holdswrap" hidden><div class="holdsgrid" id="holds"></div></div>
+          <div class="hint" id="hint"></div>
+        </div>
+      </section>
+
+      <section class="pane grow">
+        <div class="ptabs" id="ptabs" role="group" aria-label="Panel">
+          <button data-tab="ficha"   aria-pressed="true">Ficha</button>
+          <button data-tab="balance" aria-pressed="false">Balance</button>
+          <button data-tab="puesto"  aria-pressed="false">Puesto</button>
+          <button data-tab="avisos" aria-pressed="false">Avisos<span class="badge" id="badge" hidden></span></button>
+          <button data-tab="json"   aria-pressed="false">JSON</button>
+        </div>
+
+        <div class="tabbody" id="tab-ficha">
+          <div class="field"><label for="f-name">Nombre</label><input type="text" id="f-name"></div>
+          <div class="field"><label for="f-id">Id</label><input type="number" id="f-id"></div>
+          <div class="field"><label for="f-chapter">Capítulo</label><input type="number" id="f-chapter"></div>
+          <div class="field"><label for="f-shots">Disparos máx.</label><input type="number" id="f-shots"></div>
+          <div class="field"><label for="f-min">Mín. óptimo</label><input type="number" id="f-min"></div>
+          <div class="field"><label for="f-type">Objetivo</label>
+            <select id="f-type"><option value="clear_all">clear_all</option><option value="rescue">rescue</option></select>
+          </div>
+          <div class="field"><label>Estrellas</label>
+            <div class="trio">
+              <input type="number" id="f-s1" aria-label="1 estrella">
+              <input type="number" id="f-s2" aria-label="2 estrellas">
+              <input type="number" id="f-s3" aria-label="3 estrellas">
+            </div>
+          </div>
+          <hr class="sep">
+          <h2 class="inline">Colores del nivel</h2>
+          <div class="chips" id="avail"></div>
+
+          <h2 class="inline">Tutoriales</h2>
+          <div class="chips" id="tutorials"></div>
+          <p class="note" id="tut-note"></p>
+
+          <h2 class="inline">Boosters de inicio</h2>
+          <div class="slots" id="slots"></div>
+          <p class="note" id="slot-note"></p>
+        </div>
+
+        <div class="tabbody" id="tab-balance" hidden></div>
+        <div class="tabbody" id="tab-puesto" hidden></div>
+        <div class="tabbody" id="tab-avisos" hidden></div>
+        <div class="tabbody" id="tab-json" hidden>
+          <div class="path" id="path"></div>
+          <textarea id="json" spellcheck="false" aria-label="JSON del nivel"></textarea>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ====================================================================
+   Geometria — copiada de HexGridMath.cs al pie de la letra. Si esto se
+   separa del juego, el editor ensena un nivel y la partida juega otro,
+   que es el unico error que no se ve hasta jugarlo.
+   ==================================================================== */
+const DIAM = 92, RAD = 46, LEFT = 34;
+const ROWH = DIAM * 0.866;
+const DESIGN_W = LEFT * 2 + 10 * DIAM;
+
+/* El juego NO tiene tope de filas: HexGridMath.IsValidCell solo pide row >= 0 y el grid
+   crece hacia abajo con cada disparo que no matchea. Este numero es solo hasta donde dibuja
+   el editor, y esta alto a proposito — el nivel mas alto de hoy tiene 25 filas. */
+const MAX_ROWS = 60;
+
+const colsInRow = r => (r % 2 !== 0 ? 9 : 10);
+const cellX = (col, row) => LEFT + RAD + col * DIAM + (row % 2 !== 0 ? RAD : 0);
+const cellY = row => RAD + row * ROWH;
+
+const EVEN_N = [[-1,0],[1,0],[-1,-1],[0,-1],[-1,1],[0,1]];
+const ODD_N  = [[-1,0],[1,0],[0,-1],[1,-1],[0,1],[1,1]];
+function neighbors(col, row) {
+  const out = [];
+  for (const [dc, dr] of (row % 2 !== 0 ? ODD_N : EVEN_N)) {
+    const c = col + dc, r = row + dr;
+    if (r >= 0 && c >= 0 && c < colsInRow(r)) out.push([c, r]);
+  }
+  return out;
+}
+
+/* Lo atenuado que queda el cuerpo bajo un caparazon — BubbleView.SHELL_SHADE. */
+const SHELL_SHADE = 0.5;
+
+/* ====================================================================
+   Estado
+   ==================================================================== */
+const state = {
+  local: false,          // servido desde la maquina: Guardar escribe en el proyecto
+  catalog: null,
+  art: new Map(),
+  levels: [],
+  index: -1,
+  brush: "color", paint: "red", material: "ice", layers: 3, holds: "",
+  recipe: "", anyMatch: false,
+  zoom: null,              // null = ajustar solo a la caja; un numero = puesto a mano
+  rows: 12, search: "", closed: new Set(), tab: "ficha",
+  undo: [], redo: [],
+};
+
+const cur = () => (state.index >= 0 ? state.levels[state.index] : null);
+const lvl = () => cur()?.data ?? null;
+
+function blankLevel(id) {
+  return {
+    id, chapter: 1, name: "Nivel nuevo",
+    max_shots: 25, min_shots_to_clear: 0, rainbow_chance: 0,
+    available_colors: ["red", "blue", "yellow"], star_thresholds: [0, 0, 0],
+    obstacles: [], tutorials: [], allowed_boosters_start: [],
+    // Sin creature_id ni creature_position: esa es la forma vieja del objetivo, se sigue
+    // leyendo pero no hay por que escribirla en un nivel nuevo.
+    objective: { type: "clear_all", rescues: [] },
+    bubbles: [],
+  };
+}
+function adopt(data) {
+  data.bubbles ??= [];
+  data.obstacles ??= [];
+  data.tutorials ??= [];
+  data.allowed_boosters_start ??= [];
+  data.available_colors ??= [];
+  data.star_thresholds ??= [0, 0, 0];
+  data.objective ??= { type: "clear_all" };
+  data.objective.rescues ??= [];
+  return data;
+}
+
+/* ====================================================================
+   Historial
+   ==================================================================== */
+function snapshot() {
+  if (!lvl()) return;
+  state.undo.push(JSON.stringify(lvl()));
+  if (state.undo.length > 150) state.undo.shift();
+  state.redo.length = 0;
+}
+function restore(from, to) {
+  if (!lvl() || !from.length) return;
+  to.push(JSON.stringify(lvl()));
+  cur().data = adopt(JSON.parse(from.pop()));
+  touch();
+  renderAll();
+}
+function touch() {
+  const c = cur();
+  if (c) c.dirty = JSON.stringify(c.data) !== c.original;
+}
+
+/* ====================================================================
+   Celdas
+   ==================================================================== */
+function cellAtPoint(x, y) {
+  const guess = Math.round((y - RAD) / ROWH);
+  let best = null, bestD = Infinity;
+  for (let r = guess - 1; r <= guess + 1; r++) {
+    if (r < 0 || r >= state.rows) continue;
+    const off = r % 2 !== 0 ? RAD : 0;
+    const c = Math.max(0, Math.min(colsInRow(r) - 1, Math.round((x - LEFT - RAD - off) / DIAM)));
+    const dx = x - cellX(c, r), dy = y - cellY(r), d = dx * dx + dy * dy;
+    if (d < bestD) { bestD = d; best = [c, r]; }
+  }
+  return bestD <= RAD * RAD ? best : null;
+}
+
+/* Vacia la celda en las TRES listas. Una celda escrita en dos sitios es una
+   contradiccion que el juego resuelve en silencio y el editor no ensena. */
+function clearCell(data, col, row) {
+  data.bubbles = data.bubbles.filter(b => !(b.col === col && b.row === row));
+  data.obstacles = data.obstacles.filter(o => !(o.col === col && o.row === row));
+  data.objective.rescues = data.objective.rescues.filter(r => !(r.col === col && r.row === row));
+}
+
+function paintCell(col, row, erase) {
+  const data = lvl();
+  if (!data) return;
+  clearCell(data, col, row);
+  if (erase) { touch(); return; }
+
+  if (state.brush === "color") {
+    data.bubbles.push({ row, col, color: state.paint });
+  } else if (state.brush === "obstacle") {
+    data.obstacles.push({ row, col, color: state.paint, obstacle: state.material,
+                          layers: Math.max(1, state.layers) });
+  } else {
+    const cell = { row, col };
+    if (state.recipe) {
+      // Con receta, la celda solo dice donde va: el contenido y las capas salen de ella.
+      cell.bubble = state.recipe;
+    } else {
+      cell.holds = state.holds;
+      // Sin capas no se escribe material: con cero capas la burbuja sale igual sin
+      // caparazon, pero el JSON diria que es de hielo.
+      if (state.layers > 0) { cell.obstacle = state.material; cell.layers = state.layers; }
+    }
+    // Sin match la abre CUALQUIER match que pase al lado. Es una decision de diseno, no un
+    // olvido, asi que tiene su propio boton en vez de deducirse de dejar el color vacio.
+    if (!state.anyMatch) cell.match = state.paint;
+    data.objective.rescues.push(cell);
+  }
+  touch();
+}
+
+/* ====================================================================
+   Dibujo con el arte real
+   ==================================================================== */
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+const img = path => (path ? state.art.get(path) : null);
+
+const colorArt = id => img(state.catalog?.colors.find(c => c.id === id)?.art);
+
+/* Una celda de rescate puede traer su receta en vez de escribirlo todo. Lo que escribe la
+   celda MANDA sobre lo que diga la receta — igual que CellPos.Holds() y CellPos.Shell(). */
+const recipeOf = e => (state.catalog?.recipes || []).find(r => r.id === e.bubble) || null;
+const holdsOf  = e => e.holds || recipeOf(e)?.holds || "";
+function shellOf(e) {
+  if (e.obstacle) return { id: e.obstacle, n: e.layers || 0 };
+  const r = recipeOf(e);
+  return r && r.obstacle ? { id: r.obstacle, n: r.layers || 0 } : { id: "", n: 0 };
+}
+function holdsArt(id) {
+  const all = [...(state.catalog?.creatures || []), ...(state.catalog?.objects || [])];
+  return img(all.find(e => e.id === id)?.art);
+}
+/* La capa que se ve es la de MAS AFUERA: ObstacleCatalog.Layers toma las primeras n y
+   BubbleView las viste de dentro hacia afuera, asi que la ultima queda encima. */
+function shellArt(material, layers) {
+  const m = state.catalog?.materials.find(x => x.id === material);
+  if (!m || !m.layers.length || layers <= 0) return null;
+  return img(m.layers[Math.min(layers, m.layers.length) - 1]);
+}
+
+/* Lo mas chica que se deja: por debajo de esto una burbuja mide menos de 28 px y deja de
+   poder pintarse con el raton. Un nivel de cuarenta filas no entra en la pantalla ni
+   encogiendolo, asi que ahi se deja de encoger y la caja hace scroll — mejor desplazarse
+   que ver el nivel entero sin poder tocarlo. */
+const MIN_FIT = 0.3;
+
+const ZOOM_MIN = 0.12, ZOOM_MAX = 2;
+
+/* El tablero entra entero mientras se pueda trabajar en el. */
+function fitScale() {
+  const box = document.getElementById("boardwrap");
+  const w = Math.max(120, box.clientWidth - 14);
+  const h = Math.max(120, box.clientHeight - 14);
+  const tall = cellY(Math.max(0, state.rows - 1)) + RAD + 6;
+
+  // El ANCHO manda siempre: un tablero mas ancho que la caja obligaria a moverse en
+  // horizontal para ver una fila entera, y eso ya no es leer el nivel. El alto cede.
+  return Math.min(1.1, w / DESIGN_W, Math.max(MIN_FIT, h / tall));
+}
+
+const boardScale = () => state.zoom ?? fitScale();
+
+/* null vuelve al ajuste automatico, que es donde se quiere estar casi siempre: el zoom a
+   mano es para mirar un detalle, no para quedarse. */
+function setZoom(value) {
+  state.zoom = value === null ? null : Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
+  draw();
+}
+
+function renderZoom() {
+  const auto = state.zoom === null;
+  const fit = $("zoom-fit");
+  fit.textContent = Math.round(boardScale() * 100) + "%";
+  fit.setAttribute("aria-pressed", String(auto));
+  fit.title = auto ? "Ajustado a la caja" : "Volver a ajustar a la caja";
+}
+
+function blit(image, x, y, size, alpha) {
+  if (!image || !image.complete || !image.naturalWidth) return false;
+  ctx.globalAlpha = alpha ?? 1;
+  ctx.drawImage(image, x - size / 2, y - size / 2, size, size);
+  ctx.globalAlpha = 1;
+  return true;
+}
+
+function draw() {
+  const data = lvl();
+  const s = boardScale();
+  const dpr = window.devicePixelRatio || 1;
+  const tall = cellY(Math.max(0, state.rows - 1)) + RAD + 6;
+
+  renderZoom();
+
+  canvas.width = Math.round(DESIGN_W * s * dpr);
+  canvas.height = Math.round(tall * s * dpr);
+  canvas.style.width = DESIGN_W * s + "px";
+  canvas.style.height = tall * s + "px";
+  ctx.setTransform(dpr * s, 0, 0, dpr * s, 0, 0);
+  ctx.clearRect(0, 0, DESIGN_W, tall);
+  if (!data) return;
+
+  const bub = new Map(), obs = new Map(), res = new Map();
+  for (const b of data.bubbles) bub.set(b.col + "," + b.row, b);
+  for (const o of data.obstacles) obs.set(o.col + "," + o.row, o);
+  for (const r of data.objective.rescues) res.set(r.col + "," + r.row, r);
+
+  const floating = findFloating(data);
+  const glow = img(state.catalog?.glow);
+  const empty = getComputedStyle(document.documentElement).getPropertyValue("--grid").trim() || "rgba(255,255,255,.07)";
+
+  for (let row = 0; row < state.rows; row++) {
+    for (let col = 0; col < colsInRow(row); col++) {
+      const x = cellX(col, row), y = cellY(row), key = col + "," + row;
+      const r = res.get(key), o = obs.get(key), b = bub.get(key);
+
+      if (!r && !o && !b) {
+        ctx.beginPath();
+        ctx.arc(x, y, RAD - 4, 0, Math.PI * 2);
+        ctx.strokeStyle = empty;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        continue;
+      }
+
+      const entry = r || o || b;
+      const shell = r || o ? shellOf(entry) : { id: "", n: 0 };
+      const shelled = shell.n > 0;
+      const lit = shelled ? SHELL_SHADE : 1;   // el cuerpo se atenua bajo el caparazon
+      const bodyColor = r ? (r.match || r.color) : (o ? o.color : b.color);
+
+      if (!blit(colorArt(bodyColor), x, y, DIAM, lit)) {
+        ctx.beginPath();
+        ctx.arc(x, y, RAD - 3, 0, Math.PI * 2);
+        ctx.fillStyle = "#8a8a99";
+        ctx.fill();
+      }
+      if (r && holdsOf(r)) blit(holdsArt(holdsOf(r)), x, y, DIAM * 0.62, lit);
+      if (glow) blit(glow, x, y, DIAM, shelled ? 0.35 : 0.9);
+      if (shelled) blit(shellArt(shell.id, shell.n), x, y, DIAM);
+
+      // Una burbuja suelta cae en el primer barrido: no cuelga de la fila 0.
+      if (floating.has(key)) {
+        ctx.beginPath();
+        ctx.arc(x, y, RAD - 3, 0, Math.PI * 2);
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 4;
+        ctx.setLineDash([7, 6]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  }
+}
+
+function findFloating(data) {
+  const all = new Set();
+  for (const list of [data.bubbles, data.obstacles, data.objective.rescues])
+    for (const e of list) all.add(e.col + "," + e.row);
+
+  const seen = new Set(), queue = [];
+  for (const key of all) if (key.endsWith(",0")) { seen.add(key); queue.push(key); }
+  while (queue.length) {
+    const [c, r] = queue.pop().split(",").map(Number);
+    for (const [nc, nr] of neighbors(c, r)) {
+      const k = nc + "," + nr;
+      if (all.has(k) && !seen.has(k)) { seen.add(k); queue.push(k); }
+    }
+  }
+  const out = new Set();
+  for (const key of all) if (!seen.has(key)) out.add(key);
+  return out;
+}
+
+/* ====================================================================
+   Raton
+   ==================================================================== */
+let painting = false;
+function pointerCell(ev) {
+  const rect = canvas.getBoundingClientRect();
+  const s = boardScale();
+  return cellAtPoint((ev.clientX - rect.left) / s, (ev.clientY - rect.top) / s);
+}
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+canvas.addEventListener("pointerdown", e => {
+  if (!lvl()) return;
+  const cell = pointerCell(e);
+  if (!cell) return;
+  e.preventDefault();
+  canvas.setPointerCapture(e.pointerId);
+  snapshot();
+  painting = true;
+  paintCell(cell[0], cell[1], e.button === 2 || e.altKey);
+  renderAll();
+});
+canvas.addEventListener("pointermove", e => {
+  if (!painting) return;
+  const erase = e.buttons === 2 || e.altKey;
+  // Arrastrar solo pinta burbujas de color, que es lo que se hace a brochazos. Cruzar el
+  // tablero con el pincel de rescate dejaria veinte criaturas que borrar una por una.
+  if (state.brush !== "color" && !erase) return;
+  const cell = pointerCell(e);
+  if (!cell) return;
+  paintCell(cell[0], cell[1], erase);
+  draw();
+});
+addEventListener("pointerup", () => { if (painting) { painting = false; renderAll(); } });
+
+/* ====================================================================
+   Herramientas
+   ==================================================================== */
+function mirror() {
+  const data = lvl();
+  if (!data) return;
+  snapshot();
+  // Se calcula el reflejo entero ANTES de tocar nada: vaciando y copiando a la vez, una
+  // celda de la izquierda todavia sin reflejar puede desaparecer en el camino.
+  const copies = [];
+  const add = (which, list) => {
+    for (const e of list) {
+      if (e.col >= colsInRow(e.row) / 2) continue;
+      const col = colsInRow(e.row) - 1 - e.col;
+      if (col === e.col) continue;   // la columna central de una fila impar es su propio reflejo
+      copies.push([which, { ...e, col }]);
+    }
+  };
+  add("bubbles", data.bubbles);
+  add("obstacles", data.obstacles);
+  add("rescues", data.objective.rescues);
+
+  for (const [, e] of copies) clearCell(data, e.col, e.row);
+  for (const [which, e] of copies) {
+    if (which === "bubbles") data.bubbles.push(e);
+    else if (which === "obstacles") data.obstacles.push(e);
+    else data.objective.rescues.push(e);
+  }
+  touch();
+  renderAll();
+  toast("Mitad izquierda reflejada");
+}
+
+function clearBoard() {
+  const data = lvl();
+  if (!data) return;
+  snapshot();
+  data.bubbles = [];
+  data.obstacles = [];
+  data.objective.rescues = [];
+  touch();
+  renderAll();
+}
+
+/* ====================================================================
+   Balance — port de LevelDifficultyEstimator.cs y de ScoreRules.cs.
+
+   Las constantes NO estan escritas aqui: salen de catalog.json, que
+   extract.py lee del propio codigo del juego. Asi este panel calcula con
+   la MISMA formula que "Recalcular umbrales" de Unity, y el dia que
+   Diego toque una, no hay una segunda copia que se quede vieja sin
+   avisar. Lo comprobado: de los 210 niveles, los que no han cambiado
+   desde el ultimo recalculo dan los tres umbrales identicos.
+
+   Igual que la de Unity, la simulacion mira SOLO 'bubbles': ni los
+   caparazones ni las burbujas de rescate entran en la cuenta.
+   ==================================================================== */
+const R = () => state.catalog?.rules || {};
+
+/* Mathf.RoundToInt redondea la mitad al PAR, no hacia arriba como Math.round.
+   En un umbral de estrellas esa diferencia es una decena de puntos. */
+function roundInt(v) {
+  const f = Math.floor(v), d = v - f;
+  if (d > 0.5) return f + 1;
+  if (d < 0.5) return f;
+  return f % 2 === 0 ? f : f + 1;
+}
+
+const linksWith = (a, b) => a === b || a === "rainbow" || b === "rainbow";
+
+/* La comparacion es siempre contra el color de la SEMILLA, no entre vecinos: con
+   rainbow en medio, rojo-rainbow-azul no forma un solo grupo. */
+function clustersOf(cells) {
+  const seen = new Set(), out = [];
+  for (const seed of cells.keys()) {
+    if (seen.has(seed)) continue;
+    const color = cells.get(seed), group = [], queue = [seed], visited = new Set([seed]);
+    while (queue.length) {
+      const key = queue.pop();
+      group.push(key);
+      const [c, r] = key.split(",").map(Number);
+      for (const [nc, nr] of neighbors(c, r)) {
+        const k = nc + "," + nr;
+        if (visited.has(k) || !cells.has(k) || !linksWith(color, cells.get(k))) continue;
+        visited.add(k);
+        queue.push(k);
+      }
+    }
+    for (const k of group) seen.add(k);
+    out.push(group);
+  }
+  return out;
+}
+
+function fallingOf(cells) {
+  const reach = new Set(), queue = [];
+  for (const key of cells.keys()) if (key.endsWith(",0")) { reach.add(key); queue.push(key); }
+  while (queue.length) {
+    const [c, r] = queue.pop().split(",").map(Number);
+    for (const [nc, nr] of neighbors(c, r)) {
+      const k = nc + "," + nr;
+      if (cells.has(k) && !reach.has(k)) { reach.add(k); queue.push(k); }
+    }
+  }
+  return [...cells.keys()].filter(k => !reach.has(k));
+}
+
+/* Que fraccion del nivel se lleva el MEJOR primer disparo. No mide dificultad: mide si el
+   layout se sostiene. Una franja larga de un color en la fila 0 es una cuerda cortable. */
+function collapseOf(cells) {
+  if (!cells.size) return 0;
+  let worst = 0;
+  for (const group of clustersOf(cells)) {
+    if (group.length < 2) continue;
+    const trial = new Map(cells);
+    for (const k of group) trial.delete(k);
+    worst = Math.max(worst, group.length + fallingOf(trial).length);
+  }
+  return worst / cells.size;
+}
+
+/* Recorrido codicioso: cada turno revienta el grupo que mas se lleva por disparo. */
+function simulate(start, target) {
+  const cells = new Map(start), base = R().POINTS_PER_POP_BASE ?? 10;
+  let shots = 0, popped = 0, dropped = 0, popScore = 0, streak = 0;
+  let guard = cells.size * 2 + 16;
+
+  while (cells.size > 0 && guard-- > 0) {
+    let bestGroup = null, bestFalling = null, bestCost = 1, bestGain = -1;
+    for (const group of clustersOf(cells)) {
+      // Un grupo de 2 explota con un disparo. Uno solo necesita dos: el primero no llega
+      // a tres y se queda pegado.
+      const cost = group.length >= 2 ? 1 : 2;
+      const trial = new Map(cells);
+      for (const k of group) trial.delete(k);
+      const falling = fallingOf(trial);
+      let gain = (group.length + falling.length) / cost;
+      if (target && (group.includes(target) || falling.includes(target))) gain = Infinity;
+      if (gain <= bestGain) continue;
+      bestGain = gain; bestGroup = group; bestFalling = falling; bestCost = cost;
+    }
+    if (!bestGroup) break;
+
+    for (const k of bestGroup) cells.delete(k);
+    for (const k of bestFalling) cells.delete(k);
+
+    if (bestCost > 1) streak = 0;
+    streak++;
+    shots += bestCost;
+    popped += bestGroup.length;
+    dropped += bestFalling.length;
+    popScore += bestGroup.length * base * Math.max(1, streak);
+
+    if (target && !cells.has(target)) break;
+  }
+  return { shots, popped, dropped, popScore };
+}
+
+/* Cuantos disparos pierde un jugador de VERDAD. El canon reparte al azar entre los colores
+   que quedan: cuantos mas tenga el nivel, mas seguido toca uno que no sirve y hay que
+   soltarlo en cualquier lado. Encima, un margen fijo por los que simplemente se fallan. */
+function realistic(minShots, colors) {
+  const waste = 1 + Math.max(0, colors - 2) * (R().WASTE_PER_EXTRA_COLOR ?? 0.13);
+  return Math.ceil(minShots * waste * (R().MISS_ALLOWANCE ?? 1.15));
+}
+
+function rate(realisticShots, maxShots) {
+  if (realisticShots <= 0 || maxShots < realisticShots) return "Imposible";
+  const m = maxShots / realisticShots;
+  if (m < (R().MARGIN_HARD ?? 1.42)) return "Dificil";
+  if (m < (R().MARGIN_MEDIUM ?? 1.70)) return "Medio";
+  if (m < (R().MARGIN_EASY ?? 2.25)) return "Facil";
+  return "Trivial";
+}
+
+function suggestShots(realisticShots, difficulty) {
+  const m = difficulty === "Dificil" ? (R().SUGGEST_HARD ?? 1.32)
+          : difficulty === "Medio"   ? (R().SUGGEST_MEDIUM ?? 1.55)
+          :                            (R().SUGGEST_EASY ?? 1.95);
+  return Math.max(realisticShots + 1, Math.ceil(realisticShots * m));
+}
+
+/* El puntaje de una partida BUENA, no de una perfecta. El simulador no falla nunca, asi
+   que su racha sube hasta el final; uno real falla, y cada fallo la devuelve a 1. Se
+   reparte el recorrido en tantos tramos como fallos se esperan y se cobra la racha media
+   de un tramo. El bonus por disparos sobrantes NO entra: el umbral es lo que vale el
+   TABLERO. */
+function goodScore(rep) {
+  const runs = Math.max(0, rep.realistic - rep.minShots) + 1;
+  const avg = (rep.minShots / runs + 1) / 2;
+  return roundInt(rep.popped * (R().POINTS_PER_POP_BASE ?? 10) * avg) +
+         rep.dropped * (R().POINTS_PER_DROP ?? 50);
+}
+
+/* Donde esta dibujada cada estrella sobre la barra. Cambiarlo obliga a mover los marcos de
+   la escena, y al reves. */
+function suggestStars(rep) {
+  const t = goodScore(rep), ten = v => Math.max(1, roundInt(v / 10)) * 10;
+  return [ten(t * (R().BAR_STAR_1 ?? 0.40)),
+          ten(t * (R().BAR_STAR_2 ?? 0.65)),
+          ten(t * (R().BAR_STAR_3 ?? 0.90))];
+}
+
+/* ScoreRules.RescueUnitScore: la barra entera repartida entre lo que pide el objetivo, no
+   una cifra fija. Cumplir el objetivo llena la barra. */
+function rescueUnit(thresholds, units) {
+  if (units <= 0 || !thresholds || thresholds.length < 3) return 0;
+  return roundInt(thresholds[2] / (R().STAR_3_RATIO_OF_BAR ?? 0.9) / units);
+}
+
+function analyze(data) {
+  const known = new Set((state.catalog?.colors || []).map(c => c.id).concat("rainbow"));
+  const cells = new Map();
+  for (const b of data.bubbles) {
+    if (known.size > 1 && !known.has(b.color)) return { bad: `El color "${b.color}" no existe en el catálogo.` };
+    cells.set(b.col + "," + b.row, b.color);
+  }
+
+  const groups = clustersOf(cells);
+  const rep = {
+    bubbles: cells.size,
+    colors: new Set(cells.values()).size,
+    clusters: groups.length,
+    lone: groups.filter(g => g.length === 1).length,
+    rescues: data.objective.rescues.length,
+    maxShots: data.max_shots || 0,
+  };
+  if (!cells.size) return rep;
+
+  // El objetivo que PARA la simulacion es el de la forma vieja, igual que en Unity: las
+  // celdas de 'rescues' no entran en el grid simulado, asi que no hay nada que parar.
+  const pos = data.objective.type === "rescue" ? data.objective.creature_position : null;
+  const target = pos && pos.length >= 2 ? pos[1] + "," + pos[0] : null;
+
+  Object.assign(rep, simulate(cells, target));
+  rep.minShots = rep.shots;
+  rep.realistic = realistic(rep.minShots, rep.colors);
+  rep.collapse = collapseOf(cells);
+  return rep;
+}
+
+/* La simulacion es lo mas caro que hace esta pagina y renderAll la pediria dos veces por
+   clic (avisos y balance). Se guarda la ultima, con el nivel entero de clave. */
+let _repCache = { key: "", rep: null };
+function report(data) {
+  const key = JSON.stringify(data);
+  if (_repCache.key !== key) _repCache = { key, rep: analyze(data) };
+  return _repCache.rep;
+}
+
+/* El ritmo de la decena (LevelDifficultyEstimator.TenLevelBeat): tres faciles para entrar,
+   dos medios, dos faciles que aflojan, dos medios, y el decimo dificil como cierre. */
+function pace(data) {
+  const sib = state.levels.filter(l => (l.data.chapter ?? 0) === (data.chapter ?? 0))
+                          .map(l => l.data.id).sort((a, b) => a - b);
+  const pos = Math.max(1, sib.indexOf(data.id) + 1);
+  const beat = R().beat || [];
+  return { pos, size: sib.length || 1, want: beat.length ? beat[(pos - 1) % beat.length] : "" };
+}
+
+const DIF_ES = { Imposible: "Imposible", Dificil: "Difícil", Medio: "Medio",
+                 Facil: "Fácil", Trivial: "Trivial" };
+const DIF_CLASS = { Imposible: "bad", Dificil: "ok", Medio: "ok", Facil: "ok", Trivial: "warn" };
+const num = n => (n || 0).toLocaleString("es-ES");
+
+/* ====================================================================
+   Avisos
+   ==================================================================== */
+function validate(data) {
+  const out = [], seen = new Map();
+  const scan = (list, what) => {
+    for (const e of list) {
+      const k = e.col + "," + e.row;
+      if (seen.has(k)) out.push({ kind: "bad", text: `f${e.row} c${e.col} está en dos listas: ${seen.get(k)} y ${what}.` });
+      else seen.set(k, what);
+      if (e.col < 0 || e.row < 0 || e.col >= colsInRow(e.row))
+        out.push({ kind: "bad", text: `f${e.row} c${e.col} queda fuera de la rejilla: la fila ${e.row} tiene ${colsInRow(e.row)} columnas.` });
+    }
+  };
+  scan(data.bubbles, "bubbles");
+  scan(data.obstacles, "obstacles");
+  scan(data.objective.rescues, "rescues");
+
+  // Ganar NO depende de objective.type sino de si hay rescates: el tipo solo decide si
+  // sale el tutorial. Desalineados, el nivel se juega distinto de lo que dice su ficha.
+  const any = data.objective.rescues.length > 0;
+  const says = data.objective.type === "rescue";
+  if (any && !says) out.push({ kind: "warn", text: "Hay rescates, así que se gana rescatándolos, pero el tipo dice clear_all: el tutorial de rescate no va a salir." });
+  if (!any && says) out.push({ kind: "warn", text: "El tipo dice rescue pero no hay ninguno puesto: se gana limpiando el tablero." });
+
+  const ids = new Set([...(state.catalog?.creatures || []), ...(state.catalog?.objects || [])].map(e => e.id));
+  const mats = new Set((state.catalog?.materials || []).map(m => m.id));
+
+  const recipes = new Set((state.catalog?.recipes || []).map(r => r.id));
+
+  for (const r of data.objective.rescues) {
+    const where = `f${r.row} c${r.col}`;
+    const holds = holdsOf(r);
+    const shell = shellOf(r);
+
+    if (r.bubble && recipes.size && !recipes.has(r.bubble))
+      out.push({ kind: "bad", text: `La receta "${r.bubble}" (${where}) no está en RescueBubbleCatalog.` });
+
+    if (!holds) out.push({ kind: "bad", text: `El rescate de ${where} no dice qué lleva dentro.` });
+    else if (ids.size && !ids.has(holds)) out.push({ kind: "bad", text: `"${holds}" (${where}) no está en ningún catálogo.` });
+
+    if (!r.match && !r.color) out.push({ kind: "warn", text: `El rescate de ${where} no dice con qué matchea: lo abre cualquier match.` });
+
+    if (shell.n > 0 && !mats.has(shell.id))
+      out.push({ kind: "bad", text: `"${shell.id}" (${where}) no es un material del catálogo.` });
+
+    // Capas sin material no son capas: CellPos.HasOwnShell mira 'obstacle', y sin el la
+    // celda cae a la receta. Con tres escritas y ninguna puesta, el rescate se abre al
+    // primer golpe y nada lo avisa.
+    if (!r.bubble && (r.layers || 0) > 0 && !r.obstacle)
+      out.push({ kind: "bad", text: `${where} pide ${r.layers} capas pero no dice de qué material: se va a abrir al primer golpe.` });
+
+    const mat = (state.catalog?.materials || []).find(m => m.id === shell.id);
+    if (mat && shell.n > mat.layers.length)
+      out.push({ kind: "warn", text: `${where} pide ${shell.n} capas de ${mat.name} y el material solo tiene ${mat.layers.length}: cuesta ${mat.layers.length} golpes.` });
+  }
+  for (const o of data.obstacles) {
+    if (!o.color) out.push({ kind: "bad", text: `El obstáculo de f${o.row} c${o.col} no dice de qué color es: destapado no encajaría con nada.` });
+    if (!mats.has(o.obstacle)) out.push({ kind: "bad", text: `"${o.obstacle}" (f${o.row} c${o.col}) no es un material del catálogo.` });
+    if (!(o.layers > 0)) out.push({ kind: "warn", text: `El obstáculo de f${o.row} c${o.col} no tiene capas: es una burbuja de color con pasos de más.` });
+  }
+
+  const used = new Set(data.bubbles.map(b => b.color));
+  for (const o of data.obstacles) used.add(o.color);
+  for (const r of data.objective.rescues) if (r.match) used.add(r.match);
+  for (const r of data.objective.rescues) if (r.color) used.add(r.color);
+
+  const avail = new Set(data.available_colors);
+  for (const c of used)
+    if (c && !avail.has(c))
+      out.push({ kind: "bad", text: `Hay ${c} en el tablero pero no está en los colores del nivel: el cañón nunca va a dar ese color.` });
+  for (const c of avail)
+    if (!data.bubbles.some(b => b.color === c))
+      out.push({ kind: "warn", text: `${c} está en los colores del nivel pero no hay ninguna en el tablero.` });
+
+  const floating = findFloating(data);
+  if (floating.size)
+    out.push({ kind: "warn", text: `${floating.size} burbuja${floating.size > 1 ? "s" : ""} no cuelga${floating.size > 1 ? "n" : ""} de la fila 0: cae${floating.size > 1 ? "n" : ""} nada más empezar.` });
+
+  const st = data.star_thresholds || [];
+  if (st.length >= 3 && (st[0] > st[1] || st[1] > st[2]))
+    out.push({ kind: "bad", text: "Los umbrales de estrellas no van de menor a mayor." });
+  if (!(data.max_shots > 0)) out.push({ kind: "bad", text: "Sin disparos no se puede jugar." });
+
+  // ---- tutoriales
+  //
+  // Un id que TutorialPanel no tiene no da error: Find devuelve null, Show devuelve false y
+  // no sale nada. Es el unico sitio donde se puede ver antes de jugarlo.
+  const tuts = new Set((state.catalog?.tutorials || []).map(t => t.id));
+  const seenT = new Set();
+  for (const id of data.tutorials) {
+    if (tuts.size && !tuts.has(id))
+      out.push({ kind: "bad", text: `El tutorial "${id}" no existe en TutorialPanel: no va a salir nada, y falla callado.` });
+    if (seenT.has(id)) out.push({ kind: "warn", text: `El tutorial "${id}" está escrito dos veces.` });
+    seenT.add(id);
+  }
+  // Los tres de rescate y caparazón van en la lista como todos los demás: el juego dejó de
+  // deducirlos del tablero porque un nivel con las tres cosas abría tres modales seguidos.
+  const estrena = [
+    ["rescue_shell", data.objective.rescues.some(r => shellOf(r).n > 0)],
+    ["rescue",       data.objective.rescues.some(r => shellOf(r).n === 0)],
+    ["obstacle",     data.obstacles.some(o => o.layers > 0)],
+  ];
+  for (const [id, hay] of estrena)
+    if (hay && tuts.has(id) && !data.tutorials.includes(id))
+      out.push({ kind: "warn", text: `El tablero trae ${id} y el nivel no lo explica. Si es el primero donde aparece, añádelo a los tutoriales.` });
+
+  // ---- boosters de inicio
+  const boosters = state.catalog?.boosters || [];
+  const slots = state.catalog?.rules?.SLOTS ?? 3;
+  const seenB = new Set();
+  if (data.allowed_boosters_start.length > slots)
+    out.push({ kind: "bad", text: `Hay ${data.allowed_boosters_start.length} boosters de inicio y solo ${slots} huecos: el resto no se ve.` });
+  for (const id of data.allowed_boosters_start) {
+    if (!id) continue;
+    const b = boosters.find(x => x.id === id);
+    if (boosters.length && !b) out.push({ kind: "bad", text: `"${id}" no es ningún booster conocido: el hueco sale con candado.` });
+    else if (b && !b.start) out.push({ kind: "bad", text: `${b.name} es de gameplay: no va en los de inicio, ya está siempre en el HUD.` });
+    if (seenB.has(id)) out.push({ kind: "warn", text: `${id} está dos veces en los boosters de inicio.` });
+    seenB.add(id);
+  }
+
+  // ---- forma vieja del objetivo
+  if (data.objective.creature_id || (data.objective.creature_position || []).length)
+    out.push({ kind: "warn", text: "El objetivo todavía trae creature_id/creature_position, de la forma vieja. Se sigue leyendo, pero lo que manda es 'rescues'." });
+
+  // ---- lo que dice el simulador
+  const rep = report(data);
+  if (rep.bad) out.push({ kind: "bad", text: rep.bad });
+  else if (rep.bubbles) {
+    if (data.max_shots > 0 && data.max_shots < rep.realistic)
+      out.push({ kind: "bad", text: `Con ${data.max_shots} disparos no alcanza: jugando bien hacen falta unos ${rep.realistic}.` });
+
+    const want = pace(data).want, got = rate(rep.realistic, data.max_shots);
+    if (want && got !== want && got !== "Imposible")
+      out.push({ kind: "warn", text: `Por su sitio en el capítulo tocaría ${DIF_ES[want]} y sale ${DIF_ES[got]}.` });
+
+    const stars = suggestStars(rep);
+    if (st.length >= 3 && stars[2] > 0 && Math.abs((st[2] || 0) - stars[2]) / stars[2] > 0.25)
+      out.push({ kind: "warn", text: `La tercera estrella pide ${num(st[2])} y el nivel da para ${num(stars[2])}: recalcula en Balance.` });
+
+    if (!data.min_shots_to_clear)
+      out.push({ kind: "warn", text: "Sin 'mín. óptimo' anotado no hay contra qué comparar al calibrar." });
+
+    if (rep.collapse > 0.5)
+      out.push({ kind: "warn", text: `Un solo disparo se lleva el ${Math.round(rep.collapse * 100)}% del tablero: el layout cuelga de muy poco.` });
+  }
+
+  return out;
+}
+
+/* ====================================================================
+   Serializar — se respeta el estilo de los JSON ya escritos: 'bubbles'
+   expandida y las celdas de obstaculo y rescate en una linea cada una.
+   Lo que este editor no conoce se conserva tal cual venia.
+   ==================================================================== */
+const ORDER = ["id","chapter","name","max_shots","min_shots_to_clear","rainbow_chance",
+  "available_colors","star_thresholds","obstacles","tutorials","allowed_boosters_start",
+  "objective","bubbles"];
+const CELL_ORDER = ["row","col","bubble","color","match","holds","obstacle","layers"];
+
+function cellLine(e, indent) {
+  const parts = [];
+  for (const k of CELL_ORDER)
+    if (e[k] !== undefined && e[k] !== null && e[k] !== "") parts.push(`"${k}": ${JSON.stringify(e[k])}`);
+  for (const k of Object.keys(e))
+    if (!CELL_ORDER.includes(k)) parts.push(`"${k}": ${JSON.stringify(e[k])}`);
+  return indent + "{ " + parts.join(", ") + " }";
+}
+
+// Vacias no se escriben: ausentes significan lo mismo (el trio por defecto de
+// BoosterRules, ningun tutorial) y escribirlas anadiria la clave a doscientos archivos que
+// hoy no la tienen.
+const DROP_IF_EMPTY = ["tutorials", "allowed_boosters_start"];
+const dropped = (data, k) => DROP_IF_EMPTY.includes(k) && !(data[k] || []).length;
+
+function serialize(data) {
+  const keys = ORDER.filter(k => k in data && !dropped(data, k))
+    .concat(Object.keys(data).filter(k => !ORDER.includes(k) && !dropped(data, k)));
+  const lines = [];
+  for (const key of keys) {
+    const v = data[key];
+    let body;
+    if (key === "obstacles") {
+      body = v.length ? "[\n" + v.map(e => cellLine(e, "        ")).join(",\n") + "\n    ]" : "[]";
+    } else if (key === "objective") {
+      const inner = [];
+      for (const k of Object.keys(v)) {
+        // Vacia no se escribe, igual que las otras dos: 'adopt' la crea en memoria para no
+        // tener que preguntar si existe en cada sitio, pero un nivel de limpiar el tablero
+        // no la tenia y guardarlo no deberia anadirsela.
+        if (k === "rescues" && !v.rescues.length) continue;
+        if (k === "rescues") {
+          inner.push('        "rescues": ' + (v.rescues.length
+            ? "[\n" + v.rescues.map(e => cellLine(e, "            ")).join(",\n") + "\n        ]" : "[]"));
+        } else inner.push(`        ${JSON.stringify(k)}: ` + JSON.stringify(v[k]));
+      }
+      body = "{\n" + inner.join(",\n") + "\n    }";
+    } else if (key === "bubbles") {
+      body = v.length ? "[\n" + v.map(b =>
+        `        {\n            "row": ${b.row},\n            "col": ${b.col},\n            "color": ${JSON.stringify(b.color)}\n        }`
+      ).join(",\n") + "\n    ]" : "[]";
+    } else if (key === "rainbow_chance") {
+      // Un decimal aunque sea cero: asi lo escribe JsonUtility y asi estan los 210
+      // archivos. Guardar un nivel no deberia ensuciar el diff con una linea que no cambia
+      // nada. (El campo esta muerto — ver LevelData — pero sigue escrito en todos.)
+      body = Number.isInteger(v) ? v.toFixed(1) : String(v);
+    } else if (DROP_IF_EMPTY.includes(key)) {
+      // En una linea, que es como estan escritas en los niveles de hoy.
+      body = "[" + v.map(x => JSON.stringify(x)).join(", ") + "]";
+    } else if (Array.isArray(v)) {
+      body = v.length ? "[\n" + v.map(x => "        " + JSON.stringify(x)).join(",\n") + "\n    ]" : "[]";
+    } else body = JSON.stringify(v);
+    lines.push(`    ${JSON.stringify(key)}: ${body}`);
+  }
+  // Sin salto final, que es como los escribe JsonUtility y como estan los 210. Puesto, el
+  // editor de Unity lo quitaria en la siguiente pasada y el diff iria y vendria.
+  return "{\n" + lines.join(",\n") + "\n}";
+}
+
+function sortCells(data) {
+  const by = (a, b) => (a.row - b.row) || (a.col - b.col);
+  data.bubbles.sort(by);
+  data.obstacles.sort(by);
+  data.objective.rescues.sort(by);
+}
+
+/* ====================================================================
+   Interfaz
+   ==================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => t.classList.remove("show"), 2300);
+}
+
+function pickButton(art, label, pressed, onClick, badge, id) {
+  const b = document.createElement("button");
+  b.className = "pick";
+  b.dataset.id = id ?? label;   // el rotulo esta traducido; el id es lo que va al JSON
+  b.title = label;
+  b.setAttribute("aria-label", label);
+  b.setAttribute("aria-pressed", String(pressed));
+  const i = document.createElement("img");
+  i.src = art || "";
+  i.alt = "";
+  b.appendChild(i);
+  if (badge) {
+    const s = document.createElement("span");
+    s.className = "lay";
+    s.textContent = badge;
+    b.appendChild(s);
+  }
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+/* Una fila por material, una columna por grosor. Solo el pincel de rescate ofrece
+   "suelta": un obstaculo sin capas no estorba, y entonces es una burbuja de color. */
+function renderShells() {
+  const box = $("shells");
+  box.innerHTML = "";
+  const cat = state.catalog;
+  if (!cat) return;
+
+  if (state.brush === "rescue") {
+    const lab = document.createElement("span");
+    lab.className = "ml";
+    lab.textContent = "suelta";
+    box.appendChild(lab);
+    const bare = pickButton(colorArt(state.paint)?.src, "sin caparazón", state.layers === 0,
+                            () => { state.layers = 0; renderBrush(); });
+    bare.classList.add("bare");
+    box.appendChild(bare);
+  }
+
+  for (const m of cat.materials) {
+    const lab = document.createElement("span");
+    lab.className = "ml";
+    lab.textContent = m.id;
+    box.appendChild(lab);
+    for (let n = 1; n <= 3; n++) {
+      const art = m.layers[Math.min(n, m.layers.length) - 1];
+      const on = state.material === m.id && state.layers === n;
+      box.appendChild(pickButton(art, `${m.id} ×${n}`, on,
+        () => { state.material = m.id; state.layers = n; renderBrush(); }, String(n)));
+    }
+  }
+}
+
+function renderPickers() {
+  const cat = state.catalog;
+  if (!cat) return;
+
+  const holds = $("holds");
+  holds.innerHTML = "";
+  const group = (title, list) => {
+    if (!list.length) return;
+    const h = document.createElement("div");
+    h.className = "gl";
+    h.textContent = title;
+    holds.appendChild(h);
+    for (const e of list)
+      holds.appendChild(pickButton(e.art, e.name === e.id ? e.id : `${e.name} · ${e.id}`, e.id === state.holds,
+        () => { state.holds = e.id; renderBrush(); }, null, e.id));
+  };
+  group("Criaturas", cat.creatures);
+  group("Objetos", cat.objects);
+
+  const sel = $("recipe");
+  sel.innerHTML = '<option value="">Sin receta (a mano)</option>' +
+    (cat.recipes || []).map(r =>
+      `<option value="${esc(r.id)}">${esc(r.id)} · ${esc(r.holds || "¿?")}` +
+      `${r.layers ? ` · ${esc(r.obstacle)}×${r.layers}` : ""}</option>`).join("");
+}
+
+/* Se reconstruyen en cada cambio de pincel y no una sola vez al arrancar: el de rescate
+   anade un boton que los otros dos no tienen. */
+function renderColors() {
+  const colors = $("colors");
+  colors.innerHTML = "";
+  for (const c of state.catalog?.colors || [])
+    colors.appendChild(pickButton(c.art, c.id, !state.anyMatch && c.id === state.paint,
+      () => { state.anyMatch = false; state.paint = c.id; renderBrush(); }));
+
+  // Un rescate puede no decir con que matchea, y entonces lo abre CUALQUIER match. Es una
+  // decision de diseno y tiene su boton: deducirla de "no elegiste color" seria confundir
+  // una eleccion con un olvido.
+  if (state.brush !== "rescue") return;
+
+  const any = document.createElement("button");
+  any.className = "pick";
+  any.dataset.id = "";
+  any.title = "cualquier color";
+  any.setAttribute("aria-label", "lo abre cualquier match");
+  any.setAttribute("aria-pressed", String(state.anyMatch));
+  any.textContent = "∅";
+  any.style.fontSize = "15px";
+  any.addEventListener("click", () => { state.anyMatch = true; renderBrush(); });
+  colors.appendChild(any);
+}
+
+function renderBrush() {
+  // Un obstaculo sin capas no estorba. Viniendo del pincel de rescate, que si admite
+  // cero, hay que subirlo a una o pintaria algo que no es un obstaculo.
+  if (state.brush === "obstacle" && state.layers < 1) state.layers = 1;
+  if (state.brush !== "rescue") state.anyMatch = false;
+
+  const byRecipe = state.brush === "rescue" && !!state.recipe;
+
+  for (const b of $("tabs").children) b.setAttribute("aria-pressed", String(b.dataset.brush === state.brush));
+  renderColors();
+  for (const b of $("holds").querySelectorAll(".pick")) b.setAttribute("aria-pressed", String(b.dataset.id === state.holds));
+
+  $("recipewrap").hidden = state.brush !== "rescue" || !(state.catalog?.recipes || []).length;
+  $("recipe").value = state.recipe;
+  $("shells").hidden = state.brush === "color" || byRecipe;
+  $("holdswrap").hidden = state.brush !== "rescue" || byRecipe;
+  renderShells();
+
+  const match = state.anyMatch ? "lo abre cualquier match" : `matchea ${state.paint}`;
+  $("hint").textContent = state.brush === "color"
+    ? `${state.paint} · clic pinta · derecho borra`
+    : state.brush === "obstacle"
+      ? `${state.paint} · ${state.material} ×${state.layers} · estorba`
+      : byRecipe
+        ? `receta ${state.recipe} · ${match}`
+        : `${state.holds || "¿qué lleva?"} · ${match} · ` +
+          (state.layers > 0 ? `bajo ${state.material} ×${state.layers}` : "sin caparazón");
+}
+
+/* ====================================================================
+   Tutoriales y boosters de inicio
+   ==================================================================== */
+function renderTutorials() {
+  const box = $("tutorials");
+  box.innerHTML = "";
+  const data = lvl();
+  if (!data) return;
+
+  const known = state.catalog?.tutorials || [];
+  const chosen = data.tutorials;
+
+  // En cuántos niveles está escrito YA, contando este. Es lo que evita explicar la misma
+  // mecánica dos veces: el panel no repite un tutorial visto, así que el segundo nivel que lo
+  // pida se queda sin explicar nada y nadie avisa.
+  const usedIn = id => state.levels.filter(l => (l.data.tutorials || []).includes(id));
+
+  const chip = (id, label, unknown) => {
+    const on = chosen.includes(id);
+    const where = usedIn(id);
+    const el = document.createElement("button");
+    el.className = "chip";
+    el.setAttribute("aria-pressed", String(on));
+    el.textContent = label;
+
+    if (where.length) {
+      const n = document.createElement("b");
+      n.className = "n";
+      n.textContent = where.length;
+      el.appendChild(n);
+    }
+
+    el.title = unknown
+      ? `${id} — TutorialPanel no lo conoce`
+      : where.length
+        ? `${id} — ya en ${where.map(l => String(l.data.id ?? 0).padStart(3, "0")).join(", ")}`
+        : `${id} — todavía en ningún nivel`;
+    if (unknown) { el.style.borderColor = "var(--bad)"; el.style.color = "var(--bad)"; }
+    el.addEventListener("click", () => {
+      snapshot();
+      // Se anade al FINAL: el orden de la lista es el orden en que salen.
+      data.tutorials = on ? chosen.filter(x => x !== id) : [...chosen, id];
+      touch();
+      renderAll();
+    });
+    box.appendChild(el);
+  };
+
+  for (const t of known) chip(t.id, t.name.replace(/[¡!]/g, ""), false);
+  for (const id of chosen) if (!known.some(t => t.id === id)) chip(id, id, true);
+
+  // Manda esta lista y solo esta lista: el juego ya no deduce ninguno del tablero.
+  let note = chosen.length
+    ? `Salen en este orden: ${chosen.join(" → ")}.`
+    : "Este nivel no explica nada.";
+
+  // Un nivel que estrena una mecánica y no la explica no da error en ninguna parte, así que el
+  // aviso tiene que salir acá o no sale.
+  const falta = [];
+  if (data.objective.rescues.some(r => shellOf(r).n > 0)) falta.push("rescue_shell");
+  if (data.objective.rescues.some(r => shellOf(r).n === 0)) falta.push("rescue");
+  if (data.obstacles.some(o => o.layers > 0)) falta.push("obstacle");
+
+  const pendientes = falta.filter(id => !chosen.includes(id) && known.some(t => t.id === id));
+  if (pendientes.length) note += ` Este tablero trae ${pendientes.join(", ")} sin explicar.`;
+
+  $("tut-note").textContent = note;
+  $("tut-note").className = "note" + (pendientes.length ? " warn" : "");
+}
+
+let openPop = null;
+function closePop() { openPop?.remove(); openPop = null; }
+addEventListener("click", closePop);
+
+function renderBoosters() {
+  const box = $("slots");
+  box.innerHTML = "";
+  const data = lvl();
+  if (!data) return;
+
+  const all = state.catalog?.boosters || [];
+  const start = all.filter(b => b.start);
+  const slots = state.catalog?.rules?.SLOTS ?? 3;
+  const picked = data.allowed_boosters_start;
+
+  const set = (i, id) => {
+    snapshot();
+    const list = [...picked];
+    while (list.length <= i) list.push("");
+    list[i] = id;
+    // Los huecos del final no se escriben: una lista corta ya sale con candado.
+    while (list.length && !list[list.length - 1]) list.pop();
+    data.allowed_boosters_start = list;
+    touch();
+    renderAll();
+  };
+
+  for (let i = 0; i < slots; i++) {
+    const id = picked[i] || "";
+    const b = all.find(x => x.id === id);
+
+    const wrap = document.createElement("div");
+    wrap.className = "menu";
+
+    const cell = document.createElement("button");
+    cell.className = "slot" + (b ? " on" : id ? " unknown" : "");
+    cell.innerHTML = b
+      ? `<img src="${esc(b.art || "")}" alt=""><span>${esc(b.name)}</span>`
+      : id ? `<span class="big">?</span><span>${esc(id)}</span>`
+           : `<span class="big">+</span><span>vacío</span>`;
+
+    cell.addEventListener("click", ev => {
+      ev.stopPropagation();
+      const was = openPop;
+      closePop();
+      if (was && was.parentNode === wrap) return;
+
+      const pop = document.createElement("div");
+      pop.className = "pop";
+      const item = (label, art, onClick) => {
+        const el = document.createElement("button");
+        el.innerHTML = (art ? `<img src="${esc(art)}" alt="">` : "") + esc(label);
+        el.addEventListener("click", onClick);
+        pop.appendChild(el);
+      };
+      item("— vacío —", null, () => set(i, ""));
+      for (const x of start) item(x.name, x.art, () => set(i, x.id));
+      wrap.appendChild(pop);
+      openPop = pop;
+    });
+
+    wrap.appendChild(cell);
+    box.appendChild(wrap);
+  }
+
+  $("slot-note").textContent = picked.length
+    ? "Los de gameplay no se eligen por nivel: están siempre en el HUD."
+    : `Vacío ofrece el trío por defecto: ${(R().default_boosters || []).filter(Boolean).join(", ") || "—"}.`;
+}
+
+function renderTree() {
+  const tree = $("tree");
+  tree.innerHTML = "";
+  const q = state.search.trim().toLowerCase();
+  const shown = state.levels.filter(l =>
+    !q || String(l.data.id).includes(q) || (l.data.name || "").toLowerCase().includes(q));
+
+  $("count").textContent = q ? `${shown.length}/${state.levels.length}` : state.levels.length;
+  if (!shown.length) { tree.innerHTML = '<p class="empty">Nada con ese nombre.</p>'; return; }
+
+  const byChapter = new Map();
+  for (const l of shown) {
+    const ch = l.data.chapter ?? 0;
+    if (!byChapter.has(ch)) byChapter.set(ch, []);
+    byChapter.get(ch).push(l);
+  }
+
+  for (const [ch, list] of [...byChapter].sort((a, b) => a[0] - b[0])) {
+    const open = q ? true : !state.closed.has(ch);
+    const head = document.createElement("button");
+    head.className = "chap";
+    head.setAttribute("aria-expanded", String(open));
+    head.innerHTML = `<span class="caret">▼</span>` +
+      `<span>${esc(state.catalog?.chapters?.[ch] || "Capítulo " + ch)}</span>` +
+      `<span class="count">${list.length}</span>`;
+    head.addEventListener("click", () => {
+      state.closed.has(ch) ? state.closed.delete(ch) : state.closed.add(ch);
+      renderTree();
+    });
+    tree.appendChild(head);
+    if (!open) continue;
+
+    for (const l of list) {
+      const i = state.levels.indexOf(l);
+      const b = document.createElement("button");
+      b.className = "lvl";
+      b.setAttribute("aria-current", String(i === state.index));
+      const marks = (l.data.objective?.rescues?.length ? "★" : "") + (l.data.obstacles?.length ? "◆" : "");
+      b.innerHTML = `<span class="n">${String(l.data.id ?? 0).padStart(3, "0")}</span>` +
+                    `<span class="t">${esc(l.data.name || l.file)}</span>` +
+                    (l.dirty ? '<span class="dot" title="sin guardar"></span>'
+                             : marks ? `<span class="tag">${marks}</span>` : "");
+      b.addEventListener("click", () => {
+        select(i);
+        document.querySelector(".col.left")?.classList.remove("open");
+      });
+      tree.appendChild(b);
+    }
+  }
+}
+
+function select(i) {
+  state.index = i;
+  state.undo.length = 0;
+  state.redo.length = 0;
+  syncRows();
+  renderAll();
+}
+
+function renderProps() {
+  const data = lvl();
+  const on = !!data;
+  for (const id of ["f-name","f-id","f-chapter","f-shots","f-min","f-type","f-s1","f-s2","f-s3"])
+    $(id).disabled = !on;
+  if (!data) return;
+
+  $("f-name").value = data.name ?? "";
+  $("f-id").value = data.id ?? 0;
+  $("f-chapter").value = data.chapter ?? 1;
+  $("f-shots").value = data.max_shots ?? 0;
+  $("f-min").value = data.min_shots_to_clear ?? 0;
+  $("f-type").value = data.objective.type === "rescue" ? "rescue" : "clear_all";
+  const st = data.star_thresholds;
+  $("f-s1").value = st[0] ?? 0; $("f-s2").value = st[1] ?? 0; $("f-s3").value = st[2] ?? 0;
+
+  const chips = $("avail");
+  chips.innerHTML = "";
+  const addChip = (c, picked, count, faded) => {
+    const el = document.createElement("button");
+    el.className = "chip";
+    if (faded) el.style.opacity = ".5";
+    el.setAttribute("aria-pressed", String(picked));
+    el.innerHTML = `<img src="${c.art}" alt="">${faded ? "+" : c.id + (count ? " " + count : "")}`;
+    el.title = faded ? "Añadir " + c.id : c.id;
+    el.addEventListener("click", () => {
+      snapshot();
+      data.available_colors = picked
+        ? data.available_colors.filter(x => x !== c.id)
+        : [...data.available_colors, c.id];
+      touch();
+      renderAll();
+    });
+    chips.appendChild(el);
+  };
+  for (const c of state.catalog?.colors || []) {
+    const picked = data.available_colors.includes(c.id);
+    const count = data.bubbles.filter(b => b.color === c.id).length;
+    if (picked || count) addChip(c, picked, count, false);
+  }
+  for (const c of state.catalog?.colors || []) {
+    if (data.available_colors.includes(c.id) || data.bubbles.some(b => b.color === c.id)) continue;
+    addChip(c, false, 0, true);
+  }
+
+  renderTutorials();
+  renderBoosters();
+}
+
+function cellRow(entry, art, label, list) {
+  const d = document.createElement("div");
+  d.className = "cellrow";
+  if (art) { const i = document.createElement("img"); i.src = art; i.alt = ""; d.appendChild(i); }
+  const s = document.createElement("span");
+  s.textContent = label;
+  d.appendChild(s);
+  const x = document.createElement("button");
+  x.className = "x"; x.textContent = "×"; x.title = "Quitar";
+  x.addEventListener("click", () => {
+    snapshot();
+    const i = list.indexOf(entry);
+    if (i >= 0) list.splice(i, 1);
+    touch();
+    renderAll();
+  });
+  d.appendChild(x);
+  return d;
+}
+
+function renderPlaced() {
+  const box = $("tab-puesto");
+  box.innerHTML = "";
+  const data = lvl();
+  if (!data) return;
+  const { obstacles } = data, rescues = data.objective.rescues;
+  if (!obstacles.length && !rescues.length) {
+    box.innerHTML = '<p class="empty">Nada todavía. Elige Obstáculo o Rescate y pinta.</p>';
+    return;
+  }
+  if (obstacles.length) {
+    box.insertAdjacentHTML("beforeend", `<h2 class="inline">Obstáculos · ${obstacles.length}</h2>`);
+    for (const o of obstacles)
+      box.appendChild(cellRow(o, shellArt(o.obstacle, o.layers)?.src,
+        `f${o.row} c${o.col} · ${o.color} · ${o.obstacle}×${o.layers}`, obstacles));
+  }
+  if (rescues.length) {
+    box.insertAdjacentHTML("beforeend", `<h2 class="inline" style="margin-top:11px">Rescates · ${rescues.length}</h2>`);
+    for (const r of rescues) {
+      const shell = shellOf(r);
+      box.appendChild(cellRow(r, holdsArt(holdsOf(r))?.src,
+        `f${r.row} c${r.col} · ${holdsOf(r) || "¿?"} · ${r.match || "cualquiera"}` +
+        (shell.n > 0 ? ` · ${shell.id}×${shell.n}` : "") +
+        (r.bubble ? ` · receta ${r.bubble}` : ""), rescues));
+    }
+  }
+}
+
+
+/* ====================================================================
+   Balance
+   ==================================================================== */
+function renderBalance() {
+  const box = $("tab-balance");
+  box.innerHTML = "";
+  const data = lvl();
+  if (!data) return;
+
+  const rep = report(data);
+  if (rep.bad) { box.innerHTML = `<div class="issue bad">${esc(rep.bad)}</div>`; return; }
+  if (!rep.bubbles) { box.innerHTML = '<p class="empty">Sin burbujas no hay nada que estimar.</p>'; return; }
+
+  const { pos, size, want } = pace(data);
+  const got = rate(rep.realistic, rep.maxShots);
+  const margin = rep.realistic > 0 ? rep.maxShots / rep.realistic : 0;
+  const stars = suggestStars(rep);
+  const have = data.star_thresholds;
+  const same = have.length >= 3 && stars.every((v, i) => v === have[i]);
+  const cls = got === want ? "ok" : DIF_CLASS[got] === "bad" ? "bad" : "warn";
+
+  box.innerHTML = `
+    <dl class="kv">
+      <dt>Ritmo</dt><dd>${pos}º de ${size} · toca <b>${DIF_ES[want] || "—"}</b></dd>
+      <dt>Disparos</dt><dd>óptimo ${rep.minShots} · realista ${rep.realistic} · tope ${rep.maxShots || "—"}</dd>
+      <dt>Margen</dt><dd>×${margin.toFixed(2)} → <b class="dif ${cls}">${DIF_ES[got]}</b></dd>
+      <dt>Tablero</dt><dd>${rep.bubbles} burbujas · ${rep.colors} colores · ${rep.clusters} grupos<em>${rep.lone ? ` · ${rep.lone} sueltos` : ""}</em></dd>
+      <dt>Colapso</dt><dd>${Math.round(rep.collapse * 100)}% <em>se lleva el mejor primer disparo</em></dd>
+    </dl>
+
+    <div class="row">
+      <span class="lab">Poner disparos para</span>
+      <button class="btn mini" data-shots="Facil">Fácil ${suggestShots(rep.realistic, "Facil")}</button>
+      <button class="btn mini" data-shots="Medio">Medio ${suggestShots(rep.realistic, "Medio")}</button>
+      <button class="btn mini" data-shots="Dificil">Difícil ${suggestShots(rep.realistic, "Dificil")}</button>
+    </div>
+
+    <hr class="sep">
+
+    <dl class="kv">
+      <dt>Partida buena</dt><dd>${num(goodScore(rep))} <em>puntos</em></dd>
+      <dt>Estrellas hoy</dt><dd>${(have.slice(0, 3).map(num).join(" · ")) || "—"}</dd>
+      <dt>Sugeridas</dt><dd>${stars.map(num).join(" · ")}${same ? " ✓" : ""}</dd>
+      ${rep.rescues ? `<dt>Cada rescate</dt><dd>${num(rescueUnit(have, rep.rescues))} <em>· ${rep.rescues} en el tablero</em></dd>` : ""}
+      <dt>Disparo de más</dt><dd>${num(R().POINTS_PER_REMAINING_SHOT ?? 1000)} <em>al ganar</em></dd>
+    </dl>
+
+    <div class="row">
+      <button class="btn mini" id="apply-stars"${same ? " disabled" : ""}>Aplicar estrellas sugeridas</button>
+    </div>
+
+    <p class="note">La estimación mira solo <b>bubbles</b>, igual que la de Unity: los caparazones
+    y las burbujas de rescate no entran, así que en un nivel con obstáculos los disparos salen
+    cortos.${rep.rescues ? " Acá hay rescates y la simulación limpia el tablero entero, que es más de lo que hace falta para ganar." : ""}</p>
+  `;
+
+  for (const b of box.querySelectorAll("[data-shots]"))
+    b.addEventListener("click", () => {
+      snapshot();
+      data.max_shots = suggestShots(rep.realistic, b.dataset.shots);
+      touch();
+      renderAll();
+      toast(`${data.max_shots} disparos`);
+    });
+
+  $("apply-stars")?.addEventListener("click", () => {
+    snapshot();
+    data.star_thresholds = stars;
+    touch();
+    renderAll();
+    toast("Umbrales recalculados");
+  });
+}
+
+function renderIssues() {
+  const box = $("tab-avisos");
+  box.innerHTML = "";
+  const data = lvl();
+  const badge = $("badge");
+  if (!data) { badge.hidden = true; return; }
+
+  const list = validate(data);
+  const bad = list.filter(i => i.kind === "bad").length;
+  badge.hidden = !list.length;
+  badge.textContent = list.length;
+  badge.className = "badge" + (bad ? "" : " warn");
+
+  if (!list.length) { box.innerHTML = '<div class="issue ok">Sin avisos. El nivel está listo.</div>'; return; }
+  for (const it of list) {
+    const d = document.createElement("div");
+    d.className = "issue " + it.kind;
+    d.textContent = it.text;
+    box.appendChild(d);
+  }
+}
+
+function renderNow() {
+  const c = cur();
+  $("now").innerHTML = c
+    ? `<b>${esc(String(c.data.id).padStart(3, "0"))}</b> ${esc(c.data.name || c.file)}` +
+      (c.dirty ? ' <span class="mod">· sin guardar</span>' : "")
+    : "—";
+}
+
+function renderAll() {
+  const data = lvl();
+  if (data) sortCells(data);
+  renderNow();
+  renderTree();
+  renderBrush();
+  renderProps();
+  renderBalance();
+  renderPlaced();
+  renderIssues();
+  if (data) {
+    $("json").value = serialize(data);
+    $("path").textContent = `Assets/Resources/Levels/${cur().folder}/${cur().file}`;
+  }
+  draw();
+  $("undo").disabled = !state.undo.length;
+  $("redo").disabled = !state.redo.length;
+  $("revert").disabled = !cur()?.dirty;
+}
+
+function syncRows() {
+  const data = lvl();
+  if (!data) return;
+  let max = 0;
+  for (const list of [data.bubbles, data.obstacles, data.objective.rescues])
+    for (const e of list) max = Math.max(max, e.row);
+  state.rows = Math.min(MAX_ROWS, Math.max(12, max + 3));
+  $("rows").value = state.rows;
+}
+
+/* ====================================================================
+   Guardar
+   ====================================================================
+   Un navegador no escribe en disco sin permiso, y solo hay dos formas de darselo:
+     · servido desde la maquina  -> el servidor escribe, Guardar no pregunta nada
+     · pagina suelta             -> hay que elegir la carpeta UNA vez
+   Guardar prueba la que haya, en ese orden, y cae al portapapeles si no hay ninguna. */
+let folder = null;
+
+function saved(c, msg) {
+  c.original = JSON.stringify(c.data);
+  c.dirty = false;
+  renderAll();
+  toast(msg);
+}
+
+async function guardar() {
+  const c = cur();
+  if (!c) { toast("No hay nivel abierto"); return; }
+  const text = serialize(c.data);
+  const sub = /^Chapter_\d+$/.test(c.folder) ? c.folder : `Chapter_${c.data.chapter || 1}`;
+
+  // 1. Servido desde la maquina: el servidor escribe el archivo del proyecto.
+  if (state.local) {
+    try {
+      const res = await fetch("api/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: sub, file: c.file, text }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      c.folder = sub;
+      saved(c, `Guardado en ${sub}/${c.file}`);
+    } catch (err) {
+      toast("No se pudo guardar: " + err.message);
+    }
+    return;
+  }
+
+  // 2. Carpeta elegida a mano. La primera vez la pide; despues ya no.
+  if (window.showDirectoryPicker) {
+    try {
+      if (!folder) {
+        folder = await window.showDirectoryPicker({ mode: "readwrite", id: "coralia-levels" });
+        toast(`Carpeta "${folder.name}" conectada`);
+      }
+      const dir = await folder.getDirectoryHandle(sub, { create: true });
+      const file = await dir.getFileHandle(c.file, { create: true });
+      const w = await file.createWritable();
+      await w.write(text);
+      await w.close();
+      c.folder = sub;
+      saved(c, `Guardado en ${sub}/${c.file}`);
+      return;
+    } catch (err) {
+      folder = null;
+      if (err.name === "AbortError") return;
+      // Bloqueada por el marco: no se insiste, se cae al portapapeles.
+    }
+  }
+
+  // 3. Portapapeles, que funciona siempre.
+  try {
+    await navigator.clipboard.writeText(text);
+    saved(c, `Copiado · pégalo en ${sub}/${c.file}`);
+  } catch {
+    state.tab = "json";
+    showTab();
+    $("json").focus();
+    $("json").select();
+    toast("Copia a mano desde el cuadro (Ctrl+C)");
+  }
+}
+
+/* ====================================================================
+   Paneles y cajones
+   ==================================================================== */
+function showTab() {
+  for (const t of $("ptabs").children) t.setAttribute("aria-pressed", String(t.dataset.tab === state.tab));
+  for (const n of ["ficha", "balance", "puesto", "avisos", "json"]) $("tab-" + n).hidden = n !== state.tab;
+}
+$("ptabs").addEventListener("click", e => {
+  const b = e.target.closest("button[data-tab]");
+  if (!b) return;
+  state.tab = b.dataset.tab;
+  showTab();
+});
+$("toggle-left").addEventListener("click", () => { $("col-left").classList.toggle("open"); draw(); });
+$("toggle-right").addEventListener("click", () => { $("col-right").classList.toggle("open"); draw(); });
+
+/* ====================================================================
+   Entrada
+   ==================================================================== */
+function addLevel(data, file, folderName) {
+  const entry = { file, folder: folderName, data: adopt(data), original: "", dirty: false };
+  entry.original = JSON.stringify(entry.data);
+  state.levels.push(entry);
+  return entry;
+}
+
+$("open").addEventListener("click", () => $("pick").click());
+$("pick").addEventListener("change", async e => {
+  let ok = 0, last = -1;
+  for (const f of [...e.target.files]) {
+    try {
+      const d = JSON.parse(await f.text());
+      addLevel(d, f.name, `Chapter_${d.chapter || 1}`);
+      last = state.levels.length - 1;
+      ok++;
+    } catch { toast(`${f.name} no se pudo leer`); }
+  }
+  if (last >= 0) select(last);
+  if (ok) toast(ok === 1 ? "Nivel cargado" : `${ok} niveles cargados`);
+  e.target.value = "";
+});
+
+addEventListener("dragover", e => e.preventDefault());
+addEventListener("drop", async e => {
+  e.preventDefault();
+  let ok = 0, last = -1;
+  for (const f of [...(e.dataTransfer?.files || [])]) {
+    if (!f.name.endsWith(".json")) continue;
+    try {
+      const d = JSON.parse(await f.text());
+      addLevel(d, f.name, `Chapter_${d.chapter || 1}`);
+      last = state.levels.length - 1;
+      ok++;
+    } catch { toast(`${f.name} no se pudo leer`); }
+  }
+  if (last >= 0) select(last);
+  if (ok) toast(ok === 1 ? "Nivel cargado" : `${ok} niveles cargados`);
+});
+
+$("nuevo").addEventListener("click", () => {
+  const next = state.levels.reduce((m, l) => Math.max(m, +l.data.id || 0), 0) + 1;
+  const e = addLevel(blankLevel(next), String(next).padStart(3, "0") + ".json", "Chapter_1");
+  e.dirty = true;
+  select(state.levels.length - 1);
+});
+
+$("revert").addEventListener("click", () => {
+  const c = cur();
+  if (!c || !c.dirty) return;
+  snapshot();
+  c.data = adopt(JSON.parse(c.original));
+  c.dirty = false;
+  renderAll();
+  toast("Vuelto a como está en el archivo");
+});
+
+/* ====================================================================
+   Controles
+   ==================================================================== */
+$("save").addEventListener("click", guardar);
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest("button[data-brush]");
+  if (!b) return;
+  state.brush = b.dataset.brush;
+  renderBrush();
+});
+$("zoom-in").addEventListener("click",  () => setZoom(boardScale() * 1.25));
+$("zoom-out").addEventListener("click", () => setZoom(boardScale() / 1.25));
+$("zoom-fit").addEventListener("click", () => setZoom(null));
+
+// Ctrl/Cmd + rueda acerca, como en cualquier lienzo. La rueda sola sigue desplazando.
+document.getElementById("boardwrap").addEventListener("wheel", e => {
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  setZoom(boardScale() * (e.deltaY < 0 ? 1.12 : 1 / 1.12));
+}, { passive: false });
+
+$("recipe").addEventListener("change", e => { state.recipe = e.target.value; renderBrush(); });
+$("rows").addEventListener("input", e => { state.rows = Math.max(1, Math.min(MAX_ROWS, +e.target.value || 12)); draw(); });
+$("search").addEventListener("input", e => { state.search = e.target.value; renderTree(); });
+$("undo").addEventListener("click", () => restore(state.undo, state.redo));
+$("redo").addEventListener("click", () => restore(state.redo, state.undo));
+$("mirror").addEventListener("click", mirror);
+$("clear").addEventListener("click", clearBoard);
+
+const bind = (id, apply) => $(id).addEventListener("change", e => {
+  if (!lvl()) return;
+  snapshot();
+  apply(lvl(), e.target.value);
+  touch();
+  renderAll();
+});
+bind("f-name", (d, v) => d.name = v);
+bind("f-id", (d, v) => d.id = +v || 0);
+bind("f-chapter", (d, v) => d.chapter = +v || 1);
+bind("f-shots", (d, v) => d.max_shots = +v || 0);
+bind("f-min", (d, v) => d.min_shots_to_clear = +v || 0);
+bind("f-type", (d, v) => d.objective.type = v);
+bind("f-s1", (d, v) => d.star_thresholds[0] = +v || 0);
+bind("f-s2", (d, v) => d.star_thresholds[1] = +v || 0);
+bind("f-s3", (d, v) => d.star_thresholds[2] = +v || 0);
+
+addEventListener("keydown", e => {
+  // Guardar funciona tambien escribiendo en un campo: es lo que espera cualquiera que
+  // acabe de cambiar el nombre del nivel.
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); guardar(); return; }
+  if (e.target.matches("input, textarea, select")) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+    e.preventDefault();
+    e.shiftKey ? restore(state.redo, state.undo) : restore(state.undo, state.redo);
+    return;
+  }
+  const map = { b: "color", o: "obstacle", r: "rescue" };
+  const to = map[e.key.toLowerCase()];
+  if (to) { state.brush = to; renderBrush(); }
+});
+
+addEventListener("resize", draw);
+
+/* ====================================================================
+   Arranque
+   ==================================================================== */
+function preload(paths) {
+  return Promise.all(paths.map(p => new Promise(done => {
+    const i = new Image();
+    i.onload = i.onerror = () => { state.art.set(p, i); done(); };
+    i.src = p;
+  })));
+}
+
+(async function start() {
+  try {
+    // Si hay servidor local, los niveles salen del disco y Guardar escribe de verdad.
+    // Si no, van empaquetados con la pagina y Guardar pide carpeta o copia.
+    const probe = await fetch("api/catalog").then(r => r.ok ? r.json() : null).catch(() => null);
+    state.local = !!probe;
+
+    const [catalog, levels] = state.local
+      ? [probe, await fetch("api/levels").then(r => r.json())]
+      : await Promise.all([
+          fetch("catalog.json").then(r => r.json()),
+          fetch("levels.json").then(r => r.json()),
+        ]);
+
+    state.catalog = catalog;
+    state.holds = catalog.creatures[0]?.id || catalog.objects[0]?.id || "";
+
+    await preload([catalog.glow,
+      ...catalog.colors.map(c => c.art),
+      ...catalog.materials.flatMap(m => m.layers),
+      ...catalog.creatures.map(c => c.art),
+      ...catalog.objects.map(o => o.art)].filter(Boolean));
+
+    for (const l of levels) addLevel(l.data, l.file, l.folder);
+
+    renderPickers();
+    if (state.local) $("now").title = "Servido en local: Guardar escribe en el proyecto";
+
+    const start = state.levels.findIndex(l => l.data.id === 21);
+    select(start >= 0 ? start : 0);
+  } catch (err) {
+    $("tree").innerHTML = '<p class="empty">No se pudieron cargar los niveles. Usa Abrir.</p>';
+    renderAll();
+  }
+})();
+</script>

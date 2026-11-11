@@ -302,7 +302,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TutorialCancelDemo
   bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
-  dotSprite: {fileID: 0}
+  dotSprite: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
   dotColor: {r: 1, g: 1, b: 1, a: 0.85}
   aimColor: {r: 1, g: 1, b: 1, a: 0.85}
   cancelColor: {r: 1, g: 0.45, b: 0.4, a: 1}
@@ -820,6 +820,7 @@ MonoBehaviour:
   nextSize: 0.55
   dots: 10
   dotSize: 0.2
+  dotSprite: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
   dotColor: {r: 1, g: 1, b: 1, a: 0.9}
   blotColor: {r: 0, g: 0, b: 0, a: 0}
   aimSweep: 30
@@ -893,6 +894,74 @@ MonoBehaviour:
   blastTime: 0.5
   chainTime: 0.3
   restTime: 1
+--- !u!1 &3906998574603067116
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 165682588950076081}
+  - component: {fileID: 2646485318393216305}
+  m_Layer: 0
+  m_Name: TutorialRescueDemo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &165682588950076081
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3906998574603067116}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3588830722398191144}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2646485318393216305
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3906998574603067116}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ce1a72e722264d8d86eba752a77b46c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TutorialRescueDemo
+  matchColor: 0
+  fillerColors: 
+  holds: 
+  shot:
+    hand: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
+    dot: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
+    dotColor: {r: 1, g: 1, b: 1, a: 0.85}
+    dots: 10
+    dotSize: 0.2
+    sweep: 30
+    handDistance: 0.42
+    aimTime: 0.7
+    releaseTime: 0.15
+    flyTime: 0.45
+  bubbleSize: 0.11
+  aspect: 0.72
+  holdTime: 0.5
+  popTime: 0.45
+  flyTime: 0.75
+  restTime: 0.8
 --- !u!1 &4268588987789401879
 GameObject:
   m_ObjectHideFlags: 0
@@ -943,7 +1012,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TutorialSwapDemo
   bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
-  dotSprite: {fileID: 0}
+  dotSprite: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
   dotColor: {r: 1, g: 1, b: 1, a: 0.85}
   bubbleSize: 0.1
   aspect: 0.72
@@ -1109,6 +1178,79 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalizedText
   key: ui.button.play
+--- !u!1 &4850285553926029768
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 800147310492968542}
+  - component: {fileID: 7296041882006990981}
+  m_Layer: 0
+  m_Name: TutorialRescueShellDemo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &800147310492968542
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4850285553926029768}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3588830722398191144}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &7296041882006990981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4850285553926029768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e78897687ddff8ea3e2148be003c3c7e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TutorialShellDemo
+  holdsSomething: 1
+  material: ice
+  shellColor: 0
+  knockColor: 1
+  fillerColor: 2
+  holds: 
+  shot:
+    hand: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
+    dot: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
+    dotColor: {r: 1, g: 1, b: 1, a: 0.85}
+    dots: 10
+    dotSize: 0.2
+    sweep: 30
+    handDistance: 0.42
+    aimTime: 0.7
+    releaseTime: 0.15
+    flyTime: 0.45
+  bubbleSize: 0.1
+  aspect: 0.72
+  holdTime: 0.5
+  popTime: 0.35
+  shatterTime: 0.3
+  revealTime: 0.7
+  flyTime: 0.7
+  restTime: 0.8
 --- !u!1 &5126593709231790638
 GameObject:
   m_ObjectHideFlags: 0
@@ -1334,7 +1476,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TutorialRainbowDemo
   bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
-  dotSprite: {fileID: 7416691928268232256, guid: cd4e4136d804f443b88d74e25ee17f0f, type: 3}
+  dotSprite: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
   dotColor: {r: 1, g: 1, b: 1, a: 0.85}
   bubbleSize: 0.1
   aspect: 0.72
@@ -1477,6 +1619,7 @@ MonoBehaviour:
   markColor: {r: 1, g: 1, b: 1, a: 0.85}
   dots: 10
   dotSize: 0.2
+  dotSprite: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
   dotColor: {r: 1, g: 1, b: 1, a: 0.9}
   aimSweep: 30
   handDistance: 0.42
@@ -1539,7 +1682,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TutorialShootDemo
   bubbleColors: 010000000000000002000000i
   handSprite: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
-  dotSprite: {fileID: -3862979679043480944, guid: 2e3a3fae627d849d287c2109f30c7657, type: 3}
+  dotSprite: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
   dotColor: {r: 1, g: 1, b: 1, a: 0.85}
   bubbleSize: 0.1
   aspect: 0.72
@@ -1844,6 +1987,79 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &7542223954013040880
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6169155713670078162}
+  - component: {fileID: 6812671826779947399}
+  m_Layer: 0
+  m_Name: TutorialObstacleDemo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &6169155713670078162
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7542223954013040880}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3588830722398191144}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6812671826779947399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7542223954013040880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e78897687ddff8ea3e2148be003c3c7e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TutorialShellDemo
+  holdsSomething: 0
+  material: ice
+  shellColor: 0
+  knockColor: 1
+  fillerColor: 2
+  holds: 
+  shot:
+    hand: {fileID: 8403215288983880825, guid: ad47af58d93524c29a514ee6b0dcd5ba, type: 3}
+    dot: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
+    dotColor: {r: 1, g: 1, b: 1, a: 0.85}
+    dots: 10
+    dotSize: 0.2
+    sweep: 30
+    handDistance: 0.42
+    aimTime: 0.7
+    releaseTime: 0.15
+    flyTime: 0.45
+  bubbleSize: 0.1
+  aspect: 0.72
+  holdTime: 0.5
+  popTime: 0.35
+  shatterTime: 0.3
+  revealTime: 0.7
+  flyTime: 0.7
+  restTime: 0.8
 --- !u!1 &7676310694796035754
 GameObject:
   m_ObjectHideFlags: 0
@@ -1899,6 +2115,7 @@ MonoBehaviour:
   boltColor: {r: 0.8, g: 0.95, b: 1, a: 1}
   dots: 10
   dotSize: 0.2
+  dotSprite: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
   dotColor: {r: 1, g: 1, b: 1, a: 0.9}
   aimSweep: 30
   handDistance: 0.42
@@ -2299,6 +2516,24 @@ MonoBehaviour:
     image: {fileID: 0}
     animation: {fileID: 1480724714057485257}
     once: 0
+  - id: rescue
+    titleKey: ui.tutorial.rescue.title
+    bodyKey: ui.tutorial.rescue.body
+    image: {fileID: 0}
+    animation: {fileID: 3906998574603067116}
+    once: 0
+  - id: rescue_shell
+    titleKey: ui.tutorial.rescue_shell.title
+    bodyKey: ui.tutorial.rescue_shell.body
+    image: {fileID: 0}
+    animation: {fileID: 4850285553926029768}
+    once: 0
+  - id: obstacle
+    titleKey: ui.tutorial.obstacle.title
+    bodyKey: ui.tutorial.obstacle.body
+    image: {fileID: 0}
+    animation: {fileID: 7542223954013040880}
+    once: 0
   titleText: {fileID: 6506105488765496103}
   bodyText: {fileID: 5104394503919540149}
   imageSlot: {fileID: 0}
@@ -2351,6 +2586,9 @@ RectTransform:
   - {fileID: 5358610342082803044}
   - {fileID: 904340273087965436}
   - {fileID: 2418956938208120229}
+  - {fileID: 165682588950076081}
+  - {fileID: 6169155713670078162}
+  - {fileID: 800147310492968542}
   m_Father: {fileID: 8911775597314945009}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2473,6 +2711,7 @@ MonoBehaviour:
   markColor: {r: 1, g: 1, b: 1, a: 0.85}
   dots: 10
   dotSize: 0.2
+  dotSprite: {fileID: 21300000, guid: f2685993cea0f4818811f0c4910fd78d, type: 3}
   dotColor: {r: 1, g: 1, b: 1, a: 0.9}
   aimSweep: 30
   handDistance: 0.42

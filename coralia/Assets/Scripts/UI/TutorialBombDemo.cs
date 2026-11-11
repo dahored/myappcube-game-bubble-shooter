@@ -51,6 +51,9 @@ public class TutorialBombDemo : MonoBehaviour
     [Range(0.1f, 0.6f)]
     [SerializeField] float dotSize = 0.2f;
 
+    [Tooltip("El punto de la línea de trayectoria. El mismo de la mira del juego, para que apuntar se vea igual acá que jugando.\n\nVacío cae al destello redondo que se dibuja por código.")]
+    [SerializeField] Sprite dotSprite;
+
     [Tooltip("Color de los puntos. Blanco para los boosters: una fila de bombitas en miniatura se leería como si fueran a salir muchas.")]
     [SerializeField] Color dotColor = new(1f, 1f, 1f, 0.9f);
 
@@ -188,7 +191,7 @@ public class TutorialBombDemo : MonoBehaviour
         // es exactamente el punto que hace falta y no hay que asignar ningún sprite.
         for (int i = 0; i < dots; i++)
         {
-            var dot = Spawn("Dot", SparkleTextures.Glow, size * dotSize);
+            var dot = Spawn("Dot", dotSprite != null ? dotSprite : SparkleTextures.Glow, size * dotSize);
             dot.color   = dotColor;
             dot.enabled = false;
             _trail.Add(dot);

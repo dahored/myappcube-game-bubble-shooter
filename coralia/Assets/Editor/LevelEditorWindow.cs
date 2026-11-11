@@ -70,6 +70,20 @@ public class LevelEditorWindow : EditorWindow
     string  _search = "";
     Vector2 _listScroll, _gridScroll, _propsScroll;
 
+    // Qué pinta el clic. Las tres cosas que puede haber en una celda van a listas distintas del
+    // JSON, y es el pincel el que decide a cuál: una burbuja normal a 'bubbles', un obstáculo a
+    // 'obstacles' y un rescate a 'objective.rescues'.
+    //
+    // La lista en la que está escrita es lo que decide su comportamiento, no un campo suyo: un
+    // obstáculo destapado se queda como burbuja de su color, y un rescate destapado sale volando
+    // al hub y cuenta para ganar. Por eso el pincel es un modo y no una casilla más.
+    enum Brush { Color, Obstacle, Rescue }
+
+    Brush  _brush    = Brush.Color;
+    string _material = "ice";
+    int    _layers   = 3;
+    string _holds    = "";
+
     // La simulación recorre el nivel entero, así que no puede correr en cada repintado: se
     // recalcula solo cuando el grid cambió de verdad.
     LevelDifficultyEstimator.Report _report;
@@ -262,7 +276,9 @@ public class LevelEditorWindow : EditorWindow
 
         // Se muestran un par de filas de más que las usadas, para poder extender el nivel hacia
         // abajo sin ningún control aparte.
-        int usedRows    = level.bubbles.Count > 0 ? level.bubbles.Max(b => b.row) + 1 : 0;
+        // Cuenta las tres listas: un obstáculo o un rescate escrito por debajo de la última
+        // burbuja de color quedaría fuera de la ventana y no habría forma de tocarlo.
+        int usedRows = LastRow(level) + 1;
         int visibleRows = Mathf.Clamp(usedRows + 3, 12, 30);
 
         // Todo el dibujo sale de HexGridMath a escala reducida: el editor no recalcula nada de la
@@ -282,6 +298,12 @@ public class LevelEditorWindow : EditorWindow
         var lookup = new Dictionary<Vector2Int, BubbleEntry>();
         foreach (var b in level.bubbles) lookup[new Vector2Int(b.col, b.row)] = b;
 
+        var obstacles = CellsOf(level.obstacles);
+        var rescues   = CellsOf(level.objective?.rescues);
+
+        var mark = new GUIStyle(EditorStyles.boldLabel) { alignment = TextAnchor.MiddleCenter };
+        mark.normal.textColor = Color.black;
+
         for (int row = 0; row < visibleRows; row++)
         {
             for (int col = 0; col < HexGridMath.ColsInRow(row); col++)
@@ -291,21 +313,66 @@ public class LevelEditorWindow : EditorWindow
 
                 bool filled = lookup.TryGetValue(key, out var bubble);
 
-                GUI.color = filled ? SwatchFor(bubble.color) : new Color(1f, 1f, 1f, 0.12f);
-                GUI.DrawTexture(rect, _circle);
-                GUI.color = Color.white;
-
-                // La criatura de un nivel de rescate se marca sobre su burbuja.
-                if (filled && IsCreatureCell(level, row, col))
+                // El orden importa: una celda está en UNA lista, pero si un JSON escrito a mano la
+                // repite, se enseña la que manda en la partida — el rescate pisa al obstáculo y
+                // este a la de color.
+                if (rescues.TryGetValue(key, out var rescue))
                 {
-                    var label = new GUIStyle(EditorStyles.boldLabel) { alignment = TextAnchor.MiddleCenter };
-                    label.normal.textColor = Color.black;
-                    GUI.Label(rect, "★", label);
+                    Fill(rect, SwatchFor(rescue.match ?? rescue.color));
+                    GUI.Label(rect, rescue.layers > 0 ? $"★{rescue.layers}" : "★", mark);
+                }
+                else if (obstacles.TryGetValue(key, out var obstacle))
+                {
+                    Fill(rect, SwatchFor(obstacle.color));
+                    GUI.Label(rect, obstacle.layers.ToString(), mark);
+                }
+                else
+                {
+                    Fill(rect, filled ? SwatchFor(bubble.color) : new Color(1f, 1f, 1f, 0.12f));
                 }
 
-                HandleCellClick(rect, level, row, col, lookup);
+                HandleCellClick(rect, level, row, col);
             }
         }
+    }
+
+    static void SortCells(List<CellPos> cells) =>
+        cells?.Sort((a, b) => a.row != b.row ? a.row.CompareTo(b.row) : a.col.CompareTo(b.col));
+
+    // La fila más abajo que ocupa algo. -1 en un nivel vacío, así que usedRows sale 0.
+    static int LastRow(LevelData level)
+    {
+        int last = -1;
+
+        if (level.bubbles != null)
+            foreach (var b in level.bubbles) last = Mathf.Max(last, b.row);
+
+        foreach (var list in new[] { level.obstacles, level.objective?.rescues })
+            if (list != null)
+                foreach (var at in list)
+                    if (at != null) last = Mathf.Max(last, at.row);
+
+        return last;
+    }
+
+    void Fill(Rect rect, Color color)
+    {
+        GUI.color = color;
+        GUI.DrawTexture(rect, _circle);
+        GUI.color = Color.white;
+    }
+
+    // Las celdas de una lista, indexadas. La última gana: un JSON escrito a mano puede repetir una
+    // celda, y el juego se queda con la última escrita al llenar su diccionario.
+    static Dictionary<Vector2Int, CellPos> CellsOf(List<CellPos> cells)
+    {
+        var map = new Dictionary<Vector2Int, CellPos>();
+
+        if (cells != null)
+            foreach (var at in cells)
+                if (at != null) map[at.Cell] = at;
+
+        return map;
     }
 
     // La posición exacta que tendrá la burbuja en la partida, achicada. CellToLocalPos devuelve el
@@ -321,33 +388,79 @@ public class LevelEditorWindow : EditorWindow
         return new Rect(x, y, size, size);
     }
 
-    void HandleCellClick(Rect rect, LevelData level, int row, int col,
-                         Dictionary<Vector2Int, BubbleEntry> lookup)
+    void HandleCellClick(Rect rect, LevelData level, int row, int col)
     {
         var e = Event.current;
         if (e.type != EventType.MouseDown && e.type != EventType.MouseDrag) return;
         if (!rect.Contains(e.mousePosition)) return;
 
+        // Arrastrar solo pinta burbujas de color, que es lo que se hace a brochazos. Un obstáculo
+        // y un rescate se ponen de a uno y en un sitio pensado: arrastrando, cruzar el tablero
+        // dejaría veinte criaturas que hay que borrar una por una.
+        if (e.type == EventType.MouseDrag && _brush != Brush.Color && e.button != 1 && !e.alt) return;
+
         var key    = new Vector2Int(col, row);
         bool erase = e.button == 1 || e.alt;
 
-        if (erase)
-        {
-            if (lookup.TryGetValue(key, out var existing)) level.bubbles.Remove(existing);
-        }
-        else if (lookup.TryGetValue(key, out var existing))
-        {
-            existing.color = _paint;
-        }
-        else
-        {
-            level.bubbles.Add(new BubbleEntry { row = row, col = col, color = _paint });
-        }
+        // Se vacía la celda SIEMPRE antes de pintar, no solo al borrar: una celda escrita en dos
+        // listas es una contradicción que el juego resuelve en silencio —el rescate pisa a la de
+        // color— y el nivel se comporta distinto de lo que el editor enseña.
+        Clear(level, key);
+
+        if (!erase) Paint(level, row, col);
 
         _dirty       = true;
         _reportStale = true;
         e.Use();
         Repaint();
+    }
+
+    // Quita la celda de las tres listas.
+    static void Clear(LevelData level, Vector2Int key)
+    {
+        level.bubbles?.RemoveAll(b => b.col == key.x && b.row == key.y);
+        level.obstacles?.RemoveAll(o => o != null && o.col == key.x && o.row == key.y);
+        level.objective?.rescues?.RemoveAll(r => r != null && r.col == key.x && r.row == key.y);
+    }
+
+    void Paint(LevelData level, int row, int col)
+    {
+        switch (_brush)
+        {
+            case Brush.Color:
+                level.bubbles.Add(new BubbleEntry { row = row, col = col, color = _paint });
+                break;
+
+            case Brush.Obstacle:
+                level.obstacles ??= new List<CellPos>();
+                level.obstacles.Add(new CellPos
+                {
+                    row = row, col = col, color = _paint,
+                    obstacle = _material,
+                    // Un obstáculo sin capas es una burbuja normal con pasos de más. El pincel no
+                    // deja bajar de una, así que acá no hace falta defenderse del cero.
+                    layers = Mathf.Max(1, _layers),
+                });
+                break;
+
+            case Brush.Rescue:
+                level.objective ??= new ObjectiveData();
+                level.objective.rescues ??= new List<CellPos>();
+                level.objective.rescues.Add(new CellPos
+                {
+                    row = row, col = col,
+                    holds = _holds,
+                    // 'match' y no 'color': el color del cuerpo sale solo del match cuando no se
+                    // escribe, que es lo que casi siempre se quiere. Verse de un color y encajar
+                    // con otro es la excepción y se escribe a mano en el JSON.
+                    match = _paint,
+                    // Sin capas no se escribe material: dejarlo puesto con cero capas da una
+                    // burbuja sin caparazón igual, pero el JSON diría que es de hielo.
+                    obstacle = _layers > 0 ? _material : null,
+                    layers   = _layers,
+                });
+                break;
+        }
     }
 
     void DrawPalette()
@@ -379,8 +492,96 @@ public class LevelEditorWindow : EditorWindow
             GUILayout.FlexibleSpace();
         }
 
-        EditorGUILayout.LabelField($"{_paint} · clic pinta · clic derecho borra", EditorStyles.miniLabel);
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField("Pinta", GUILayout.Width(42));
+
+            _brush = (Brush)GUILayout.Toolbar((int)_brush,
+                                              new[] { "Burbuja", "Obstáculo", "Rescate" },
+                                              GUILayout.Width(240));
+
+            GUILayout.FlexibleSpace();
+        }
+
+        if (_brush != Brush.Color) DrawShellControls();
+
+        EditorGUILayout.LabelField(BrushHint(), EditorStyles.miniLabel);
     }
+
+    // El material y el grosor, que los dos pinceles con caparazón comparten. El rescate además
+    // admite cero capas —una criatura suelta en su burbuja— y el obstáculo no: sin capas no
+    // estorba, y entonces es una burbuja de color y se pinta con el otro pincel.
+    void DrawShellControls()
+    {
+        var materials = ObstacleCatalog.All;
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (_brush == Brush.Rescue)
+            {
+                EditorGUILayout.LabelField("Lleva", GUILayout.Width(42));
+                DrawHoldsPopup();
+            }
+
+            EditorGUILayout.LabelField("Material", GUILayout.Width(55));
+
+            if (materials.Length == 0)
+            {
+                EditorGUILayout.LabelField("sin catálogo", EditorStyles.miniLabel);
+            }
+            else
+            {
+                int index = Mathf.Max(0, System.Array.IndexOf(materials, _material));
+                _material = materials[EditorGUILayout.Popup(index, materials, GUILayout.Width(90))];
+            }
+
+            EditorGUILayout.LabelField("Capas", GUILayout.Width(40));
+            _layers = EditorGUILayout.IntSlider(_layers,
+                                                _brush == Brush.Rescue ? 0 : 1,
+                                                ObstacleCatalog.MAX_LAYERS,
+                                                GUILayout.Width(140));
+
+            GUILayout.FlexibleSpace();
+        }
+    }
+
+    // Criaturas y objetos en un solo desplegable pero separados, igual que el del Inspector: los
+    // dos se escriben en 'holds' y el nivel no dice de cuál es, pero al elegir importa — lo vivo
+    // respira dentro de la burbuja y un cofre no.
+    void DrawHoldsPopup()
+    {
+        var creatures = Rescuable.CreatureIds;
+        var objects   = Rescuable.ObjectIds;
+
+        var options = new List<string>();
+        var ids     = new List<string>();
+
+        foreach (var id in creatures) { options.Add($"Criaturas/{id}"); ids.Add(id); }
+        foreach (var id in objects)   { options.Add($"Objetos/{id}");   ids.Add(id); }
+
+        if (ids.Count == 0)
+        {
+            EditorGUILayout.LabelField("sin catálogo", EditorStyles.miniLabel, GUILayout.Width(150));
+            return;
+        }
+
+        // Sin nada elegido todavía, se elige el primero en vez de dejar un hueco: un rescate con
+        // 'holds' vacío se pinta igual y sale una burbuja sin nada dentro que no cuenta para nada.
+        int index = ids.IndexOf(_holds);
+        if (index < 0) index = 0;
+
+        index  = EditorGUILayout.Popup(index, options.ToArray(), GUILayout.Width(150));
+        _holds = ids[index];
+    }
+
+    string BrushHint() => _brush switch
+    {
+        Brush.Obstacle => $"{_paint} · {_material} ×{_layers} · estorba, no se rescata · clic derecho borra",
+        Brush.Rescue   => $"{_holds} · matchea {_paint}"
+                          + (_layers > 0 ? $" · bajo {_material} ×{_layers}" : " · sin caparazón")
+                          + " · cuenta para ganar · clic derecho borra",
+        _              => $"{_paint} · clic pinta · clic derecho borra",
+    };
 
     // ---------------------------------------------------------------- propiedades
 
@@ -409,16 +610,7 @@ public class LevelEditorWindow : EditorWindow
         typeIndex = EditorGUILayout.Popup("Tipo", typeIndex, new[] { "clear_all", "rescue" });
         level.objective.type = typeIndex == 1 ? "rescue" : "clear_all";
 
-        if (level.objective.type == "rescue")
-        {
-            level.objective.creature_id = EditorGUILayout.TextField("Criatura", level.objective.creature_id);
-
-            level.objective.creature_position ??= new List<int> { 0, 0 };
-            while (level.objective.creature_position.Count < 2) level.objective.creature_position.Add(0);
-
-            level.objective.creature_position[0] = EditorGUILayout.IntField("Fila", level.objective.creature_position[0]);
-            level.objective.creature_position[1] = EditorGUILayout.IntField("Columna", level.objective.creature_position[1]);
-        }
+        DrawRescueSummary(level);
 
         GUILayout.Space(8);
         EditorGUILayout.LabelField("Dificultad", EditorStyles.boldLabel);
@@ -679,11 +871,64 @@ public class LevelEditorWindow : EditorWindow
     static Color SwatchFor(string color) =>
         Swatches.TryGetValue(color ?? "", out var swatch) ? swatch : Color.magenta;
 
-    static bool IsCreatureCell(LevelData level, int row, int col)
+    // Lo que hay puesto en el tablero, y el aviso de cuando el 'type' no dice la verdad.
+    //
+    // No se edita acá: se pinta en el grid, que es donde se ve dónde cae. Esto es la lista de lo
+    // que hay, con su botón para quitarlo sin tener que buscar la celda.
+    void DrawRescueSummary(LevelData level)
     {
-        var pos = level.objective?.creature_position;
-        return level.objective?.type == "rescue" && pos != null && pos.Count >= 2 &&
-               pos[0] == row && pos[1] == col;
+        var rescues   = level.objective?.rescues;
+        int obstacles = level.obstacles?.Count ?? 0;
+
+        // Ganar NO depende de 'type' sino de si hay rescates (GameplayController: el objetivo se
+        // cumple con AllRescued cuando los hay, y con el tablero vacío cuando no). Con los dos
+        // desalineados el nivel se juega distinto de lo que dice su ficha, y el tutorial de
+        // rescate sale —o no— al revés de lo que toca.
+        bool any   = rescues is { Count: > 0 };
+        bool says  = level.objective?.type == "rescue";
+
+        if (any != says)
+        {
+            EditorGUILayout.HelpBox(
+                any ? "Hay rescates puestos, así que se gana rescatándolos, pero el tipo dice 'clear_all'. El tutorial de rescate no va a salir."
+                    : "El tipo dice 'rescue' pero no hay ninguno puesto: se gana limpiando el tablero.",
+                MessageType.Warning);
+
+            if (GUILayout.Button(any ? "Poner el tipo en 'rescue'" : "Poner el tipo en 'clear_all'"))
+            {
+                level.objective ??= new ObjectiveData();
+                level.objective.type = any ? "rescue" : "clear_all";
+                _dirty = true;
+            }
+        }
+
+        if (obstacles > 0)
+            EditorGUILayout.LabelField($"Obstáculos: {obstacles}", EditorStyles.miniLabel);
+
+        if (!any) return;
+
+        EditorGUILayout.LabelField($"Rescates: {rescues.Count}", EditorStyles.miniLabel);
+
+        for (int i = rescues.Count - 1; i >= 0; i--)
+        {
+            var at = rescues[i];
+            if (at == null) { rescues.RemoveAt(i); continue; }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                string shell = at.layers > 0 ? $" · {at.obstacle}×{at.layers}" : "";
+
+                EditorGUILayout.LabelField($"f{at.row} c{at.col} · {at.Holds()} · {at.match}{shell}",
+                                           EditorStyles.miniLabel);
+
+                if (GUILayout.Button("×", GUILayout.Width(22)))
+                {
+                    rescues.RemoveAt(i);
+                    _dirty       = true;
+                    _reportStale = true;
+                }
+            }
+        }
     }
 
     // ---------------------------------------------------------------- generar
@@ -810,7 +1055,11 @@ public class LevelEditorWindow : EditorWindow
 
     void Save(Entry entry)
     {
+        // Las tres listas en el mismo orden de lectura. Sin ordenar, repintar una celda la manda
+        // al final y el diff del JSON sale lleno de movimientos que no cambian el nivel.
         entry.data.bubbles?.Sort((a, b) => a.row != b.row ? a.row.CompareTo(b.row) : a.col.CompareTo(b.col));
+        SortCells(entry.data.obstacles);
+        SortCells(entry.data.objective?.rescues);
 
         File.WriteAllText(entry.path, JsonUtility.ToJson(entry.data, true));
         AssetDatabase.ImportAsset(entry.path);

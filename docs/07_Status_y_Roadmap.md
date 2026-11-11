@@ -1,6 +1,6 @@
 # Coralia — Status y Roadmap
 
-**Última actualización:** 2026-10-09
+**Última actualización:** 2026-11-11
 
 Documento maestro de estado del proyecto. Si abres uno solo de los docs, **abre este**.
 
@@ -65,8 +65,19 @@ pantalla previa al nivel, y todos los paneles de partida.
 
 ### Tutoriales ✅
 
-`TutorialPanel` con una entrada por mecánica, demostraciones animadas que usan la misma geometría
-que el gameplay, y "una sola vez en la vida" por id.
+`TutorialPanel` con **16 entradas**, una por mecánica: los diez boosters, las tres básicas
+(apuntar, cancelar, cambiar de burbuja) y las tres de rescate y caparazón —`rescue`, `obstacle` y
+`rescue_shell`—.
+
+Cada una trae una demostración animada que se dibuja por código con la misma geometría
+(`HexGridMath`) y el mismo arte (`BubbleCatalog`, `ObstacleCatalog`, `Rescuable`) que el gameplay,
+así que no puede verse distinta de lo que el jugador se va a encontrar. Las que se disparan
+enseñan el gesto completo —mano, mira y burbuja— con el mismo punto de trayectoria que la mira del
+juego.
+
+Cuál sale en cada nivel lo decide **la lista `tutorials` de su JSON y solo ella**, y el panel no
+repite ninguno ya visto. El editor de niveles enseña en cada tutorial en cuántos niveles está
+escrito ya, que es lo que evita que el segundo que lo pida se quede sin explicación.
 
 ### Infraestructura ✅
 
@@ -75,6 +86,11 @@ que el gameplay, y "una sola vez en la vida" por id.
 - Transiciones de escena con fade y burbujas
 - Háptica nativa Android/iOS
 - Resolución dinámica adaptativa
+- **Dos editores de niveles**, que se reparten el trabajo: el de Unity
+  (`Coralia → Editor de niveles`) para calibrar jugando —`LevelDifficultyEstimator`,
+  `LevelShapeLibrary`, probar en Play—, y el **taller web** (`python3 editor/serve.py`) para
+  pintar, que es lo que una ventana de Unity hace peor que un navegador. Los dos escriben el
+  mismo JSON. Ver `editor/README.md`
 - Niveles en JSON. ⚠️ **La carpeta no es el capítulo narrativo**: `Chapter_1/` tiene los **60 del
   MVP** (001 a 060, de "Tu primer disparo" a "El corazón de Coralia"), y los seis capítulos del
   GDD §2.1 caben dentro de esos 60. `Chapter_2..5/` suman otros 150 ya escritos, que son contenido
@@ -92,10 +108,10 @@ el panel de recarga se agota solo. Ver el issue de recalibración de la economí
 ### Top 5 por valor
 
 1. **Fuentes de monedas** — santuario, dailies, misiones o logros. Cualquiera desbloquea la economía
-2. **Revisar y balancear los 60 del MVP** — están escritos, falta jugarlos. Los diez power-ups ya están, así que el balance se puede hacer con el juego completo delante
-3. **Revisar y balancear los 60 del MVP** — están escritos, falta jugarlos
-4. **Audio real** — la infraestructura está, faltan clips
-5. **Santuario** — decidir si `HomeGame` se expande o es pantalla nueva
+2. **Revisar y balancear los 60 del MVP** — están escritos, falta jugarlos. Los diez power-ups ya están, así que el balance se puede hacer con el juego completo delante, y el taller web estima dificultad y umbrales de estrellas con la misma fórmula que Unity
+3. **Audio real** — la infraestructura está, faltan clips
+4. **Santuario** — decidir si `HomeGame` se expande o es pantalla nueva
+5. **Nombres de las criaturas** — hay 20 en el catálogo y solo la tortuga tiene fila en `translations.csv`: el resto sale con su id crudo en el hub y en la ficha
 
 ### Necesario para lanzar, no urgente
 
@@ -117,7 +133,8 @@ docs/
 └── 08_Arte_Assets_Specs.md       ← Specs de producción de arte
 ```
 
-En la raíz: `CLAUDE.md`, el contexto que Claude Code carga al abrir el repo.
+En la raíz: `CLAUDE.md`, el contexto que Claude Code carga al abrir el repo, y
+`editor/README.md`, cómo se usa el taller de niveles web.
 
 ---
 
@@ -136,8 +153,9 @@ coralia/Assets/
   Prefabs/     UI/ Gameplay/ Animals/ Decorations/
   Resources/   translations.csv, Levels/, Chapters/, BoosterCatalog.asset, Audio/
   Sprites/     Bubbles, UI, Game, Animals, Backgrounds, Decorations
-  Editor/      menús de depuración y drawers
+  Editor/      menús de depuración, drawers, editor de niveles y estimador de dificultad
 design/exported/   exports de arte antes de importarlos
+editor/            el taller de niveles web (servidor, extractor y página)
 ```
 
 Detalle de la arquitectura en **GDD §14**.

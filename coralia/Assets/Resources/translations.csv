@@ -298,6 +298,10 @@ chapter.5.name,La Aldea Encendida,The Glowing Village,Il Villaggio Luminoso,Le V
 ui.tutorial.ok,Entendido,Got it,Ho capito,J'ai compris,Verstanden,Entendido
 ui.tutorial.rescue.title,¡Rescata a la criatura!,Rescue the creature!,Salva la creatura!,Sauve la créature !,Rette das Wesen!,Resgata a criatura!
 ui.tutorial.rescue.body,Haz estallar la burbuja que atrapa a la criatura.,Pop the bubble trapping the creature.,Fai scoppiare la bolla che intrappola la creatura.,Fais éclater la bulle qui retient la créature.,Lass die Blase mit der Kreatur platzen.,Estoura a bolha que prende a criatura.
+ui.tutorial.obstacle.title,¡Rompe el caparazón!,Break the shell!,Rompi il guscio!,Brise la coque !,Brich den Panzer!,Parte a carapaça!
+ui.tutorial.obstacle.body,Cualquier match al lado le quita una capa. Al destaparse vuelve su color.,Any match beside it strips one layer. Uncovered its color comes back.,Qualsiasi match accanto toglie uno strato. Scoperta torna il suo colore.,Tout match à côté enlève une couche. Une fois découverte sa couleur revient.,Jedes Match daneben nimmt eine Schicht. Freigelegt kommt seine Farbe zurück.,Qualquer match ao lado tira uma camada. Destapada volta a sua cor.
+ui.tutorial.rescue_shell.title,¡Está bajo caparazón!,It's under a shell!,È sotto un guscio!,Elle est sous une coque !,Es steckt unter einem Panzer!,Está sob uma carapaça!
+ui.tutorial.rescue_shell.body,Rómpele las capas y luego haz match con su color para liberarlo.,Strip its layers then match its color to set it free.,Togli gli strati e poi fai match col suo colore per liberarlo.,Enlève les couches puis fais un match de sa couleur pour le libérer.,Nimm die Schichten weg und mache dann ein Match in seiner Farbe.,Tira as camadas e depois faz match com a cor dela para a libertar.
 ui.tutorial.first_steps.title,¡Apunta y dispara!,Aim and shoot!,Mira e spara!,Vise et tire !,Ziele und schieße!,Mira e dispara!
 ui.tutorial.first_steps.body,Apunta y suelta. Junta tres del mismo color.,Aim and release. Match three of the same color.,Mira e rilascia. Unisci tre dello stesso colore.,Vise et relâche. Aligne trois de la même couleur.,Ziele und lass los. Verbinde drei gleiche Farben.,Aponta e solta. Junta três da mesma cor.
 ui.tutorial.swap.title,¡Cambia de burbuja!,Swap your bubble!,Cambia bolla!,Change de bulle !,Tausche die Blase!,Troca de bolha!
@@ -347,3 +351,29 @@ ui.booster.locked,Se desbloquea en el nivel {0},Unlocks at level {0},Si sblocca 
 ui.booster.locked_soon,Se desbloquea más adelante,Unlocks later on,Si sblocca più avanti,Se débloque plus tard,Wird später freigeschaltet,Desbloqueia mais à frente
 ui.tutorial.bomb.title,¡La Bomba de Coral!,The Coral Bomb!,La Bomba di Corallo!,La Bombe de Corail !,Die Korallenbombe!,A Bomba de Coral!
 ui.tutorial.bomb.body,Revienta todo lo que la rodea sin importar el color.,Blows up everything around it whatever the color.,Fa esplodere tutto intorno a prescindere dal colore.,Fait exploser tout autour quelle que soit la couleur.,Sprengt alles ringsum egal welche Farbe.,Rebenta tudo à volta seja qual for a cor.
+creature.turtle.name,Tortuga,Turtle,Tartaruga,Tortue,Schildkröte,Tartaruga
+object.antique_chest.name,Cofre antiguo,Antique Chest,Forziere antico,Coffre ancien,Antike Truhe,Baú antigo
+object.glass_bottle.name,Botella de cristal,Glass Bottle,Bottiglia di vetro,Bouteille en verre,Glasflasche,Garrafa de vidro
+object.antique_compass.name,Brújula antigua,Antique Compass,Bussola antica,Boussole ancienne,Antiker Kompass,Bússola antiga
+object.rusted_anchor.name,Ancla oxidada,Rusted Anchor,Ancora arrugginita,Ancre rouillée,Rostiger Anker,Âncora enferrujada
+object.ships_helm.name,Timón del barco,Ship's Helm,Timone della nave,Barre du navire,Steuerrad,Leme do navio
+object.antique_map.name,Mapa antiguo,Antique Map,Mappa antica,Carte ancienne,Antike Karte,Mapa antigo
+object.rusted_key.name,Llave oxidada,Rusted Key,Chiave arrugginita,Clé rouillée,Rostiger Schlüssel,Chave enferrujada
+object.sunken_barrel.name,Barril hundido,Sunken Barrel,Barile affondato,Tonneau englouti,Versunkenes Fass,Barril afundado
+object.sunken_cannon.name,Cañón hundido,Sunken Cannon,Cannone affondato,Canon englouti,Versunkene Kanone,Canhão afundado
+object.stone_tablet.name,Tablilla de piedra,Stone Tablet,Tavoletta di pietra,Tablette de pierre,Steintafel,Tábua de pedra
+object.ancient_amphora.name,Ánfora antigua,Ancient Amphora,Anfora antica,Amphore ancienne,Antike Amphore,Ânfora antiga
+object.old_helmet.name,Yelmo antiguo,Old Helmet,Elmo antico,Heaume ancien,Alter Helm,Elmo antigo
+object.shipwreck_plank.name,Tablón del naufragio,Shipwreck Plank,Asse del relitto,Planche d'épave,Wrackplanke,Tábua do naufrágio
+object.antique_diving_helmet.name,Escafandra antigua,Antique Diving Helmet,Scafandro antico,Scaphandre ancien,Antiker Taucherhelm,Escafandro antigo
+object.sunken_lantern.name,Farol sumergido,Sunken Lantern,Lanterna sommersa,Lanterne immergée,Versunkene Laterne,Lanterna submersa
+object.pocket_watch.name,Reloj de bolsillo,Pocket Watch,Orologio da tasca,Montre de poche,Taschenuhr,Relógio de bolso
+object.ships_bell.name,Campana del barco,Ship's Bell,Campana della nave,Cloche du navire,Schiffsglocke,Sino do navio
+object.underwater_crystal.name,Cristal submarino,Underwater Crystal,Cristallo sottomarino,Cristal sous-marin,Unterwasserkristall,Cristal submarino
+object.giant_shell.name,Concha gigante,Giant Shell,Conchiglia gigante,Coquillage géant,Riesenmuschel,Concha gigante
+object.fragment_ruin.name,Arco en ruinas,Ruined Arch,Arco in rovina,Arche en ruine,Verfallener Bogen,Arco em ruínas
+obstacle.ice.name,Hielo,Ice,Ghiaccio,Glace,Eis,Gelo
+obstacle.metal.name,Metal,Metal,Metallo,Métal,Metall,Metal
+obstacle.wood.name,Madera,Wood,Legno,Bois,Holz,Madeira
+obstacle.stone.name,Piedra,Stone,Pietra,Pierre,Stein,Pedra
+obstacle.glass.name,Vidrio,Glass,Vetro,Verre,Glas,Vidro

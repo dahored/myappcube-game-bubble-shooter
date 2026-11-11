@@ -91,10 +91,21 @@ public static class Rescuable
         ObjectCatalog.Instance != null ? ObjectCatalog.Instance.Ids : System.Array.Empty<string>();
 
     // El nombre traducido, con el id crudo de reserva: en pantalla es peor un hueco en blanco que
-    // un "coqui" sin traducir, que al menos dice cuál falta.
+    // un "turtle" sin traducir, que al menos dice cuál falta.
     //
-    // La misma clave para criaturas y objetos. Son dos catálogos pero una sola pregunta —cómo se
-    // llama esto—, y dos prefijos serían dos sitios donde buscar en el CSV.
-    public static string Name(string id) =>
-        string.IsNullOrEmpty(id) ? "" : LocaleManager.Get($"creature.{id}.name", id);
+    // La clave la da SU catálogo, que es quien sabe bajo qué prefijo se traduce lo suyo. Escrita
+    // acá sería la misma fórmula en dos sitios, y el día que una cambiara la otra se quedaría.
+    public static string Name(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return "";
+
+        var catalog = From(id);
+
+        // Un id que no está en ningún catálogo no tiene prefijo propio. Se le pregunta igual —por
+        // si el CSV lo tiene escrito de antes— y si tampoco, sale el id crudo.
+        string key = catalog != null ? catalog.NameKeyFor(id) : $"creature.{id}.name";
+
+        return LocaleManager.Get(key, id);
+    }
+
 }
