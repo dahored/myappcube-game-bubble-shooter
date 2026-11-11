@@ -110,8 +110,7 @@ el panel de recarga se agota solo. Ver el issue de recalibración de la economí
 1. **Fuentes de monedas** — santuario, dailies, misiones o logros. Cualquiera desbloquea la economía
 2. **Revisar y balancear los 60 del MVP** — están escritos, falta jugarlos. Los diez power-ups ya están, así que el balance se puede hacer con el juego completo delante, y el taller web estima dificultad y umbrales de estrellas con la misma fórmula que Unity
 3. **Audio real** — la infraestructura está, faltan clips
-4. **Santuario** — decidir si `HomeGame` se expande o es pantalla nueva
-5. **Nombres de las criaturas** — hay 20 en el catálogo y solo la tortuga tiene fila en `translations.csv`: el resto sale con su id crudo en el hub y en la ficha
+4. **Santuario** — decidir si `HomeGame` se expande o es pantalla nueva. Ya hay 20 criaturas y 20 objetos rescatables, los dos con nombre en los seis idiomas, y no hay dónde enseñarlos
 
 ### Necesario para lanzar, no urgente
 
