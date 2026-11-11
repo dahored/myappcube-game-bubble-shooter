@@ -48,6 +48,9 @@ public class TutorialElectricRayDemo : MonoBehaviour
     [Range(0.1f, 0.6f)]
     [SerializeField] float dotSize = 0.2f;
 
+    [Tooltip("El punto de la línea de trayectoria. El mismo de la mira del juego, para que apuntar se vea igual acá que jugando.\n\nVacío cae al destello redondo que se dibuja por código.")]
+    [SerializeField] Sprite dotSprite;
+
     [Tooltip("Color de los puntos.")]
     [SerializeField] Color dotColor = new(1f, 1f, 1f, 0.9f);
 
@@ -171,7 +174,7 @@ public class TutorialElectricRayDemo : MonoBehaviour
 
         for (int i = 0; i < dots; i++)
         {
-            var dot = Spawn("Dot", SparkleTextures.Glow, size * dotSize);
+            var dot = Spawn("Dot", dotSprite != null ? dotSprite : SparkleTextures.Glow, size * dotSize);
             dot.color   = dotColor;
             dot.enabled = false;
             _trail.Add(dot);
