@@ -13,12 +13,161 @@ MonoBehaviour:
   m_Name: CreatureCatalog
   m_EditorClassIdentifier: Assembly-CSharp::CreatureCatalog
   entries:
+  - id: angelfish_fe
+    icon: {fileID: 6740244376260901819, guid: 64358c5ff86de48e7a2e7174a5d21dbb, type: 3}
+    frames:
+    - {fileID: 6740244376260901819, guid: 64358c5ff86de48e7a2e7174a5d21dbb, type: 3}
+    - {fileID: -4249746767406549761, guid: 1f754fe6991414600b600a5612496165, type: 3}
+    - {fileID: 2677543244115346722, guid: 3e30d5e35829d4ceeafb9cb07106e52b, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: clam
+    icon: {fileID: -488698168087384284, guid: d84e445c42ced4b27992337359719ba5, type: 3}
+    frames: []
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: coral
+    icon: {fileID: 3273187744099624924, guid: 7339f5ad064e44c36b86feefbff345de, type: 3}
+    frames:
+    - {fileID: 3273187744099624924, guid: 7339f5ad064e44c36b86feefbff345de, type: 3}
+    - {fileID: -7218002868829221667, guid: 41ab1f606b00c4f06b06e5e9ff29fe48, type: 3}
+    - {fileID: -3575073456567968027, guid: 51236d987a683499fa8629419293e64f, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: crab
+    icon: {fileID: -8781757214100938709, guid: b7278331b42b04c47a416f0341d377ec, type: 3}
+    frames:
+    - {fileID: -8781757214100938709, guid: b7278331b42b04c47a416f0341d377ec, type: 3}
+    - {fileID: -5809922520229565362, guid: 1cb2d8dbf027f42838e76b4de59eece8, type: 3}
+    - {fileID: -6791061482634316489, guid: d33dd68a904854193ab2805a1b977fca, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: dolphin
+    icon: {fileID: 2248702022733413791, guid: 3ecd9da750af34c2ba189aa329d1b2db, type: 3}
+    frames:
+    - {fileID: 2248702022733413791, guid: 3ecd9da750af34c2ba189aa329d1b2db, type: 3}
+    - {fileID: 531207264692600854, guid: 2a15545df7c6543d5ac62905f9e7e5fe, type: 3}
+    - {fileID: 8020310639270735144, guid: 4509bac85d61949b2b9c65b438d3fa17, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: electriceel
+    icon: {fileID: 674371136069486715, guid: 3303a55f300d14a71a81b792d1f37a68, type: 3}
+    frames:
+    - {fileID: 674371136069486715, guid: 3303a55f300d14a71a81b792d1f37a68, type: 3}
+    - {fileID: -5885990910303271326, guid: ee6b1d711202c482691648a54a4b29ad, type: 3}
+    - {fileID: -4899917795767877118, guid: bcc59d19c92c14ffbb747353dffa1576, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: jellyfish
+    icon: {fileID: 5462400059112648395, guid: a4b9c5beecf9a4286a6a9260399760bb, type: 3}
+    frames:
+    - {fileID: 5462400059112648395, guid: a4b9c5beecf9a4286a6a9260399760bb, type: 3}
+    - {fileID: 4955443203711235969, guid: 1d247c1f9e65345159d949bd8af5b703, type: 3}
+    - {fileID: -1629539381923483857, guid: 6f2494e211df04f809ab2259ffbce3da, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: lenguado
+    icon: {fileID: -7190600870638844690, guid: 3bd1d8c3e87654aadaef5873f28c918a, type: 3}
+    frames:
+    - {fileID: -7190600870638844690, guid: 3bd1d8c3e87654aadaef5873f28c918a, type: 3}
+    - {fileID: 2986718488592782697, guid: 1b3a59843623846b9a0b9aee0361d3d9, type: 3}
+    - {fileID: -7882971092817788568, guid: 29df770083ca845489d75c12c2b719e0, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: lobster
+    icon: {fileID: 5071766062666551965, guid: 25bec18fe930a4274bd913ec25737d54, type: 3}
+    frames:
+    - {fileID: 5071766062666551965, guid: 25bec18fe930a4274bd913ec25737d54, type: 3}
+    - {fileID: -2959848197392625313, guid: e2d31ec41e0ae4b279608296c0d6dfcb, type: 3}
+    - {fileID: -5653705017095120209, guid: 777b04a74714844f1a1c73254a29e531, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: mantaray
+    icon: {fileID: 322424094381044149, guid: af48f9c5d70904b408c8df93d28e5c45, type: 3}
+    frames:
+    - {fileID: 322424094381044149, guid: af48f9c5d70904b408c8df93d28e5c45, type: 3}
+    - {fileID: 933391352380380799, guid: 7c7ccacd4f31347f6bac2cdb0d2ff1c4, type: 3}
+    - {fileID: -3244608167010207141, guid: bc150612d15824926aa4a9d47fea68c1, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: morayeel
+    icon: {fileID: -8340658406779940827, guid: e5db33ebd211a4f6aab7ab2750472131, type: 3}
+    frames:
+    - {fileID: -8340658406779940827, guid: e5db33ebd211a4f6aab7ab2750472131, type: 3}
+    - {fileID: -1904866235141062656, guid: 381466883dbf94c7b98eb4cbc9bee60e, type: 3}
+    - {fileID: 9140344108102777431, guid: 51eb93bae31ce4ab1bd5a6d3a253e140, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: octupus
+    icon: {fileID: -5358078164763003774, guid: 3a4f92ca150be4825aa98664b36ce3e4, type: 3}
+    frames:
+    - {fileID: -5358078164763003774, guid: 3a4f92ca150be4825aa98664b36ce3e4, type: 3}
+    - {fileID: -8357812608397844844, guid: cffe06dab0c324fffa1918a0080f7da6, type: 3}
+    - {fileID: 1675637496561873640, guid: 51cba9c00e21e4b76a053bd3c084791e, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: pufferfish
+    icon: {fileID: 4866182238925101983, guid: 3fb4be7fcf8464404a79ab5633ae48b8, type: 3}
+    frames:
+    - {fileID: 4866182238925101983, guid: 3fb4be7fcf8464404a79ab5633ae48b8, type: 3}
+    - {fileID: 1555598760733763917, guid: da1522b8e760f44f9a3aa7ab145a2988, type: 3}
+    - {fileID: 8076834513220097984, guid: 39485c44f339242fdb0660a842083e07, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: seahorse
+    icon: {fileID: 2727363536787704940, guid: b8dc67f030e474750b2f3dc286a85a5a, type: 3}
+    frames:
+    - {fileID: 2727363536787704940, guid: b8dc67f030e474750b2f3dc286a85a5a, type: 3}
+    - {fileID: 8800253388459294181, guid: 2efbff3cc37544f3baa2a8123e51e9e2, type: 3}
+    - {fileID: -7126447409115464678, guid: 10f986a1c0f2e4c089382eb825d29ca1, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: seaotter
+    icon: {fileID: 3293463238049684757, guid: c854903481a35480791a06a2fe1baa9c, type: 3}
+    frames:
+    - {fileID: 3293463238049684757, guid: c854903481a35480791a06a2fe1baa9c, type: 3}
+    - {fileID: -6655003792688055640, guid: b6e264ed7d5b249c5ad97a9f0adc5229, type: 3}
+    - {fileID: 8888869339231497393, guid: 297ed24e6bc7f443087b49593e892241, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: shark
+    icon: {fileID: 8861480726252175340, guid: 4214497d32f8e489cba40a34675c9c0e, type: 3}
+    frames:
+    - {fileID: 8861480726252175340, guid: 4214497d32f8e489cba40a34675c9c0e, type: 3}
+    - {fileID: -3707498833086232314, guid: 65ea18f583c2d4a4eae6724a493201d3, type: 3}
+    - {fileID: -209652114293440153, guid: 5cf31f163b80e44cc971e6db9211d021, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: sponge
+    icon: {fileID: 8386587460383133869, guid: d2ff72244ebaf405e8b055ca30166a3d, type: 3}
+    frames:
+    - {fileID: 8386587460383133869, guid: d2ff72244ebaf405e8b055ca30166a3d, type: 3}
+    - {fileID: -1852482573724524860, guid: 0623d630f736c46979bdd2adc8e4963c, type: 3}
+    - {fileID: 1046176867640411927, guid: 10e3a6a18dee9460f95b551842554087, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: starfish
+    icon: {fileID: -6987148479580219570, guid: cdc894a3e299a4b2aadb2d9897fcb21d, type: 3}
+    frames:
+    - {fileID: -6987148479580219570, guid: cdc894a3e299a4b2aadb2d9897fcb21d, type: 3}
+    - {fileID: -7693190483102060887, guid: 73e920fcbd77f4e5ab0696ae154204f9, type: 3}
+    - {fileID: 7933377957855421258, guid: d90b12d3f73cf464ab44c58412df21ab, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
   - id: turtle
     icon: {fileID: -429890163646538327, guid: 140884d8418114ecd8d7813e2eef41f5, type: 3}
     frames:
     - {fileID: -429890163646538327, guid: 140884d8418114ecd8d7813e2eef41f5, type: 3}
     - {fileID: 8772218596750800175, guid: f8ed4c6997ce24faa9d446b68d97bf10, type: 3}
     - {fileID: -7815261973968355752, guid: 3e90d8fa0316f4323a07e821dc5f5a30, type: 3}
+    framesPerSecond: 4
+    rescueClip: {fileID: 0}
+  - id: walrus
+    icon: {fileID: 7100313373612036279, guid: c81401b63adaf4aeaab45f3a9428c85c, type: 3}
+    frames:
+    - {fileID: 7100313373612036279, guid: c81401b63adaf4aeaab45f3a9428c85c, type: 3}
+    - {fileID: -885620194284282168, guid: 3ca5bc84763ee45aca495149840ee400, type: 3}
+    - {fileID: 6540146930714413964, guid: 13124dca105d9475097431647a70e508, type: 3}
     framesPerSecond: 4
     rescueClip: {fileID: 0}
   genericIcon: {fileID: -8212066693482842052, guid: 0864e55d1a7a14d8ab1a72eedbaeaedc, type: 3}
