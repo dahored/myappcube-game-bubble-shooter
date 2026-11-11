@@ -16,21 +16,27 @@
         1230,
         1700
     ],
-    "obstacles": [
-        { "row": 6, "col": 1, "color": "red", "obstacle": "ice", "layers": 3 },
-        { "row": 6, "col": 8, "color": "red", "obstacle": "metal", "layers": 2 },
-        { "row": 7, "col": 5, "color": "yellow", "obstacle": "stone", "layers": 1 }
-    ],
+    "obstacles": [],
+    "tutorials": ["obstacle"],
     "objective": {
-        "type": "clear_all",
+        "type": "rescue",
         "creature_id": "",
-        "creature_position": []
+        "creature_position": [],
+        "rescues": [
+            { "row": 0, "col": 8, "match": "green", "holds": "turtle" },
+            { "row": 2, "col": 9, "match": "green", "holds": "turtle" },
+            { "row": 5, "col": 0, "match": "red", "holds": "turtle" },
+            { "row": 5, "col": 1, "match": "red", "holds": "turtle" },
+            { "row": 8, "col": 2, "match": "blue", "holds": "turtle" },
+            { "row": 8, "col": 5, "match": "green", "holds": "antique_chest" },
+            { "row": 8, "col": 8, "match": "red", "holds": "giant_shell", "obstacle": "ice", "layers": 2 }
+        ]
     },
     "bubbles": [
         {
             "row": 0,
             "col": 0,
-            "color": "red"
+            "color": "yellow"
         },
         {
             "row": 0,
@@ -45,7 +51,7 @@
         {
             "row": 0,
             "col": 3,
-            "color": "green"
+            "color": "yellow"
         },
         {
             "row": 0,
@@ -66,11 +72,6 @@
             "row": 0,
             "col": 7,
             "color": "green"
-        },
-        {
-            "row": 0,
-            "col": 8,
-            "color": "red"
         },
         {
             "row": 0,
@@ -135,7 +136,7 @@
         {
             "row": 2,
             "col": 2,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 2,
@@ -148,24 +149,34 @@
             "color": "red"
         },
         {
-            "row": 2,
-            "col": 9,
-            "color": "green"
-        },
-        {
             "row": 3,
             "col": 0,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 3,
             "col": 1,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 3,
             "col": 2,
-            "color": "blue"
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 3,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 4,
+            "color": "red"
+        },
+        {
+            "row": 3,
+            "col": 5,
+            "color": "red"
         },
         {
             "row": 3,
@@ -190,7 +201,7 @@
         {
             "row": 4,
             "col": 1,
-            "color": "blue"
+            "color": "red"
         },
         {
             "row": 4,
@@ -210,16 +221,6 @@
         {
             "row": 4,
             "col": 9,
-            "color": "red"
-        },
-        {
-            "row": 5,
-            "col": 0,
-            "color": "red"
-        },
-        {
-            "row": 5,
-            "col": 1,
             "color": "red"
         },
         {
@@ -245,6 +246,11 @@
         {
             "row": 6,
             "col": 0,
+            "color": "red"
+        },
+        {
+            "row": 6,
+            "col": 1,
             "color": "red"
         },
         {
@@ -279,6 +285,11 @@
         },
         {
             "row": 6,
+            "col": 8,
+            "color": "red"
+        },
+        {
+            "row": 6,
             "col": 9,
             "color": "red"
         },
@@ -309,6 +320,11 @@
         },
         {
             "row": 7,
+            "col": 5,
+            "color": "yellow"
+        },
+        {
+            "row": 7,
             "col": 6,
             "color": "yellow"
         },
@@ -329,11 +345,6 @@
         },
         {
             "row": 8,
-            "col": 2,
-            "color": "blue"
-        },
-        {
-            "row": 8,
             "col": 3,
             "color": "green"
         },
@@ -344,22 +355,12 @@
         },
         {
             "row": 8,
-            "col": 5,
-            "color": "green"
-        },
-        {
-            "row": 8,
             "col": 6,
             "color": "yellow"
         },
         {
             "row": 8,
             "col": 7,
-            "color": "red"
-        },
-        {
-            "row": 8,
-            "col": 8,
             "color": "red"
         }
     ]
