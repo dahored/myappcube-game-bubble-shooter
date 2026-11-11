@@ -351,7 +351,26 @@ ui.booster.locked,Se desbloquea en el nivel {0},Unlocks at level {0},Si sblocca 
 ui.booster.locked_soon,Se desbloquea más adelante,Unlocks later on,Si sblocca più avanti,Se débloque plus tard,Wird später freigeschaltet,Desbloqueia mais à frente
 ui.tutorial.bomb.title,¡La Bomba de Coral!,The Coral Bomb!,La Bomba di Corallo!,La Bombe de Corail !,Die Korallenbombe!,A Bomba de Coral!
 ui.tutorial.bomb.body,Revienta todo lo que la rodea sin importar el color.,Blows up everything around it whatever the color.,Fa esplodere tutto intorno a prescindere dal colore.,Fait exploser tout autour quelle que soit la couleur.,Sprengt alles ringsum egal welche Farbe.,Rebenta tudo à volta seja qual for a cor.
+creature.angelfish_fe.name,Pez ángel,Angelfish,Pesce angelo,Poisson-ange,Kaiserfisch,Peixe-anjo
+creature.clam.name,Almeja,Clam,Vongola,Palourde,Muschel,Amêijoa
+creature.coral.name,Coral,Coral,Corallo,Corail,Koralle,Coral
+creature.crab.name,Cangrejo,Crab,Granchio,Crabe,Krabbe,Caranguejo
+creature.dolphin.name,Delfín,Dolphin,Delfino,Dauphin,Delfin,Golfinho
+creature.electriceel.name,Anguila eléctrica,Electric Eel,Anguilla elettrica,Anguille électrique,Zitteraal,Enguia-elétrica
+creature.jellyfish.name,Medusa,Jellyfish,Medusa,Méduse,Qualle,Alforreca
+creature.lenguado.name,Lenguado,Sole,Sogliola,Sole,Seezunge,Linguado
+creature.lobster.name,Langosta,Lobster,Aragosta,Homard,Hummer,Lagosta
+creature.mantaray.name,Manta,Manta Ray,Manta,Raie manta,Mantarochen,Manta
+creature.morayeel.name,Morena,Moray Eel,Murena,Murène,Muräne,Moreia
+creature.octupus.name,Pulpo,Octopus,Polpo,Pieuvre,Krake,Polvo
+creature.pufferfish.name,Pez globo,Pufferfish,Pesce palla,Poisson-globe,Kugelfisch,Peixe-balão
+creature.seahorse.name,Caballito de mar,Seahorse,Cavalluccio marino,Hippocampe,Seepferdchen,Cavalo-marinho
+creature.seaotter.name,Nutria marina,Sea Otter,Lontra marina,Loutre de mer,Seeotter,Lontra-marinha
+creature.shark.name,Tiburón,Shark,Squalo,Requin,Hai,Tubarão
+creature.sponge.name,Esponja,Sponge,Spugna,Éponge,Schwamm,Esponja
+creature.starfish.name,Estrella de mar,Starfish,Stella marina,Étoile de mer,Seestern,Estrela-do-mar
 creature.turtle.name,Tortuga,Turtle,Tartaruga,Tortue,Schildkröte,Tartaruga
+creature.walrus.name,Morsa,Walrus,Tricheco,Morse,Walross,Morsa
 object.antique_chest.name,Cofre antiguo,Antique Chest,Forziere antico,Coffre ancien,Antike Truhe,Baú antigo
 object.glass_bottle.name,Botella de cristal,Glass Bottle,Bottiglia di vetro,Bouteille en verre,Glasflasche,Garrafa de vidro
 object.antique_compass.name,Brújula antigua,Antique Compass,Bussola antica,Boussole ancienne,Antiker Kompass,Bússola antiga
