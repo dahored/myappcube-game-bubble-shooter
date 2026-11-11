@@ -256,7 +256,10 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
     }
 
     // Lo apagado que queda el cuerpo debajo del caparazón.
-    const float SHELL_SHADE = 0.5f;
+    //
+    // Público porque la demostración del tutorial compone sus burbujas a mano, sin pasar por
+    // esta clase, y una burbuja tapada que allí se viera a otro brillo enseñaría algo que no es.
+    public const float SHELL_SHADE = 0.5f;
 
     // El color de debajo se ve APAGADO mientras quede caparazón, y recupera su brillo al quedar
     // destapado.
@@ -481,13 +484,24 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         }
     }
 
+    // La escala de una burbuja QUIETA. Todas las sacudidas de abajo —el tirón del golpe, el
+    // encogerse antes de caer, el estirón de la caída, el rebote al posarse, el gesto de
+    // cambiar de color— deforman alrededor de esta y vuelven exactamente a ella.
+    //
+    // Antes cada una guardaba la escala que encontraba al empezar y restauraba ESA. Dos que se
+    // solaparan —y se solapan todo el rato: una burbuja que acusa un golpe mientras baja, o que
+    // recibe dos derrumbes seguidos— hacían que la segunda tomara por reposo una deformada a
+    // medias, y al terminar la dejaba así para siempre. Cada solape lo empeoraba, así que a los
+    // pocos disparos las burbujas eran óvalos (reportado por Diego).
+    static readonly Vector3 REST = Vector3.one;
+
     // El tirón de acusar el golpe: la burbuja se sacude en el sitio y vuelve.
     //
     // En la ESCALA y no en la posición: la posición ya la escriben el traslado y el empujón, y
     // una sacudida que se pelee con ellos deja la burbuja descuadrada en su celda.
     IEnumerator Jolt()
     {
-        var start = transform.localScale;
+        var start = REST;
 
         for (float t = 0f; t < JOLT_TIME; t += Time.deltaTime)
         {
@@ -771,7 +785,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
 
         // Un pelín más grande mientras se tiñe, y vuelve. Sin el gesto, el cambio de color sobre
         // una burbuja quieta se pierde entre las demás que ya están cambiando.
-        Vector3 baseScale = transform.localScale;
+        Vector3 baseScale = REST;
 
         for (float t = 0f; t < fade; t += Time.deltaTime)
         {
@@ -879,7 +893,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
 
         var     rt    = (RectTransform)transform;
         Vector2 start = rt.anchoredPosition;
-        Vector3 scale = rt.localScale;
+        Vector3 scale = REST;
 
         // Se encoge un poco ANTES de soltarse. Es media décima de nada, pero es lo que hace que
         // se lea como que se deja caer en vez de como que la movieron: toda caída empieza con
@@ -1024,7 +1038,7 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         AudioManager.Instance?.PlayPop(popClip);
         if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
 
-        Vector3 baseScale = transform.localScale;
+        Vector3 baseScale = REST;
         float   t = 0f;
         while (t < POP_DURATION)
         {
