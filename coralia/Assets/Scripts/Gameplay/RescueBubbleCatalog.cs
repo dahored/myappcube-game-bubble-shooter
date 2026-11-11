@@ -71,14 +71,15 @@ public class RescueBubbleCatalog : ScriptableObject
     public AudioClip BurstFor(Recipe recipe) => recipe?.burstClip != null ? recipe.burstClip : sharedBurstClip;
 
     // Lo que suena al romperse una capa. Lo pone el MATERIAL y no la receta: romper hielo suena
-    // a hielo, sin que importe qué haya debajo. Sin clip propio cae en el de la receta, y sin
-    // ese en el común — una capa siempre suena.
-    public AudioClip LayerBurstFor(Recipe recipe)
-    {
-        var clip = recipe != null ? ObstacleCatalog.BreakClip(recipe.obstacle) : null;
-
-        return clip != null ? clip : BurstFor(recipe);
-    }
+    // a hielo, sin que importe qué haya debajo.
+    //
+    // Y si el material no tiene clip, NO suena. Antes caía en el de reventar la burbuja —el del
+    // cristal rompiéndose y la criatura saliendo—, así que romper una capa sonaba exactamente
+    // igual que liberar: el sonido del rescate solo puede sonar cuando se rescata de verdad
+    // (pedido de Diego). Un material mudo se arregla en su catálogo, no tomando prestado el
+    // sonido de otra cosa.
+    public AudioClip LayerBurstFor(Recipe recipe) =>
+        recipe != null ? ObstacleCatalog.BreakClip(recipe.obstacle) : null;
 
     public static AudioClip Burst(Recipe recipe) => Instance != null ? Instance.BurstFor(recipe) : null;
 

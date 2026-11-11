@@ -126,9 +126,6 @@ public class GameplayController : MonoBehaviour
     int        _popScore;     // acumulado disparo a disparo: cada burbuja valió según la racha de SU momento
     int        _victoryBonus;  // el bonus ya topado — lo reparte el remate de disparos
     int        _comboStreak;  // racha actual de disparos consecutivos con match
-    // El id con el que TutorialPanel conoce la explicación del rescate. Constante y no un string
-    // suelto porque el mismo valor tiene que estar escrito igual en el Inspector del panel.
-    const string TUTORIAL_RESCUE = "rescue";
 
     // El booster que acaba de presentarse y hay que dejar cargado en cuanto arranque el nivel.
     Booster _autoLoadBooster;
@@ -769,6 +766,10 @@ public class GameplayController : MonoBehaviour
         var doomed = BoosterRules.LowTideCells(grid, rows);
         if (doomed.Count == 0) yield break;
 
+        // La marea es una jugada propia, así que sus golpes de capa se cuentan aparte de los del
+        // disparo que la precedió.
+        _layerHitThisShot.Clear();
+
         float cross = art != null && art.tideSweepDuration > 0f ? art.tideSweepDuration : DEFAULT_TIDE_CROSS;
         int   trail = art != null && art.tideTrail         > 0  ? art.tideTrail         : DEFAULT_TIDE_TRAIL;
         Color tint  = art != null && art.tideSweepColor.a  > 0f ? art.tideSweepColor    : DEFAULT_TIDE_COLOR;
@@ -881,6 +882,9 @@ public class GameplayController : MonoBehaviour
                 //
                 // Una de cada tantas suena: treinta pops seguidos son ruido, y lo que tiene que
                 // oírse es la ola cruzando.
+                // La marea tampoco se lleva lo acorazado: le quita una capa al pasar.
+                if (ShellAbsorbs(cell, TIDE_POP_LAG)) continue;
+
                 if (grid.TryGetBubble(cell, out var view))
                     view.PlayPopAnimation(TIDE_POP_LAG, removed.Count % TIDE_POP_EVERY == 0 ? art?.burstClip : null);
 
@@ -895,6 +899,8 @@ public class GameplayController : MonoBehaviour
         while (next < pending.Count)
         {
             var cell = pending[next++];
+            if (ShellAbsorbs(cell)) continue;
+
             if (grid.TryGetBubble(cell, out var view)) view.PlayPopAnimation(0f, null);
             grid.RemoveBubble(cell);
             removed.Add(cell);
@@ -902,7 +908,12 @@ public class GameplayController : MonoBehaviour
 
         foreach (var bit in foam) if (bit.rt) Destroy(bit.rt.gameObject);
 
-        _bubblesPopped += doomed.Count;
+        _bubblesPopped += removed.Count;
+
+        // Lo que la ola se llevó y contaba para el objetivo. Faltaba: una criatura en las filas
+        // de abajo desaparecía sin contar, y el nivel quedaba imposible de ganar porque el hub
+        // seguía pidiéndola y ya no estaba en el tablero.
+        CountRescued(removed);
 
         // Por si acaso: las filas de abajo no sostienen a nadie POR DEBAJO, pero en un tablero con
         // huecos una burbuja de más arriba puede estar colgando por un camino que baja hasta acá y
@@ -1743,10 +1754,13 @@ public class GameplayController : MonoBehaviour
             foreach (string id in _level.tutorials)
                 yield return Explain(id);
 
-        // Y el del rescate, que no hace falta escribir: el objetivo del nivel ya lo dice. Si
-        // además está en la lista, el panel no lo repite.
-        if (_level.objective != null && _level.objective.type == "rescue")
-            yield return Explain(TUTORIAL_RESCUE);
+        // Y nada más: manda la lista y solo la lista.
+        //
+        // Acá se deducían del tablero los tres de rescate y caparazón —el nivel que los trae ya
+        // lo dice por sí mismo— y es tentador, pero quita el control: un nivel con las tres cosas
+        // abría tres modales seguidos sin que nadie los hubiera pedido, y elegir uno en el editor
+        // no servía de nada (reportado por Diego). Qué mecánica se explica y dónde es una
+        // decisión de diseño de niveles, igual que para el resto.
     }
 
     IEnumerator Explain(string id)
@@ -2042,6 +2056,14 @@ public class GameplayController : MonoBehaviour
         if (cannon) cannon.CheckAutoSwap();
     }
 
+    // DESTAPAR NO ES LIBERAR. Una burbuja de dos capas cuesta TRES golpes: el primero rompe una
+    // capa, el segundo rompe la otra y la deja a la vista, y el tercero es el que se la lleva y
+    // rescata lo que llevaba dentro (pedido de Diego).
+    //
+    // Destapada vuelve a ser una burbuja normal: recupera su brillo, su color cuenta otra vez
+    // para el match y se la lleva un racimo de los suyos como a cualquier otra. Por eso el tercer
+    // golpe no es un caso aparte — es, literalmente, el match de siempre.
+    //
     // Un golpe es que reviente algo PEGADO a ella: da igual que se fuera en un match, en una
     // explosión o que acabe de aterrizar. Cada golpe le quita la capa de fuera, y la que ya está
     // a la vista queda liberada (GDD §2.2).
@@ -2097,23 +2119,50 @@ public class GameplayController : MonoBehaviour
         }
     }
 
+    // Lo ACORAZADO no se lo lleva nada: pierde UNA capa y se queda donde está.
+    //
+    // La regla vale venga el golpe de donde venga —un match, un poder, la marea— y por eso está
+    // acá y no repartida: con cada camino decidiendo por su cuenta, el caparazón significa cosas
+    // distintas según quién lo golpee, y una criatura bajo tres capas se rescataba de un bombazo
+    // (reportado por Diego).
+    //
+    // Devuelve si la celda SE SALVA de que se la lleven. El golpe se cobra una sola vez por
+    // jugada, igual que el de un match: un poder que alcanza la misma burbuja por dos sitios es
+    // un golpe, no dos.
+    bool ShellAbsorbs(Vector2Int cell, float at = 0f)
+    {
+        if (!grid.TryGetBubble(cell, out var view) || view == null) return false;
+        if (view.LayersLeft <= 0)                                   return false;
+
+        if (_layerHitThisShot.Add(view)) StartCoroutine(HitRescue(cell, at));
+
+        return true;
+    }
+
     IEnumerator HitRescue(Vector2Int cell, float delay)
     {
         if (delay > 0f) yield return new WaitForSeconds(delay);
 
         if (!grid.TryGetBubble(cell, out var view) || view == null) yield break;
 
-        // Con capas, el golpe se queda en el caparazón. Sin ellas, se la lleva.
-        bool bare = view.BreakLayer();
-
-        // Pero un OBSTÁCULO no se lleva: destaparlo no es liberarlo. Lo que queda es la burbuja
-        // de color que el caparazón tapaba, y de esa se encarga un match de su color como de
-        // cualquier otra del tablero. Solo lo que lleva algo dentro se abre al quedar a la vista.
-        if (!bare || !view.IsCreature)
+        // Mientras le quede caparazón, el golpe se lo queda ÉL y nada más — también el que rompe
+        // la última capa. Ese deja la burbuja a la vista, que no es lo mismo que abrirla: lo que
+        // llevaba dentro sigue dentro, y hace falta otro golpe para sacarlo.
+        //
+        // Acá se liberaba al romper la última, y entonces un caparazón de dos capas costaba dos
+        // matches en vez de tres: el que lo destapaba se llevaba la criatura de paso (reportado
+        // por Diego).
+        if (view.LayersLeft > 0)
         {
+            view.BreakLayer();
             AudioManager.Instance?.PlaySfx(view.LayerClip);
             yield break;
         }
+
+        // Y un OBSTÁCULO destapado tampoco se va: lo que queda es la burbuja de color que el
+        // caparazón tapaba, y de esa se encarga un match de su color como de cualquier otra.
+        // Solo lo que lleva algo dentro se abre al quedar a la vista.
+        if (!view.IsCreature) yield break;
 
         // Y estalla como cualquier otra. Quitarla del registro a secas solo la saca de las
         // cuentas: el objeto se quedaba en pantalla para siempre, sin reventar y sin destruirse
@@ -2246,6 +2295,10 @@ public class GameplayController : MonoBehaviour
             if (_targets.Count > 0)
             {
                 if (!_creatureAt.TryGetValue(cell, out index)) continue;
+
+                // Si algo volvió a ocupar la celda, lo que hay ahí no es lo que se fue. Liberar
+                // es que la burbuja SALGA del tablero, y esta sigue dentro.
+                if (grid.IsOccupied(cell)) continue;
 
                 _creatureAt.Remove(cell);   // ya contada: una celda no libera dos veces
 
@@ -3116,6 +3169,10 @@ public class GameplayController : MonoBehaviour
         // Va la PRIMERA porque es el origen: lo demás revienta porque ella lo hizo.
         if (grid.IsOccupied(center) && !hit.Contains(center)) hit.Insert(0, center);
 
+        // Y lo que lleve caparazón sale de la lista: no revienta, pierde una capa. Se quita
+        // ANTES de repartir tiempos y de contar, así que ni cuenta como reventada ni puntúa.
+        hit.RemoveAll(cell => ShellAbsorbs(cell, startDelay));
+
         // Antes de los pops, mientras la burbuja del poder todavía existe para marcar el lugar.
         //
         // Con retraso se lanza desde el PUNTO y no desde la burbuja: para cuando llegue su turno
@@ -3374,21 +3431,20 @@ public class GameplayController : MonoBehaviour
         // Sin esto el derrumbe regalaba el rescate entero: tres capas deshechas por suerte, con
         // un caparazón que solo significaba algo cuando el golpe venía de un disparo.
         //
-        // La ÚLTIMA capa no se agarra CUANDO LLEVA ALGO DENTRO: romperla es exactamente lo que
-        // libera, igual que el último golpe de un match (ver HitRescue). Así tres capas son tres
-        // desprendimientos y una es uno — el caparazón cuesta lo mismo venga el golpe de donde
-        // venga.
+        // Mientras le quede UNA capa se agarra, lleve algo dentro o no: destaparse no es
+        // abrirse, ni de un golpe ni de un derrumbe. Lo que se desprende SIN caparazón sí se cae,
+        // y si llevaba algo dentro eso es liberarlo — es el mismo tercer golpe de un match, dado
+        // por el tablero en vez de por el jugador.
         //
-        // Un OBSTÁCULO sí se agarra con su última capa, porque destaparlo no lo libera: debajo
-        // queda la burbuja de color. Soltándolo con el resto, un obstáculo a medio abrir se caía
-        // al tumbar lo que tenía encima y el caparazón que le quedaba no servía de nada
-        // (reportado por Diego).
+        // Así el caparazón cuesta lo mismo venga el golpe de donde venga: dos capas son dos
+        // desprendimientos y el tercero se la lleva.
         var clinging = new List<(Vector2Int from, BubbleView view)>();
 
         for (int i = collapsing.Count - 1; i >= 0; i--)
         {
             if (!grid.TryGetBubble(collapsing[i], out var shelled) || shelled == null) continue;
-            if (shelled.LayersLeft <= (shelled.IsCreature ? 1 : 0))                    continue;
+
+            if (shelled.LayersLeft <= 0)                                           continue;
 
             clinging.Add((collapsing[i], shelled));
 
@@ -3427,8 +3483,9 @@ public class GameplayController : MonoBehaviour
     // salir, igual que pide tres matches: el caparazón cuesta lo mismo venga el golpe de donde
     // venga.
     //
-    // Si no queda dónde agarrarse —el tablero se vació— se libera. No hay tablero del que
-    // desprenderse, y dejarla flotando sola sería un nivel que no se puede terminar.
+    // Si no queda dónde agarrarse —el tablero se vació debajo— sube al TECHO, que es un agarre
+    // que no depende de que quede nada. Liberarla ahí sería rescatarla sin romperle las capas, y
+    // dejarla flotando sola sería un nivel que no se puede terminar; arriba sigue en juego.
     void ClingOn(List<(Vector2Int from, BubbleView view)> clinging, HashSet<Vector2Int> removed, float delay)
     {
         foreach (var (from, view) in clinging)
@@ -3437,7 +3494,9 @@ public class GameplayController : MonoBehaviour
 
             // Una a una, no todas de golpe: SlideBubbleTo la deja registrada en su celda nueva, y
             // así la siguiente ya la ve ocupada en vez de mudarse al mismo hueco.
-            var landing = grid.FindLandingCell(from);
+            // Y si no hay, el techo. Solo cuando tampoco ahí cabe —diez burbujas en la fila 0—
+            // se la lleva la caída, que es el único caso en que no queda ningún sitio.
+            var landing = grid.FindLandingCell(from) ?? grid.FreeCeilingCellNear(from.x);
 
             if (!landing.HasValue)
             {
@@ -3474,7 +3533,27 @@ public class GameplayController : MonoBehaviour
             // sonidos no se pisan: la capa salta antes de moverse y esto es al final del viaje,
             // así que entre uno y otro hay medio segundo largo. Callándolo cuando había rotura
             // —que es casi siempre— el aterrizaje no se oía nunca (reportado por Diego).
+            // La celda a la que baja puede ser justo la que acaba de dejar OTRA burbuja de
+            // rescate al reventar. Esa ya salió del tablero, así que se cuenta AHORA, antes de
+            // que la mudanza de abajo le pise el registro.
+            //
+            // Las dos mitades de este cruce dieron un bug cada una. Sin contar acá, el registro
+            // se perdía y esa criatura no la sumaba nadie: tres tortugas en el tablero y el
+            // objetivo solo bajaba una. Y sin sacar la celda de 'removed', el recuento de después
+            // la encontraba vacía cuando ya no lo estaba y daba por rescatado al recién llegado,
+            // con su caparazón entero (los dos reportados por Diego).
+            //
+            // El fondo es que una celda no sirve de registro de quién estaba en ella: entre que
+            // la burbuja se va y que se cuenta, otra puede haberse mudado al hueco.
+            if (removed.Contains(landing.Value))
+                CountRescued(new HashSet<Vector2Int> { landing.Value });
+
             grid.SlideBubbleTo(view, landing.Value, delay + shed, slideLandClip);
+
+            // Y esa celda deja de ser una de las que se vaciaron en esta jugada, porque acaba de
+            // volver a llenarse. 'removed' significa "aquí ya no hay nada", y todo lo que lo lee
+            // después —el recuento del objetivo, las minas— cuenta con eso.
+            removed.Remove(landing.Value);
 
             // Las dos tablas van POR CELDA, así que la mudanza hay que escribirla también en
             // ellas: con la clave vieja la criatura dejaba de contar para el objetivo y el nivel

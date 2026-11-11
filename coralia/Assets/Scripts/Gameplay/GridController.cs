@@ -517,6 +517,16 @@ public class GridController : MonoBehaviour, IBoardView
             // porque no hay receta de la que sacarlo.
             if (at.HasOwnShell) view.SetShell(at.Shell(), at.ShellClip());
 
+            // Pedir tres capas y recibir una no da error en ninguna parte: el material mal
+            // escrito, el que no tiene los tres sprites puestos, o un 'layers' sin 'obstacle' al
+            // lado dejan la burbuja con menos golpes —o con ninguno— y se ve igual que si el
+            // nivel lo hubiera querido así. Un rescate de tres capas que se abre al primer tiro
+            // solo se descubre jugándolo.
+            if (at.layers > view.LayersLeft)
+                Debug.LogWarning($"[GridController] La celda {at.Cell} pide {at.layers} capa(s) " +
+                    (at.HasOwnShell ? $"de '{at.obstacle}'" : $"por la receta '{at.bubble}'") +
+                    $" y se queda en {view.LayersLeft}: va a costar {view.LayersLeft} golpe(s) en vez de {at.layers}.");
+
             // El caparazón se esconde YA, antes del primer frame: llega al final de la
             // presentación del nivel, no mientras el telón todavía está subiendo
             // (GameplayController.OpenLevel).
@@ -980,6 +990,35 @@ public class GridController : MonoBehaviour, IBoardView
         }
 
         return null;
+    }
+
+    // El techo siempre sirve de agarre: no depende de que quede nada del tablero.
+    //
+    // Es la última red para lo que se desprende CON caparazón y no encuentra dónde posarse,
+    // porque el tablero se vació debajo. Soltarlo sería liberarlo sin romperle las capas, que es
+    // justo lo que el caparazón tiene que impedir. Arriba sigue en juego: el jugador le pega
+    // burbujas al lado y lo abre a matches como a cualquier otra (pedido de Diego).
+    //
+    // La más cercana a su columna, para que el viaje se lea como subir y no como aparecer en la
+    // otra punta. Null solo si el techo está lleno.
+    public Vector2Int? FreeCeilingCellNear(int col)
+    {
+        Vector2Int? best = null;
+        int closest = int.MaxValue;
+
+        for (int c = 0; c < HexGridMath.ColsInRow(0); c++)
+        {
+            var cell = new Vector2Int(c, 0);
+            if (IsOccupied(cell)) continue;
+
+            int distance = Mathf.Abs(c - col);
+            if (distance >= closest) continue;
+
+            closest = distance;
+            best    = cell;
+        }
+
+        return best;
     }
 
     const int LANDING_RINGS = 12;   // el grid de diseño tiene doce filas: más allá no hay tablero
