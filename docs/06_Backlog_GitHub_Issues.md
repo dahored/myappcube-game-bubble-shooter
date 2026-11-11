@@ -702,24 +702,39 @@ sin aportar historia.
 
 ---
 
-## [Feature] Obstáculos (6 tipos) — el campo del JSON existe y no hace nada
+## [Feature] Obstáculos — el caparazón está hecho; faltan los cuatro que rompen supuestos
 
-**Labels:** `feature`, `gameplay`, `level-design`, `priority-medium`, `size-XL`
+**Labels:** `feature`, `gameplay`, `level-design`, `priority-medium`, `size-L`
 
 ### Descripción
 
-`LevelData.obstacles` existe desde el principio y **está vacío en los 30 niveles**. El GDD 2.3 ya
-define los seis tipos y en qué nivel entra cada uno, pero no hay nada implementado: ni el parseo,
-ni el comportamiento, ni el arte.
+**Actualizado el 2026-11-11.** Los dos primeros tipos del GDD §2.3 ya están, y resultaron ser el
+mismo mecanismo con dos nombres: un **caparazón** de N capas sobre una burbuja cualquiera.
 
-| Obstáculo | Comportamiento (GDD 2.3) | Nivel |
-|---|---|---|
-| **Burbuja de hielo** | Dos impactos: el primero rompe el hielo, el segundo la burbuja | 11 |
-| **Jaula de coral** | Encierra una criatura. Se rompe con un match adyacente | 16 |
-| **Burbuja pegajosa** | No cae aunque pierda la conexión al techo. Solo muere por match directo | 21 |
-| **Generador de algas** | Cada 5 disparos produce una burbuja nueva en una posición fija | 26 |
-| **Burbuja-bomba** | — | 36 |
-| **Cadena viva** | Dos burbujas unidas. Solo se rompen las dos a la vez | 46 |
+Lo que hay hoy:
+
+- `LevelData.obstacles` es `List<CellPos>`: color, material y grosor por celda
+- `ObstacleCatalog` con cinco materiales (hielo, metal, madera, piedra, vidrio), tres capas de
+  arte cada uno y su sonido de rotura
+- La regla, igual venga el golpe de un match, de un poder, de la marea o de un derrumbe:
+  **cada golpe quita una capa, del color que sea**, porque el color está tapado; **la última solo
+  destapa**; y destapada la burbuja vuelve a contar su color
+- Lo mismo sirve para **encerrar algo**: una burbuja de rescate bajo caparazón es la jaula de
+  coral, sin código aparte
+- Tutoriales `obstacle` y `rescue_shell`, y los dos pinceles en los dos editores de niveles
+
+| Obstáculo | Comportamiento (GDD 2.3) | Nivel | Estado |
+|---|---|---|---|
+| **Burbuja de hielo** | Dos impactos: el primero rompe el hielo, el segundo la burbuja | 11 | ✅ hecho, y con grosor de 1 a 3 |
+| **Jaula de coral** | Encierra una criatura. Se rompe con un match adyacente | 16 | ✅ hecho: es un rescate con caparazón |
+| **Burbuja pegajosa** | No cae aunque pierda la conexión al techo. Solo muere por match directo | 21 | pendiente |
+| **Generador de algas** | Cada 5 disparos produce una burbuja nueva en una posición fija | 26 | pendiente |
+| **Burbuja-bomba** | — | 36 | pendiente |
+| **Cadena viva** | Dos burbujas unidas. Solo se rompen las dos a la vez | 46 | pendiente |
+
+Nota de lo aprendido con el caparazón: **lo acorazado se agarra al perder el techo** en vez de
+caerse, así que la pegajosa ya tiene medio camino hecho — `CollapseFloating` distingue entre lo que
+cae y lo que se agarra, y hasta sube al techo cuando no queda dónde posarse.
 
 El **crustáceo pegado** que menciona Diego encaja con la burbuja pegajosa, pero como criatura en vez
 de como textura: un percebe agarrado a la burbuja explica por qué esa no cae, y es más del mundo
@@ -730,9 +745,9 @@ del juego que "una burbuja pegajosa". Decidir si es un renombrado o un obstácul
 Cada obstáculo toca sitios distintos del núcleo, y varios rompen supuestos que hoy están dados por
 hechos:
 
-- **El hielo** necesita vida por burbuja. Hoy una burbuja se quita o no se quita.
+- ~~**El hielo** necesita vida por burbuja~~ — hecho: `BubbleView.LayersLeft`.
 - **La pegajosa** rompe `FindUnreachableFromCeiling`: la caída es una propiedad de grafo recalculada
-  desde cero, y esto introduce excepciones por celda.
+  desde cero, y esto introduce excepciones por celda. Media hecha por el caparazón, que ya se agarra.
 - **El generador** añade burbujas a mitad de partida, con lo que el grid deja de ser algo que solo
   mengua — afecta al scroll de retirada y a la condición de derrota.
 - **La cadena** une dos celdas, y hoy cada celda es independiente.
@@ -741,16 +756,17 @@ Conviene **partirlo en un issue por obstáculo** y empezar por el hielo, que es 
 supuestos rompe y además es el primero que ve el jugador.
 
 ### A decidir
-- [ ] Formato en el JSON: `obstacles` es `List<string>` y ninguno de estos cabe en un string suelto
-      (hace falta al menos tipo + posición)
+- [x] ~~Formato en el JSON~~ — `obstacles` es `List<CellPos>`: celda, color, material y capas
 - [ ] Si la burbuja-bomba del nivel 36 es un obstáculo o una variante de la Bomba de Coral — el GDD
       no describe su comportamiento
 - [ ] El crustáceo: renombrado de la pegajosa, o séptimo tipo
 
 ### Acceptance criteria
-- [ ] `LevelData` modela los obstáculos con tipo y posición
-- [ ] Un issue por obstáculo, cada uno con su tutorial y su arte
-- [ ] El skill `level-designer` documenta el formato nuevo
+- [x] `LevelData` modela los obstáculos con tipo y posición
+- [x] El caparazón, con su tutorial y su arte
+- [ ] Un issue por obstáculo de los cuatro que faltan, cada uno con su tutorial y su arte
+- [ ] El skill `level-designer` documenta el formato nuevo — **sigue pendiente y ya está viejo**:
+      habla de `data/levels/`, de seis capítulos y de un formato de burbujas que no es el actual
 
 ---
 
