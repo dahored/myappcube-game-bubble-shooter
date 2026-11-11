@@ -84,3 +84,8 @@ design/Seasons/
 # Generados por el framework de tests de performance de Unity
 coralia/Assets/Resources/PerformanceTestRun*.json
 coralia/Assets/Resources/PerformanceTestRun*.json.meta
+
+# Lo que extract.py saca de los assets de Unity para el editor web: arte recortado,
+# catalogos resueltos y los 210 niveles en un archivo. Se regenera solo al arrancar
+# serve.py, pesa casi 3 MB y queda viejo en cuanto se toca un catalogo.
+editor/build/
