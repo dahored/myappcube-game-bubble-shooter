@@ -58,6 +58,17 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
     const float DROP_MAX_DURATION = 1f;    // tope de seguridad
     const float DROP_FADE_START   = 0.5f;  // a partir de acá empieza a desvanecerse
 
+    // Qué parte de esa caída hace la que LLEVA ALGO DENTRO antes de reventar.
+    //
+    // No se va por abajo como las demás: lo que cae es el cristal, y lo que importa es lo que
+    // sale de él camino del hub. Cayendo la pantalla entera, el rescate pasa arriba mientras la
+    // burbuja sigue bajando por su cuenta, y se leen como dos cosas sin relación — justo lo
+    // contrario de lo que son (pedido de Diego).
+    //
+    // Un tercio alcanza para que se vea DESPRENDERSE. Menos sería reventar en el sitio, que es
+    // lo que hace un match y no lo que acaba de pasar.
+    const float RESCUE_DROP_RATIO = 0.3f;
+
     // Cuánto tarda una burbuja en caer 'distance' px. Es gravedad pura desde reposo, así que
     // sale de la fórmula sin simular nada — lo usa GridController para saber CUÁNDO mostrar el
     // número de puntos: recién cuando la burbuja llegó abajo y desapareció.
@@ -1110,7 +1121,12 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         float   spin     = Random.Range(-180f, 180f); // grados/seg
         float   t        = 0f;
 
-        while (t < DROP_MAX_DURATION)
+        // La que lleva algo dentro hace solo un trecho y revienta: ver RESCUE_DROP_RATIO.
+        bool  rescue = IsCreature;
+        float falls  = rescue ? DROP_MAX_DURATION * RESCUE_DROP_RATIO : DROP_MAX_DURATION;
+        float fades  = rescue ? falls : DROP_FADE_START;
+
+        while (t < falls)
         {
             t += Time.deltaTime;
             velocity -= DROP_GRAVITY * Time.deltaTime;
@@ -1118,14 +1134,46 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
             rt.anchoredPosition = pos;
             rt.Rotate(0f, 0f, spin * Time.deltaTime);
 
-            if (t > DROP_FADE_START && bubbleImage)
+            if (t > fades && bubbleImage)
             {
-                float fadeP = (t - DROP_FADE_START) / (DROP_MAX_DURATION - DROP_FADE_START);
+                float fadeP = (t - fades) / (falls - fades);
                 bubbleImage.color = new Color(1f, 1f, 1f, 1f - fadeP);
                 if (Special != Booster.None) SpecialBubbleSkin.SetAlpha(this, 1f - fadeP);
             }
             yield return null;
         }
+
+        // Y revienta donde haya llegado, en vez de apagarse al caer fuera de cuadro. El giro se
+        // deshace primero: una burbuja que estalla ladeada se lee como un error de dibujo.
+        if (rescue)
+        {
+            rt.localEulerAngles = Vector3.zero;
+            yield return PopInPlace();
+        }
+
         Destroy(gameObject);
+    }
+
+    // El estallido de la que cayó: los mismos trozos y el mismo crecer-y-apagarse del pop normal,
+    // sin el sonido ni el háptico —los dio ya al desprenderse— y sin destruirse, que de eso se
+    // encarga quien la dejó caer.
+    IEnumerator PopInPlace()
+    {
+        SpawnPopParticles();
+
+        var rt = (RectTransform)transform;
+
+        for (float t = 0f; t < POP_DURATION; t += Time.deltaTime)
+        {
+            float p = Mathf.Clamp01(t / POP_DURATION);
+
+            rt.localScale = REST * (1f + 0.3f * p);
+
+            if (bubbleImage) bubbleImage.color = new Color(1f, 1f, 1f, 1f - p);
+            if (Special != Booster.None) SpecialBubbleSkin.SetAlpha(this, 1f - p);
+
+            FadeRescueLayers(1f - p);
+            yield return null;
+        }
     }
 }
