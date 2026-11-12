@@ -349,6 +349,7 @@ ui.tutorial.weak_spot.body,Toca una burbuja y se va con su color. Bastan dos.,Ta
 ui.booster.pick.hint,Toca la burbuja que quieras quitar,Tap the bubble you want gone,Tocca la bolla che vuoi togliere,Touche la bulle que tu veux enlever,Tippe die Blase an die weg soll,Toca na bolha que queres tirar
 ui.booster.locked,Se desbloquea en el nivel {0},Unlocks at level {0},Si sblocca al livello {0},Se débloque au niveau {0},Wird in Level {0} freigeschaltet,Desbloqueia no nível {0}
 ui.booster.locked_soon,Se desbloquea más adelante,Unlocks later on,Si sblocca più avanti,Se débloque plus tard,Wird später freigeschaltet,Desbloqueia mais à frente
+ui.booster.needs_board,Queda muy poco tablero para esto,Not enough board left for this,Resta troppo poco tabellone per questo,Il reste trop peu de plateau pour ça,Zu wenig Spielfeld übrig dafür,Resta muito pouco tabuleiro para isto
 ui.tutorial.bomb.title,¡La Bomba de Coral!,The Coral Bomb!,La Bomba di Corallo!,La Bombe de Corail !,Die Korallenbombe!,A Bomba de Coral!
 ui.tutorial.bomb.body,Revienta todo lo que la rodea sin importar el color.,Blows up everything around it whatever the color.,Fa esplodere tutto intorno a prescindere dal colore.,Fait exploser tout autour quelle que soit la couleur.,Sprengt alles ringsum egal welche Farbe.,Rebenta tudo à volta seja qual for a cor.
 creature.angelfish.name,Pez ángel,Angelfish,Pesce angelo,Poisson-ange,Kaiserfisch,Peixe-anjo

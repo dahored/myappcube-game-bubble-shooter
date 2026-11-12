@@ -725,6 +725,26 @@ public static class BoosterRules
     // propio racimo.
     public static int TravelersOf(Booster booster) => booster == Booster.Mother ? MOTHER_TARGETS : 0;
 
+    // Cuántas burbujas tiene que haber EN EL TABLERO para que este poder haga algo.
+    //
+    // No es una restricción de diseño: es lo que el poder necesita para existir. La Madre manda
+    // dos hijas a buscar burbujas lejanas y la Tinta salpica a las vecinas del impacto; con el
+    // tablero casi vacío no hay a quién ir ni a quién salpicar, así que las hijas salen y
+    // revientan en el agua y la tinta no pinta nada. El jugador paga y ve un fallo (reportado
+    // por Diego).
+    //
+    // El mínimo es el del match por una razón: los dos existen para PROVOCAR uno. Por debajo de
+    // tres no hay match posible ni habiendo acertado, así que no hay nada que el poder pueda
+    // comprar.
+    //
+    // Los demás no necesitan mínimo: una bomba en un tablero de una burbuja se lleva esa
+    // burbuja, que es exactamente lo que promete.
+    public static int NeedsOnBoard(Booster booster) =>
+        booster == Booster.Mother || booster == Booster.Ink ? GridController.MIN_MATCH : 0;
+
+    // Si gastarlo ahora seria tirarlo.
+    public static bool Pointless(Booster booster, int onBoard) => onBoard < NeedsOnBoard(booster);
+
     // Una hija que cae no solo revienta a la que fue a buscar: se lleva también a las de su color
     // que estuvieran pegadas a ella, como un match. Es lo que convierte a la Madre en algo más
     // que dos burbujas por el precio de una bomba (pedido de Diego).

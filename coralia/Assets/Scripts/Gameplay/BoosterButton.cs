@@ -66,6 +66,11 @@ public class BoosterButton : MonoBehaviour
     // Refresh que dispara el regalo.
     bool Locked => !BoosterRules.IsUnlocked(booster);
 
+    // Y el otro motivo para apagarlo: está desbloqueado y comprado, pero con el tablero que
+    // queda no puede hacer nada. Es un candado distinto —temporal y del nivel, no del
+    // progreso— y por eso dice otra cosa al tocarlo.
+    bool Pointless => gameplay != null && !Locked && gameplay.Pointless(booster);
+
     void Awake()
     {
         if (cannon == null) Debug.LogWarning($"[BoosterButton] Falta asignar 'cannon' en {name} — el ícono no va a poder cargar nada.", this);
@@ -80,6 +85,10 @@ public class BoosterButton : MonoBehaviour
         if (lockedState == null) Debug.LogWarning($"[BoosterButton] Falta asignar 'Locked State' en {name} — un poder que el jugador todavía no conoce se va a ver igual que uno disponible.", this);
         if (cannon != null) cannon.OnBoosterChanged += Refresh;
 
+        // El tablero mengua con cada disparo, así que el botón tiene que enterarse: un poder que
+        // dejó de servir a mitad del nivel se apaga solo.
+        if (gameplay != null) gameplay.OnBoardChanged += Refresh;
+
         // Dos fuentes distintas: el cañón avisa de cargar y descargar (cambia el tinte, no el
         // inventario) y SaveManager de ganar o gastar uno (cambia el número). Un regalo al abrir
         // el nivel llega por acá, cuando este botón ya hizo su OnEnable.
@@ -92,6 +101,7 @@ public class BoosterButton : MonoBehaviour
     {
         if (button != null) button.onClick.RemoveListener(OnPressed);
         if (cannon != null) cannon.OnBoosterChanged -= Refresh;
+        if (gameplay != null) gameplay.OnBoardChanged -= Refresh;
 
         // Obligatorio: el evento es ESTÁTICO, así que un botón destruido al cambiar de escena
         // seguiría enganchado y se le llamaría Refresh sobre un objeto que ya no existe.
@@ -108,6 +118,10 @@ public class BoosterButton : MonoBehaviour
         // Pero el toque SÍ hace algo: cuenta cuándo se consigue. Un botón que no responde se lee
         // como roto, y la pregunta que el jugador se hace al ver un candado es exactamente esa.
         if (Locked) { ShowLockedTooltip(); return; }
+
+        // Gastarlo ahora sería tirarlo. El toque explica por qué en vez de no hacer nada: un
+        // botón mudo se lee como roto, y la pregunta del jugador al ver uno apagado es esa.
+        if (Pointless) { ShowPointlessTooltip(); return; }
 
         // Los que se usan señalando el tablero no pasan por la recámara: ni se cargan, ni gastan
         // disparo, ni tienen burbuja que dibujar. El botón enciende el modo y el segundo toque lo
@@ -177,6 +191,19 @@ public class BoosterButton : MonoBehaviour
         _tooltipRoutine = StartCoroutine(TooltipRoutine());
     }
 
+    // El mismo globo, otro motivo. Comparten rutina y tiempo porque son la misma pieza de
+    // interfaz: lo unico que cambia es la frase.
+    void ShowPointlessTooltip()
+    {
+        if (lockedTooltip == null) return;
+
+        if (lockedTooltipText != null)
+            lockedTooltipText.text = LocaleManager.Get("ui.booster.needs_board");
+
+        if (_tooltipRoutine != null) StopCoroutine(_tooltipRoutine);
+        _tooltipRoutine = StartCoroutine(TooltipRoutine());
+    }
+
     Coroutine _tooltipRoutine;
 
     IEnumerator TooltipRoutine()
@@ -194,8 +221,9 @@ public class BoosterButton : MonoBehaviour
         // Bloqueado gana a todo lo demás: sin existencias que mostrar, sin '+' que lleve a la
         // tienda y sin carga posible. Son estados excluyentes y el orden está decidido acá, no
         // repartido entre quien monte el prefab.
-        bool locked = Locked;
-        int  count  = locked ? 0 : SaveManager.BoosterCount(booster);
+        bool locked    = Locked;
+        bool pointless = Pointless;
+        int  count     = locked ? 0 : SaveManager.BoosterCount(booster);
         // "Puesto" es lo mismo para los dos: cargado en la recámara, o con el modo de elegir
         // abierto. El jugador no distingue las dos formas de activarse y el botón tampoco debería.
         bool loaded = !locked && (cannon != null && cannon.LoadedBooster == booster
@@ -209,7 +237,9 @@ public class BoosterButton : MonoBehaviour
 
         if (icon != null)
         {
-            icon.color = locked ? lockedTint : loaded ? loadedTint : idleTint;
+            // Apagado por los dos motivos: el candado del progreso y el "ahora no sirve". Desde
+            // lejos los dos dicen lo mismo —no lo toques— y al tocarlo cada uno explica el suyo.
+            icon.color = locked || pointless ? lockedTint : loaded ? loadedTint : idleTint;
 
             // Solo si el catálogo lo tiene: así un booster sin arte todavía se queda con el
             // sprite del prefab en vez de aparecer en blanco.

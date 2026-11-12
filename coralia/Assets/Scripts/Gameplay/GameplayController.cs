@@ -2882,6 +2882,14 @@ public class GameplayController : MonoBehaviour
     // también la enciende— va al instante: no hay nada que esperar.
     float PopTime(Vector2Int cell) => _poppedAt.TryGetValue(cell, out float t) ? t : 0f;
 
+    // El tablero cambió de tamaño. Lo escuchan los botones del HUD, que apagan los poderes que
+    // ya no pueden hacer nada con lo que queda.
+    public event System.Action OnBoardChanged;
+
+    // Si gastar ese poder ahora sería tirarlo, con el tablero que hay en este momento.
+    public bool Pointless(Booster booster) =>
+        grid != null && BoosterRules.Pointless(booster, grid.CellCount);
+
     void AfterRemoval(HashSet<Vector2Int> removed, Vector2Int? landed = null)
     {
         // Las minas primero, y la cadena ENTERA: una que estalla puede encender a la de al lado y
@@ -2896,6 +2904,10 @@ public class GameplayController : MonoBehaviour
         HitRescuesTouching(removed, landed);
 
         CountRescued(removed);
+
+        // Y que el HUD se entere: lo que acaba de irse puede dejar al tablero por debajo de lo
+        // que algun poder necesita para hacer algo.
+        OnBoardChanged?.Invoke();
 
         // Un disparo que no matchea SUMA una burbuja al tablero, así que el objetivo de limpiarlo
         // se aleja. Se refresca contra el grid en vez de sumar a mano: el mismo número derivado
@@ -3234,7 +3246,11 @@ public class GameplayController : MonoBehaviour
         // Las últimas de la lista son las que el poder alcanza a distancia. Lo dice BoosterRules
         // y no una medida de "está lejos": el racimo que la Madre revienta puede estirarse varias
         // burbujas, y midiendo le salía una hija a la otra punta de su propio racimo.
-        int firstTraveler = hit.Count - BoosterRules.TravelersOf(booster);
+        // Nunca por debajo de uno: la PRIMERA de la lista es el impacto y no puede salir de
+        // viaje. Con menos burbujas que hijas el índice se iba a negativo y la Madre se mandaba
+        // una hija a la burbuja que acababa de reventar — que es lo que se veía como que se
+        // volvía loca (reportado por Diego).
+        int firstTraveler = Mathf.Max(1, hit.Count - BoosterRules.TravelersOf(booster));
         int sent          = 0;
 
         // Lo que cada hija se lleva DE PROPINA al caer: las de su color que estuvieran pegadas a
