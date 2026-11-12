@@ -65,9 +65,17 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
     // burbuja sigue bajando por su cuenta, y se leen como dos cosas sin relación — justo lo
     // contrario de lo que son (pedido de Diego).
     //
-    // Un tercio alcanza para que se vea DESPRENDERSE. Menos sería reventar en el sitio, que es
-    // lo que hace un match y no lo que acaba de pasar.
-    const float RESCUE_DROP_RATIO = 0.3f;
+    // Con un tercio apenas se despegaba del sitio. Con algo más de la mitad se ve caer de
+    // verdad y todavía revienta dentro del tablero, que es lo que hace falta: más abajo el
+    // estallido queda a la altura del cañón, donde el jugador no está mirando (pedido de Diego).
+    const float RESCUE_DROP_RATIO = 0.6f;
+
+    // Y el estallido es MÁS GRANDE y más largo que el de un match. No es decoración: es el único
+    // momento en que se ve que ahí había algo que rescatar. Con el pop corriente —un cuarto de
+    // segundo y un 30% de crecer— la burbuja desaparecía como si nada después de haber caído
+    // media pantalla (reportado por Diego).
+    const float RESCUE_POP_TIME  = 0.45f;
+    const float RESCUE_POP_GROW  = 0.8f;
 
     // Cuánto tarda una burbuja en caer 'distance' px. Es gravedad pura desde reposo, así que
     // sale de la fórmula sin simular nada — lo usa GridController para saber CUÁNDO mostrar el
@@ -1154,25 +1162,34 @@ public class BubbleView : MonoBehaviour, IPointerClickHandler, IPointerDownHandl
         Destroy(gameObject);
     }
 
-    // El estallido de la que cayó: los mismos trozos y el mismo crecer-y-apagarse del pop normal,
-    // sin el sonido ni el háptico —los dio ya al desprenderse— y sin destruirse, que de eso se
-    // encarga quien la dejó caer.
+    // El estallido de la que cayó. Sin destruirse, que de eso se encarga quien la dejó caer.
     IEnumerator PopInPlace()
     {
+        // Dos tandas de trozos y no una: salen con ángulos distintos porque cada una sortea su
+        // desvío, así que el doble se lee como un estallido y no como ocho puntos ordenados.
         SpawnPopParticles();
+        SpawnPopParticles();
+
+        // El háptico sí, el sonido no: el de caer ya sonó al desprenderse y el del rescate lo
+        // pone GameplayController cuando lo cuenta.
+        if (SaveManager.Vibration) MOST_HapticFeedback.Generate(MOST_HapticFeedback.HapticTypes.LightImpact);
 
         var rt = (RectTransform)transform;
 
-        for (float t = 0f; t < POP_DURATION; t += Time.deltaTime)
+        for (float t = 0f; t < RESCUE_POP_TIME; t += Time.deltaTime)
         {
-            float p = Mathf.Clamp01(t / POP_DURATION);
+            float p = Mathf.Clamp01(t / RESCUE_POP_TIME);
 
-            rt.localScale = REST * (1f + 0.3f * p);
+            rt.localScale = REST * (1f + RESCUE_POP_GROW * p);
 
-            if (bubbleImage) bubbleImage.color = new Color(1f, 1f, 1f, 1f - p);
-            if (Special != Booster.None) SpecialBubbleSkin.SetAlpha(this, 1f - p);
+            // Al cuadrado: aguanta opaca mientras crece y se va de golpe al final. Lineal se
+            // apaga desde el primer frame y lo que se ve es un desvanecido, no una rotura.
+            float alpha = 1f - p * p;
 
-            FadeRescueLayers(1f - p);
+            if (bubbleImage) bubbleImage.color = new Color(1f, 1f, 1f, alpha);
+            if (Special != Booster.None) SpecialBubbleSkin.SetAlpha(this, alpha);
+
+            FadeRescueLayers(alpha);
             yield return null;
         }
     }
