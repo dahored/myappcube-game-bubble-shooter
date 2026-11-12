@@ -50,7 +50,7 @@ MonoBehaviour:
     - {fileID: 8020310639270735144, guid: 4509bac85d61949b2b9c65b438d3fa17, type: 3}
     framesPerSecond: 4
     rescueClip: {fileID: 0}
-  - id: electriceel
+  - id: electric_eel
     icon: {fileID: 674371136069486715, guid: 3303a55f300d14a71a81b792d1f37a68, type: 3}
     frames:
     - {fileID: 674371136069486715, guid: 3303a55f300d14a71a81b792d1f37a68, type: 3}
@@ -82,7 +82,7 @@ MonoBehaviour:
     - {fileID: -5653705017095120209, guid: 777b04a74714844f1a1c73254a29e531, type: 3}
     framesPerSecond: 4
     rescueClip: {fileID: 0}
-  - id: mantaray
+  - id: manta_ray
     icon: {fileID: 322424094381044149, guid: af48f9c5d70904b408c8df93d28e5c45, type: 3}
     frames:
     - {fileID: 322424094381044149, guid: af48f9c5d70904b408c8df93d28e5c45, type: 3}
@@ -90,7 +90,7 @@ MonoBehaviour:
     - {fileID: -3244608167010207141, guid: bc150612d15824926aa4a9d47fea68c1, type: 3}
     framesPerSecond: 4
     rescueClip: {fileID: 0}
-  - id: morayeel
+  - id: moray_eel
     icon: {fileID: -8340658406779940827, guid: e5db33ebd211a4f6aab7ab2750472131, type: 3}
     frames:
     - {fileID: -8340658406779940827, guid: e5db33ebd211a4f6aab7ab2750472131, type: 3}
@@ -122,7 +122,7 @@ MonoBehaviour:
     - {fileID: -7126447409115464678, guid: 10f986a1c0f2e4c089382eb825d29ca1, type: 3}
     framesPerSecond: 4
     rescueClip: {fileID: 0}
-  - id: seaotter
+  - id: sea_otter
     icon: {fileID: 3293463238049684757, guid: c854903481a35480791a06a2fe1baa9c, type: 3}
     frames:
     - {fileID: 3293463238049684757, guid: c854903481a35480791a06a2fe1baa9c, type: 3}

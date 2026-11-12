@@ -356,16 +356,16 @@ creature.clam.name,Almeja,Clam,Vongola,Palourde,Muschel,Amêijoa
 creature.coral.name,Coral,Coral,Corallo,Corail,Koralle,Coral
 creature.crab.name,Cangrejo,Crab,Granchio,Crabe,Krabbe,Caranguejo
 creature.dolphin.name,Delfín,Dolphin,Delfino,Dauphin,Delfin,Golfinho
-creature.electriceel.name,Anguila eléctrica,Electric Eel,Anguilla elettrica,Anguille électrique,Zitteraal,Enguia-elétrica
+creature.electric_eel.name,Anguila eléctrica,Electric Eel,Anguilla elettrica,Anguille électrique,Zitteraal,Enguia-elétrica
 creature.jellyfish.name,Medusa,Jellyfish,Medusa,Méduse,Qualle,Alforreca
 creature.sole.name,Lenguado,Sole,Sogliola,Sole,Seezunge,Linguado
 creature.lobster.name,Langosta,Lobster,Aragosta,Homard,Hummer,Lagosta
-creature.mantaray.name,Manta,Manta Ray,Manta,Raie manta,Mantarochen,Manta
-creature.morayeel.name,Morena,Moray Eel,Murena,Murène,Muräne,Moreia
+creature.manta_ray.name,Manta,Manta Ray,Manta,Raie manta,Mantarochen,Manta
+creature.moray_eel.name,Morena,Moray Eel,Murena,Murène,Muräne,Moreia
 creature.octopus.name,Pulpo,Octopus,Polpo,Pieuvre,Krake,Polvo
 creature.pufferfish.name,Pez globo,Pufferfish,Pesce palla,Poisson-globe,Kugelfisch,Peixe-balão
 creature.seahorse.name,Caballito de mar,Seahorse,Cavalluccio marino,Hippocampe,Seepferdchen,Cavalo-marinho
-creature.seaotter.name,Nutria marina,Sea Otter,Lontra marina,Loutre de mer,Seeotter,Lontra-marinha
+creature.sea_otter.name,Nutria marina,Sea Otter,Lontra marina,Loutre de mer,Seeotter,Lontra-marinha
 creature.shark.name,Tiburón,Shark,Squalo,Requin,Hai,Tubarão
 creature.sponge.name,Esponja,Sponge,Spugna,Éponge,Schwamm,Esponja
 creature.starfish.name,Estrella de mar,Starfish,Stella marina,Étoile de mer,Seestern,Estrela-do-mar
