@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CreatureCatalog
   m_EditorClassIdentifier: Assembly-CSharp::CreatureCatalog
   entries:
-  - id: angelfish_fe
+  - id: angelfish
     icon: {fileID: 6740244376260901819, guid: 64358c5ff86de48e7a2e7174a5d21dbb, type: 3}
     frames:
     - {fileID: 6740244376260901819, guid: 64358c5ff86de48e7a2e7174a5d21dbb, type: 3}
@@ -66,7 +66,7 @@ MonoBehaviour:
     - {fileID: -1629539381923483857, guid: 6f2494e211df04f809ab2259ffbce3da, type: 3}
     framesPerSecond: 4
     rescueClip: {fileID: 0}
-  - id: lenguado
+  - id: sole
     icon: {fileID: -7190600870638844690, guid: 3bd1d8c3e87654aadaef5873f28c918a, type: 3}
     frames:
     - {fileID: -7190600870638844690, guid: 3bd1d8c3e87654aadaef5873f28c918a, type: 3}
@@ -98,7 +98,7 @@ MonoBehaviour:
     - {fileID: 9140344108102777431, guid: 51eb93bae31ce4ab1bd5a6d3a253e140, type: 3}
     framesPerSecond: 4
     rescueClip: {fileID: 0}
-  - id: octupus
+  - id: octopus
     icon: {fileID: -5358078164763003774, guid: 3a4f92ca150be4825aa98664b36ce3e4, type: 3}
     frames:
     - {fileID: -5358078164763003774, guid: 3a4f92ca150be4825aa98664b36ce3e4, type: 3}
